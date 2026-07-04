@@ -38,7 +38,7 @@ export default function DashboardLayout({
             <Navbar />
             <div className="flex flex-1">
                 <AdminSidebar />
-                <main className="flex-1 overflow-auto bg-default-50 p-6 lg:p-8">
+                <main className="flex-1 overflow-auto bg-default-50 p-6 lg:p-8 lg:ml-64">
                     {children}
                 </main>
             </div>

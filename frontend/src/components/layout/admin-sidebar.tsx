@@ -33,7 +33,7 @@ export function AdminSidebar() {
     const { logout } = useAuth();
 
     return (
-        <aside className="sticky top-0 hidden h-screen w-64 flex-shrink-0 border-r border-divider bg-content1 p-4 lg:block">
+        <aside className="fixed top-[65px] left-0 hidden h-[calc(100vh-65px)] w-64 flex-shrink-0 border-r border-divider bg-content1 p-4 lg:block overflow-y-auto">
             <div className="flex h-full flex-col">
                 <div className="mb-8 px-3 pt-2">
                     <h2 className="text-lg font-bold text-foreground">Admin Panel</h2>

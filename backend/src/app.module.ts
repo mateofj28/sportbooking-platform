@@ -10,6 +10,7 @@ import { BookingsModule } from './modules/bookings/bookings.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
 import { PricingModule } from './modules/pricing/pricing.module';
 import { BlockedSlotsModule } from './modules/blocked-slots/blocked-slots.module';
+import { MailModule } from './modules/mail/mail.module';
 import appConfig from './config/app.config';
 
 @Module({
@@ -19,6 +20,7 @@ import appConfig from './config/app.config';
       load: [appConfig],
     }),
     PrismaModule,
+    MailModule,
     AuthModule,
     UsersModule,
     SportsModule,

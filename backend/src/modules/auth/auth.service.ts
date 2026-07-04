@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './dto';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class AuthService {
         private prisma: PrismaService,
         private jwtService: JwtService,
         private configService: ConfigService,
+        private mailService: MailService,
     ) { }
 
     async register(dto: RegisterDto) {
@@ -95,7 +97,7 @@ export class AuthService {
 
         if (!user) {
             // Don't reveal if user exists
-            return { message: 'If the email exists, a reset link has been sent' };
+            return { message: 'Se ha enviado un enlace de recuperación a tu email' };
         }
 
         const resetToken = uuidv4();
@@ -106,8 +108,10 @@ export class AuthService {
             data: { resetToken, resetTokenExpires },
         });
 
-        // TODO: Send email with reset token
-        return { message: 'If the email exists, a reset link has been sent' };
+        // Send reset email
+        await this.mailService.sendPasswordReset(user.email, resetToken, user.firstName);
+
+        return { message: 'Se ha enviado un enlace de recuperación a tu email' };
     }
 
     async resetPassword(dto: ResetPasswordDto) {

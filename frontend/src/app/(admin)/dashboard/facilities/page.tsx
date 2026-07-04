@@ -22,7 +22,7 @@ import {
 import { useFacilities } from "@/hooks/use-facilities";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
 import type { Sport, Venue } from "@/types";
 
@@ -39,11 +39,20 @@ export default function AdminFacilitiesPage() {
     });
 
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
     const [form, setForm] = useState({
         name: "",
         description: "",
         venueId: "",
         sportId: "",
+        surfaceType: "",
+        minBookingDuration: "60",
+        maxBookingDuration: "120",
+    });
+    const [editForm, setEditForm] = useState({
+        id: "",
+        name: "",
+        description: "",
         surfaceType: "",
         minBookingDuration: "60",
         maxBookingDuration: "120",
@@ -63,6 +72,38 @@ export default function AdminFacilitiesPage() {
             queryClient.invalidateQueries({ queryKey: ["facilities"] });
         },
     });
+
+    const editMutation = useMutation({
+        mutationFn: ({ id, ...data }: { id: string; name: string; description: string; surfaceType: string; minBookingDuration: number; maxBookingDuration: number }) =>
+            apiClient.patch(`/facilities/${id}`, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["facilities"] });
+            onEditClose();
+        },
+    });
+
+    const handleEdit = (facility: any) => {
+        setEditForm({
+            id: facility.id,
+            name: facility.name,
+            description: facility.description || "",
+            surfaceType: facility.surfaceType || "",
+            minBookingDuration: String(facility.minBookingDuration),
+            maxBookingDuration: String(facility.maxBookingDuration),
+        });
+        onEditOpen();
+    };
+
+    const handleEditSubmit = () => {
+        editMutation.mutate({
+            id: editForm.id,
+            name: editForm.name,
+            description: editForm.description,
+            surfaceType: editForm.surfaceType,
+            minBookingDuration: parseInt(editForm.minBookingDuration),
+            maxBookingDuration: parseInt(editForm.maxBookingDuration),
+        });
+    };
 
     const handleCreate = () => {
         setForm({
@@ -131,15 +172,26 @@ export default function AdminFacilitiesPage() {
                                 </Chip>
                             </TableCell>
                             <TableCell>
-                                <Button
-                                    size="sm"
-                                    color="danger"
-                                    variant="light"
-                                    isIconOnly
-                                    onPress={() => deleteMutation.mutate(facility.id)}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <div className="flex gap-1">
+                                    <Button
+                                        size="sm"
+                                        color="primary"
+                                        variant="light"
+                                        isIconOnly
+                                        onPress={() => handleEdit(facility)}
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        color="danger"
+                                        variant="light"
+                                        isIconOnly
+                                        onPress={() => deleteMutation.mutate(facility.id)}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </TableCell>
                         </TableRow>
                     ))}
@@ -161,6 +213,25 @@ export default function AdminFacilitiesPage() {
                     <ModalFooter>
                         <Button variant="light" onPress={onClose}>Cancelar</Button>
                         <Button color="primary" onPress={handleSubmit} isLoading={createMutation.isPending}>Crear</Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            <Modal isOpen={isEditOpen} onClose={onEditClose} size="2xl">
+                <ModalContent>
+                    <ModalHeader>Editar Instalación</ModalHeader>
+                    <ModalBody className="gap-4">
+                        <Input label="Nombre" variant="bordered" value={editForm.name} onValueChange={(v) => setEditForm({ ...editForm, name: v })} />
+                        <Textarea label="Descripción" variant="bordered" value={editForm.description} onValueChange={(v) => setEditForm({ ...editForm, description: v })} />
+                        <Input label="Tipo de superficie" variant="bordered" value={editForm.surfaceType} onValueChange={(v) => setEditForm({ ...editForm, surfaceType: v })} />
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input label="Duración mín (min)" type="number" variant="bordered" value={editForm.minBookingDuration} onValueChange={(v) => setEditForm({ ...editForm, minBookingDuration: v })} />
+                            <Input label="Duración máx (min)" type="number" variant="bordered" value={editForm.maxBookingDuration} onValueChange={(v) => setEditForm({ ...editForm, maxBookingDuration: v })} />
+                        </div>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="light" onPress={onEditClose}>Cancelar</Button>
+                        <Button color="primary" onPress={handleEditSubmit} isLoading={editMutation.isPending}>Guardar</Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>

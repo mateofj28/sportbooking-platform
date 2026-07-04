@@ -15,10 +15,12 @@ import {
     useDisclosure,
 } from "@heroui/react";
 import { useBookings, useCancelBooking } from "@/hooks/use-bookings";
+import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Calendar, MapPin, Clock, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import type { Booking, BookingStatus } from "@/types";
 
 const STATUS_MAP: Record<BookingStatus, { label: string; color: "warning" | "success" | "danger" | "default" }> = {
@@ -29,11 +31,23 @@ const STATUS_MAP: Record<BookingStatus, { label: string; color: "warning" | "suc
 };
 
 export default function BookingsPage() {
+    const { isAuthenticated, isHydrated } = useAuthStore();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (isHydrated && !isAuthenticated) {
+            router.replace("/login");
+        }
+    }, [isHydrated, isAuthenticated, router]);
+
     const { data: bookings, isLoading } = useBookings();
     const cancelBooking = useCancelBooking();
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [cancelReason, setCancelReason] = useState("");
+
+    if (!isHydrated) return <div className="flex min-h-screen items-center justify-center"><Spinner size="lg" /></div>;
+    if (!isAuthenticated) return null;
 
     const handleCancelClick = (booking: Booking) => {
         setSelectedBooking(booking);

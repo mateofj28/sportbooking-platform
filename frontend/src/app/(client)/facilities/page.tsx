@@ -6,6 +6,7 @@ import { Select, SelectItem } from "@heroui/select";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useFacilities } from "@/hooks/use-facilities";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { FacilityCard } from "@/components/cards/facility-card";
@@ -15,6 +16,7 @@ import type { Sport } from "@/types";
 export default function FacilitiesPage() {
     const [search, setSearch] = useState("");
     const [sportId, setSportId] = useState("");
+    const debouncedSearch = useDebounce(search, 400);
 
     const { data: sports } = useQuery({
         queryKey: ["sports"],
@@ -22,7 +24,7 @@ export default function FacilitiesPage() {
     });
 
     const { data: facilities, isLoading } = useFacilities({
-        search: search || undefined,
+        search: debouncedSearch || undefined,
         sportId: sportId || undefined,
     });
 

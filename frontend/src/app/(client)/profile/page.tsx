@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, CardBody, CardHeader, Input, Divider } from "@heroui/react";
+import { Button, Card, CardBody, CardHeader, Input, Divider, Spinner } from "@heroui/react";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
@@ -8,10 +8,19 @@ import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { User, Mail, Phone, Save } from "lucide-react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import type { User as UserType } from "@/types";
 
 export default function ProfilePage() {
-    const { user, updateUser } = useAuthStore();
+    const { user, updateUser, isAuthenticated, isHydrated } = useAuthStore();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (isHydrated && !isAuthenticated) {
+            router.replace("/login");
+        }
+    }, [isHydrated, isAuthenticated, router]);
 
     const { register, handleSubmit } = useForm({
         defaultValues: {
@@ -32,6 +41,9 @@ export default function ProfilePage() {
     const onSubmit = (data: any) => {
         updateMutation.mutate(data);
     };
+
+    if (!isHydrated) return <div className="flex min-h-screen items-center justify-center"><Spinner size="lg" /></div>;
+    if (!isAuthenticated) return null;
 
     return (
         <div className="flex min-h-screen flex-col">

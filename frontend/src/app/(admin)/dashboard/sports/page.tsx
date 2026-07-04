@@ -20,14 +20,16 @@ import {
 } from "@heroui/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
 import type { Sport } from "@/types";
 
 export default function AdminSportsPage() {
     const queryClient = useQueryClient();
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
     const [form, setForm] = useState({ name: "", slug: "", icon: "" });
+    const [editForm, setEditForm] = useState({ id: "", name: "", slug: "", icon: "" });
 
     const { data: sports, isLoading } = useQuery({
         queryKey: ["sports"],
@@ -49,6 +51,20 @@ export default function AdminSportsPage() {
             queryClient.invalidateQueries({ queryKey: ["sports"] });
         },
     });
+
+    const editMutation = useMutation({
+        mutationFn: ({ id, ...data }: { id: string; name: string; slug: string; icon: string }) =>
+            apiClient.patch(`/sports/${id}`, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["sports"] });
+            onEditClose();
+        },
+    });
+
+    const handleEdit = (sport: Sport) => {
+        setEditForm({ id: sport.id, name: sport.name, slug: sport.slug, icon: sport.icon || "" });
+        onEditOpen();
+    };
 
     if (isLoading) {
         return (
@@ -90,15 +106,26 @@ export default function AdminSportsPage() {
                                 </Chip>
                             </TableCell>
                             <TableCell>
-                                <Button
-                                    size="sm"
-                                    color="danger"
-                                    variant="light"
-                                    isIconOnly
-                                    onPress={() => deleteMutation.mutate(sport.id)}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <div className="flex gap-1">
+                                    <Button
+                                        size="sm"
+                                        color="primary"
+                                        variant="light"
+                                        isIconOnly
+                                        onPress={() => handleEdit(sport)}
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        color="danger"
+                                        variant="light"
+                                        isIconOnly
+                                        onPress={() => deleteMutation.mutate(sport.id)}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </TableCell>
                         </TableRow>
                     ))}
@@ -128,6 +155,32 @@ export default function AdminSportsPage() {
                     <ModalFooter>
                         <Button variant="light" onPress={onClose}>Cancelar</Button>
                         <Button color="primary" onPress={() => createMutation.mutate(form)} isLoading={createMutation.isPending}>Crear</Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            <Modal isOpen={isEditOpen} onClose={onEditClose}>
+                <ModalContent>
+                    <ModalHeader>Editar Deporte</ModalHeader>
+                    <ModalBody className="gap-4">
+                        <Input
+                            label="Nombre"
+                            variant="bordered"
+                            value={editForm.name}
+                            onValueChange={(v) =>
+                                setEditForm({
+                                    ...editForm,
+                                    name: v,
+                                    slug: v.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
+                                })
+                            }
+                        />
+                        <Input label="Slug" variant="bordered" value={editForm.slug} onValueChange={(v) => setEditForm({ ...editForm, slug: v })} />
+                        <Input label="Icono" placeholder="Ej: soccer" variant="bordered" value={editForm.icon} onValueChange={(v) => setEditForm({ ...editForm, icon: v })} />
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="light" onPress={onEditClose}>Cancelar</Button>
+                        <Button color="primary" onPress={() => editMutation.mutate(editForm)} isLoading={editMutation.isPending}>Guardar</Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>

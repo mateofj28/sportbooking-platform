@@ -44,6 +44,15 @@ export class FacilitiesController {
         return this.facilitiesService.findById(id);
     }
 
+    @Get(':id/availability')
+    @ApiOperation({ summary: 'Get facility availability for a date' })
+    getAvailability(
+        @Param('id') id: string,
+        @Query('date') date: string,
+    ) {
+        return this.facilitiesService.getAvailability(id, date);
+    }
+
     @Post()
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)

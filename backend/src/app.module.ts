@@ -9,6 +9,7 @@ import { FacilitiesModule } from './modules/facilities/facilities.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
 import { PricingModule } from './modules/pricing/pricing.module';
+import { BlockedSlotsModule } from './modules/blocked-slots/blocked-slots.module';
 import appConfig from './config/app.config';
 
 @Module({
@@ -26,6 +27,7 @@ import appConfig from './config/app.config';
     BookingsModule,
     SchedulesModule,
     PricingModule,
+    BlockedSlotsModule,
   ],
 })
 export class AppModule { }

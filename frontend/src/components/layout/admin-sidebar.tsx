@@ -11,12 +11,19 @@ import {
     Trophy,
     ArrowLeft,
     LogOut,
+    Clock,
+    DollarSign,
+    Ban,
 } from "lucide-react";
 
 const menuItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/bookings", label: "Reservas", icon: Calendar },
     { href: "/dashboard/facilities", label: "Instalaciones", icon: MapPin },
+    { href: "/dashboard/venues", label: "Sedes", icon: MapPin },
+    { href: "/dashboard/schedules", label: "Horarios", icon: Clock },
+    { href: "/dashboard/pricing", label: "Precios", icon: DollarSign },
+    { href: "/dashboard/blocked-slots", label: "Bloqueos", icon: Ban },
     { href: "/dashboard/users", label: "Usuarios", icon: Users },
     { href: "/dashboard/sports", label: "Deportes", icon: Trophy },
 ];

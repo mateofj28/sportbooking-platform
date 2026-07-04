@@ -16,10 +16,10 @@ export default function DashboardLayout({
     const { isAuthenticated, isHydrated, user } = useAuthStore();
 
     useEffect(() => {
-        if (isHydrated && !isAuthenticated) {
+        if (isHydrated && (!isAuthenticated || user?.role !== "ADMIN")) {
             router.replace("/login");
         }
-    }, [isHydrated, isAuthenticated, router]);
+    }, [isHydrated, isAuthenticated, user, router]);
 
     if (!isHydrated) {
         return (

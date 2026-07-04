@@ -13,6 +13,8 @@ import {
 } from "@heroui/react";
 import { useFacility } from "@/hooks/use-facilities";
 import { useCreateBooking } from "@/hooks/use-bookings";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
@@ -91,12 +93,24 @@ export default function FacilityDetailPage({
     const dayOfWeek = useMemo(() => (selectedDate.getDay() + 6) % 7, [selectedDate]);
     const schedule = facility?.schedules?.find((s) => s.dayOfWeek === dayOfWeek && s.isActive);
 
-    // Generate available time slots
+    // Fetch real availability from backend
+    const dateStr = selectedDate.toISOString().split("T")[0];
+    const { data: availability } = useQuery({
+        queryKey: ["availability", id, dateStr],
+        queryFn: () => apiClient.get<{ available: boolean; slots: { time: string; available: boolean }[]; message?: string }>(`/facilities/${id}/availability`, { date: dateStr }),
+        enabled: !!facility && !!schedule,
+    });
+
+    // Generate available time slots (fallback to local if API not ready)
     const isToday = selectedDate.toDateString() === new Date().toDateString();
     const timeSlots = useMemo(() => {
+        if (availability?.slots) {
+            return availability.slots;
+        }
         if (!schedule || !facility) return [];
-        return generateTimeSlots(schedule.openTime, schedule.closeTime, facility.minBookingDuration, isToday);
-    }, [schedule, facility, isToday]);
+        return generateTimeSlots(schedule.openTime, schedule.closeTime, facility.minBookingDuration, isToday)
+            .map((t) => ({ time: t, available: true }));
+    }, [availability, schedule, facility, isToday]);
 
     // Duration options
     const durationOptions = useMemo(() => {
@@ -256,17 +270,22 @@ export default function FacilityDetailPage({
                             ) : (
                                 <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
                                     {timeSlots.map((slot) => {
-                                        const isSelected = slot === selectedSlot;
+                                        const slotTime = typeof slot === "string" ? slot : slot.time;
+                                        const slotAvailable = typeof slot === "string" ? true : slot.available;
+                                        const isSelected = slotTime === selectedSlot;
                                         return (
                                             <button
-                                                key={slot}
-                                                onClick={() => { setSelectedSlot(slot); setStep("select"); }}
+                                                key={slotTime}
+                                                onClick={() => { if (slotAvailable) { setSelectedSlot(slotTime); setStep("select"); } }}
+                                                disabled={!slotAvailable}
                                                 className={`rounded-lg border px-2 py-2.5 text-sm font-medium transition-all ${isSelected
                                                     ? "border-primary bg-primary text-white shadow-sm"
-                                                    : "border-divider bg-background hover:border-primary hover:text-primary"
+                                                    : slotAvailable
+                                                        ? "border-divider bg-background hover:border-primary hover:text-primary"
+                                                        : "border-divider bg-default-100 text-default-300 cursor-not-allowed line-through"
                                                     }`}
                                             >
-                                                {slot}
+                                                {slotTime}
                                             </button>
                                         );
                                     })}

@@ -19,26 +19,8 @@ Plataforma para gestión y reserva de instalaciones deportivas.
 ### Detalle y Reserva de Instalación
 ![Booking Flow](docs/screenshots/booking-flow.png)
 
-### Mis Reservas (Cliente)
-![My Bookings](docs/screenshots/my-bookings.png)
-
 ### Dashboard Admin
 ![Dashboard](docs/screenshots/dashboard.png)
-
-### Gestión de Reservas (Admin)
-![Admin Bookings](docs/screenshots/admin-bookings.png)
-
-### Gestión de Instalaciones (Admin)
-![Admin Facilities](docs/screenshots/admin-facilities.png)
-
-### Configuración de Horarios
-![Schedules](docs/screenshots/schedules.png)
-
-### Configuración de Precios
-![Pricing](docs/screenshots/pricing.png)
-
-### Email de Recuperación de Contraseña
-![Reset Email](docs/screenshots/reset-email.png)
 
 ---
 

@@ -9,13 +9,19 @@ export class MailService {
   private frontendUrl: string;
 
   constructor(private configService: ConfigService) {
-    this.resend = new Resend(this.configService.get<string>('RESEND_API_KEY'));
+    const apiKey = this.configService.get<string>('RESEND_API_KEY');
+    this.resend = apiKey ? new Resend(apiKey) : null as any;
     this.fromEmail = this.configService.get<string>('RESEND_FROM_EMAIL') || 'SportBooking <onboarding@resend.dev>';
     this.frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
   }
 
   async sendPasswordReset(email: string, token: string, firstName: string) {
     const resetUrl = `${this.frontendUrl}/reset-password?token=${token}`;
+
+    if (!this.resend) {
+      console.warn('⚠️ RESEND_API_KEY no configurada. Email no enviado. Reset URL:', resetUrl);
+      return;
+    }
 
     await this.resend.emails.send({
       from: this.fromEmail,

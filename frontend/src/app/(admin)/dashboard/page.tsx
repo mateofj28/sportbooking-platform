@@ -14,7 +14,7 @@ import {
     Users,
 } from "lucide-react";
 import Link from "next/link";
-import type { Booking, Facility, Sport } from "@/types";
+import type { Booking, Facility, Sport, User, PaginatedResult } from "@/types";
 
 export default function DashboardPage() {
     const { data: bookings, isLoading: loadingBookings } = useQuery({
@@ -32,10 +32,16 @@ export default function DashboardPage() {
         queryFn: () => apiClient.get<Sport[]>("/sports"),
     });
 
+    const { data: usersData } = useQuery({
+        queryKey: ["admin-users"],
+        queryFn: () => apiClient.get<PaginatedResult<User>>("/users?limit=100"),
+    });
+
     // Computed stats
     const pendingBookings = bookings?.filter((b) => b.status === "PENDING") || [];
     const confirmedBookings = bookings?.filter((b) => b.status === "CONFIRMED") || [];
     const cancelledBookings = bookings?.filter((b) => b.status === "CANCELLED") || [];
+    const completedBookings = bookings?.filter((b) => b.status === "COMPLETED") || [];
     const totalRevenue = bookings
         ?.filter((b) => b.status !== "CANCELLED")
         .reduce((sum, b) => sum + Number(b.totalPrice), 0) || 0;
@@ -111,9 +117,67 @@ export default function DashboardPage() {
                     color="bg-warning-50 text-warning-600"
                     trend={`${sports?.length || 0} deportes`}
                 />
+                <StatCard
+                    icon={<Users className="h-5 w-5" />}
+                    label="Total usuarios"
+                    value={usersData?.meta?.total || usersData?.data?.length || 0}
+                    color="bg-default-100 text-default-600"
+                    trend="registrados"
+                />
             </div>
 
-            {/* Content Grid */}
+            {/* Booking Status Breakdown */}
+            <Card>
+                <CardHeader className="pb-2">
+                    <div>
+                        <h2 className="text-base font-semibold">Estado de reservas</h2>
+                        <p className="text-xs text-default-400">Desglose por estado</p>
+                    </div>
+                </CardHeader>
+                <Divider />
+                <CardBody>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="flex items-center gap-3 rounded-lg bg-warning-50 p-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/20">
+                                <Clock className="h-5 w-5 text-warning" />
+                            </div>
+                            <div>
+                                <p className="text-xl font-bold">{pendingBookings.length}</p>
+                                <p className="text-xs text-default-500">Pendientes</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 rounded-lg bg-success-50 p-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/20">
+                                <Calendar className="h-5 w-5 text-success" />
+                            </div>
+                            <div>
+                                <p className="text-xl font-bold">{confirmedBookings.length}</p>
+                                <p className="text-xs text-default-500">Confirmadas</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 rounded-lg bg-danger-50 p-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-danger/20">
+                                <Activity className="h-5 w-5 text-danger" />
+                            </div>
+                            <div>
+                                <p className="text-xl font-bold">{cancelledBookings.length}</p>
+                                <p className="text-xs text-default-500">Canceladas</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 rounded-lg bg-default-100 p-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-default-200">
+                                <Calendar className="h-5 w-5 text-default-600" />
+                            </div>
+                            <div>
+                                <p className="text-xl font-bold">{completedBookings.length}</p>
+                                <p className="text-xs text-default-500">Completadas</p>
+                            </div>
+                        </div>
+                    </div>
+                </CardBody>
+            </Card>
+
+            {/* Últimos usuarios + Recent Bookings */}
             <div className="grid gap-6 lg:grid-cols-3">
                 {/* Recent Bookings */}
                 <Card className="lg:col-span-2 animate-slide-up">
@@ -174,6 +238,42 @@ export default function DashboardPage() {
 
                 {/* Right Column */}
                 <div className="space-y-4 animate-slide-up" style={{ animationDelay: "100ms" }}>
+                    {/* Últimos 5 usuarios */}
+                    <Card>
+                        <CardHeader className="pb-2 flex-row items-center justify-between">
+                            <div>
+                                <h2 className="text-base font-semibold">Últimos usuarios</h2>
+                                <p className="text-xs text-default-400">Registros recientes</p>
+                            </div>
+                            <Link href="/dashboard/users">
+                                <Chip size="sm" variant="flat" color="primary" className="cursor-pointer">
+                                    Ver todos →
+                                </Chip>
+                            </Link>
+                        </CardHeader>
+                        <Divider />
+                        <CardBody className="gap-2">
+                            {usersData?.data && usersData.data.length > 0 ? (
+                                usersData.data.slice(0, 5).map((u) => (
+                                    <div key={u.id} className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-default-50 transition-colors">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-50 text-xs font-bold text-primary">
+                                            {u.firstName?.[0]}{u.lastName?.[0]}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium truncate">{u.firstName} {u.lastName}</p>
+                                            <p className="text-xs text-default-400 truncate">{u.email}</p>
+                                        </div>
+                                        <Chip size="sm" variant="flat" color={u.role === "ADMIN" ? "secondary" : "default"}>
+                                            {u.role}
+                                        </Chip>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-default-400 text-center py-2">Sin usuarios</p>
+                            )}
+                        </CardBody>
+                    </Card>
+
                     {/* Bookings by Sport */}
                     <Card>
                         <CardHeader className="pb-2">

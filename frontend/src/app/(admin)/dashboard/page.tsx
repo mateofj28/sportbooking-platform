@@ -7,13 +7,11 @@ import {
     Calendar,
     MapPin,
     TrendingUp,
-    CheckCircle,
     Clock,
-    Users,
     Activity,
-    BarChart3,
     ArrowUpRight,
     ArrowDownRight,
+    Users,
 } from "lucide-react";
 import Link from "next/link";
 import type { Booking, Facility, Sport } from "@/types";

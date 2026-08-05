@@ -23,7 +23,7 @@ export class FacilitiesService {
     async findById(id: string) {
         const facility = await this.facilitiesRepository.findById(id);
         if (!facility) {
-            throw new NotFoundException('Facility not found');
+            throw new NotFoundException('Instalación no encontrada');
         }
         return facility;
     }

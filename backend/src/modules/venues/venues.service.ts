@@ -13,7 +13,7 @@ export class VenuesService {
     async findById(id: string) {
         const venue = await this.venuesRepository.findById(id);
         if (!venue) {
-            throw new NotFoundException('Venue not found');
+            throw new NotFoundException('Sede no encontrada');
         }
         return venue;
     }

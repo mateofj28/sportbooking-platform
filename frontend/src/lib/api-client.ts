@@ -16,6 +16,16 @@ class ApiClient {
 
     private async handleResponse<T>(response: Response): Promise<T> {
         if (!response.ok) {
+            // Auto-logout on 401 (expired token)
+            if (response.status === 401 && typeof window !== "undefined") {
+                const currentPath = window.location.pathname;
+                if (currentPath !== "/login" && currentPath !== "/register") {
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("refreshToken");
+                    localStorage.removeItem("user");
+                    window.location.href = "/login";
+                }
+            }
             const error: ApiError = await response.json().catch(() => ({
                 statusCode: response.status,
                 message: response.statusText,

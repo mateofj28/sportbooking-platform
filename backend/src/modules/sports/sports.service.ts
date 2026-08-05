@@ -13,7 +13,7 @@ export class SportsService {
     async findById(id: string) {
         const sport = await this.sportsRepository.findById(id);
         if (!sport) {
-            throw new NotFoundException('Sport not found');
+            throw new NotFoundException('Deporte no encontrado');
         }
         return sport;
     }

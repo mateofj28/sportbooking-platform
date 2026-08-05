@@ -26,7 +26,7 @@ export class BookingsService {
     async findById(id: string) {
         const booking = await this.bookingsRepository.findById(id);
         if (!booking) {
-            throw new NotFoundException('Booking not found');
+            throw new NotFoundException('Reserva no encontrada');
         }
         return booking;
     }

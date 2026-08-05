@@ -137,7 +137,7 @@ export class AuthService {
             },
         });
 
-        return { message: 'Password reset successfully' };
+        return { message: 'Contraseña restablecida correctamente' };
     }
 
     async getProfile(userId: string) {
@@ -156,7 +156,7 @@ export class AuthService {
         });
 
         if (!user) {
-            throw new NotFoundException('User not found');
+            throw new NotFoundException('Usuario no encontrado');
         }
 
         return user;

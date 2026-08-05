@@ -270,14 +270,14 @@ export default function HomePage() {
                 {/* ===== CTA FOR OWNERS ===== */}
                 <section className="px-6 py-20 bg-background">
                     <div className="mx-auto max-w-4xl">
-                        <Card className="bg-gradient-to-br from-foreground to-default-800 text-white overflow-hidden">
+                        <Card className="overflow-hidden border border-divider bg-gradient-to-br from-primary-600 to-secondary-700">
                             <CardBody className="relative p-10 md:p-14">
                                 <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-white/5 blur-2xl" />
                                 <div className="relative z-10 max-w-lg">
-                                    <h2 className="text-2xl font-bold md:text-3xl">
+                                    <h2 className="text-2xl font-bold text-white md:text-3xl">
                                         ¿Tienes un complejo deportivo?
                                     </h2>
-                                    <p className="mt-4 text-default-300 leading-relaxed">
+                                    <p className="mt-4 text-white/70 leading-relaxed">
                                         Digitaliza tu negocio. Recibe reservas online 24/7, reduce cancelaciones
                                         y aumenta la ocupación de tus canchas con nuestro panel de gestión.
                                     </p>
@@ -285,10 +285,9 @@ export default function HomePage() {
                                         <Button
                                             as={Link}
                                             href="/register"
-                                            color="primary"
                                             size="lg"
                                             radius="full"
-                                            className="font-semibold"
+                                            className="font-semibold bg-white text-primary-600 hover:bg-white/90"
                                         >
                                             Registra tu complejo
                                         </Button>
@@ -298,7 +297,7 @@ export default function HomePage() {
                                             variant="bordered"
                                             size="lg"
                                             radius="full"
-                                            className="font-semibold border-white/30 text-white hover:bg-white/10"
+                                            className="font-semibold border-white/40 text-white hover:bg-white/10"
                                         >
                                             Ver demo
                                         </Button>

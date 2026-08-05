@@ -72,7 +72,7 @@ export default function HomePage() {
                                         onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                                         startContent={<Search className="h-4 w-4 text-default-400" />}
                                         classNames={{
-                                            inputWrapper: "bg-white shadow-sm border-default-200",
+                                            inputWrapper: "bg-background shadow-sm border-default-200",
                                         }}
                                     />
                                     <Button
@@ -113,7 +113,7 @@ export default function HomePage() {
 
                             {/* Right - Visual */}
                             <div className="relative hidden lg:block animate-slide-up">
-                                <div className="relative rounded-2xl bg-white p-6 shadow-2xl shadow-primary/10 border border-default-100">
+                                <div className="relative rounded-2xl bg-content1 p-6 shadow-2xl shadow-primary/10 border border-default-100">
                                     {/* Fake app preview */}
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
@@ -150,7 +150,7 @@ export default function HomePage() {
                                 <div className="absolute -top-4 -right-4 rounded-xl bg-success/90 px-3 py-2 text-white shadow-lg animate-pulse-soft">
                                     <p className="text-xs font-bold">✓ Reserva confirmada</p>
                                 </div>
-                                <div className="absolute -bottom-3 -left-3 rounded-xl bg-white px-3 py-2 shadow-lg border border-default-100">
+                                <div className="absolute -bottom-3 -left-3 rounded-xl bg-content1 px-3 py-2 shadow-lg border border-default-100">
                                     <p className="text-xs font-medium text-foreground flex items-center gap-1">
                                         <Clock className="h-3 w-3 text-primary" />
                                         Confirmación inmediata
@@ -162,7 +162,7 @@ export default function HomePage() {
                 </section>
 
                 {/* ===== HOW IT WORKS ===== */}
-                <section className="border-t border-divider bg-white px-6 py-20">
+                <section className="border-t border-divider bg-content1 px-6 py-20">
                     <div className="mx-auto max-w-5xl">
                         <div className="text-center mb-14">
                             <h2 className="text-3xl font-bold">
@@ -268,7 +268,7 @@ export default function HomePage() {
                 </section>
 
                 {/* ===== CTA FOR OWNERS ===== */}
-                <section className="px-6 py-20 bg-white">
+                <section className="px-6 py-20 bg-background">
                     <div className="mx-auto max-w-4xl">
                         <Card className="bg-gradient-to-br from-foreground to-default-800 text-white overflow-hidden">
                             <CardBody className="relative p-10 md:p-14">

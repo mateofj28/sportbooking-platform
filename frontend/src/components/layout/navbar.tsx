@@ -19,12 +19,14 @@ import {
 import { useState } from "react";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAuth } from "@/hooks/use-auth";
-import { Trophy, LogOut, User, Calendar, LayoutDashboard } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
+import { Trophy, LogOut, User, Calendar, LayoutDashboard, Sun, Moon } from "lucide-react";
 
 export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { user, isAuthenticated, isHydrated } = useAuthStore();
     const { logout } = useAuth();
+    const { isDark, toggleTheme, mounted } = useTheme();
 
     return (
         <HeroNavbar
@@ -72,6 +74,23 @@ export function Navbar() {
             </NavbarContent>
 
             <NavbarContent justify="end">
+                {/* Theme toggle */}
+                {mounted && (
+                    <NavbarItem>
+                        <Button
+                            isIconOnly
+                            variant="light"
+                            size="sm"
+                            onPress={toggleTheme}
+                            aria-label="Cambiar tema"
+                        >
+                            {isDark
+                                ? <Sun className="h-4 w-4 text-warning" />
+                                : <Moon className="h-4 w-4 text-default-500" />
+                            }
+                        </Button>
+                    </NavbarItem>
+                )}
                 {!isHydrated ? (
                     <NavbarItem>
                         <div className="h-8 w-8 animate-pulse rounded-full bg-default-200" />

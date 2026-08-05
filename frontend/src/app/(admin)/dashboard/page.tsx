@@ -14,6 +14,7 @@ import {
     Users,
 } from "lucide-react";
 import Link from "next/link";
+import { BookingStatusDonut, BookingsByDayBar, RevenueAreaChart, SportRevenueBar } from "@/components/charts/dashboard-charts";
 import type { Booking, Facility, Sport, User, PaginatedResult } from "@/types";
 
 export default function DashboardPage() {
@@ -176,6 +177,16 @@ export default function DashboardPage() {
                     </div>
                 </CardBody>
             </Card>
+
+            {/* Charts Section */}
+            <div className="grid gap-6 md:grid-cols-2">
+                <BookingStatusDonut bookings={bookings || []} />
+                <BookingsByDayBar bookings={bookings || []} />
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+                <RevenueAreaChart bookings={bookings || []} />
+                <SportRevenueBar bookings={bookings || []} />
+            </div>
 
             {/* Últimos usuarios + Recent Bookings */}
             <div className="grid gap-6 lg:grid-cols-3">

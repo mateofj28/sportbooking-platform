@@ -10,7 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
-import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './dto';
+import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto } from './dto';
 
 @Injectable()
 export class AuthService {
@@ -174,6 +174,24 @@ export class AuthService {
         });
 
         return { accessToken, refreshToken };
+    }
+
+    async changePassword(userId: string, dto: ChangePasswordDto) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new NotFoundException('Usuario no encontrado');
+
+        const isValid = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+        if (!isValid) {
+            throw new UnauthorizedException('La contraseña actual es incorrecta');
+        }
+
+        const passwordHash = await bcrypt.hash(dto.newPassword, 12);
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { passwordHash },
+        });
+
+        return { message: 'Contraseña actualizada correctamente' };
     }
 
     async refreshToken(token: string) {

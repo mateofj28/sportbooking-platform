@@ -24,6 +24,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
+import { Select, SelectItem } from "@heroui/select";
 import type { Sport, Venue } from "@/types";
 
 export default function AdminFacilitiesPage() {
@@ -203,6 +204,30 @@ export default function AdminFacilitiesPage() {
                     <ModalHeader>Nueva Instalación</ModalHeader>
                     <ModalBody className="gap-4">
                         <Input label="Nombre" variant="bordered" value={form.name} onValueChange={(v) => setForm({ ...form, name: v })} />
+                        <div className="grid grid-cols-2 gap-4">
+                            <Select
+                                label="Sede"
+                                placeholder="Seleccionar sede"
+                                variant="bordered"
+                                selectedKeys={form.venueId ? [form.venueId] : []}
+                                onSelectionChange={(keys: any) => setForm({ ...form, venueId: Array.from(keys)[0] as string || "" })}
+                            >
+                                {(venues || []).map((v) => (
+                                    <SelectItem key={v.id}>{v.name} — {v.city}</SelectItem>
+                                ))}
+                            </Select>
+                            <Select
+                                label="Deporte"
+                                placeholder="Seleccionar deporte"
+                                variant="bordered"
+                                selectedKeys={form.sportId ? [form.sportId] : []}
+                                onSelectionChange={(keys: any) => setForm({ ...form, sportId: Array.from(keys)[0] as string || "" })}
+                            >
+                                {(sports || []).map((s) => (
+                                    <SelectItem key={s.id}>{s.name}</SelectItem>
+                                ))}
+                            </Select>
+                        </div>
                         <Textarea label="Descripción" variant="bordered" value={form.description} onValueChange={(v) => setForm({ ...form, description: v })} />
                         <Input label="Tipo de superficie" variant="bordered" value={form.surfaceType} onValueChange={(v) => setForm({ ...form, surfaceType: v })} />
                         <div className="grid grid-cols-2 gap-4">

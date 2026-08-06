@@ -5,10 +5,11 @@ import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
+import { useToastStore } from "@/stores/toast-store";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { User, Mail, Phone, Save } from "lucide-react";
-import { useEffect } from "react";
+import { User, Mail, Phone, Save, Lock, Eye, EyeOff } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User as UserType } from "@/types";
 
@@ -106,8 +107,106 @@ export default function ProfilePage() {
                         </form>
                     </CardBody>
                 </Card>
+
+                {/* Change Password */}
+                <Card className="mt-6">
+                    <CardHeader>
+                        <h2 className="text-lg font-semibold">Cambiar Contraseña</h2>
+                    </CardHeader>
+                    <Divider />
+                    <CardBody>
+                        <ChangePasswordForm />
+                    </CardBody>
+                </Card>
             </main>
             <Footer />
         </div>
+    );
+}
+
+function ChangePasswordForm() {
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [showCurrent, setShowCurrent] = useState(false);
+    const [showNew, setShowNew] = useState(false);
+    const addToast = useToastStore((s) => s.addToast);
+
+    const mutation = useMutation({
+        mutationFn: (data: { currentPassword: string; newPassword: string }) =>
+            apiClient.patch("/auth/change-password", data),
+        onSuccess: () => {
+            addToast("Contraseña actualizada correctamente");
+            setCurrentPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
+        },
+    });
+
+    const passwordsMatch = newPassword && confirmPassword && newPassword === confirmPassword;
+    const canSubmit = currentPassword && newPassword.length >= 8 && passwordsMatch;
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!canSubmit) return;
+        mutation.mutate({ currentPassword, newPassword });
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <Input
+                label="Contraseña actual"
+                type={showCurrent ? "text" : "password"}
+                variant="bordered"
+                value={currentPassword}
+                onValueChange={setCurrentPassword}
+                startContent={<Lock className="h-4 w-4 text-default-400" />}
+                endContent={
+                    <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="text-default-400 hover:text-default-600">
+                        {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                }
+            />
+            <Input
+                label="Nueva contraseña"
+                type={showNew ? "text" : "password"}
+                variant="bordered"
+                value={newPassword}
+                onValueChange={setNewPassword}
+                placeholder="Mín. 8 caracteres, 1 mayúscula, 1 número"
+                startContent={<Lock className="h-4 w-4 text-default-400" />}
+                endContent={
+                    <button type="button" onClick={() => setShowNew(!showNew)} className="text-default-400 hover:text-default-600">
+                        {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                }
+            />
+            <Input
+                label="Confirmar nueva contraseña"
+                type="password"
+                variant="bordered"
+                value={confirmPassword}
+                onValueChange={setConfirmPassword}
+                startContent={<Lock className="h-4 w-4 text-default-400" />}
+                color={passwordsMatch ? "success" : undefined}
+            />
+            {newPassword && confirmPassword && !passwordsMatch && (
+                <p className="text-xs text-danger">Las contraseñas no coinciden</p>
+            )}
+
+            <Button
+                type="submit"
+                color="primary"
+                isDisabled={!canSubmit}
+                isLoading={mutation.isPending}
+                className="self-end"
+            >
+                Cambiar Contraseña
+            </Button>
+
+            {mutation.isError && (
+                <p className="text-sm text-danger">{(mutation.error as any)?.message || "Error al cambiar contraseña"}</p>
+            )}
+        </form>
     );
 }

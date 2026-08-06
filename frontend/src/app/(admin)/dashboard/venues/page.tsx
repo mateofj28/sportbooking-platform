@@ -6,14 +6,16 @@ import {
 } from "@heroui/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
 import type { Venue } from "@/types";
 
 export default function AdminVenuesPage() {
   const queryClient = useQueryClient();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   const [form, setForm] = useState({ name: "", slug: "", address: "", city: "", country: "", description: "" });
+  const [editForm, setEditForm] = useState({ id: "", name: "", address: "", city: "", country: "", description: "" });
 
   const { data: venues, isLoading } = useQuery({
     queryKey: ["venues"],
@@ -25,10 +27,27 @@ export default function AdminVenuesPage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onClose(); },
   });
 
+  const editMutation = useMutation({
+    mutationFn: ({ id, ...data }: any) => apiClient.patch(`/venues/${id}`, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onEditClose(); },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/venues/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["venues"] }),
   });
+
+  const handleEdit = (venue: Venue) => {
+    setEditForm({
+      id: venue.id,
+      name: venue.name,
+      address: venue.address,
+      city: venue.city,
+      country: venue.country,
+      description: venue.description || "",
+    });
+    onEditOpen();
+  };
 
   if (isLoading) return <div className="flex justify-center py-12"><Spinner size="lg" /></div>;
 
@@ -39,7 +58,7 @@ export default function AdminVenuesPage() {
           <h1 className="text-2xl font-bold">Sedes</h1>
           <p className="text-sm text-default-500 mt-1">Gestiona los complejos deportivos</p>
         </div>
-        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", city: "", country: "Argentina", description: "" }); onOpen(); }}>
+        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", city: "", country: "Colombia", description: "" }); onOpen(); }}>
           Nueva Sede
         </Button>
       </div>
@@ -64,15 +83,21 @@ export default function AdminVenuesPage() {
                 </Chip>
               </TableCell>
               <TableCell>
-                <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => deleteMutation.mutate(venue.id)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-1">
+                  <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(venue)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => deleteMutation.mutate(venue.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
 
+      {/* Create Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
           <ModalHeader>Nueva Sede</ModalHeader>
@@ -89,6 +114,26 @@ export default function AdminVenuesPage() {
           <ModalFooter>
             <Button variant="light" onPress={onClose}>Cancelar</Button>
             <Button color="primary" onPress={() => createMutation.mutate(form)} isLoading={createMutation.isPending}>Crear</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal isOpen={isEditOpen} onClose={onEditClose} size="2xl">
+        <ModalContent>
+          <ModalHeader>Editar Sede</ModalHeader>
+          <ModalBody className="gap-4">
+            <Input label="Nombre" variant="bordered" value={editForm.name} onValueChange={(v) => setEditForm({ ...editForm, name: v })} />
+            <Input label="Dirección" variant="bordered" value={editForm.address} onValueChange={(v) => setEditForm({ ...editForm, address: v })} />
+            <div className="grid grid-cols-2 gap-4">
+              <Input label="Ciudad" variant="bordered" value={editForm.city} onValueChange={(v) => setEditForm({ ...editForm, city: v })} />
+              <Input label="País" variant="bordered" value={editForm.country} onValueChange={(v) => setEditForm({ ...editForm, country: v })} />
+            </div>
+            <Textarea label="Descripción" variant="bordered" value={editForm.description} onValueChange={(v) => setEditForm({ ...editForm, description: v })} />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onEditClose}>Cancelar</Button>
+            <Button color="primary" onPress={() => editMutation.mutate(editForm)} isLoading={editMutation.isPending}>Guardar</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

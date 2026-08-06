@@ -10,7 +10,10 @@ export const registerSchema = z
         firstName: z.string().min(2, "Mínimo 2 caracteres"),
         lastName: z.string().min(2, "Mínimo 2 caracteres"),
         email: z.string().email("Email inválido"),
-        password: z.string().min(8, "Mínimo 8 caracteres"),
+        password: z.string()
+            .min(8, "Mínimo 8 caracteres")
+            .regex(/[A-Z]/, "Debe tener al menos una mayúscula")
+            .regex(/\d/, "Debe tener al menos un número"),
         confirmPassword: z.string(),
         phone: z.string().optional(),
     })
@@ -25,7 +28,10 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z
     .object({
-        password: z.string().min(8, "Mínimo 8 caracteres"),
+        password: z.string()
+            .min(8, "Mínimo 8 caracteres")
+            .regex(/[A-Z]/, "Debe tener al menos una mayúscula")
+            .regex(/\d/, "Debe tener al menos un número"),
         confirmPassword: z.string(),
         token: z.string(),
     })

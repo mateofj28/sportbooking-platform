@@ -16,11 +16,11 @@ export class BookingsService {
         private readonly prisma: PrismaService,
     ) { }
 
-    async findAll(userId?: string, isAdmin = false, status?: BookingStatus) {
+    async findAll(userId?: string, isAdmin = false, status?: BookingStatus, page = 1, limit = 20) {
         if (isAdmin) {
-            return this.bookingsRepository.findAll(undefined, status);
+            return this.bookingsRepository.findAll(undefined, status, page, limit);
         }
-        return this.bookingsRepository.findAll(userId, status);
+        return this.bookingsRepository.findAll(userId, status, page, limit);
     }
 
     async findById(id: string) {

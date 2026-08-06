@@ -25,10 +25,14 @@ import { apiClient } from "@/lib/api-client";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
 import { Select, SelectItem } from "@heroui/select";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { useToastStore } from "@/stores/toast-store";
 import type { Sport, Venue } from "@/types";
 
 export default function AdminFacilitiesPage() {
     const queryClient = useQueryClient();
+    const addToast = useToastStore((s) => s.addToast);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
     const { data: facilities, isLoading } = useFacilities();
     const { data: sports } = useQuery({
         queryKey: ["sports"],
@@ -64,6 +68,7 @@ export default function AdminFacilitiesPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["facilities"] });
             onClose();
+            addToast("Item creado correctamente");
         },
     });
 
@@ -71,6 +76,7 @@ export default function AdminFacilitiesPage() {
         mutationFn: (id: string) => apiClient.delete(`/facilities/${id}`),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["facilities"] });
+            addToast("Item eliminado correctamente");
         },
     });
 
@@ -80,6 +86,7 @@ export default function AdminFacilitiesPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["facilities"] });
             onEditClose();
+            addToast("Item actualizado correctamente");
         },
     });
 
@@ -188,7 +195,7 @@ export default function AdminFacilitiesPage() {
                                         color="danger"
                                         variant="light"
                                         isIconOnly
-                                        onPress={() => deleteMutation.mutate(facility.id)}
+                                        onPress={() => setDeleteId(facility.id)}
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
@@ -260,6 +267,15 @@ export default function AdminFacilitiesPage() {
                     </ModalFooter>
                 </ModalContent>
             </Modal>
+
+            <ConfirmModal
+                isOpen={!!deleteId}
+                onClose={() => setDeleteId(null)}
+                onConfirm={() => { deleteMutation.mutate(deleteId!); setDeleteId(null); }}
+                title="Eliminar"
+                message="¿Estás seguro? Esta acción no se puede deshacer."
+                confirmLabel="Eliminar"
+            />
         </div>
     );
 }

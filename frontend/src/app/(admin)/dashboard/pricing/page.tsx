@@ -9,12 +9,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Plus, Trash2, DollarSign } from "lucide-react";
 import { useState } from "react";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { useToastStore } from "@/stores/toast-store";
 import type { Facility, Pricing } from "@/types";
 
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
 export default function AdminPricingPage() {
   const queryClient = useQueryClient();
+  const addToast = useToastStore((s) => s.addToast);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedFacility, setSelectedFacility] = useState<string>("");
   const [form, setForm] = useState({ startTime: "08:00", endTime: "22:00", pricePerHour: "25", dayOfWeek: "" });
@@ -32,12 +36,12 @@ export default function AdminPricingPage() {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiClient.post(`/facilities/${selectedFacility}/pricing`, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pricing", selectedFacility] }); onClose(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pricing", selectedFacility] }); onClose(); addToast("Item creado correctamente"); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/pricing/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pricing", selectedFacility] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pricing", selectedFacility] }); addToast("Item eliminado correctamente"); },
   });
 
   return (
@@ -84,7 +88,7 @@ export default function AdminPricingPage() {
                       <span className="text-sm">{p.startTime} - {p.endTime}</span>
                       <Chip size="sm" color="success" variant="flat">${p.pricePerHour}/hr</Chip>
                     </div>
-                    <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => deleteMutation.mutate(p.id)}>
+                    <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(p.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -128,6 +132,15 @@ export default function AdminPricingPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => { deleteMutation.mutate(deleteId!); setDeleteId(null); }}
+        title="Eliminar"
+        message="¿Estás seguro? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+      />
     </div>
   );
 }

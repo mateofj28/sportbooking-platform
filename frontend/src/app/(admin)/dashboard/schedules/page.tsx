@@ -9,12 +9,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Plus, Trash2, Clock } from "lucide-react";
 import { useState } from "react";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { useToastStore } from "@/stores/toast-store";
 import type { Facility, Schedule } from "@/types";
 
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
 export default function AdminSchedulesPage() {
   const queryClient = useQueryClient();
+  const addToast = useToastStore((s) => s.addToast);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedFacility, setSelectedFacility] = useState<string>("");
   const [form, setForm] = useState({ dayOfWeek: "0", openTime: "08:00", closeTime: "22:00" });
@@ -32,12 +36,12 @@ export default function AdminSchedulesPage() {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiClient.post(`/facilities/${selectedFacility}/schedules`, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["schedules", selectedFacility] }); onClose(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["schedules", selectedFacility] }); onClose(); addToast("Item creado correctamente"); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/schedules/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["schedules", selectedFacility] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["schedules", selectedFacility] }); addToast("Item eliminado correctamente"); },
   });
 
   return (
@@ -82,7 +86,7 @@ export default function AdminSchedulesPage() {
                       <Chip size="sm" variant="flat" color="primary">{DAYS[s.dayOfWeek]}</Chip>
                       <span className="text-sm font-medium">{s.openTime} - {s.closeTime}</span>
                     </div>
-                    <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => deleteMutation.mutate(s.id)}>
+                    <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(s.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -120,6 +124,15 @@ export default function AdminSchedulesPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => { deleteMutation.mutate(deleteId!); setDeleteId(null); }}
+        title="Eliminar"
+        message="¿Estás seguro? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+      />
     </div>
   );
 }

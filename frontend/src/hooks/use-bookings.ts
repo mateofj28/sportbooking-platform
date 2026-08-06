@@ -8,7 +8,7 @@ export function useBookings(status?: string) {
     return useQuery({
         queryKey: ["bookings", status],
         queryFn: () =>
-            apiClient.get<Booking[]>("/bookings", status ? { status } : undefined),
+            apiClient.get<{ data: Booking[]; meta: { total: number; page: number; limit: number; totalPages: number } }>("/bookings", status ? { status } : undefined),
     });
 }
 

@@ -6,46 +6,38 @@ import {
 } from "@heroui/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { useToastStore } from "@/stores/toast-store";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
 import type { Venue } from "@/types";
 
 export default function AdminVenuesPage() {
   const queryClient = useQueryClient();
+  const addToast = useToastStore((s) => s.addToast);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   const [form, setForm] = useState({ name: "", slug: "", address: "", city: "", country: "", description: "" });
   const [editForm, setEditForm] = useState({ id: "", name: "", address: "", city: "", country: "", description: "" });
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { data: venues, isLoading } = useQuery({
-    queryKey: ["venues"],
-    queryFn: () => apiClient.get<Venue[]>("/venues"),
-  });
+  const { data: venues, isLoading } = useQuery({ queryKey: ["venues"], queryFn: () => apiClient.get<Venue[]>("/venues") });
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiClient.post("/venues", data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onClose(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onClose(); addToast("Sede creada correctamente"); },
   });
-
   const editMutation = useMutation({
     mutationFn: ({ id, ...data }: any) => apiClient.patch(`/venues/${id}`, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onEditClose(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onEditClose(); addToast("Sede actualizada"); },
   });
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/venues/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["venues"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); addToast("Sede eliminada"); },
   });
 
   const handleEdit = (venue: Venue) => {
-    setEditForm({
-      id: venue.id,
-      name: venue.name,
-      address: venue.address,
-      city: venue.city,
-      country: venue.country,
-      description: venue.description || "",
-    });
+    setEditForm({ id: venue.id, name: venue.name, address: venue.address, city: venue.city, country: venue.country, description: venue.description || "" });
     onEditOpen();
   };
 
@@ -54,42 +46,25 @@ export default function AdminVenuesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Sedes</h1>
-          <p className="text-sm text-default-500 mt-1">Gestiona los complejos deportivos</p>
-        </div>
-        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", city: "", country: "Colombia", description: "" }); onOpen(); }}>
-          Nueva Sede
-        </Button>
+        <div><h1 className="text-2xl font-bold">Sedes</h1><p className="text-sm text-default-500 mt-1">Gestiona los complejos deportivos</p></div>
+        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", city: "", country: "Colombia", description: "" }); onOpen(); }}>Nueva Sede</Button>
       </div>
 
       <Table aria-label="Sedes">
         <TableHeader>
-          <TableColumn>NOMBRE</TableColumn>
-          <TableColumn>DIRECCIÓN</TableColumn>
-          <TableColumn>CIUDAD</TableColumn>
-          <TableColumn>ESTADO</TableColumn>
-          <TableColumn>ACCIONES</TableColumn>
+          <TableColumn>NOMBRE</TableColumn><TableColumn>DIRECCIÓN</TableColumn><TableColumn>CIUDAD</TableColumn><TableColumn>ESTADO</TableColumn><TableColumn>ACCIONES</TableColumn>
         </TableHeader>
         <TableBody emptyContent="No hay sedes">
-          {(venues || []).map((venue) => (
-            <TableRow key={venue.id}>
-              <TableCell className="font-medium">{venue.name}</TableCell>
-              <TableCell>{venue.address}</TableCell>
-              <TableCell>{venue.city}</TableCell>
-              <TableCell>
-                <Chip color={venue.isActive ? "success" : "danger"} size="sm" variant="dot">
-                  {venue.isActive ? "Activa" : "Inactiva"}
-                </Chip>
-              </TableCell>
+          {(venues || []).map((v) => (
+            <TableRow key={v.id}>
+              <TableCell className="font-medium">{v.name}</TableCell>
+              <TableCell>{v.address}</TableCell>
+              <TableCell>{v.city}</TableCell>
+              <TableCell><Chip color={v.isActive ? "success" : "danger"} size="sm" variant="dot">{v.isActive ? "Activa" : "Inactiva"}</Chip></TableCell>
               <TableCell>
                 <div className="flex gap-1">
-                  <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(venue)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => deleteMutation.mutate(venue.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(v)}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(v.id)}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               </TableCell>
             </TableRow>
@@ -97,7 +72,6 @@ export default function AdminVenuesPage() {
         </TableBody>
       </Table>
 
-      {/* Create Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
           <ModalHeader>Nueva Sede</ModalHeader>
@@ -111,14 +85,10 @@ export default function AdminVenuesPage() {
             </div>
             <Textarea label="Descripción" variant="bordered" value={form.description} onValueChange={(v) => setForm({ ...form, description: v })} />
           </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>Cancelar</Button>
-            <Button color="primary" onPress={() => createMutation.mutate(form)} isLoading={createMutation.isPending}>Crear</Button>
-          </ModalFooter>
+          <ModalFooter><Button variant="light" onPress={onClose}>Cancelar</Button><Button color="primary" onPress={() => createMutation.mutate(form)} isLoading={createMutation.isPending}>Crear</Button></ModalFooter>
         </ModalContent>
       </Modal>
 
-      {/* Edit Modal */}
       <Modal isOpen={isEditOpen} onClose={onEditClose} size="2xl">
         <ModalContent>
           <ModalHeader>Editar Sede</ModalHeader>
@@ -131,12 +101,11 @@ export default function AdminVenuesPage() {
             </div>
             <Textarea label="Descripción" variant="bordered" value={editForm.description} onValueChange={(v) => setEditForm({ ...editForm, description: v })} />
           </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onEditClose}>Cancelar</Button>
-            <Button color="primary" onPress={() => editMutation.mutate(editForm)} isLoading={editMutation.isPending}>Guardar</Button>
-          </ModalFooter>
+          <ModalFooter><Button variant="light" onPress={onEditClose}>Cancelar</Button><Button color="primary" onPress={() => editMutation.mutate(editForm)} isLoading={editMutation.isPending}>Guardar</Button></ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmModal isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteMutation.mutate(deleteId!); setDeleteId(null); }} title="Eliminar sede" message="¿Estás seguro? Esta acción no se puede deshacer." confirmLabel="Eliminar" />
     </div>
   );
 }

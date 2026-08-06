@@ -14,10 +14,15 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { UserX } from "lucide-react";
+import { useState } from "react";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { useToastStore } from "@/stores/toast-store";
 import type { User, PaginatedResult } from "@/types";
 
 export default function AdminUsersPage() {
     const queryClient = useQueryClient();
+    const addToast = useToastStore((s) => s.addToast);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const { data, isLoading } = useQuery({
         queryKey: ["admin-users"],
@@ -28,6 +33,7 @@ export default function AdminUsersPage() {
         mutationFn: (id: string) => apiClient.delete(`/users/${id}`),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+            addToast("Item eliminado correctamente");
         },
     });
 
@@ -80,7 +86,7 @@ export default function AdminUsersPage() {
                                         color="danger"
                                         variant="light"
                                         isIconOnly
-                                        onPress={() => deactivateMutation.mutate(user.id)}
+                                        onPress={() => setDeleteId(user.id)}
                                     >
                                         <UserX className="h-4 w-4" />
                                     </Button>
@@ -90,6 +96,15 @@ export default function AdminUsersPage() {
                     ))}
                 </TableBody>
             </Table>
+
+            <ConfirmModal
+                isOpen={!!deleteId}
+                onClose={() => setDeleteId(null)}
+                onConfirm={() => { deactivateMutation.mutate(deleteId!); setDeleteId(null); }}
+                title="Eliminar"
+                message="¿Estás seguro? Esta acción no se puede deshacer."
+                confirmLabel="Eliminar"
+            />
         </div>
     );
 }

@@ -6,24 +6,33 @@ import { BookingStatus } from '@prisma/client';
 export class BookingsRepository {
     constructor(private prisma: PrismaService) { }
 
-    async findAll(userId?: string, status?: BookingStatus) {
+    async findAll(userId?: string, status?: BookingStatus, page = 1, limit = 20) {
         const where: Record<string, unknown> = {};
         if (userId) where.userId = userId;
         if (status) where.status = status;
 
-        return this.prisma.booking.findMany({
-            where,
-            include: {
-                facility: {
-                    include: {
-                        sport: true,
-                        venue: { select: { id: true, name: true, address: true } },
+        const skip = (page - 1) * limit;
+
+        const [data, total] = await Promise.all([
+            this.prisma.booking.findMany({
+                where,
+                skip,
+                take: limit,
+                include: {
+                    facility: {
+                        include: {
+                            sport: true,
+                            venue: { select: { id: true, name: true, address: true } },
+                        },
                     },
+                    user: { select: { id: true, firstName: true, lastName: true, email: true } },
                 },
-                user: { select: { id: true, firstName: true, lastName: true, email: true } },
-            },
-            orderBy: { startDatetime: 'desc' },
-        });
+                orderBy: { startDatetime: 'desc' },
+            }),
+            this.prisma.booking.count({ where }),
+        ]);
+
+        return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
     }
 
     async findById(id: string) {

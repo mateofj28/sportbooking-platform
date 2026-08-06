@@ -29,9 +29,11 @@ export class BookingsController {
     findAll(
         @CurrentUser() user: { id: string; role: Role },
         @Query('status') status?: BookingStatus,
+        @Query('page') page?: number,
+        @Query('limit') limit?: number,
     ) {
         const isAdmin = user.role === Role.ADMIN;
-        return this.bookingsService.findAll(user.id, isAdmin, status);
+        return this.bookingsService.findAll(user.id, isAdmin, status, page ? +page : 1, limit ? +limit : 20);
     }
 
     @Get(':id')

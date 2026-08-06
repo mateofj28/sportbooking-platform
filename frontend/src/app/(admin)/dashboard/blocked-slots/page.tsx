@@ -9,6 +9,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Plus, Trash2, Ban } from "lucide-react";
 import { useState } from "react";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { useToastStore } from "@/stores/toast-store";
 import type { Facility } from "@/types";
 
 interface BlockedSlot {
@@ -21,6 +23,8 @@ interface BlockedSlot {
 
 export default function AdminBlockedSlotsPage() {
   const queryClient = useQueryClient();
+  const addToast = useToastStore((s) => s.addToast);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedFacility, setSelectedFacility] = useState<string>("");
   const [form, setForm] = useState({ date: "", startTime: "08:00", endTime: "22:00", reason: "" });
@@ -38,12 +42,12 @@ export default function AdminBlockedSlotsPage() {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiClient.post(`/facilities/${selectedFacility}/blocked-slots`, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] }); onClose(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] }); onClose(); addToast("Item creado correctamente"); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/blocked-slots/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] }); addToast("Item eliminado correctamente"); },
   });
 
   const formatDT = (dt: string) => new Date(dt).toLocaleString("es-AR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -90,7 +94,7 @@ export default function AdminBlockedSlotsPage() {
                       <p className="text-sm font-medium">{formatDT(slot.startDatetime)} → {formatDT(slot.endDatetime)}</p>
                       {slot.reason && <p className="text-xs text-default-500 mt-0.5">{slot.reason}</p>}
                     </div>
-                    <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => deleteMutation.mutate(slot.id)}>
+                    <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(slot.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -124,6 +128,15 @@ export default function AdminBlockedSlotsPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => { deleteMutation.mutate(deleteId!); setDeleteId(null); }}
+        title="Eliminar"
+        message="¿Estás seguro? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+      />
     </div>
   );
 }

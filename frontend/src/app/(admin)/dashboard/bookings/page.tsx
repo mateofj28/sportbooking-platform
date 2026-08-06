@@ -21,12 +21,13 @@ import {
 } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useBookings, useConfirmBooking, useCancelBooking } from "@/hooks/use-bookings";
+import { useConfirmBooking, useCancelBooking } from "@/hooks/use-bookings";
 import { useFacilities } from "@/hooks/use-facilities";
 import { apiClient } from "@/lib/api-client";
 import { CheckCircle, XCircle, Plus } from "lucide-react";
 import { useState } from "react";
-import type { BookingStatus, User, PaginatedResult } from "@/types";
+import { useToastStore } from "@/stores/toast-store";
+import type { Booking, BookingStatus, User, PaginatedResult } from "@/types";
 
 const STATUS_MAP: Record<BookingStatus, { label: string; color: "warning" | "success" | "danger" | "default" }> = {
     PENDING: { label: "Pendiente", color: "warning" },
@@ -37,7 +38,14 @@ const STATUS_MAP: Record<BookingStatus, { label: string; color: "warning" | "suc
 
 export default function AdminBookingsPage() {
     const queryClient = useQueryClient();
-    const { data: bookings, isLoading } = useBookings();
+    const addToast = useToastStore((s) => s.addToast);
+    const [page, setPage] = useState(1);
+    const { data: bookingsData, isLoading } = useQuery({
+        queryKey: ["bookings", page],
+        queryFn: () => apiClient.get<{ data: Booking[]; meta: { total: number; page: number; totalPages: number } }>("/bookings", { page: String(page), limit: "15" }),
+    });
+    const bookings = bookingsData?.data;
+    const meta = bookingsData?.meta;
     const confirmBooking = useConfirmBooking();
     const cancelBooking = useCancelBooking();
     const { isOpen, onOpen, onClose } = useDisclosure();
@@ -64,6 +72,7 @@ export default function AdminBookingsPage() {
             queryClient.invalidateQueries({ queryKey: ["bookings"] });
             onClose();
             setManualForm({ facilityId: "", userId: "", date: "", startTime: "", endTime: "", notes: "" });
+            addToast("Reserva creada correctamente");
         },
     });
 
@@ -151,7 +160,7 @@ export default function AdminBookingsPage() {
                                                     color="success"
                                                     variant="flat"
                                                     isIconOnly
-                                                    onPress={() => confirmBooking.mutate(booking.id)}
+                                                    onPress={() => confirmBooking.mutate(booking.id, { onSuccess: () => addToast("Reserva confirmada correctamente") })}
                                                 >
                                                     <CheckCircle className="h-4 w-4" />
                                                 </Button>
@@ -160,7 +169,7 @@ export default function AdminBookingsPage() {
                                                     color="danger"
                                                     variant="flat"
                                                     isIconOnly
-                                                    onPress={() => cancelBooking.mutate({ id: booking.id })}
+                                                    onPress={() => cancelBooking.mutate({ id: booking.id }, { onSuccess: () => addToast("Reserva cancelada correctamente") })}
                                                 >
                                                     <XCircle className="h-4 w-4" />
                                                 </Button>
@@ -172,7 +181,7 @@ export default function AdminBookingsPage() {
                                                 color="danger"
                                                 variant="flat"
                                                 isIconOnly
-                                                onPress={() => cancelBooking.mutate({ id: booking.id })}
+                                                onPress={() => cancelBooking.mutate({ id: booking.id }, { onSuccess: () => addToast("Reserva cancelada correctamente") })}
                                             >
                                                 <XCircle className="h-4 w-4" />
                                             </Button>
@@ -184,6 +193,16 @@ export default function AdminBookingsPage() {
                     })}
                 </TableBody>
             </Table>
+
+            {meta && meta.totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4">
+                    <p className="text-sm text-default-500">Página {meta.page} de {meta.totalPages} ({meta.total} total)</p>
+                    <div className="flex gap-2">
+                        <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(p => p - 1)}>Anterior</Button>
+                        <Button size="sm" variant="flat" isDisabled={page >= meta.totalPages} onPress={() => setPage(p => p + 1)}>Siguiente</Button>
+                    </div>
+                </div>
+            )}
 
             <Modal isOpen={isOpen} onClose={onClose} size="2xl">
                 <ModalContent>

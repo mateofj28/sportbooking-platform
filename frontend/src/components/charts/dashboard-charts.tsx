@@ -6,6 +6,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
     AreaChart, Area,
 } from "recharts";
+import { useTheme } from "@/hooks/use-theme";
 import type { Booking } from "@/types";
 
 const COLORS = {
@@ -21,7 +22,19 @@ interface DashboardChartsProps {
     bookings: Booking[];
 }
 
+function useChartColors() {
+    const { isDark } = useTheme();
+    return {
+        text: isDark ? "#A1A1AA" : "#71717A",
+        grid: isDark ? "#27272A" : "#E4E4E7",
+        tooltipBg: isDark ? "#18181B" : "#FFFFFF",
+        tooltipBorder: isDark ? "#3F3F46" : "#E4E4E7",
+        pieBg: isDark ? "#18181B" : "#FFFFFF",
+    };
+}
+
 export function BookingStatusDonut({ bookings }: DashboardChartsProps) {
+    const colors = useChartColors();
     const data = [
         { name: "Pendientes", value: bookings.filter((b) => b.status === "PENDING").length, color: COLORS.PENDING },
         { name: "Confirmadas", value: bookings.filter((b) => b.status === "CONFIRMED").length, color: COLORS.CONFIRMED },
@@ -67,43 +80,49 @@ export function BookingStatusDonut({ bookings }: DashboardChartsProps) {
                                 outerRadius={70}
                                 dataKey="value"
                                 strokeWidth={2}
-                                stroke="var(--heroui-background)"
-                            >
-                                {data.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                            </Pie>
-                            <Tooltip
-                                contentStyle={{ borderRadius: "8px", fontSize: "12px", border: "1px solid var(--heroui-divider)" }}
-                            />
-                        </PieChart>
-                    </ResponsiveContainer>
-                    <div className="flex-1 space-y-2">
-                        {data.map((item) => (
-                            <div key={item.name} className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-                                    <span className="text-xs text-default-600">{item.name}</span>
-                                </div>
-                                <span className="text-xs font-semibold">{item.value}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </CardBody>
-        </Card>
-    );
+                              stroke={colors.pieBg}
+                          >
+                              {data.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                          </Pie>
+                          <Tooltip
+                              contentStyle={{
+                                  borderRadius: "8px",
+                                  fontSize: "12px",
+                                  backgroundColor: colors.tooltipBg,
+                                  border: `1px solid ${colors.tooltipBorder}`,
+                                  color: colors.text,
+                              }}
+                          />
+                      </PieChart>
+                  </ResponsiveContainer>
+                  <div className="flex-1 space-y-2">
+                      {data.map((item) => (
+                          <div key={item.name} className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
+                                  <span className="text-xs text-default-600">{item.name}</span>
+                              </div>
+                              <span className="text-xs font-semibold">{item.value}</span>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+          </CardBody>
+      </Card>
+  );
 }
 
 export function BookingsByDayBar({ bookings }: DashboardChartsProps) {
-    // Count bookings by day of week
+    const colors = useChartColors();
     const dayCounts = [0, 0, 0, 0, 0, 0, 0];
     bookings.forEach((b) => {
         if (b.status !== "CANCELLED") {
-            const day = (new Date(b.startDatetime).getDay() + 6) % 7; // 0=Mon
-            dayCounts[day]++;
-        }
-    });
+          const day = (new Date(b.startDatetime).getDay() + 6) % 7;
+          dayCounts[day]++;
+      }
+  });
 
     const data = DAY_NAMES.map((name, i) => ({ name, reservas: dayCounts[i] }));
 
@@ -119,22 +138,28 @@ export function BookingsByDayBar({ bookings }: DashboardChartsProps) {
             <CardBody>
                 <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--heroui-divider)" />
-                        <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="var(--heroui-default-400)" />
-                        <YAxis tick={{ fontSize: 11 }} stroke="var(--heroui-default-400)" allowDecimals={false} />
-                        <Tooltip
-                            contentStyle={{ borderRadius: "8px", fontSize: "12px", border: "1px solid var(--heroui-divider)" }}
-                        />
-                        <Bar dataKey="reservas" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                </ResponsiveContainer>
-            </CardBody>
-        </Card>
-    );
+                      <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} />
+                      <YAxis tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} allowDecimals={false} />
+                      <Tooltip
+                          contentStyle={{
+                              borderRadius: "8px",
+                              fontSize: "12px",
+                              backgroundColor: colors.tooltipBg,
+                              border: `1px solid ${colors.tooltipBorder}`,
+                              color: colors.text,
+                          }}
+                      />
+                      <Bar dataKey="reservas" fill="#60A5FA" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+              </ResponsiveContainer>
+          </CardBody>
+      </Card>
+  );
 }
 
 export function RevenueAreaChart({ bookings }: DashboardChartsProps) {
-    // Revenue per day for last 7 days
+    const colors = useChartColors();
     const today = new Date();
     const last7 = Array.from({ length: 7 }, (_, i) => {
         const d = new Date(today);
@@ -165,35 +190,41 @@ export function RevenueAreaChart({ bookings }: DashboardChartsProps) {
             <CardBody>
                 <ResponsiveContainer width="100%" height={200}>
                     <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--heroui-divider)" />
-                        <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="var(--heroui-default-400)" />
-                        <YAxis tick={{ fontSize: 11 }} stroke="var(--heroui-default-400)" />
-                        <Tooltip
-                            contentStyle={{ borderRadius: "8px", fontSize: "12px", border: "1px solid var(--heroui-divider)" }}
-                            formatter={(value: any) => [`$${value}`, "Ingresos"]}
-                        />
-                        <defs>
-                            <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                            </linearGradient>
-                        </defs>
-                        <Area
-                            type="monotone"
-                            dataKey="ingresos"
-                            stroke="#10B981"
-                            strokeWidth={2}
-                            fill="url(#colorIngresos)"
-                        />
-                    </AreaChart>
-                </ResponsiveContainer>
-            </CardBody>
-        </Card>
-    );
+                      <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} />
+                      <YAxis tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} />
+                      <Tooltip
+                          contentStyle={{
+                              borderRadius: "8px",
+                              fontSize: "12px",
+                              backgroundColor: colors.tooltipBg,
+                              border: `1px solid ${colors.tooltipBorder}`,
+                              color: colors.text,
+                          }}
+                          formatter={(value: any) => [`$${value}`, "Ingresos"]}
+                      />
+                      <defs>
+                          <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                          </linearGradient>
+                      </defs>
+                      <Area
+                          type="monotone"
+                          dataKey="ingresos"
+                          stroke="#10B981"
+                          strokeWidth={2}
+                          fill="url(#colorIngresos)"
+                      />
+                  </AreaChart>
+              </ResponsiveContainer>
+          </CardBody>
+      </Card>
+  );
 }
 
 export function SportRevenueBar({ bookings }: DashboardChartsProps) {
-    // Revenue by sport
+    const colors = useChartColors();
     const sportRevenue: Record<string, number> = {};
     bookings.forEach((b) => {
         if (b.status !== "CANCELLED") {
@@ -220,17 +251,23 @@ export function SportRevenueBar({ bookings }: DashboardChartsProps) {
             <CardBody>
                 <ResponsiveContainer width="100%" height={180}>
                     <BarChart data={data} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--heroui-divider)" />
-                        <XAxis type="number" tick={{ fontSize: 11 }} stroke="var(--heroui-default-400)" />
-                        <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} stroke="var(--heroui-default-400)" width={80} />
-                        <Tooltip
-                            contentStyle={{ borderRadius: "8px", fontSize: "12px", border: "1px solid var(--heroui-divider)" }}
-                            formatter={(value: any) => [`$${value}`, "Ingresos"]}
-                        />
-                        <Bar dataKey="ingresos" fill="#8B5CF6" radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                </ResponsiveContainer>
-            </CardBody>
-        </Card>
-    );
+                      <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+                      <XAxis type="number" tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} />
+                      <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} width={80} />
+                      <Tooltip
+                          contentStyle={{
+                              borderRadius: "8px",
+                              fontSize: "12px",
+                              backgroundColor: colors.tooltipBg,
+                              border: `1px solid ${colors.tooltipBorder}`,
+                              color: colors.text,
+                          }}
+                          formatter={(value: any) => [`$${value}`, "Ingresos"]}
+                      />
+                      <Bar dataKey="ingresos" fill="#A78BFA" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+              </ResponsiveContainer>
+          </CardBody>
+      </Card>
+  );
 }

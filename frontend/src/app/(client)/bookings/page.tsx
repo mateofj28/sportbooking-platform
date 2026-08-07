@@ -50,7 +50,7 @@ export default function BookingsPage() {
     }, [isHydrated, isAuthenticated, router]);
 
     const { data: bookingsResponse, isLoading } = useBookings();
-    const bookings = bookingsResponse?.data;
+    const bookings = Array.isArray(bookingsResponse?.data) ? bookingsResponse.data : [];
     const cancelBooking = useCancelBooking();
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);

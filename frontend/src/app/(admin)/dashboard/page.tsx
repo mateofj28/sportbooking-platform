@@ -18,10 +18,11 @@ import { BookingStatusDonut, BookingsByDayBar, RevenueAreaChart, SportRevenueBar
 import type { Booking, Facility, Sport, User, PaginatedResult } from "@/types";
 
 export default function DashboardPage() {
-    const { data: bookings, isLoading: loadingBookings } = useQuery({
+    const { data: bookingsResponse, isLoading: loadingBookings } = useQuery({
         queryKey: ["admin-bookings"],
-        queryFn: () => apiClient.get<Booking[]>("/bookings"),
+        queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=100"),
     });
+    const bookings = bookingsResponse?.data || [];
 
     const { data: facilities } = useQuery({
         queryKey: ["admin-facilities"],

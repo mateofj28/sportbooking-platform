@@ -16,6 +16,8 @@ import {
     Ban,
     Menu,
     X,
+    Bell,
+    HelpCircle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -29,6 +31,8 @@ const menuItems = [
     { href: "/dashboard/blocked-slots", label: "Bloqueos", icon: Ban },
     { href: "/dashboard/users", label: "Usuarios", icon: Users },
     { href: "/dashboard/sports", label: "Deportes", icon: Trophy },
+    { href: "/dashboard/notifications", label: "Notificaciones", icon: Bell },
+    { href: "/dashboard/support", label: "Ayuda y soporte", icon: HelpCircle },
 ];
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {

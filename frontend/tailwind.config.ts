@@ -9,7 +9,7 @@ const config: Config = {
     theme: {
         extend: {
             fontFamily: {
-                sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+                sans: ["Plus Jakarta Sans", "system-ui", "-apple-system", "sans-serif"],
             },
             animation: {
                 "fade-in": "fadeIn 0.3s ease-out",

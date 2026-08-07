@@ -33,7 +33,8 @@ export function Navbar() {
             onMenuOpenChange={setIsMenuOpen}
             maxWidth="xl"
             classNames={{
-                base: "bg-background/80 backdrop-blur-md border-b border-divider",
+                base: "bg-gradient-to-r from-blue-400 to-blue-900 border-b border-blue-800",
+                content: "text-white",
             }}
         >
             <NavbarContent>
@@ -42,31 +43,31 @@ export function Navbar() {
                     className="sm:hidden"
                 />
                 <NavbarBrand>
-                    <Link href="/" className="flex items-center gap-2 text-inherit">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                    <Link href="/" className="flex items-center gap-2 text-white">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20">
                             <Trophy className="h-4 w-4 text-white" />
                         </div>
-                        <p className="font-bold text-inherit text-lg">SportBooking</p>
+                        <p className="font-bold text-white text-lg">SportBooking</p>
                     </Link>
                 </NavbarBrand>
             </NavbarContent>
 
             <NavbarContent className="hidden gap-6 sm:flex" justify="center">
                 <NavbarItem>
-                    <Link color="foreground" href="/facilities" className="text-sm font-medium">
+                    <Link href="/facilities" className="text-sm font-medium text-white hover:text-blue-200">
                         Instalaciones
                     </Link>
                 </NavbarItem>
                 {isAuthenticated && (
                     <NavbarItem>
-                        <Link color="foreground" href="/bookings" className="text-sm font-medium">
+                        <Link href="/bookings" className="text-sm font-medium text-white hover:text-blue-200">
                             Mis Reservas
                         </Link>
                     </NavbarItem>
                 )}
                 {user?.role === "ADMIN" && (
                     <NavbarItem>
-                        <Link color="foreground" href="/dashboard" className="text-sm font-medium">
+                        <Link href="/dashboard" className="text-sm font-medium text-white hover:text-blue-200">
                             Dashboard
                         </Link>
                     </NavbarItem>
@@ -85,8 +86,8 @@ export function Navbar() {
                             aria-label="Cambiar tema"
                         >
                             {isDark
-                                ? <Sun className="h-4 w-4 text-warning" />
-                                : <Moon className="h-4 w-4 text-default-500" />
+                                ? <Sun className="h-4 w-4 text-yellow-300" />
+                                : <Moon className="h-4 w-4 text-white/80" />
                             }
                         </Button>
                     </NavbarItem>
@@ -163,12 +164,12 @@ export function Navbar() {
                 ) : (
                     <>
                         <NavbarItem className="hidden sm:flex">
-                            <Link href="/login" className="text-sm font-medium">
+                                    <Link href="/login" className="text-sm font-medium text-white hover:text-blue-200">
                                 Iniciar Sesión
                             </Link>
                         </NavbarItem>
                         <NavbarItem>
-                            <Button as={Link} color="primary" href="/register" variant="flat" size="sm">
+                                    <Button as={Link} href="/register" variant="bordered" size="sm" className="border-white/40 text-white hover:bg-white/10">
                                 Registrarse
                             </Button>
                         </NavbarItem>

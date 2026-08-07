@@ -33,29 +33,28 @@ export default function HomePage() {
 
             <main className="flex-1">
                 {/* ===== HERO ===== */}
-                <section className="relative overflow-hidden">
-                    {/* Gradient background */}
-                    <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary-50 via-background to-secondary-50" />
-                    <div className="absolute top-0 right-0 -z-10 h-[500px] w-[500px] rounded-full bg-primary/5 blur-[100px]" />
-                    <div className="absolute bottom-0 left-0 -z-10 h-[400px] w-[400px] rounded-full bg-secondary/5 blur-[100px]" />
+                <section className="relative overflow-hidden bg-gradient-to-r from-blue-400 to-blue-900">
+                    {/* Subtle overlay effects */}
+                    <div className="absolute top-0 right-0 -z-0 h-[500px] w-[500px] rounded-full bg-white/5 blur-[100px]" />
+                    <div className="absolute bottom-0 left-0 -z-0 h-[400px] w-[400px] rounded-full bg-white/5 blur-[100px]" />
 
-                    <div className="mx-auto max-w-7xl px-6 py-16 md:py-24 lg:py-28">
+                    <div className="relative z-10 mx-auto max-w-7xl px-6 py-16 md:py-24 lg:py-28">
                         <div className="grid items-center gap-12 lg:grid-cols-2">
                             {/* Left - Copy */}
                             <div className="animate-fade-in">
-                                <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary uppercase tracking-wider">
+                                <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-xs font-semibold text-white uppercase tracking-wider">
                                     <Zap className="h-3 w-3" />
                                     La app de reservas deportivas
                                 </span>
 
-                                <h1 className="mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight text-foreground md:text-5xl lg:text-6xl">
+                                <h1 className="mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight text-white md:text-5xl lg:text-6xl">
                                     Tu cancha favorita,{" "}
-                                    <span className="bg-gradient-to-r from-primary via-primary to-secondary bg-clip-text text-transparent">
+                                    <span className="text-blue-200">
                                         cuando quieras
                                     </span>
                                 </h1>
 
-                                <p className="mt-5 max-w-lg text-base text-default-500 leading-relaxed md:text-lg">
+                                <p className="mt-5 max-w-lg text-base text-white/80 leading-relaxed md:text-lg">
                                     Busca, compara y reserva instalaciones deportivas en segundos.
                                     Sin llamadas, sin esperas. Más de 500 canchas disponibles.
                                 </p>
@@ -106,7 +105,7 @@ export default function HomePage() {
                                                 <Star key={i} className="h-3.5 w-3.5 fill-warning text-warning" />
                                             ))}
                                         </div>
-                                        <p className="text-xs text-default-500">+2,000 usuarios activos</p>
+                                        <p className="text-xs text-white/70">+2,000 usuarios activos</p>
                                     </div>
                                 </div>
                             </div>

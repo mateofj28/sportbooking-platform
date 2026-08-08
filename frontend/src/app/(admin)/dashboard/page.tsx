@@ -5,8 +5,8 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useState, useEffect, useCallback } from "react";
-import { Calendar, Clock, MapPin, User } from "lucide-react";
-import type { Booking } from "@/types";
+import { Calendar, Clock, MapPin, User, DollarSign, Users } from "lucide-react";
+import type { Booking, Facility, PaginatedResult, User as UserType } from "@/types";
 
 const ADS = [
     {
@@ -104,6 +104,9 @@ export default function DashboardPage() {
 
             {/* Today's Bookings */}
             <TodayBookings />
+
+            {/* Today's Summary Stats */}
+            <TodaySummary />
       </div>
   );
 }
@@ -242,6 +245,91 @@ function TodayBookings() {
                     </CardBody>
                 </Card>
             )}
+        </div>
+    );
+}
+
+function TodaySummary() {
+    const today = new Date().toISOString().split("T")[0];
+
+    const { data: bookingsData } = useQuery({
+        queryKey: ["today-bookings"],
+        queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=100"),
+    });
+
+    const { data: usersData } = useQuery({
+        queryKey: ["admin-users-today"],
+        queryFn: () => apiClient.get<PaginatedResult<UserType>>("/users?limit=100"),
+    });
+
+    const { data: facilities } = useQuery({
+        queryKey: ["admin-facilities"],
+        queryFn: () => apiClient.get<Facility[]>("/facilities"),
+    });
+
+    const allBookings = bookingsData?.data || [];
+    const todayBookings = allBookings.filter((b) => {
+        const d = new Date(b.startDatetime).toISOString().split("T")[0];
+        return d === today && b.status !== "CANCELLED";
+    });
+
+    const todayRevenue = todayBookings.reduce((sum, b) => sum + Number(b.totalPrice), 0);
+
+    // Users created today (approximate - check createdAt)
+    const allUsers = usersData?.data || [];
+    const newUsersToday = allUsers.filter((u) => {
+        if (!u.createdAt) return false;
+        return new Date(u.createdAt).toISOString().split("T")[0] === today;
+    });
+
+    // Unique facilities booked today
+    const occupiedFacilities = new Set(todayBookings.map((b) => b.facilityId)).size;
+
+    const stats = [
+        {
+            icon: <Calendar className="h-5 w-5 text-primary" />,
+            label: "Reservas hoy",
+            value: todayBookings.length,
+            bg: "bg-primary/10",
+        },
+        {
+            icon: <Users className="h-5 w-5 text-secondary" />,
+            label: "Usuarios nuevos",
+            value: newUsersToday.length,
+            bg: "bg-secondary/10",
+        },
+        {
+            icon: <DollarSign className="h-5 w-5 text-success" />,
+            label: "Ingresos hoy",
+            value: `$${todayRevenue.toLocaleString("es-AR")}`,
+            bg: "bg-success/10",
+        },
+        {
+            icon: <MapPin className="h-5 w-5 text-warning" />,
+            label: "Canchas ocupadas",
+            value: `${occupiedFacilities}/${facilities?.length || 0}`,
+            bg: "bg-warning/10",
+        },
+    ];
+
+    return (
+        <div>
+            <h2 className="text-lg font-bold mb-4">Resumen del día</h2>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                {stats.map((stat, i) => (
+                    <Card key={i} className="border border-divider">
+                        <CardBody className="flex-row items-center gap-3 p-4">
+                            <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${stat.bg}`}>
+                                {stat.icon}
+                            </div>
+                            <div>
+                                <p className="text-xl font-bold">{stat.value}</p>
+                                <p className="text-[11px] text-default-500">{stat.label}</p>
+                            </div>
+                        </CardBody>
+                    </Card>
+                ))}
+            </div>
         </div>
     );
 }

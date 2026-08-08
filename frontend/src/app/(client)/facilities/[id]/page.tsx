@@ -225,7 +225,7 @@ export default function FacilityDetailPage({
                         {/* Step 1: Date Selector - Horizontal scroll of days */}
                         <div>
                             <p className="mb-3 text-sm font-semibold text-default-700">1. Elige el día</p>
-                            <div className="flex gap-2 overflow-x-auto pb-2">
+                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                                 {days.map((day) => {
                                     const isSelected = day.toDateString() === selectedDate.toDateString();
                                     const isDayToday = day.toDateString() === new Date().toDateString();

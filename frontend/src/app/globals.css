@@ -1,11 +1,6 @@
 @import "tailwindcss";
 @config "../../tailwind.config.ts";
 
-@layer base {
-    * {
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-    }
 h1,
 h2,
 h3,
@@ -15,34 +10,24 @@ h6,
 .font-bold,
 .font-semibold {
     color: #1e3a5f;
-    
+}
 
-        .dark h1,
-        .dark h2,
-        .dark h3,
-        .dark h4,
-        .dark h5,
-        .dark h6,
-        .dark .font-bold,
-        .dark .font-semibold {
-            color: #e8edf4;
-        }
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6,
+.dark .font-bold,
+.dark .font-semibold {
+    color: #e8edf4;
+}
 
-        .text-white,
-        .text-primary,
-        .text-success,
-        .text-danger,
-        .text-warning,
-        .text-secondary {
-            color: inherit;
-        }
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
 
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
 }

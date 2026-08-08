@@ -144,6 +144,8 @@ const STATUS_LABELS: Record<string, string> = {
 
 function TodayBookings() {
     const today = new Date().toISOString().split("T")[0];
+    const [page, setPage] = useState(1);
+    const perPage = 6;
 
     const { data: bookingsData, isLoading } = useQuery({
         queryKey: ["today-bookings"],
@@ -154,6 +156,9 @@ function TodayBookings() {
         const bookingDate = new Date(b.startDatetime).toISOString().split("T")[0];
         return bookingDate === today;
     });
+
+    const totalPages = Math.ceil(todayBookings.length / perPage);
+    const paginatedBookings = todayBookings.slice((page - 1) * perPage, page * perPage);
 
     const formatTime = (d: string) => new Date(d).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
 
@@ -173,39 +178,62 @@ function TodayBookings() {
 
             {isLoading ? (
                 <div className="flex justify-center py-8"><Spinner /></div>
-            ) : todayBookings.length > 0 ? (
-                <div className="space-y-3">
-                    {todayBookings.map((booking) => (
-                        <Card key={booking.id} className="border border-divider">
-                            <CardBody className="flex-row items-center justify-between p-4 gap-3">
-                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                                        <Calendar className="h-5 w-5 text-primary" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-sm truncate">{booking.facility.name}</p>
-                                        <div className="flex items-center gap-3 mt-0.5 text-xs text-default-500">
-                                            <span className="flex items-center gap-1">
-                                                <User className="h-3 w-3" />
-                                                {booking.user.firstName} {booking.user.lastName}
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <Clock className="h-3 w-3" />
-                                                {formatTime(booking.startDatetime)} — {formatTime(booking.endDatetime)}
-                                            </span>
+            ) : paginatedBookings.length > 0 ? (
+                <>
+                    <div className="space-y-3">
+                            {paginatedBookings.map((booking) => (
+                                <Card key={booking.id} className="border border-divider">
+                                    <CardBody className="flex-row items-center justify-between p-4 gap-3">
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                                                <Calendar className="h-5 w-5 text-primary" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-sm truncate">{booking.facility.name}</p>
+                                                <div className="flex items-center gap-3 mt-0.5 text-xs text-default-500">
+                                                    <span className="flex items-center gap-1">
+                                                        <User className="h-3 w-3" />
+                                                        {booking.user.firstName} {booking.user.lastName}
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <Clock className="h-3 w-3" />
+                                                        {formatTime(booking.startDatetime)} — {formatTime(booking.endDatetime)}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                            <span className="text-sm font-bold text-success">${booking.totalPrice}</span>
+                                            <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
+                                                {STATUS_LABELS[booking.status]}
+                                            </Chip>
+                                        </div>
+                                    </CardBody>
+                                </Card>
+                            ))}
+                        </div>
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-between mt-4">
+                                <p className="text-xs text-default-500">Página {page} de {totalPages}</p>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setPage((p) => p - 1)}
+                                        disabled={page <= 1}
+                                        className="px-3 py-1 text-xs font-medium rounded-lg bg-default-100 hover:bg-default-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Anterior
+                                    </button>
+                                    <button
+                                        onClick={() => setPage((p) => p + 1)}
+                                        disabled={page >= totalPages}
+                                        className="px-3 py-1 text-xs font-medium rounded-lg bg-default-100 hover:bg-default-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Siguiente
+                                    </button>
                                 </div>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                    <span className="text-sm font-bold text-success">${booking.totalPrice}</span>
-                                    <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
-                                        {STATUS_LABELS[booking.status]}
-                                    </Chip>
-                                </div>
-                            </CardBody>
-                        </Card>
-                    ))}
-                </div>
+                            </div>
+                        )}
+                    </>
             ) : (
                 <Card className="border border-divider">
                     <CardBody className="flex flex-col items-center py-8">

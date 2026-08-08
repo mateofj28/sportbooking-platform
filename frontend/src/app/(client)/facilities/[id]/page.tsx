@@ -59,10 +59,14 @@ function generateTimeSlots(openTime: string, closeTime: string, durationMin: num
     return slots;
 }
 
-function getNext7Days(): Date[] {
+function getRemainingDaysOfMonth(): Date[] {
     const days: Date[] = [];
     const today = new Date();
-    for (let i = 0; i < 7; i++) {
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const remaining = lastDay - today.getDate();
+    // Show at least 30 days ahead (current month + next month if needed)
+    const totalDays = Math.max(remaining + 1, 30);
+    for (let i = 0; i < totalDays; i++) {
         const d = new Date(today);
         d.setDate(today.getDate() + i);
         days.push(d);
@@ -87,7 +91,7 @@ export default function FacilityDetailPage({
     const [notes, setNotes] = useState("");
     const [step, setStep] = useState<"select" | "confirm">("select");
 
-    const days = useMemo(() => getNext7Days(), []);
+    const days = useMemo(() => getRemainingDaysOfMonth(), []);
 
     // Get schedule for selected day
     const dayOfWeek = useMemo(() => (selectedDate.getDay() + 6) % 7, [selectedDate]);

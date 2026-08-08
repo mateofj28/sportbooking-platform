@@ -33,7 +33,7 @@ export default function HomePage() {
 
             <main className="flex-1">
                 {/* ===== HERO ===== */}
-                <section className="relative overflow-hidden bg-gradient-to-r from-blue-400 to-blue-900">
+                <section className="relative overflow-hidden bg-gradient-to-r from-blue-400 to-blue-900 dark:from-gray-950 dark:to-black">
                     {/* Subtle overlay effects */}
                     <div className="absolute top-0 right-0 -z-0 h-[500px] w-[500px] rounded-full bg-white/5 blur-[100px]" />
                     <div className="absolute bottom-0 left-0 -z-0 h-[400px] w-[400px] rounded-full bg-white/5 blur-[100px]" />

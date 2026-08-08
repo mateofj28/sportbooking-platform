@@ -6,7 +6,6 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
     }
-/* Títulos: azul oscuro bold, nunca negro */
 h1,
 h2,
 h3,
@@ -29,15 +28,12 @@ h6,
             color: #e8edf4;
         }
 
-        /* Excepciones: textos dentro de fondos coloreados mantienen su color */
         .text-white,
         .text-primary,
         .text-success,
         .text-danger,
         .text-warning,
-        .text-secondary,
-        [class*="text-blue-"],
-        [class*="text-white"] {
+        .text-secondary {
             color: inherit;
         }
 

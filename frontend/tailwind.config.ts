@@ -61,7 +61,7 @@ const config: Config = {
                 light: {
                     colors: {
                         background: "#FAFBFC",
-                        foreground: "#1A1D23",
+                        foreground: "#1e3a5f",
                         primary: {
                             50: "#EEF6FF",
                             100: "#D9EBFF",
@@ -123,6 +123,20 @@ const config: Config = {
                             600: "#DC2626",
                             DEFAULT: "#EF4444",
                             foreground: "#FFFFFF",
+                        },
+                        default: {
+                            50: "#f8fafc",
+                            100: "#f1f5f9",
+                            200: "#e2e8f0",
+                            300: "#cbd5e1",
+                            400: "#94a3b8",
+                            500: "#64748b",
+                            600: "#475569",
+                            700: "#334155",
+                            800: "#1e293b",
+                            900: "#0f172a",
+                            DEFAULT: "#64748b",
+                            foreground: "#1e3a5f",
                         },
                     },
                 },

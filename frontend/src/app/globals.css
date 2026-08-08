@@ -6,39 +6,41 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
     }
-/* Títulos: azul oscuro bold en light, blanco en dark */
+/* Títulos: azul oscuro bold, nunca negro */
 h1,
 h2,
 h3,
 h4,
 h5,
-h6 {
+h6,
+.font-bold,
+.font-semibold {
     color: #1e3a5f;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-}
+    
 
-.dark h1,
-.dark h2,
-.dark h3,
-.dark h4,
-.dark h5,
-.dark h6 {
-    color: #e8edf4;
-}
+        .dark h1,
+        .dark h2,
+        .dark h3,
+        .dark h4,
+        .dark h5,
+        .dark h6,
+        .dark .font-bold,
+        .dark .font-semibold {
+            color: #e8edf4;
+        }
 
-/* Textos: gris oscuro semi-bold en light, gris claro en dark */
-p,
-li {
-    color: #4a5568;
-    font-weight: 500;
-    line-height: 1.6;
-}
+        /* Excepciones: textos dentro de fondos coloreados mantienen su color */
+        .text-white,
+        .text-primary,
+        .text-success,
+        .text-danger,
+        .text-warning,
+        .text-secondary,
+        [class*="text-blue-"],
+        [class*="text-white"] {
+            color: inherit;
+        }
 
-.dark p,
-.dark li {
-    color: #a0aec0;
-}
         .scrollbar-hide {
             -ms-overflow-style: none;
             scrollbar-width: none;

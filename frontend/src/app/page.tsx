@@ -33,10 +33,10 @@ export default function HomePage() {
 
             <main className="flex-1">
                 {/* ===== HERO ===== */}
-                <section className="relative overflow-hidden bg-gradient-to-r from-blue-400 to-blue-900 dark:from-gray-950 dark:to-black">
+                <section className="relative overflow-hidden bg-gradient-to-r from-blue-400 to-blue-900 dark:from-[#0a0a0f] dark:to-[#111827]">
                     {/* Subtle overlay effects */}
                     <div className="absolute top-0 right-0 -z-0 h-[500px] w-[500px] rounded-full bg-white/5 blur-[100px]" />
-                    <div className="absolute bottom-0 left-0 -z-0 h-[400px] w-[400px] rounded-full bg-white/5 blur-[100px]" />
+                    <div className="absolute bottom-0 left-0 -z-0 h-[400px] w-[400px] rounded-full bg-blue-500/10 dark:bg-blue-500/5 blur-[100px]" />
 
                     <div className="relative z-10 mx-auto max-w-7xl px-6 py-16 md:py-24 lg:py-28">
                         <div className="grid items-center gap-12 lg:grid-cols-2">
@@ -49,7 +49,7 @@ export default function HomePage() {
 
                                 <h1 className="mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight text-white md:text-5xl lg:text-6xl">
                                     Tu cancha favorita,{" "}
-                                    <span className="text-blue-200">
+                                    <span className="text-blue-200 dark:text-blue-400">
                                         cuando quieras
                                     </span>
                                 </h1>
@@ -69,9 +69,10 @@ export default function HomePage() {
                                         value={searchQuery}
                                         onValueChange={setSearchQuery}
                                         onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                                        startContent={<Search className="h-4 w-4 text-default-400" />}
+                                        startContent={<Search className="h-4 w-4 text-white/60" />}
                                         classNames={{
-                                            inputWrapper: "bg-background shadow-sm border-default-200",
+                                            inputWrapper: "bg-white/10 dark:bg-white/5 shadow-sm border-white/20 dark:border-white/10",
+                                            input: "text-white placeholder:text-white/50",
                                         }}
                                     />
                                     <Button
@@ -161,7 +162,7 @@ export default function HomePage() {
                 </section>
 
                 {/* ===== HOW IT WORKS ===== */}
-                <section className="border-t border-divider bg-content1 px-6 py-20">
+                <section className="border-t border-divider bg-content1 dark:bg-default-50/30 px-6 py-20">
                     <div className="mx-auto max-w-5xl">
                         <div className="text-center mb-14">
                             <h2 className="text-3xl font-bold">
@@ -196,7 +197,7 @@ export default function HomePage() {
                 </section>
 
                 {/* ===== STATS ===== */}
-                <section className="px-6 py-16 bg-gradient-to-r from-primary to-primary-700">
+                <section className="px-6 py-16 bg-gradient-to-r from-primary to-primary-700 dark:from-blue-950 dark:to-indigo-950">
                     <div className="mx-auto max-w-5xl">
                         <div className="grid gap-8 text-center text-white sm:grid-cols-2 lg:grid-cols-4">
                             <div className="animate-scale-in">
@@ -220,7 +221,7 @@ export default function HomePage() {
                 </section>
 
                 {/* ===== FEATURES ===== */}
-                <section className="px-6 py-20 bg-default-50">
+                <section className="px-6 py-20 bg-default-50 dark:bg-background">
                     <div className="mx-auto max-w-6xl">
                         <div className="text-center mb-14">
                             <h2 className="text-3xl font-bold">

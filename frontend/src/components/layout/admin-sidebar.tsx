@@ -18,12 +18,14 @@ import {
     X,
     Bell,
     HelpCircle,
+    BarChart3,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 const menuItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/bookings", label: "Reservas", icon: Calendar },
+    { href: "/dashboard/statistics", label: "Estadísticas", icon: BarChart3 },
     { href: "/dashboard/facilities", label: "Instalaciones", icon: MapPin },
     { href: "/dashboard/venues", label: "Sedes", icon: MapPin },
     { href: "/dashboard/schedules", label: "Horarios", icon: Clock },

@@ -53,7 +53,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
               )}
           </div>
 
-          <nav className="flex-1 space-y-1 overflow-y-auto">
+            <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hide">
               {menuItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
@@ -123,14 +123,14 @@ export function AdminSidebar() {
                         onClick={() => setMobileOpen(false)}
                     />
                     {/* Drawer */}
-                    <aside className="absolute left-0 top-0 h-full w-72 bg-content1 p-4 shadow-xl animate-slide-in-right overflow-y-auto">
+                    <aside className="absolute left-0 top-0 h-full w-72 bg-content1 p-4 shadow-xl animate-slide-in-right overflow-y-auto scrollbar-hide">
                         <SidebarContent onClose={() => setMobileOpen(false)} />
                     </aside>
                 </div>
             )}
 
             {/* Desktop sidebar */}
-            <aside className="fixed top-[65px] left-0 hidden h-[calc(100vh-65px)] w-64 flex-shrink-0 border-r border-divider bg-content1 p-4 lg:block overflow-y-auto">
+            <aside className="fixed top-[65px] left-0 hidden h-[calc(100vh-65px)] w-64 flex-shrink-0 border-r border-divider bg-content1 p-4 lg:block overflow-y-auto scrollbar-hide">
                 <SidebarContent />
           </aside>
       </>

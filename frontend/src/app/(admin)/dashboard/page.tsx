@@ -1,8 +1,12 @@
 "use client";
 
-import { Card, CardBody } from "@heroui/react";
+import { Card, CardBody, Chip, Spinner } from "@heroui/react";
 import { useAuthStore } from "@/stores/auth-store";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
 import { useState, useEffect, useCallback } from "react";
+import { Calendar, Clock, MapPin, User } from "lucide-react";
+import type { Booking } from "@/types";
 
 const ADS = [
     {
@@ -97,6 +101,9 @@ export default function DashboardPage() {
             />
         ))}
       </div>
+
+            {/* Today's Bookings */}
+            <TodayBookings />
       </div>
   );
 }
@@ -118,5 +125,95 @@ function AdCard({ ad, compact = false }: { ad: typeof ADS[0]; compact?: boolean 
                 )}
             </CardBody>
         </Card>
+    );
+}
+
+const STATUS_COLORS: Record<string, "warning" | "success" | "danger" | "default"> = {
+    PENDING: "warning",
+    CONFIRMED: "success",
+    CANCELLED: "danger",
+    COMPLETED: "default",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+    PENDING: "Pendiente",
+    CONFIRMED: "Confirmada",
+    CANCELLED: "Cancelada",
+    COMPLETED: "Completada",
+};
+
+function TodayBookings() {
+    const today = new Date().toISOString().split("T")[0];
+
+    const { data: bookingsData, isLoading } = useQuery({
+        queryKey: ["today-bookings"],
+        queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=50"),
+    });
+
+    const todayBookings = (bookingsData?.data || []).filter((b) => {
+        const bookingDate = new Date(b.startDatetime).toISOString().split("T")[0];
+        return bookingDate === today;
+    });
+
+    const formatTime = (d: string) => new Date(d).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <h2 className="text-lg font-bold">Reservas de hoy</h2>
+                    <p className="text-xs text-default-500">
+                        {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
+                    </p>
+                </div>
+                {todayBookings.length > 0 && (
+                    <Chip size="sm" variant="flat" color="primary">{todayBookings.length} reservas</Chip>
+                )}
+            </div>
+
+            {isLoading ? (
+                <div className="flex justify-center py-8"><Spinner /></div>
+            ) : todayBookings.length > 0 ? (
+                <div className="space-y-3">
+                    {todayBookings.map((booking) => (
+                        <Card key={booking.id} className="border border-divider">
+                            <CardBody className="flex-row items-center justify-between p-4 gap-3">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                                        <Calendar className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-sm truncate">{booking.facility.name}</p>
+                                        <div className="flex items-center gap-3 mt-0.5 text-xs text-default-500">
+                                            <span className="flex items-center gap-1">
+                                                <User className="h-3 w-3" />
+                                                {booking.user.firstName} {booking.user.lastName}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <Clock className="h-3 w-3" />
+                                                {formatTime(booking.startDatetime)} — {formatTime(booking.endDatetime)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className="text-sm font-bold text-success">${booking.totalPrice}</span>
+                                    <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
+                                        {STATUS_LABELS[booking.status]}
+                                    </Chip>
+                                </div>
+                            </CardBody>
+                        </Card>
+                    ))}
+                </div>
+            ) : (
+                <Card className="border border-divider">
+                    <CardBody className="flex flex-col items-center py-8">
+                        <Calendar className="h-10 w-10 text-default-200" />
+                        <p className="mt-3 text-sm text-default-500">Sin reservas para hoy</p>
+                    </CardBody>
+                </Card>
+            )}
+        </div>
     );
 }

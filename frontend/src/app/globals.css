@@ -6,12 +6,45 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
     }
-.scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+/* Títulos: azul oscuro bold en light, blanco en dark */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: #1e3a5f;
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
-.scrollbar-hide::-webkit-scrollbar {
-    display: none;
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+    color: #e8edf4;
 }
+
+/* Textos: gris oscuro semi-bold en light, gris claro en dark */
+p,
+li {
+    color: #4a5568;
+    font-weight: 500;
+    line-height: 1.6;
+}
+
+.dark p,
+.dark li {
+    color: #a0aec0;
+}
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
 }

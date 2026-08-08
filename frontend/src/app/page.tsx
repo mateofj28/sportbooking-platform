@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AnimateOnScroll } from "@/components/shared/animate-on-scroll";
 
 export default function HomePage() {
     const router = useRouter();
@@ -41,7 +42,7 @@ export default function HomePage() {
                     <div className="relative z-10 mx-auto max-w-7xl px-6 py-16 md:py-24 lg:py-28">
                         <div className="grid items-center gap-12 lg:grid-cols-2">
                             {/* Left - Copy */}
-                            <div className="animate-fade-in">
+                            <AnimateOnScroll direction="right" className="animate-fade-in">
                                 <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-xs font-semibold text-white uppercase tracking-wider">
                                     <Zap className="h-3 w-3" />
                                     La app de reservas deportivas
@@ -109,10 +110,10 @@ export default function HomePage() {
                                         <p className="text-xs text-white/70">+2,000 usuarios activos</p>
                                     </div>
                                 </div>
-                            </div>
+                            </AnimateOnScroll>
 
                             {/* Right - Visual */}
-                            <div className="relative hidden lg:block animate-slide-up">
+                            <AnimateOnScroll direction="left" delay={200} className="relative hidden lg:block">
                                 <div className="relative rounded-2xl bg-content1 p-6 shadow-2xl shadow-primary/10 border border-default-100">
                                     {/* Fake app preview */}
                                     <div className="space-y-4">
@@ -156,7 +157,7 @@ export default function HomePage() {
                                         Confirmación inmediata
                                     </p>
                                 </div>
-                            </div>
+                            </AnimateOnScroll>
                         </div>
                     </div>
                 </section>
@@ -165,33 +166,26 @@ export default function HomePage() {
                 <section className="border-t border-divider bg-content1 dark:bg-default-50/30 px-6 py-20">
                     <div className="mx-auto max-w-5xl">
                         <div className="text-center mb-14">
-                            <h2 className="text-3xl font-bold">
-                                Reserva en <span className="text-primary">3 simples pasos</span>
-                            </h2>
-                            <p className="mt-3 text-default-500">
-                                Sin complicaciones, sin llamadas
-                            </p>
+                            <AnimateOnScroll direction="up">
+                                <h2 className="text-3xl font-bold">
+                                    Reserva en <span className="text-primary">3 simples pasos</span>
+                                </h2>
+                                <p className="mt-3 text-default-500">
+                                    Sin complicaciones, sin llamadas
+                                </p>
+                            </AnimateOnScroll>
                         </div>
 
                         <div className="grid gap-8 md:grid-cols-3">
-                            <StepCard
-                                step={1}
-                                icon={<Search className="h-6 w-6" />}
-                                title="Busca"
-                                description="Filtra por deporte, ubicación, fecha y horario disponible"
-                            />
-                            <StepCard
-                                step={2}
-                                icon={<Calendar className="h-6 w-6" />}
-                                title="Elige tu horario"
-                                description="Selecciona el día y la hora que más te convenga"
-                            />
-                            <StepCard
-                                step={3}
-                                icon={<CheckCircle2 className="h-6 w-6" />}
-                                title="¡Listo!"
-                                description="Confirma tu reserva y recibe la notificación al instante"
-                            />
+                            <AnimateOnScroll direction="right" delay={0}>
+                                <StepCard step={1} icon={<Search className="h-6 w-6" />} title="Busca" description="Filtra por deporte, ubicación, fecha y horario disponible" />
+                            </AnimateOnScroll>
+                            <AnimateOnScroll direction="up" delay={150}>
+                                <StepCard step={2} icon={<Calendar className="h-6 w-6" />} title="Elige tu horario" description="Selecciona el día y la hora que más te convenga" />
+                            </AnimateOnScroll>
+                            <AnimateOnScroll direction="left" delay={300}>
+                                <StepCard step={3} icon={<CheckCircle2 className="h-6 w-6" />} title="¡Listo!" description="Confirma tu reserva y recibe la notificación al instante" />
+                            </AnimateOnScroll>
                         </div>
                     </div>
                 </section>
@@ -200,22 +194,22 @@ export default function HomePage() {
                 <section className="px-6 py-16 bg-gradient-to-r from-primary to-primary-700 dark:from-blue-950 dark:to-indigo-950">
                     <div className="mx-auto max-w-5xl">
                         <div className="grid gap-8 text-center text-white sm:grid-cols-2 lg:grid-cols-4">
-                            <div className="animate-scale-in">
+                            <AnimateOnScroll direction="up" delay={0}>
                                 <p className="text-4xl font-extrabold">500+</p>
                                 <p className="mt-1 text-sm text-white/70">Canchas disponibles</p>
-                            </div>
-                            <div className="animate-scale-in" style={{ animationDelay: "100ms" }}>
+                            </AnimateOnScroll>
+                            <AnimateOnScroll direction="up" delay={100}>
                                 <p className="text-4xl font-extrabold">6</p>
                                 <p className="mt-1 text-sm text-white/70">Deportes</p>
-                            </div>
-                            <div className="animate-scale-in" style={{ animationDelay: "200ms" }}>
+                            </AnimateOnScroll>
+                            <AnimateOnScroll direction="up" delay={200}>
                                 <p className="text-4xl font-extrabold">2,000+</p>
                                 <p className="mt-1 text-sm text-white/70">Usuarios activos</p>
-                            </div>
-                            <div className="animate-scale-in" style={{ animationDelay: "300ms" }}>
+                            </AnimateOnScroll>
+                            <AnimateOnScroll direction="up" delay={300}>
                                 <p className="text-4xl font-extrabold">98%</p>
                                 <p className="mt-1 text-sm text-white/70">Satisfacción</p>
-                            </div>
+                            </AnimateOnScroll>
                         </div>
                     </div>
                 </section>
@@ -224,52 +218,42 @@ export default function HomePage() {
                 <section className="px-6 py-20 bg-default-50 dark:bg-background">
                     <div className="mx-auto max-w-6xl">
                         <div className="text-center mb-14">
-                            <h2 className="text-3xl font-bold">
-                                Todo lo que necesitas para jugar
-                            </h2>
-                            <p className="mt-3 text-default-500 max-w-xl mx-auto">
-                                Una plataforma completa para deportistas y administradores de complejos deportivos
-                            </p>
+                            <AnimateOnScroll direction="up">
+                                <h2 className="text-3xl font-bold">
+                                    Todo lo que necesitas para jugar
+                                </h2>
+                                <p className="mt-3 text-default-500 max-w-xl mx-auto">
+                                    Una plataforma completa para deportistas y administradores de complejos deportivos
+                                </p>
+                            </AnimateOnScroll>
                         </div>
 
                         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                            <FeatureCard
-                                icon={<Trophy className="h-5 w-5 text-primary" />}
-                                title="Múltiples deportes"
-                                description="Fútbol, tenis, pádel, básquet, vóley y más. Todo en un solo lugar."
-                            />
-                            <FeatureCard
-                                icon={<Clock className="h-5 w-5 text-success" />}
-                                title="Disponibilidad en tiempo real"
-                                description="Consulta horarios actualizados y reserva al instante sin sorpresas."
-                            />
-                            <FeatureCard
-                                icon={<MapPin className="h-5 w-5 text-secondary" />}
-                                title="Múltiples sedes"
-                                description="Encuentra la cancha más cercana y compara precios entre complejos."
-                            />
-                            <FeatureCard
-                                icon={<Shield className="h-5 w-5 text-warning" />}
-                                title="Reserva segura"
-                                description="Tu reserva queda confirmada al instante. Cancelación flexible."
-                            />
-                            <FeatureCard
-                                icon={<Users className="h-5 w-5 text-danger" />}
-                                title="Gestión de equipos"
-                                description="Organiza partidos, invita amigos y gestiona tus reservas grupales."
-                            />
-                            <FeatureCard
-                                icon={<Zap className="h-5 w-5 text-primary" />}
-                                title="Panel administrativo"
-                                description="Si tienes un complejo, gestiona reservas, precios y horarios fácilmente."
-                            />
+                            <AnimateOnScroll direction="right" delay={0}>
+                                <FeatureCard icon={<Trophy className="h-5 w-5 text-primary" />} title="Múltiples deportes" description="Fútbol, tenis, pádel, básquet, vóley y más. Todo en un solo lugar." />
+                            </AnimateOnScroll>
+                            <AnimateOnScroll direction="up" delay={100}>
+                                <FeatureCard icon={<Clock className="h-5 w-5 text-success" />} title="Disponibilidad en tiempo real" description="Consulta horarios actualizados y reserva al instante sin sorpresas." />
+                            </AnimateOnScroll>
+                            <AnimateOnScroll direction="left" delay={200}>
+                                <FeatureCard icon={<MapPin className="h-5 w-5 text-secondary" />} title="Múltiples sedes" description="Encuentra la cancha más cercana y compara precios entre complejos." />
+                            </AnimateOnScroll>
+                            <AnimateOnScroll direction="right" delay={300}>
+                                <FeatureCard icon={<Shield className="h-5 w-5 text-warning" />} title="Reserva segura" description="Tu reserva queda confirmada al instante. Cancelación flexible." />
+                            </AnimateOnScroll>
+                            <AnimateOnScroll direction="up" delay={400}>
+                                <FeatureCard icon={<Users className="h-5 w-5 text-danger" />} title="Gestión de equipos" description="Organiza partidos, invita amigos y gestiona tus reservas grupales." />
+                            </AnimateOnScroll>
+                            <AnimateOnScroll direction="left" delay={500}>
+                                <FeatureCard icon={<Zap className="h-5 w-5 text-primary" />} title="Panel administrativo" description="Si tienes un complejo, gestiona reservas, precios y horarios fácilmente." />
+                            </AnimateOnScroll>
                         </div>
                     </div>
                 </section>
 
                 {/* ===== CTA FOR OWNERS ===== */}
                 <section className="px-6 py-20 bg-background">
-                    <div className="mx-auto max-w-4xl">
+                    <AnimateOnScroll direction="scale" className="mx-auto max-w-4xl">
                         <Card className="overflow-hidden border border-divider bg-gradient-to-br from-primary-600 to-secondary-700">
                             <CardBody className="relative p-10 md:p-14">
                                 <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-white/5 blur-2xl" />
@@ -305,7 +289,7 @@ export default function HomePage() {
                                 </div>
                             </CardBody>
                         </Card>
-                    </div>
+                    </AnimateOnScroll>
                 </section>
             </main>
 

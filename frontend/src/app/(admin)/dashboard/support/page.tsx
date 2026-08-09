@@ -1,73 +1,80 @@
 "use client";
 
-import { Card, CardBody, Link } from "@heroui/react";
-import { HelpCircle, Mail, MessageCircle, FileText } from "lucide-react";
+import { Card, CardBody } from "@heroui/react";
+
+const FAQ = [
+  {
+    question: "¿Cómo creo una nueva instalación?",
+    answer: "Ve a Dashboard → Instalaciones → Nueva Instalación. Selecciona la sede, el deporte, define la superficie y las duraciones permitidas.",
+  },
+  {
+    question: "¿Cómo configuro los horarios de una cancha?",
+    answer: "Ve a Dashboard → Horarios, selecciona la instalación y agrega los horarios de apertura/cierre para cada día de la semana.",
+  },
+  {
+    question: "¿Cómo bloqueo un horario por mantenimiento?",
+    answer: "Ve a Dashboard → Bloqueos, selecciona la instalación, elige la fecha y el rango horario, y opcionalmente agrega un motivo.",
+  },
+  {
+    question: "¿Cómo cancelo una reserva?",
+    answer: "Ve a Dashboard → Reservas, busca la reserva y presiona el botón Cancelar. El horario se liberará automáticamente.",
+  },
+  {
+    question: "¿Cómo creo una reserva manual para un cliente?",
+    answer: "En Dashboard → Reservas, presiona 'Reserva Manual'. Selecciona la instalación, el usuario, fecha y horario. La reserva se confirma automáticamente.",
+  },
+  {
+    question: "¿Cómo cambio el precio de una instalación?",
+    answer: "Ve a Dashboard → Precios, selecciona la instalación, elimina la tarifa anterior y crea una nueva con el precio actualizado.",
+  },
+  {
+    question: "¿Puedo tener diferentes precios por día?",
+    answer: "Sí. Al crear una tarifa puedes seleccionar un día específico. Si dejas vacío el día, aplica para todos los días de la semana.",
+  },
+  {
+    question: "¿Cómo agrego un nuevo deporte?",
+    answer: "Ve a Dashboard → Deportes → Nuevo Deporte. Ingresa el nombre, slug (URL amigable) y un ícono opcional.",
+  },
+  {
+    question: "¿Cómo desactivo una instalación temporalmente?",
+    answer: "En Dashboard → Instalaciones, puedes eliminar (desactivar) una instalación. Los clientes no podrán reservarla hasta que se reactive.",
+  },
+  {
+    question: "¿Los clientes pueden cancelar sus propias reservas?",
+    answer: "Sí. Desde 'Mis Reservas', el cliente puede cancelar cualquier reserva pendiente o confirmada. El horario se libera al instante.",
+  },
+  {
+    question: "¿Cómo veo las estadísticas de mi complejo?",
+    answer: "Ve a Dashboard → Estadísticas. Ahí encontrarás gráficas de ingresos, reservas por deporte, demanda semanal y más indicadores clave.",
+  },
+  {
+    question: "¿Cómo recupero mi contraseña?",
+    answer: "En la pantalla de login, presiona '¿Olvidaste tu contraseña?'. Recibirás un email con un enlace para crear una nueva contraseña.",
+  },
+  {
+    question: "¿Puedo tener múltiples sedes?",
+    answer: "Sí. En Dashboard → Sedes puedes crear tantas sedes como necesites. Cada sede puede tener sus propias instalaciones y deportes.",
+  },
+  {
+    question: "¿Qué pasa si un cliente reserva y no asiste?",
+    answer: "Actualmente el sistema no tiene penalización automática por no-show. Puedes gestionar esto manualmente desde la sección de reservas.",
+  },
+];
 
 export default function SupportPage() {
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Ayuda y Soporte</h1>
-        <p className="text-sm text-default-500 mt-1">¿Necesitas ayuda? Estamos aquí para ti</p>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="border border-divider hover:border-primary/30 transition-colors">
-          <CardBody className="flex flex-col items-center text-center p-6 gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-              <Mail className="h-6 w-6 text-primary" />
-            </div>
-            <h3 className="font-semibold">Contacto por Email</h3>
-            <p className="text-xs text-default-500">Escríbenos y te responderemos en menos de 24 horas</p>
-            <Link href="mailto:soporte@sportbooking.com" className="text-sm text-primary font-medium">
-              soporte@sportbooking.com
-            </Link>
-          </CardBody>
-        </Card>
-
-        <Card className="border border-divider hover:border-primary/30 transition-colors">
-          <CardBody className="flex flex-col items-center text-center p-6 gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10">
-              <MessageCircle className="h-6 w-6 text-success" />
-            </div>
-            <h3 className="font-semibold">Chat en vivo</h3>
-            <p className="text-xs text-default-500">Disponible de lunes a viernes, 8am a 6pm</p>
-            <span className="text-xs text-default-400">Próximamente</span>
-          </CardBody>
-        </Card>
-
-        <Card className="border border-divider hover:border-primary/30 transition-colors">
-          <CardBody className="flex flex-col items-center text-center p-6 gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-warning/10">
-              <FileText className="h-6 w-6 text-warning" />
-            </div>
-            <h3 className="font-semibold">Documentación</h3>
-            <p className="text-xs text-default-500">Guías, tutoriales y preguntas frecuentes</p>
-            <span className="text-xs text-default-400">Próximamente</span>
-          </CardBody>
-        </Card>
+        <p className="text-sm text-default-500 mt-1">Preguntas frecuentes sobre el uso de la plataforma</p>
       </div>
 
       <Card>
         <CardBody className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Preguntas Frecuentes</h2>
           <div className="space-y-4">
-            <FaqItem
-              question="¿Cómo creo una nueva instalación?"
-              answer="Ve a Dashboard → Instalaciones → Nueva Instalación. Selecciona la sede, el deporte, define la superficie y las duraciones permitidas."
-            />
-            <FaqItem
-              question="¿Cómo configuro los horarios de una cancha?"
-              answer="Ve a Dashboard → Horarios, selecciona la instalación y agrega los horarios de apertura/cierre para cada día de la semana."
-            />
-            <FaqItem
-              question="¿Cómo bloqueo un horario por mantenimiento?"
-              answer="Ve a Dashboard → Bloqueos, selecciona la instalación, elige la fecha y el rango horario, y opcionalmente agrega un motivo."
-            />
-            <FaqItem
-              question="¿Cómo cancelo una reserva?"
-              answer="Ve a Dashboard → Reservas, busca la reserva y presiona el botón Cancelar. El horario se liberará automáticamente."
-            />
+            {FAQ.map((item, i) => (
+              <FaqItem key={i} question={item.question} answer={item.answer} />
+            ))}
           </div>
         </CardBody>
       </Card>
@@ -78,7 +85,7 @@ export default function SupportPage() {
 function FaqItem({ question, answer }: { question: string; answer: string }) {
   return (
     <div className="rounded-lg bg-default-50 p-4">
-      <p className="text-sm font-semibold text-foreground">{question}</p>
+      <p className="text-sm font-semibold">{question}</p>
       <p className="mt-1 text-xs text-default-500 leading-relaxed">{answer}</p>
     </div>
   );

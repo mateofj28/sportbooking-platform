@@ -65,7 +65,7 @@ export function Navbar() {
                         </Link>
                     </NavbarItem>
                 )}
-                {user?.role === "ADMIN" && (
+                {(user?.role === "ADMIN" || user?.role === "VENUE_ADMIN") && (
                     <NavbarItem>
                         <Link href="/dashboard" className="text-sm font-medium text-white hover:text-blue-200">
                             Dashboard
@@ -134,7 +134,7 @@ export function Navbar() {
                             >
                                 Mis Reservas
                             </DropdownItem>
-                            {user?.role === "ADMIN" ? (
+                            {(user?.role === "ADMIN" || user?.role === "VENUE_ADMIN") ? (
                                 <DropdownItem
                                     key="dashboard"
                                     href="/dashboard"
@@ -197,7 +197,7 @@ export function Navbar() {
                         </NavbarMenuItem>
                     </>
                 )}
-                {user?.role === "ADMIN" && (
+                {(user?.role === "ADMIN" || user?.role === "VENUE_ADMIN") && (
                     <NavbarMenuItem>
                         <Link className="w-full" href="/dashboard" size="lg">
                             Dashboard

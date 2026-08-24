@@ -6,7 +6,8 @@ export interface User {
     lastName: string;
     phone?: string;
     avatarUrl?: string;
-    role: "CLIENT" | "ADMIN";
+    role: "CLIENT" | "ADMIN" | "VENUE_ADMIN";
+    venueId?: string;
     isActive?: boolean;
     createdAt?: string;
 }

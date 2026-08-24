@@ -3,6 +3,7 @@
 import { Link, Button } from "@heroui/react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
+import { useAuthStore } from "@/stores/auth-store";
 import {
     LayoutDashboard,
     Calendar,
@@ -40,6 +41,13 @@ const menuItems = [
 function SidebarContent({ onClose }: { onClose?: () => void }) {
     const pathname = usePathname();
     const { logout } = useAuth();
+    const { user } = useAuthStore();
+    const isVenueAdmin = user?.role === "VENUE_ADMIN";
+
+    // VENUE_ADMIN can't see: venues, sports, users
+    const visibleItems = isVenueAdmin
+        ? menuItems.filter((item) => !(["/dashboard/venues", "/dashboard/sports", "/dashboard/users"].includes(item.href)))
+        : menuItems;
 
     return (
       <div className="flex h-full flex-col">
@@ -56,7 +64,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
           </div>
 
             <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hide">
-              {menuItems.map((item) => {
+                {visibleItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
                   return (

@@ -42,7 +42,7 @@ export class AuthService {
             },
         });
 
-        const tokens = await this.generateTokens(user.id, user.email, user.role);
+        const tokens = await this.generateTokens(user.id, user.email, user.role, user.venueId);
 
         return {
             user: {
@@ -75,7 +75,7 @@ export class AuthService {
             throw new UnauthorizedException('Credenciales inválidas');
         }
 
-        const tokens = await this.generateTokens(user.id, user.email, user.role);
+        const tokens = await this.generateTokens(user.id, user.email, user.role, user.venueId);
 
         return {
             user: {
@@ -85,6 +85,7 @@ export class AuthService {
                 lastName: user.lastName,
                 role: user.role,
                 avatarUrl: user.avatarUrl,
+                venueId: user.venueId,
             },
             ...tokens,
         };
@@ -162,8 +163,8 @@ export class AuthService {
         return user;
     }
 
-    private async generateTokens(userId: string, email: string, role: string) {
-        const payload = { sub: userId, email, role };
+    private async generateTokens(userId: string, email: string, role: string, venueId?: string | null) {
+        const payload = { sub: userId, email, role, venueId: venueId || null };
 
         const accessToken = this.jwtService.sign(payload, {
             expiresIn: this.configService.get<string>('app.jwtExpiration') as any,

@@ -15,7 +15,7 @@ export function useAuth() {
             apiClient.post<AuthResponse>("/auth/login", credentials),
         onSuccess: (data) => {
             setAuth(data.user, data.accessToken, data.refreshToken);
-            if (data.user.role === "ADMIN") {
+            if (data.user.role === "ADMIN" || data.user.role === "VENUE_ADMIN") {
                 router.push("/dashboard");
             } else {
                 router.push("/facilities");

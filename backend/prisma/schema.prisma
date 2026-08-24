@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   CLIENT
   ADMIN
+  VENUE_ADMIN
 }
 
 enum BookingStatus {
@@ -28,6 +29,7 @@ model User {
   phone             String?
   avatarUrl         String?   @map("avatar_url")
   role              Role      @default(CLIENT)
+  venueId           String?   @map("venue_id")
   isActive          Boolean   @default(true) @map("is_active")
   emailVerified     Boolean   @default(false) @map("email_verified")
   resetToken        String?   @map("reset_token")
@@ -39,6 +41,7 @@ model User {
   createdBookings Booking[]     @relation("BookingCreator")
   cancelledBookings Booking[]   @relation("BookingCanceller")
   blockedSlots    BlockedSlot[]
+  venue           Venue?        @relation("VenueAdmins", fields: [venueId], references: [id])
 
   @@map("users")
 }
@@ -63,6 +66,7 @@ model Venue {
 
   facilities Facility[]
   sports     VenueSport[]
+  admins     User[]       @relation("VenueAdmins")
 
   @@map("venues")
 }

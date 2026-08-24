@@ -13,11 +13,17 @@ export class RolesGuard implements CanActivate {
             context.getClass(),
         ]);
 
-        if (!requiredRoles) {
-            return true;
-        }
+      if (!requiredRoles) {
+          return true;
+      }
 
-        const { user } = context.switchToHttp().getRequest();
-        return requiredRoles.some((role) => user?.role === role);
-    }
+      const { user } = context.switchToHttp().getRequest();
+
+      // VENUE_ADMIN has access to ADMIN-protected routes (filtered by venue in services)
+      if (requiredRoles.includes(Role.ADMIN) && user?.role === Role.VENUE_ADMIN) {
+          return true;
+      }
+
+      return requiredRoles.some((role) => user?.role === role);
+  }
 }

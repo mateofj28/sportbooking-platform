@@ -29,6 +29,29 @@ import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
 import type { Sport, Venue } from "@/types";
 
+const SURFACE_TYPES = [
+    "Césped sintético",
+    "Césped natural",
+    "Arcilla",
+    "Cemento",
+    "Madera",
+    "Caucho",
+    "Vidrio/Cristal",
+    "Parquet",
+    "Tartán",
+];
+
+// Duraciones recomendadas por deporte (slug → opciones en minutos)
+const DURATION_BY_SPORT: Record<string, { min: number; max: number; options: number[] }> = {
+    futbol: { min: 60, max: 60, options: [60] },
+    tenis: { min: 60, max: 90, options: [60, 90] },
+    padel: { min: 60, max: 90, options: [60, 90] },
+    basquetbol: { min: 60, max: 90, options: [60, 90] },
+    voleibol: { min: 60, max: 90, options: [60, 90] },
+};
+
+const DEFAULT_DURATION = { min: 60, max: 120, options: [60, 90, 120] };
+
 export default function AdminFacilitiesPage() {
     const queryClient = useQueryClient();
     const addToast = useToastStore((s) => s.addToast);
@@ -210,13 +233,13 @@ export default function AdminFacilitiesPage() {
                 <ModalContent>
                     <ModalHeader>Nueva Instalación</ModalHeader>
                     <ModalBody className="gap-4">
-                        <Input label="Nombre" variant="bordered" value={form.name} onValueChange={(v) => setForm({ ...form, name: v })} />
+                        <Input label="Nombre" placeholder="Ej: Cancha de Fútbol 5 - A" variant="bordered" value={form.name} onValueChange={(v) => setForm({ ...form, name: v })} />
                         <div className="grid grid-cols-2 gap-4">
                             <Select
                                 label="Sede"
                                 placeholder="Seleccionar sede"
                                 variant="bordered"
-                                selectedKeys={form.venueId ? [form.venueId] : []}
+                                selectedKeys={form.venueId ? new Set([form.venueId]) as any : new Set() as any}
                                 onSelectionChange={(keys: any) => setForm({ ...form, venueId: Array.from(keys)[0] as string || "" })}
                             >
                                 {(venues || []).map((v) => (
@@ -227,19 +250,53 @@ export default function AdminFacilitiesPage() {
                                 label="Deporte"
                                 placeholder="Seleccionar deporte"
                                 variant="bordered"
-                                selectedKeys={form.sportId ? [form.sportId] : []}
-                                onSelectionChange={(keys: any) => setForm({ ...form, sportId: Array.from(keys)[0] as string || "" })}
+                                selectedKeys={form.sportId ? new Set([form.sportId]) as any : new Set() as any}
+                                onSelectionChange={(keys: any) => {
+                                    const sportId = Array.from(keys)[0] as string || "";
+                                    const sport = sports?.find((s) => s.id === sportId);
+                                    const durations = sport ? (DURATION_BY_SPORT[sport.slug] || DEFAULT_DURATION) : DEFAULT_DURATION;
+                                    setForm({ ...form, sportId, minBookingDuration: String(durations.min), maxBookingDuration: String(durations.max) });
+                                }}
                             >
                                 {(sports || []).map((s) => (
                                     <SelectItem key={s.id}>{s.name}</SelectItem>
                                 ))}
                             </Select>
                         </div>
-                        <Textarea label="Descripción" variant="bordered" value={form.description} onValueChange={(v) => setForm({ ...form, description: v })} />
-                        <Input label="Tipo de superficie" variant="bordered" value={form.surfaceType} onValueChange={(v) => setForm({ ...form, surfaceType: v })} />
-                        <div className="grid grid-cols-2 gap-4">
-                            <Input label="Duración mín (min)" type="number" variant="bordered" value={form.minBookingDuration} onValueChange={(v) => setForm({ ...form, minBookingDuration: v })} />
-                            <Input label="Duración máx (min)" type="number" variant="bordered" value={form.maxBookingDuration} onValueChange={(v) => setForm({ ...form, maxBookingDuration: v })} />
+                        <Textarea label="Descripción" placeholder="Descripción breve de la instalación" variant="bordered" value={form.description} onValueChange={(v) => setForm({ ...form, description: v })} />
+                        <Select
+                            label="Tipo de superficie"
+                            placeholder="Seleccionar superficie"
+                            variant="bordered"
+                            selectedKeys={form.surfaceType ? new Set([form.surfaceType]) as any : new Set() as any}
+                            onSelectionChange={(keys: any) => setForm({ ...form, surfaceType: Array.from(keys)[0] as string || "" })}
+                        >
+                            {SURFACE_TYPES.map((s) => (
+                                <SelectItem key={s}>{s}</SelectItem>
+                            ))}
+                        </Select>
+                        {/* Duration - auto-calculated from sport */}
+                        <div>
+                            <p className="text-xs text-default-500 mb-2">Duración de reserva (según deporte seleccionado)</p>
+                            <div className="flex gap-2">
+                                {(() => {
+                                    const sport = sports?.find((s) => s.id === form.sportId);
+                                    const durations = sport ? (DURATION_BY_SPORT[sport.slug] || DEFAULT_DURATION) : DEFAULT_DURATION;
+                                    return durations.options.map((d) => (
+                                        <button
+                                            key={d}
+                                            type="button"
+                                            onClick={() => setForm({ ...form, minBookingDuration: String(d), maxBookingDuration: String(d) })}
+                                            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-all ${form.minBookingDuration === String(d)
+                                                    ? "border-primary bg-primary/10 text-primary"
+                                                    : "border-divider hover:border-primary"
+                                                }`}
+                                        >
+                                            {d} min
+                                        </button>
+                                    ));
+                                })()}
+                            </div>
                         </div>
                     </ModalBody>
                     <ModalFooter>

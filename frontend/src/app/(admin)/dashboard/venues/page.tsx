@@ -10,6 +10,7 @@ import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
+import { useFacilities } from "@/hooks/use-facilities";
 import type { Venue } from "@/types";
 
 export default function AdminVenuesPage() {
@@ -22,6 +23,13 @@ export default function AdminVenuesPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: venues, isLoading } = useQuery({ queryKey: ["venues"], queryFn: () => apiClient.get<Venue[]>("/venues") });
+  const { data: facilities } = useFacilities();
+
+  // Count facilities per venue
+  const facilitiesCountByVenue = (facilities || []).reduce((acc, f) => {
+    acc[f.venueId] = (acc[f.venueId] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiClient.post("/venues", data),
@@ -52,7 +60,7 @@ export default function AdminVenuesPage() {
 
       <Table aria-label="Sedes">
         <TableHeader>
-          <TableColumn>NOMBRE</TableColumn><TableColumn>DIRECCIÓN</TableColumn><TableColumn>CIUDAD</TableColumn><TableColumn>ESTADO</TableColumn><TableColumn>ACCIONES</TableColumn>
+          <TableColumn>NOMBRE</TableColumn><TableColumn>DIRECCIÓN</TableColumn><TableColumn>CIUDAD</TableColumn><TableColumn>INSTALACIONES</TableColumn><TableColumn>ESTADO</TableColumn><TableColumn>ACCIONES</TableColumn>
         </TableHeader>
         <TableBody emptyContent="No hay sedes">
           {(venues || []).map((v) => (
@@ -60,6 +68,11 @@ export default function AdminVenuesPage() {
               <TableCell className="font-medium">{v.name}</TableCell>
               <TableCell>{v.address}</TableCell>
               <TableCell>{v.city}</TableCell>
+              <TableCell>
+                <Chip size="sm" variant="flat" color={facilitiesCountByVenue[v.id] ? "primary" : "default"}>
+                  {facilitiesCountByVenue[v.id] || 0}
+                </Chip>
+              </TableCell>
               <TableCell><Chip color={v.isActive ? "success" : "danger"} size="sm" variant="dot">{v.isActive ? "Activa" : "Inactiva"}</Chip></TableCell>
               <TableCell>
                 <div className="flex gap-1">

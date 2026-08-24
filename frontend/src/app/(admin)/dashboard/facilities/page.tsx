@@ -312,10 +312,34 @@ export default function AdminFacilitiesPage() {
                     <ModalBody className="gap-4">
                         <Input label="Nombre" variant="bordered" value={editForm.name} onValueChange={(v) => setEditForm({ ...editForm, name: v })} />
                         <Textarea label="Descripción" variant="bordered" value={editForm.description} onValueChange={(v) => setEditForm({ ...editForm, description: v })} />
-                        <Input label="Tipo de superficie" variant="bordered" value={editForm.surfaceType} onValueChange={(v) => setEditForm({ ...editForm, surfaceType: v })} />
-                        <div className="grid grid-cols-2 gap-4">
-                            <Input label="Duración mín (min)" type="number" variant="bordered" value={editForm.minBookingDuration} onValueChange={(v) => setEditForm({ ...editForm, minBookingDuration: v })} />
-                            <Input label="Duración máx (min)" type="number" variant="bordered" value={editForm.maxBookingDuration} onValueChange={(v) => setEditForm({ ...editForm, maxBookingDuration: v })} />
+                        <Select
+                            label="Tipo de superficie"
+                            placeholder="Seleccionar superficie"
+                            variant="bordered"
+                            selectedKeys={editForm.surfaceType ? new Set([editForm.surfaceType]) as any : new Set() as any}
+                            onSelectionChange={(keys: any) => setEditForm({ ...editForm, surfaceType: Array.from(keys)[0] as string || "" })}
+                        >
+                            {SURFACE_TYPES.map((s) => (
+                                <SelectItem key={s} textValue={s}>{s}</SelectItem>
+                            ))}
+                        </Select>
+                        <div>
+                            <p className="text-xs text-default-500 mb-2">Duración de reserva</p>
+                            <div className="flex gap-2">
+                                {DEFAULT_DURATION.options.map((d) => (
+                                    <button
+                                        key={d}
+                                        type="button"
+                                        onClick={() => setEditForm({ ...editForm, minBookingDuration: String(d), maxBookingDuration: String(d) })}
+                                        className={`rounded-lg border px-4 py-2 text-sm font-medium transition-all ${editForm.minBookingDuration === String(d)
+                                                ? "border-primary bg-primary/10 text-primary"
+                                                : "border-divider hover:border-primary"
+                                            }`}
+                                    >
+                                        {d} min
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </ModalBody>
                     <ModalFooter>

@@ -243,7 +243,7 @@ export default function AdminFacilitiesPage() {
                                 onSelectionChange={(keys: any) => setForm({ ...form, venueId: Array.from(keys)[0] as string || "" })}
                             >
                                 {(venues || []).map((v) => (
-                                    <SelectItem key={v.id}>{v.name} — {v.city}</SelectItem>
+                                    <SelectItem key={v.id} textValue={`${v.name} — ${v.city}`}>{v.name} — {v.city}</SelectItem>
                                 ))}
                             </Select>
                             <Select

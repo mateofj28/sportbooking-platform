@@ -24,7 +24,7 @@ export class CreatePricingDto {
     @Min(0)
     pricePerHour: number;
 
-    @ApiProperty({ example: 'USD', required: false })
+    @ApiProperty({ example: 'ARS', required: false })
     @IsOptional()
     @IsString()
     currency?: string;

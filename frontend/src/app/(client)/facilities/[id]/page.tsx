@@ -337,7 +337,7 @@ export default function FacilityDetailPage({
                                             </span>
                                         </div>
                                         <p className="text-xl font-bold text-success">
-                                            ${price.toFixed(2)} USD
+                                            ${price.toFixed(2)} ARS
                                         </p>
                                     </div>
 

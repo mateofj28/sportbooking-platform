@@ -45,7 +45,7 @@ export class BookingsService {
             startDatetime,
             endDatetime,
             totalPrice,
-            currency: 'USD',
+            currency: 'ARS',
             notes: dto.notes,
             createdById: userId,
         });
@@ -65,7 +65,7 @@ export class BookingsService {
             startDatetime,
             endDatetime,
             totalPrice,
-            currency: 'USD',
+            currency: 'ARS',
             notes: dto.notes,
             createdById: adminId,
             status: BookingStatus.CONFIRMED,

@@ -48,7 +48,7 @@ export function FacilityCard({ facility }: FacilityCardProps) {
               {lowestPrice !== null && (
                   <div className="absolute bottom-2 left-2">
                       <span className="rounded-md bg-black/60 px-2 py-1 text-xs font-bold text-white">
-                          Desde ${lowestPrice}/hr
+                            Desde ${lowestPrice} ARS/hr
                       </span>
                   </div>
               )}

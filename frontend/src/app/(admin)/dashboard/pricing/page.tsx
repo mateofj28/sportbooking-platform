@@ -119,7 +119,7 @@ export default function AdminPricingPage() {
               <Input label="Desde" type="time" variant="bordered" value={form.startTime} onValueChange={(v) => setForm({ ...form, startTime: v })} />
               <Input label="Hasta" type="time" variant="bordered" value={form.endTime} onValueChange={(v) => setForm({ ...form, endTime: v })} />
             </div>
-            <Input label="Precio por hora (USD)" type="number" variant="bordered" value={form.pricePerHour} onValueChange={(v) => setForm({ ...form, pricePerHour: v })} startContent={<DollarSign className="h-4 w-4 text-default-400" />} />
+            <Input label="Precio por hora (ARS)" type="number" variant="bordered" value={form.pricePerHour} onValueChange={(v) => setForm({ ...form, pricePerHour: v })} startContent={<DollarSign className="h-4 w-4 text-default-400" />} />
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onClose}>Cancelar</Button>

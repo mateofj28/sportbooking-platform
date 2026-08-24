@@ -32,6 +32,11 @@ export class AdminUpdateUserDto extends UpdateUserDto {
 
     @ApiProperty({ required: false })
     @IsOptional()
+    @IsString()
+    venueId?: string | null;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
     @IsBoolean()
     isActive?: boolean;
 }

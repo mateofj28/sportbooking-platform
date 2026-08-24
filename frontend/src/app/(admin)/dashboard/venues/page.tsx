@@ -2,7 +2,7 @@
 
 import {
   Button, Chip, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, useDisclosure,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, useDisclosure, Link,
 } from "@heroui/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
@@ -65,7 +65,7 @@ export default function AdminVenuesPage() {
         <TableBody emptyContent="No hay sedes">
           {(venues || []).map((v) => (
             <TableRow key={v.id}>
-              <TableCell className="font-medium">{v.name}</TableCell>
+              <TableCell className="font-medium"><Link href={`/dashboard/venues/${v.id}`} className="hover:text-primary transition-colors">{v.name}</Link></TableCell>
               <TableCell>{v.address}</TableCell>
               <TableCell>{v.city}</TableCell>
               <TableCell>

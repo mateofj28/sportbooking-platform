@@ -66,38 +66,53 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
         {facilities.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {facilities.map((facility) => (
-              <Card key={facility.id} className="border border-divider">
+              <Card key={facility.id} className="border border-divider overflow-hidden hover:shadow-lg transition-shadow">
+                {/* Colored header bar */}
+                <div className="flex items-center justify-between bg-primary/5 px-4 py-2.5 border-b border-divider">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+                      <Trophy className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <span className="text-xs font-semibold text-primary">{facility.sport.name}</span>
+                  </div>
+                  <Chip size="sm" color={facility.isActive ? "success" : "danger"} variant="dot" className="text-[10px]">
+                    {facility.isActive ? "Activa" : "Inactiva"}
+                  </Chip>
+                </div>
+
                 <CardBody className="p-4 gap-3">
-                  <div className="flex items-start justify-between">
-                    <h3 className="font-semibold text-sm">{facility.name}</h3>
-                    <Chip size="sm" color="primary" variant="flat">{facility.sport.name}</Chip>
+                  {/* Name + description */}
+                  <div>
+                    <h3 className="font-bold text-base">{facility.name}</h3>
+                    {facility.description && (
+                      <p className="text-xs text-default-500 mt-1 line-clamp-2">{facility.description}</p>
+                    )}
                   </div>
 
-                  {facility.description && (
-                    <p className="text-xs text-default-500 line-clamp-2">{facility.description}</p>
-                  )}
+                  {/* Stats row */}
+                  <div className="grid grid-cols-3 gap-2 py-2">
+                    <div className="text-center rounded-lg bg-default-50 py-2">
+                      <p className="text-xs text-default-400">Superficie</p>
+                      <p className="text-[11px] font-semibold mt-0.5">{facility.surfaceType || "—"}</p>
+                    </div>
+                    <div className="text-center rounded-lg bg-default-50 py-2">
+                      <p className="text-xs text-default-400">Capacidad</p>
+                      <p className="text-[11px] font-semibold mt-0.5">{facility.capacity ? `${facility.capacity} jug.` : "—"}</p>
+                    </div>
+                    <div className="text-center rounded-lg bg-default-50 py-2">
+                      <p className="text-xs text-default-400">Duración</p>
+                      <p className="text-[11px] font-semibold mt-0.5">{facility.minBookingDuration} min</p>
+                    </div>
+                  </div>
 
+                  {/* Tags */}
                   <div className="flex flex-wrap gap-1.5">
-                    {facility.surfaceType && (
-                      <Chip size="sm" variant="bordered">{facility.surfaceType}</Chip>
-                    )}
                     {facility.isIndoor && (
-                      <Chip size="sm" variant="bordered" color="secondary">Indoor</Chip>
+                      <Chip size="sm" variant="flat" color="secondary" className="text-[10px]">🏠 Indoor</Chip>
                     )}
-                    {facility.capacity && (
-                      <Chip size="sm" variant="bordered" startContent={<Users className="h-3 w-3" />}>
-                        {facility.capacity}
-                      </Chip>
+                    {!facility.isIndoor && (
+                      <Chip size="sm" variant="flat" color="warning" className="text-[10px]">☀️ Exterior</Chip>
                     )}
-                    <Chip size="sm" variant="bordered" startContent={<Clock className="h-3 w-3" />}>
-                      {facility.minBookingDuration} min
-                    </Chip>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-divider mt-1">
-                    <Chip size="sm" color={facility.isActive ? "success" : "danger"} variant="dot">
-                      {facility.isActive ? "Activa" : "Inactiva"}
-                    </Chip>
                   </div>
                 </CardBody>
               </Card>

@@ -99,6 +99,7 @@ export interface Pricing {
     startTime: string;
     endTime: string;
     pricePerHour: number;
+    profitPercent?: number;
     currency: string;
     isActive: boolean;
 }

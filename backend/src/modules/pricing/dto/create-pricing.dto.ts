@@ -24,6 +24,13 @@ export class CreatePricingDto {
     @Min(0)
     pricePerHour: number;
 
+    @ApiProperty({ example: 10, description: 'Profit percentage for the company' })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Max(100)
+    profitPercent?: number;
+
     @ApiProperty({ example: 'ARS', required: false })
     @IsOptional()
     @IsString()
@@ -46,6 +53,13 @@ export class UpdatePricingDto {
     @IsNumber()
     @Min(0)
     pricePerHour?: number;
+
+    @ApiProperty({ required: false, description: 'Profit percentage for the company' })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Max(100)
+    profitPercent?: number;
 
     @ApiProperty({ required: false })
     @IsOptional()

@@ -33,6 +33,7 @@ export class UsersRepository {
                     phone: true,
                     avatarUrl: true,
                     role: true,
+                    venueId: true,
                     isActive: true,
                     createdAt: true,
                 },
@@ -63,6 +64,7 @@ export class UsersRepository {
                 phone: true,
                 avatarUrl: true,
                 role: true,
+                venueId: true,
                 isActive: true,
                 createdAt: true,
             },
@@ -81,6 +83,7 @@ export class UsersRepository {
                 phone: true,
                 avatarUrl: true,
                 role: true,
+                venueId: true,
                 isActive: true,
             },
         });

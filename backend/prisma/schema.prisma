@@ -27,6 +27,7 @@ model User {
   firstName         String    @map("first_name")
   lastName          String    @map("last_name")
   phone             String?
+  dni               String?   @unique
   avatarUrl         String?   @map("avatar_url")
   role              Role      @default(CLIENT)
   venueId           String?   @map("venue_id")

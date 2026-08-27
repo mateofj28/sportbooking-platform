@@ -5,6 +5,7 @@ export interface User {
     firstName: string;
     lastName: string;
     phone?: string;
+    dni?: string;
     avatarUrl?: string;
     role: "CLIENT" | "ADMIN" | "VENUE_ADMIN";
     venueId?: string;

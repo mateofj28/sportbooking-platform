@@ -94,6 +94,7 @@ export default function AdminUsersPage() {
           <Table aria-label="Usuarios">
               <TableHeader>
                   <TableColumn>NOMBRE</TableColumn>
+                    <TableColumn>DNI</TableColumn>
                   <TableColumn>EMAIL</TableColumn>
                   <TableColumn>ROL</TableColumn>
                   <TableColumn>SEDE</TableColumn>
@@ -104,6 +105,7 @@ export default function AdminUsersPage() {
                   {users.map((user) => (
                       <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.firstName} {user.lastName}</TableCell>
+                          <TableCell className="text-sm text-default-500">{user.dni || "—"}</TableCell>
                   <TableCell className="text-sm text-default-500">{user.email}</TableCell>
                   <TableCell>
                       <Chip color={ROLE_COLORS[user.role] || "default"} size="sm" variant="flat">

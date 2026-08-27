@@ -35,6 +35,11 @@ export class AdminUpdateUserDto extends UpdateUserDto {
     @IsString()
     venueId?: string | null;
 
+    @ApiProperty({ required: false, description: 'Documento de identidad' })
+    @IsOptional()
+    @IsString()
+    dni?: string | null;
+
     @ApiProperty({ required: false })
     @IsOptional()
     @IsBoolean()

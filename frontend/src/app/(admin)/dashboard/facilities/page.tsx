@@ -22,8 +22,8 @@ import {
 import { useFacilities } from "@/hooks/use-facilities";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { Plus, Trash2, Pencil } from "lucide-react";
-import { useState } from "react";
+import { Plus, Trash2, Pencil, Search } from "lucide-react";
+import { useState, useMemo } from "react";
 import { Select, SelectItem } from "@heroui/select";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
@@ -65,6 +65,23 @@ export default function AdminFacilitiesPage() {
         queryKey: ["venues"],
         queryFn: () => apiClient.get<Venue[]>("/venues"),
     });
+
+    // Filters
+    const [searchName, setSearchName] = useState("");
+    const [filterSport, setFilterSport] = useState("");
+    const [filterVenue, setFilterVenue] = useState("");
+    const [filterSurface, setFilterSurface] = useState("");
+
+    const filteredFacilities = useMemo(() => {
+        if (!facilities) return [];
+        return facilities.filter((f) => {
+            if (searchName && !f.name.toLowerCase().includes(searchName.toLowerCase())) return false;
+            if (filterSport && f.sport.id !== filterSport) return false;
+            if (filterVenue && f.venue.id !== filterVenue) return false;
+            if (filterSurface && f.surfaceType?.toLowerCase() !== filterSurface.toLowerCase()) return false;
+            return true;
+        });
+    }, [facilities, searchName, filterSport, filterVenue, filterSurface]);
 
     const { isOpen, onOpen, onClose } = useDisclosure();
     const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
@@ -157,6 +174,13 @@ export default function AdminFacilitiesPage() {
         });
     };
 
+    // Get unique surface types from existing facilities for the filter
+    const availableSurfaces = useMemo(() => {
+        if (!facilities) return [];
+        const surfaces = new Set(facilities.map((f) => f.surfaceType).filter(Boolean));
+        return Array.from(surfaces) as string[];
+    }, [facilities]);
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center py-12">
@@ -177,6 +201,65 @@ export default function AdminFacilitiesPage() {
                 </Button>
             </div>
 
+            {/* Filters */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <Input
+                    placeholder="Buscar por nombre..."
+                    variant="bordered"
+                    size="sm"
+                    value={searchName}
+                    onValueChange={setSearchName}
+                    startContent={<Search className="h-4 w-4 text-default-400" />}
+                    isClearable
+                    onClear={() => setSearchName("")}
+                />
+                <Select
+                    placeholder="Filtrar por deporte"
+                    variant="bordered"
+                    size="sm"
+                    selectedKeys={filterSport ? [filterSport] : []}
+                    onSelectionChange={(keys: any) => setFilterSport(Array.from(keys)[0] as string || "")}
+                >
+                    {(sports || []).map((s) => (
+                        <SelectItem key={s.id}>{s.name}</SelectItem>
+                    ))}
+                </Select>
+                <Select
+                    placeholder="Filtrar por sede"
+                    variant="bordered"
+                    size="sm"
+                    selectedKeys={filterVenue ? [filterVenue] : []}
+                    onSelectionChange={(keys: any) => setFilterVenue(Array.from(keys)[0] as string || "")}
+                >
+                    {(venues || []).map((v) => (
+                        <SelectItem key={v.id}>{v.name}</SelectItem>
+                    ))}
+                </Select>
+                <Select
+                    placeholder="Filtrar por superficie"
+                    variant="bordered"
+                    size="sm"
+                    selectedKeys={filterSurface ? [filterSurface] : []}
+                    onSelectionChange={(keys: any) => setFilterSurface(Array.from(keys)[0] as string || "")}
+                >
+                    {availableSurfaces.map((s) => (
+                        <SelectItem key={s}>{s}</SelectItem>
+                    ))}
+                </Select>
+            </div>
+
+            {/* Active filters indicator */}
+            {(searchName || filterSport || filterVenue || filterSurface) && (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-default-500">
+                        {filteredFacilities.length} resultado{filteredFacilities.length !== 1 ? "s" : ""}
+                    </span>
+                    <Button size="sm" variant="light" color="danger" onPress={() => { setSearchName(""); setFilterSport(""); setFilterVenue(""); setFilterSurface(""); }}>
+                        Limpiar filtros
+                    </Button>
+                </div>
+            )}
+
             <Table aria-label="Instalaciones">
                 <TableHeader>
                     <TableColumn>NOMBRE</TableColumn>
@@ -186,8 +269,8 @@ export default function AdminFacilitiesPage() {
                     <TableColumn>ESTADO</TableColumn>
                     <TableColumn>ACCIONES</TableColumn>
                 </TableHeader>
-                <TableBody emptyContent="No hay instalaciones">
-                    {(facilities || []).map((facility) => (
+                <TableBody emptyContent="No hay instalaciones que coincidan con los filtros">
+                    {filteredFacilities.map((facility) => (
                         <TableRow key={facility.id}>
                             <TableCell className="font-medium">{facility.name}</TableCell>
                             <TableCell>

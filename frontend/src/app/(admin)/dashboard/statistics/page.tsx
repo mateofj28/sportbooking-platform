@@ -118,7 +118,13 @@ export default function StatisticsPage() {
     const totalActive = filteredBookings.length - cancelledBookings.length;
     const occupancyRate = totalActive > 0 ? Math.round((confirmedBookings.length / totalActive) * 100) : 0;
 
-    const now = new Date();
+    // New users in the selected date range
+    const newUsers = useMemo(() => {
+        if (!usersData?.data) return 0;
+        const dateStart = getDateStart(dateRange);
+        if (!dateStart) return usersData.data.length;
+        return usersData.data.filter((u) => u.createdAt && new Date(u.createdAt) >= dateStart).length;
+    }, [usersData, dateRange]);
 
     if (isLoading) {
         return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;
@@ -202,11 +208,12 @@ export default function StatisticsPage() {
           </Card>
 
           {/* Stats Cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Ingresos" value={`$${totalRevenue.toLocaleString("es-AR", { minimumFractionDigits: 0 })}`} color="bg-success-50 text-success-600" />
               <StatCard icon={<Calendar className="h-5 w-5" />} label="Reservas" value={filteredBookings.length} color="bg-primary-50 text-primary-600" trend={`${pendingBookings.length} pendientes`} />
               <StatCard icon={<Activity className="h-5 w-5" />} label="Confirmación" value={`${occupancyRate}%`} color="bg-secondary-50 text-secondary-600" trend={`${cancelledBookings.length} canceladas`} trendUp={false} />
               <StatCard icon={<MapPin className="h-5 w-5" />} label="Instalaciones" value={facilities?.filter((f) => f.isActive).length || 0} color="bg-warning-50 text-warning-600" trend={`${sports?.length || 0} deportes`} />
+                <StatCard icon={<Users className="h-5 w-5" />} label="Usuarios nuevos" value={newUsers} color="bg-primary-50 text-primary-600" trend={`de ${usersData?.data?.length || 0} totales`} trendUp={newUsers > 0 ? true : undefined} />
           </div>
 
           {/* Charts */}

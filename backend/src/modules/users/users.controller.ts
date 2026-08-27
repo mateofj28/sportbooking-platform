@@ -1,6 +1,7 @@
 import {
     Controller,
     Get,
+    Post,
     Patch,
     Delete,
     Param,
@@ -12,6 +13,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { UsersService } from './users.service';
 import { UpdateUserDto, AdminUpdateUserDto } from './dto/update-user.dto';
+import { AdminCreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -40,6 +42,14 @@ export class UsersController {
         });
     }
 
+    @Post()
+    @UseGuards(RolesGuard)
+    @Roles(Role.ADMIN)
+    @ApiOperation({ summary: 'Create user (Admin)' })
+    create(@Body() dto: AdminCreateUserDto) {
+        return this.usersService.adminCreate(dto);
+    }
+
     @Get(':id')
     @UseGuards(RolesGuard)
     @Roles(Role.ADMIN)
@@ -52,6 +62,14 @@ export class UsersController {
     @ApiOperation({ summary: 'Update own profile' })
     updateProfile(@CurrentUser('id') userId: string, @Body() dto: UpdateUserDto) {
         return this.usersService.updateProfile(userId, dto);
+    }
+
+    @Patch(':id/reactivate')
+    @UseGuards(RolesGuard)
+    @Roles(Role.ADMIN)
+    @ApiOperation({ summary: 'Reactivate user (Admin)' })
+    reactivate(@Param('id') id: string) {
+        return this.usersService.reactivate(id);
     }
 
     @Patch(':id')

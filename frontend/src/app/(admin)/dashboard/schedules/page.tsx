@@ -11,7 +11,8 @@ import { Plus, Trash2, Clock } from "lucide-react";
 import { useState } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
-import type { Facility, Schedule } from "@/types";
+import { VenueFacilityPicker } from "@/components/shared/venue-facility-picker";
+import type { Schedule } from "@/types";
 
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
@@ -22,11 +23,6 @@ export default function AdminSchedulesPage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedFacility, setSelectedFacility] = useState<string>("");
   const [form, setForm] = useState({ dayOfWeek: "0", openTime: "08:00", closeTime: "22:00" });
-
-  const { data: facilities } = useQuery({
-    queryKey: ["facilities"],
-    queryFn: () => apiClient.get<Facility[]>("/facilities"),
-  });
 
   const { data: schedules, isLoading } = useQuery({
     queryKey: ["schedules", selectedFacility],
@@ -51,17 +47,11 @@ export default function AdminSchedulesPage() {
         <p className="text-sm text-default-500 mt-1">Define los horarios de apertura de cada instalación</p>
       </div>
 
-      <Select
-        label="Selecciona una instalación"
-        variant="bordered"
-        selectedKeys={selectedFacility ? [selectedFacility] : []}
-        onSelectionChange={(keys: any) => setSelectedFacility(Array.from(keys)[0] as string || "")}
-        className="max-w-md"
-      >
-        {(facilities || []).map((f) => (
-          <SelectItem key={f.id}>{f.name} — {f.sport.name}</SelectItem>
-        ))}
-      </Select>
+      <VenueFacilityPicker
+        selectedFacilityId={selectedFacility}
+        onFacilityChange={setSelectedFacility}
+        className="max-w-2xl"
+      />
 
       {selectedFacility && (
         <Card>

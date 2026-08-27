@@ -11,7 +11,8 @@ import { Plus, Trash2, DollarSign, Percent } from "lucide-react";
 import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
-import type { Facility, Pricing } from "@/types";
+import { VenueFacilityPicker } from "@/components/shared/venue-facility-picker";
+import type { Pricing } from "@/types";
 
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
@@ -53,11 +54,6 @@ export default function AdminPricingPage() {
     dayOfWeek: "",
   });
 
-  const { data: facilities } = useQuery({
-    queryKey: ["facilities"],
-    queryFn: () => apiClient.get<Facility[]>("/facilities"),
-  });
-
   const { data: pricing, isLoading } = useQuery({
     queryKey: ["pricing", selectedFacility],
     queryFn: () => apiClient.get<Pricing[]>(`/facilities/${selectedFacility}/pricing`),
@@ -97,17 +93,11 @@ export default function AdminPricingPage() {
         <p className="text-sm text-default-500 mt-1">Define las tarifas por franja horaria</p>
       </div>
 
-      <Select
-        label="Selecciona una instalación"
-        variant="bordered"
-        selectedKeys={selectedFacility ? [selectedFacility] : []}
-        onSelectionChange={(keys: any) => setSelectedFacility(Array.from(keys)[0] as string || "")}
-        className="max-w-md"
-      >
-        {(facilities || []).map((f) => (
-          <SelectItem key={f.id}>{f.name} — {f.sport.name}</SelectItem>
-        ))}
-      </Select>
+      <VenueFacilityPicker
+        selectedFacilityId={selectedFacility}
+        onFacilityChange={setSelectedFacility}
+        className="max-w-2xl"
+      />
 
       {selectedFacility && (
         <Card>

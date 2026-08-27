@@ -4,14 +4,13 @@ import {
   Button, Chip, Spinner, Card, CardBody, CardHeader, Divider, Input, Textarea,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
 } from "@heroui/react";
-import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Plus, Trash2, Ban } from "lucide-react";
 import { useState } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
-import type { Facility } from "@/types";
+import { VenueFacilityPicker } from "@/components/shared/venue-facility-picker";
 
 interface BlockedSlot {
   id: string;
@@ -28,11 +27,6 @@ export default function AdminBlockedSlotsPage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedFacility, setSelectedFacility] = useState<string>("");
   const [form, setForm] = useState({ date: "", startTime: "08:00", endTime: "22:00", reason: "" });
-
-  const { data: facilities } = useQuery({
-    queryKey: ["facilities"],
-    queryFn: () => apiClient.get<Facility[]>("/facilities"),
-  });
 
   const { data: blockedSlots, isLoading } = useQuery({
     queryKey: ["blocked-slots", selectedFacility],
@@ -59,17 +53,11 @@ export default function AdminBlockedSlotsPage() {
         <p className="text-sm text-default-500 mt-1">Bloquea horarios por mantenimiento, eventos u otras razones</p>
       </div>
 
-      <Select
-        label="Selecciona una instalación"
-        variant="bordered"
-        selectedKeys={selectedFacility ? [selectedFacility] : []}
-        onSelectionChange={(keys: any) => setSelectedFacility(Array.from(keys)[0] as string || "")}
-        className="max-w-md"
-      >
-        {(facilities || []).map((f) => (
-          <SelectItem key={f.id}>{f.name} — {f.sport.name}</SelectItem>
-        ))}
-      </Select>
+      <VenueFacilityPicker
+        selectedFacilityId={selectedFacility}
+        onFacilityChange={setSelectedFacility}
+        className="max-w-2xl"
+      />
 
       {selectedFacility && (
         <Card>

@@ -76,6 +76,7 @@ model Sport {
   id          String   @id @default(uuid())
   name        String   @unique
   description String?
+  maxPlayers  Int?     @map("max_players")
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")

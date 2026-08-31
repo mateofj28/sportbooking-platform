@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsInt, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateSportDto {
@@ -11,6 +11,12 @@ export class CreateSportDto {
     @IsOptional()
     @IsString()
     description?: string;
+
+    @ApiProperty({ example: 22, required: false, description: 'Cantidad de jugadores' })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    maxPlayers?: number;
 }
 
 export class UpdateSportDto {
@@ -23,4 +29,10 @@ export class UpdateSportDto {
     @IsOptional()
     @IsString()
     description?: string;
+
+    @ApiProperty({ required: false, description: 'Cantidad de jugadores' })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    maxPlayers?: number;
 }

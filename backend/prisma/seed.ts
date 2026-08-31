@@ -39,27 +39,27 @@ async function main() {
         prisma.sport.upsert({
             where: { name: 'Fútbol' },
             update: {},
-            create: { name: 'Fútbol' },
+            create: { name: 'Fútbol', maxPlayers: 22 },
         }),
         prisma.sport.upsert({
             where: { name: 'Tenis' },
             update: {},
-            create: { name: 'Tenis' },
+            create: { name: 'Tenis', maxPlayers: 4 },
         }),
         prisma.sport.upsert({
             where: { name: 'Pádel' },
             update: {},
-            create: { name: 'Pádel' },
+            create: { name: 'Pádel', maxPlayers: 4 },
         }),
         prisma.sport.upsert({
             where: { name: 'Basquetbol' },
             update: {},
-            create: { name: 'Basquetbol' },
+            create: { name: 'Basquetbol', maxPlayers: 10 },
         }),
         prisma.sport.upsert({
             where: { name: 'Voleibol' },
             update: {},
-            create: { name: 'Voleibol' },
+            create: { name: 'Voleibol', maxPlayers: 12 },
         }),
     ]);
 

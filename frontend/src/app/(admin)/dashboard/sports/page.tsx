@@ -17,8 +17,8 @@ export default function AdminSportsPage() {
     const addToast = useToastStore((s) => s.addToast);
     const { isOpen, onOpen, onClose } = useDisclosure();
     const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
-    const [form, setForm] = useState({ name: "", description: "" });
-    const [editForm, setEditForm] = useState({ id: "", name: "", description: "" });
+    const [form, setForm] = useState({ name: "", description: "", maxPlayers: "" });
+    const [editForm, setEditForm] = useState({ id: "", name: "", description: "", maxPlayers: "" });
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const { data: sports, isLoading } = useQuery({
@@ -28,7 +28,7 @@ export default function AdminSportsPage() {
 
     const createMutation = useMutation({
         mutationFn: (data: any) => apiClient.post("/sports", data),
-        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); onClose(); setForm({ name: "", description: "" }); addToast("Deporte creado correctamente"); },
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); onClose(); setForm({ name: "", description: "", maxPlayers: "" }); addToast("Deporte creado correctamente"); },
     });
 
     const deleteMutation = useMutation({
@@ -42,9 +42,15 @@ export default function AdminSportsPage() {
     });
 
     const handleEdit = (sport: Sport) => {
-        setEditForm({ id: sport.id, name: sport.name, description: sport.description || "" });
+        setEditForm({ id: sport.id, name: sport.name, description: sport.description || "", maxPlayers: sport.maxPlayers != null ? String(sport.maxPlayers) : "" });
         onEditOpen();
     };
+
+    const buildPayload = (f: { name: string; description: string; maxPlayers: string }) => ({
+        name: f.name,
+        description: f.description || undefined,
+        maxPlayers: f.maxPlayers ? parseInt(f.maxPlayers) : undefined,
+    });
 
     if (isLoading) return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;
 
@@ -62,6 +68,7 @@ export default function AdminSportsPage() {
                 <TableHeader>
                     <TableColumn>NOMBRE</TableColumn>
                     <TableColumn>DESCRIPCIÓN</TableColumn>
+                    <TableColumn>JUGADORES</TableColumn>
                     <TableColumn>ESTADO</TableColumn>
                     <TableColumn>ACCIONES</TableColumn>
                 </TableHeader>
@@ -70,6 +77,7 @@ export default function AdminSportsPage() {
                         <TableRow key={sport.id}>
                             <TableCell className="font-medium">{sport.name}</TableCell>
                             <TableCell className="text-default-500">{sport.description || "-"}</TableCell>
+                            <TableCell className="text-default-500">{sport.maxPlayers != null ? sport.maxPlayers : "-"}</TableCell>
                             <TableCell><Chip color={sport.isActive ? "success" : "danger"} size="sm" variant="dot">{sport.isActive ? "Activo" : "Inactivo"}</Chip></TableCell>
                             <TableCell>
                                 <div className="flex gap-1">
@@ -89,10 +97,11 @@ export default function AdminSportsPage() {
                     <ModalBody className="gap-4">
                         <Input label="Nombre" placeholder="Ej: Fútbol" variant="bordered" value={form.name} onValueChange={(v) => setForm({ ...form, name: v })} />
                         <Input label="Descripción" placeholder="Descripción breve (opcional)" variant="bordered" value={form.description} onValueChange={(v) => setForm({ ...form, description: v })} />
+                        <Input label="Cantidad de jugadores" type="number" min="1" placeholder="Ej: 22" variant="bordered" value={form.maxPlayers} onValueChange={(v) => setForm({ ...form, maxPlayers: v })} />
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="light" onPress={onClose}>Cancelar</Button>
-                        <Button color="primary" onPress={() => createMutation.mutate(form)} isLoading={createMutation.isPending} isDisabled={!form.name}>Crear</Button>
+                        <Button color="primary" onPress={() => createMutation.mutate(buildPayload(form))} isLoading={createMutation.isPending} isDisabled={!form.name}>Crear</Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
@@ -104,10 +113,11 @@ export default function AdminSportsPage() {
                     <ModalBody className="gap-4">
                         <Input label="Nombre" variant="bordered" value={editForm.name} onValueChange={(v) => setEditForm({ ...editForm, name: v })} />
                         <Input label="Descripción" variant="bordered" value={editForm.description} onValueChange={(v) => setEditForm({ ...editForm, description: v })} />
+                        <Input label="Cantidad de jugadores" type="number" min="1" placeholder="Ej: 22" variant="bordered" value={editForm.maxPlayers} onValueChange={(v) => setEditForm({ ...editForm, maxPlayers: v })} />
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="light" onPress={onEditClose}>Cancelar</Button>
-                        <Button color="primary" onPress={() => editMutation.mutate(editForm)} isLoading={editMutation.isPending}>Guardar</Button>
+                        <Button color="primary" onPress={() => editMutation.mutate({ id: editForm.id, ...buildPayload(editForm) })} isLoading={editMutation.isPending}>Guardar</Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>

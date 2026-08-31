@@ -50,9 +50,10 @@ export default function DashboardPage() {
     }, []);
 
     useEffect(() => {
+        if (user?.role !== "CLIENT") return;
       const interval = setInterval(nextSlide, 4000);
       return () => clearInterval(interval);
-  }, [nextSlide]);
+    }, [nextSlide, user?.role]);
 
     const getCardIndex = (offset: number) => {
         return (activeIndex + offset + ADS.length) % ADS.length;

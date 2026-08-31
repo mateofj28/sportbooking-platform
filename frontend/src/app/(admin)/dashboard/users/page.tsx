@@ -7,8 +7,8 @@ import {
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { UserX, UserCheck, Pencil, Plus } from "lucide-react";
-import { useState } from "react";
+import { UserX, UserCheck, Pencil, Plus, Search } from "lucide-react";
+import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
 import type { User, PaginatedResult, Venue } from "@/types";
@@ -57,6 +57,11 @@ export default function AdminUsersPage() {
         queryKey: ["venues"],
         queryFn: () => apiClient.get<Venue[]>("/venues"),
     });
+
+    // Filters
+    const [search, setSearch] = useState("");
+    const [filterRole, setFilterRole] = useState("");
+    const [filterVenue, setFilterVenue] = useState("");
 
     const deactivateMutation = useMutation({
         mutationFn: (id: string) => apiClient.delete(`/users/${id}`),
@@ -126,11 +131,28 @@ export default function AdminUsersPage() {
         });
     };
 
+    const allUsers = data?.data || [];
+
+    const users = useMemo(() => {
+        return allUsers.filter((u) => {
+            if (filterRole && u.role !== filterRole) return false;
+            if (filterVenue && u.venueId !== filterVenue) return false;
+            if (search) {
+                const q = search.toLowerCase();
+                const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
+                const matches =
+                    fullName.includes(q) ||
+                    (u.email?.toLowerCase().includes(q)) ||
+                    (u.dni?.toLowerCase().includes(q));
+                if (!matches) return false;
+            }
+            return true;
+        });
+    }, [allUsers, search, filterRole, filterVenue]);
+
     if (isLoading) {
         return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;
     }
-
-    const users = data?.data || [];
 
     return (
         <div className="space-y-6">
@@ -143,6 +165,53 @@ export default function AdminUsersPage() {
                     Nuevo Usuario
                 </Button>
             </div>
+
+            {/* Filters */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <Input
+                    placeholder="Buscar por nombre, DNI o email..."
+                    variant="bordered"
+                    size="sm"
+                    value={search}
+                    onValueChange={setSearch}
+                    startContent={<Search className="h-4 w-4 text-default-400" />}
+                    isClearable
+                    onClear={() => setSearch("")}
+                />
+                <Select
+                    placeholder="Filtrar por rol"
+                    variant="bordered"
+                    size="sm"
+                    selectedKeys={filterRole ? [filterRole] : []}
+                    onSelectionChange={(keys: any) => setFilterRole(Array.from(keys)[0] as string || "")}
+                >
+                    <SelectItem key="CLIENT">Cliente</SelectItem>
+                    <SelectItem key="VENUE_ADMIN">Admin Sede</SelectItem>
+                    <SelectItem key="ADMIN">Admin General</SelectItem>
+                </Select>
+                <Select
+                    placeholder="Filtrar por sede"
+                    variant="bordered"
+                    size="sm"
+                    selectedKeys={filterVenue ? [filterVenue] : []}
+                    onSelectionChange={(keys: any) => setFilterVenue(Array.from(keys)[0] as string || "")}
+                >
+                    {(venues || []).map((v) => (
+                        <SelectItem key={v.id}>{v.name}</SelectItem>
+                    ))}
+                </Select>
+            </div>
+
+            {(search || filterRole || filterVenue) && (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-default-500">
+                        {users.length} resultado{users.length !== 1 ? "s" : ""}
+                    </span>
+                    <Button size="sm" variant="light" color="danger" onPress={() => { setSearch(""); setFilterRole(""); setFilterVenue(""); }}>
+                        Limpiar filtros
+                    </Button>
+                </div>
+            )}
 
             <Table aria-label="Usuarios">
                 <TableHeader>

@@ -69,38 +69,43 @@ export default function DashboardPage() {
                 </p>
             </div>
 
-          {/* Carousel - 3 visible, center highlighted */}
-          <div className="relative flex items-center justify-center gap-3 overflow-hidden py-2">
-              {/* Left card (partial) */}
-              <div className="w-[20%] flex-shrink-0 opacity-50 scale-90 transition-all duration-500">
-                  <AdCard ad={ADS[getCardIndex(-1)]} compact />
-              </div>
+            {/* Carousel - solo visible para clientes */}
+            {user?.role === "CLIENT" && (
+                <>
+                    {/* Carousel - 3 visible, center highlighted */}
+                    <div className="relative flex items-center justify-center gap-3 overflow-hidden py-2">
+                        {/* Left card (partial) */}
+                        <div className="w-[20%] flex-shrink-0 opacity-50 scale-90 transition-all duration-500">
+                            <AdCard ad={ADS[getCardIndex(-1)]} compact />
+                        </div>
 
-              {/* Center card (main) */}
-              <div className="w-[56%] flex-shrink-0 scale-100 transition-all duration-500 z-10">
-                  <AdCard ad={ADS[activeIndex]} />
-              </div>
+                        {/* Center card (main) */}
+                        <div className="w-[56%] flex-shrink-0 scale-100 transition-all duration-500 z-10">
+                            <AdCard ad={ADS[activeIndex]} />
+                        </div>
 
-              {/* Right card (partial) */}
-              <div className="w-[20%] flex-shrink-0 opacity-50 scale-90 transition-all duration-500">
-                  <AdCard ad={ADS[getCardIndex(1)]} compact />
-              </div>
-          </div>
+                        {/* Right card (partial) */}
+                        <div className="w-[20%] flex-shrink-0 opacity-50 scale-90 transition-all duration-500">
+                            <AdCard ad={ADS[getCardIndex(1)]} compact />
+                        </div>
+                    </div>
 
-          {/* Dots */}
-          <div className="flex justify-center gap-2">
-              {ADS.map((_, i) => (
-                  <button
-                      key={i}
-                      onClick={() => setActiveIndex(i)}
-                className={`h-2 rounded-full transition-all duration-300 ${i === activeIndex
-                        ? "w-6 bg-primary"
-                        : "w-2 bg-default-300 hover:bg-default-400"
-                    }`}
-                aria-label={`Slide ${i + 1}`}
-            />
-        ))}
-      </div>
+                    {/* Dots */}
+                    <div className="flex justify-center gap-2">
+                        {ADS.map((_, i) => (
+                            <button
+                                key={i}
+                                onClick={() => setActiveIndex(i)}
+                                className={`h-2 rounded-full transition-all duration-300 ${i === activeIndex
+                                    ? "w-6 bg-primary"
+                                    : "w-2 bg-default-300 hover:bg-default-400"
+                                    }`}
+                                aria-label={`Slide ${i + 1}`}
+                            />
+                        ))}
+                    </div>
+                </>
+            )}
 
             {/* Today's Bookings */}
             <TodayBookings />

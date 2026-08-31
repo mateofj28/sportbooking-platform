@@ -52,6 +52,11 @@ const DURATION_BY_SPORT: Record<string, { min: number; max: number; options: num
 
 const DEFAULT_DURATION = { min: 60, max: 120, options: [60, 90, 120] };
 
+/** Normaliza el nombre del deporte a una clave (sin acentos, minúsculas) */
+function sportKey(name?: string): string {
+    return (name || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 export default function AdminFacilitiesPage() {
     const queryClient = useQueryClient();
     const addToast = useToastStore((s) => s.addToast);
@@ -337,7 +342,7 @@ export default function AdminFacilitiesPage() {
                                 onSelectionChange={(keys: any) => {
                                     const sportId = Array.from(keys)[0] as string || "";
                                     const sport = sports?.find((s) => s.id === sportId);
-                                    const durations = sport ? (DURATION_BY_SPORT[sport.slug] || DEFAULT_DURATION) : DEFAULT_DURATION;
+                                    const durations = sport ? (DURATION_BY_SPORT[sportKey(sport.name)] || DEFAULT_DURATION) : DEFAULT_DURATION;
                                     setForm({ ...form, sportId, minBookingDuration: String(durations.min), maxBookingDuration: String(durations.max) });
                                 }}
                             >
@@ -364,7 +369,7 @@ export default function AdminFacilitiesPage() {
                             <div className="flex gap-2">
                                 {(() => {
                                     const sport = sports?.find((s) => s.id === form.sportId);
-                                    const durations = sport ? (DURATION_BY_SPORT[sport.slug] || DEFAULT_DURATION) : DEFAULT_DURATION;
+                                    const durations = sport ? (DURATION_BY_SPORT[sportKey(sport.name)] || DEFAULT_DURATION) : DEFAULT_DURATION;
                                     return durations.options.map((d) => (
                                         <button
                                             key={d}

@@ -36,8 +36,6 @@ export interface RegisterData {
 export interface Sport {
     id: string;
     name: string;
-    slug: string;
-    icon?: string;
     description?: string;
     isActive: boolean;
 }

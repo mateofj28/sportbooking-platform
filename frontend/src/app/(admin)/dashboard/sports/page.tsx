@@ -17,8 +17,8 @@ export default function AdminSportsPage() {
     const addToast = useToastStore((s) => s.addToast);
     const { isOpen, onOpen, onClose } = useDisclosure();
     const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
-    const [form, setForm] = useState({ name: "", slug: "", icon: "" });
-    const [editForm, setEditForm] = useState({ id: "", name: "", slug: "", icon: "" });
+    const [form, setForm] = useState({ name: "", description: "" });
+    const [editForm, setEditForm] = useState({ id: "", name: "", description: "" });
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const { data: sports, isLoading } = useQuery({
@@ -28,21 +28,21 @@ export default function AdminSportsPage() {
 
     const createMutation = useMutation({
         mutationFn: (data: any) => apiClient.post("/sports", data),
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); onClose(); setForm({ name: "", slug: "", icon: "" }); addToast("Deporte creado correctamente"); },
-  });
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); onClose(); setForm({ name: "", description: "" }); addToast("Deporte creado correctamente"); },
+    });
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => apiClient.delete(`/sports/${id}`),
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); addToast("Deporte eliminado"); },
-  });
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); addToast("Deporte eliminado"); },
+    });
 
     const editMutation = useMutation({
-      mutationFn: ({ id, ...data }: any) => apiClient.patch(`/sports/${id}`, data),
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); onEditClose(); addToast("Deporte actualizado"); },
-  });
+        mutationFn: ({ id, ...data }: any) => apiClient.patch(`/sports/${id}`, data),
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); onEditClose(); addToast("Deporte actualizado"); },
+    });
 
     const handleEdit = (sport: Sport) => {
-        setEditForm({ id: sport.id, name: sport.name, slug: sport.slug, icon: sport.icon || "" });
+        setEditForm({ id: sport.id, name: sport.name, description: sport.description || "" });
         onEditOpen();
     };
 
@@ -55,76 +55,72 @@ export default function AdminSportsPage() {
                     <h1 className="text-2xl font-bold">Deportes</h1>
                     <p className="text-sm text-default-500 mt-1">Catálogo de deportes disponibles</p>
                 </div>
-              <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={onOpen}>Nuevo Deporte</Button>
-          </div>
+                <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={onOpen}>Nuevo Deporte</Button>
+            </div>
 
-          <Table aria-label="Deportes">
-              <TableHeader>
-                  <TableColumn>NOMBRE</TableColumn>
-                  <TableColumn>SLUG</TableColumn>
-                  <TableColumn>ICONO</TableColumn>
-                  <TableColumn>ESTADO</TableColumn>
-                  <TableColumn>ACCIONES</TableColumn>
-              </TableHeader>
-              <TableBody emptyContent="No hay deportes">
-                  {(sports || []).map((sport) => (
-                      <TableRow key={sport.id}>
-                          <TableCell className="font-medium">{sport.name}</TableCell>
-                          <TableCell className="text-default-500">{sport.slug}</TableCell>
-                          <TableCell>{sport.icon || "-"}</TableCell>
-                  <TableCell><Chip color={sport.isActive ? "success" : "danger"} size="sm" variant="dot">{sport.isActive ? "Activo" : "Inactivo"}</Chip></TableCell>
-                  <TableCell>
-                      <div className="flex gap-1">
-                          <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(sport)}><Pencil className="h-4 w-4" /></Button>
-                          <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(sport.id)}><Trash2 className="h-4 w-4" /></Button>
-                      </div>
-                  </TableCell>
-              </TableRow>
-          ))}
-              </TableBody>
-          </Table>
+            <Table aria-label="Deportes">
+                <TableHeader>
+                    <TableColumn>NOMBRE</TableColumn>
+                    <TableColumn>DESCRIPCIÓN</TableColumn>
+                    <TableColumn>ESTADO</TableColumn>
+                    <TableColumn>ACCIONES</TableColumn>
+                </TableHeader>
+                <TableBody emptyContent="No hay deportes">
+                    {(sports || []).map((sport) => (
+                        <TableRow key={sport.id}>
+                            <TableCell className="font-medium">{sport.name}</TableCell>
+                            <TableCell className="text-default-500">{sport.description || "-"}</TableCell>
+                            <TableCell><Chip color={sport.isActive ? "success" : "danger"} size="sm" variant="dot">{sport.isActive ? "Activo" : "Inactivo"}</Chip></TableCell>
+                            <TableCell>
+                                <div className="flex gap-1">
+                                    <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(sport)}><Pencil className="h-4 w-4" /></Button>
+                                    <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(sport.id)}><Trash2 className="h-4 w-4" /></Button>
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
 
-          {/* Create Modal */}
-          <Modal isOpen={isOpen} onClose={onClose}>
-              <ModalContent>
-                  <ModalHeader>Nuevo Deporte</ModalHeader>
-                  <ModalBody className="gap-4">
-                      <Input label="Nombre" placeholder="Ej: Fútbol" variant="bordered" value={form.name} onValueChange={(v) => setForm({ ...form, name: v, slug: v.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })} />
-                      <Input label="Slug" variant="bordered" value={form.slug} onValueChange={(v) => setForm({ ...form, slug: v })} />
-                      <Input label="Icono" placeholder="Ej: soccer" variant="bordered" value={form.icon} onValueChange={(v) => setForm({ ...form, icon: v })} />
-                  </ModalBody>
-                  <ModalFooter>
-                      <Button variant="light" onPress={onClose}>Cancelar</Button>
-                      <Button color="primary" onPress={() => createMutation.mutate(form)} isLoading={createMutation.isPending}>Crear</Button>
-                  </ModalFooter>
-              </ModalContent>
-          </Modal>
+            {/* Create Modal */}
+            <Modal isOpen={isOpen} onClose={onClose}>
+                <ModalContent>
+                    <ModalHeader>Nuevo Deporte</ModalHeader>
+                    <ModalBody className="gap-4">
+                        <Input label="Nombre" placeholder="Ej: Fútbol" variant="bordered" value={form.name} onValueChange={(v) => setForm({ ...form, name: v })} />
+                        <Input label="Descripción" placeholder="Descripción breve (opcional)" variant="bordered" value={form.description} onValueChange={(v) => setForm({ ...form, description: v })} />
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="light" onPress={onClose}>Cancelar</Button>
+                        <Button color="primary" onPress={() => createMutation.mutate(form)} isLoading={createMutation.isPending} isDisabled={!form.name}>Crear</Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
 
-          {/* Edit Modal */}
-          <Modal isOpen={isEditOpen} onClose={onEditClose}>
-              <ModalContent>
-                  <ModalHeader>Editar Deporte</ModalHeader>
-                  <ModalBody className="gap-4">
-                      <Input label="Nombre" variant="bordered" value={editForm.name} onValueChange={(v) => setEditForm({ ...editForm, name: v, slug: v.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })} />
-                      <Input label="Slug" variant="bordered" value={editForm.slug} onValueChange={(v) => setEditForm({ ...editForm, slug: v })} />
-                      <Input label="Icono" variant="bordered" value={editForm.icon} onValueChange={(v) => setEditForm({ ...editForm, icon: v })} />
-                  </ModalBody>
-                  <ModalFooter>
-                      <Button variant="light" onPress={onEditClose}>Cancelar</Button>
-                      <Button color="primary" onPress={() => editMutation.mutate(editForm)} isLoading={editMutation.isPending}>Guardar</Button>
-                  </ModalFooter>
-              </ModalContent>
-          </Modal>
+            {/* Edit Modal */}
+            <Modal isOpen={isEditOpen} onClose={onEditClose}>
+                <ModalContent>
+                    <ModalHeader>Editar Deporte</ModalHeader>
+                    <ModalBody className="gap-4">
+                        <Input label="Nombre" variant="bordered" value={editForm.name} onValueChange={(v) => setEditForm({ ...editForm, name: v })} />
+                        <Input label="Descripción" variant="bordered" value={editForm.description} onValueChange={(v) => setEditForm({ ...editForm, description: v })} />
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="light" onPress={onEditClose}>Cancelar</Button>
+                        <Button color="primary" onPress={() => editMutation.mutate(editForm)} isLoading={editMutation.isPending}>Guardar</Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
 
-          {/* Confirm Delete */}
-          <ConfirmModal
-              isOpen={!!deleteId}
-              onClose={() => setDeleteId(null)}
-              onConfirm={() => { deleteMutation.mutate(deleteId!); setDeleteId(null); }}
-              title="Eliminar deporte"
-              message="¿Estás seguro? Esta acción no se puede deshacer."
-              confirmLabel="Eliminar"
-          />
-      </div>
-  );
+            {/* Confirm Delete */}
+            <ConfirmModal
+                isOpen={!!deleteId}
+                onClose={() => setDeleteId(null)}
+                onConfirm={() => { deleteMutation.mutate(deleteId!); setDeleteId(null); }}
+                title="Eliminar deporte"
+                message="¿Estás seguro? Esta acción no se puede deshacer."
+                confirmLabel="Eliminar"
+            />
+        </div>
+    );
 }

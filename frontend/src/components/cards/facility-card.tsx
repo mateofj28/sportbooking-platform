@@ -28,7 +28,7 @@ export function FacilityCard({ facility }: FacilityCardProps) {
         ? Math.min(...facility.pricing.map((p) => Number(p.pricePerHour)))
         : null;
 
-    const imageUrl = facility.imageUrl || getSportImage(facility.sport.slug || facility.sport.name);
+    const imageUrl = facility.imageUrl || getSportImage(facility.sport.name);
 
     return (
       <Card className="w-full overflow-hidden" isPressable as={Link} href={`/facilities/${facility.id}`}>

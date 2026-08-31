@@ -7,16 +7,6 @@ export class CreateSportDto {
     @IsNotEmpty()
     name: string;
 
-    @ApiProperty({ example: 'futbol' })
-    @IsString()
-    @IsNotEmpty()
-    slug: string;
-
-    @ApiProperty({ example: 'soccer', required: false })
-    @IsOptional()
-    @IsString()
-    icon?: string;
-
     @ApiProperty({ required: false })
     @IsOptional()
     @IsString()
@@ -28,16 +18,6 @@ export class UpdateSportDto {
     @IsOptional()
     @IsString()
     name?: string;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsString()
-    slug?: string;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsString()
-    icon?: string;
 
     @ApiProperty({ required: false })
     @IsOptional()

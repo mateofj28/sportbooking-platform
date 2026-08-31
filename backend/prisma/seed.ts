@@ -37,29 +37,29 @@ async function main() {
     // Create sports
     const sports = await Promise.all([
         prisma.sport.upsert({
-            where: { slug: 'futbol' },
+            where: { name: 'Fútbol' },
             update: {},
-            create: { name: 'Fútbol', slug: 'futbol', icon: 'soccer' },
+            create: { name: 'Fútbol' },
         }),
         prisma.sport.upsert({
-            where: { slug: 'tenis' },
+            where: { name: 'Tenis' },
             update: {},
-            create: { name: 'Tenis', slug: 'tenis', icon: 'tennis' },
+            create: { name: 'Tenis' },
         }),
         prisma.sport.upsert({
-            where: { slug: 'padel' },
+            where: { name: 'Pádel' },
             update: {},
-            create: { name: 'Pádel', slug: 'padel', icon: 'paddle' },
+            create: { name: 'Pádel' },
         }),
         prisma.sport.upsert({
-            where: { slug: 'basquetbol' },
+            where: { name: 'Basquetbol' },
             update: {},
-            create: { name: 'Basquetbol', slug: 'basquetbol', icon: 'basketball' },
+            create: { name: 'Basquetbol' },
         }),
         prisma.sport.upsert({
-            where: { slug: 'voleibol' },
+            where: { name: 'Voleibol' },
             update: {},
-            create: { name: 'Voleibol', slug: 'voleibol', icon: 'volleyball' },
+            create: { name: 'Voleibol' },
         }),
     ]);
 

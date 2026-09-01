@@ -5,7 +5,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useState, useEffect, useCallback } from "react";
-import { Calendar, Clock, MapPin, User, DollarSign, Users } from "lucide-react";
+import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp } from "lucide-react";
 import type { Booking, Facility, PaginatedResult, User as UserType } from "@/types";
 
 const ADS = [
@@ -281,6 +281,12 @@ function TodaySummary() {
 
     const todayRevenue = todayBookings.reduce((sum, b) => sum + Number(b.totalPrice), 0);
 
+    // Comisión de la empresa: totalPrice * (profitPercent / 100) de cada reserva
+    const todayCommission = todayBookings.reduce((sum, b) => {
+        const pct = Number(b.facility?.pricing?.[0]?.profitPercent) || 0;
+        return sum + Number(b.totalPrice) * (pct / 100);
+    }, 0);
+
     // Users created today (approximate - check createdAt)
     const allUsers = usersData?.data || [];
     const newUsersToday = allUsers.filter((u) => {
@@ -311,6 +317,12 @@ function TodaySummary() {
             bg: "bg-success/10",
         },
         {
+            icon: <TrendingUp className="h-5 w-5 text-emerald-500" />,
+            label: "Comisión empresa hoy",
+            value: `$${todayCommission.toLocaleString("es-AR", { maximumFractionDigits: 0 })}`,
+            bg: "bg-emerald-500/10",
+        },
+        {
             icon: <MapPin className="h-5 w-5 text-warning" />,
             label: "Canchas ocupadas",
             value: `${occupiedFacilities}/${facilities?.length || 0}`,
@@ -321,7 +333,7 @@ function TodaySummary() {
     return (
         <div>
             <h2 className="text-lg font-bold mb-4">Resumen del día</h2>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
                 {stats.map((stat, i) => (
                     <Card key={i} className="border border-divider">
                         <CardBody className="flex-row items-center gap-3 p-4">

@@ -23,6 +23,7 @@ export class BookingsRepository {
                         include: {
                             sport: true,
                             venue: { select: { id: true, name: true, address: true } },
+                            pricing: { where: { isActive: true } },
                         },
                     },
                     user: { select: { id: true, firstName: true, lastName: true, email: true } },

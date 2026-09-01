@@ -10,8 +10,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useConfirmBooking, useCancelBooking } from "@/hooks/use-bookings";
 import { useFacilities } from "@/hooks/use-facilities";
 import { apiClient } from "@/lib/api-client";
-import { CheckCircle, XCircle, Plus, Calendar, Clock, MapPin, User, DollarSign } from "lucide-react";
-import { useState } from "react";
+import { CheckCircle, XCircle, Plus, Calendar, Clock, MapPin, User, DollarSign, Search } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
 import { useToastStore } from "@/stores/toast-store";
 import type { Booking, BookingStatus, User as UserType, PaginatedResult } from "@/types";
 
@@ -22,17 +22,61 @@ const STATUS_MAP: Record<BookingStatus, { label: string; color: "warning" | "suc
     COMPLETED: { label: "Completada", color: "default" },
 };
 
+const STATUS_FILTERS: { key: "ALL" | BookingStatus; label: string; color: "primary" | "warning" | "success" | "danger" | "default" }[] = [
+    { key: "ALL", label: "Todas", color: "primary" },
+    { key: "PENDING", label: "Pendientes", color: "warning" },
+    { key: "CONFIRMED", label: "Confirmadas", color: "success" },
+    { key: "COMPLETED", label: "Completadas", color: "default" },
+    { key: "CANCELLED", label: "Canceladas", color: "danger" },
+];
+
+const PER_PAGE = 12;
+
 export default function AdminBookingsPage() {
     const queryClient = useQueryClient();
     const addToast = useToastStore((s) => s.addToast);
     const [page, setPage] = useState(1);
 
+    // Filters
+    const [search, setSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState<"ALL" | BookingStatus>("ALL");
+
     const { data: bookingsData, isLoading } = useQuery({
-        queryKey: ["bookings", page],
-      queryFn: () => apiClient.get<{ data: Booking[]; meta: { total: number; page: number; totalPages: number } }>("/bookings", { page: String(page), limit: "12" }),
-  });
-    const bookings = bookingsData?.data;
-    const meta = bookingsData?.meta;
+        queryKey: ["bookings"],
+        queryFn: () => apiClient.get<{ data: Booking[]; meta: { total: number; page: number; totalPages: number } }>("/bookings", { limit: "500" }),
+    });
+    const allBookings = bookingsData?.data;
+
+    // Apply filters (client-side over all bookings)
+    const filteredBookings = useMemo(() => {
+        let result = allBookings || [];
+        if (statusFilter !== "ALL") {
+            result = result.filter((b) => b.status === statusFilter);
+        }
+        if (search) {
+            const q = search.toLowerCase();
+            result = result.filter((b) =>
+                b.facility?.name?.toLowerCase().includes(q) ||
+                b.facility?.venue?.name?.toLowerCase().includes(q)
+            );
+        }
+        return result;
+    }, [allBookings, statusFilter, search]);
+
+    // Count per status for badges
+    const statusCounts = useMemo(() => {
+        const counts: Record<string, number> = { ALL: (allBookings || []).length };
+        (allBookings || []).forEach((b) => { counts[b.status] = (counts[b.status] || 0) + 1; });
+        return counts;
+    }, [allBookings]);
+
+    // Client-side pagination over filtered results
+    const totalPages = Math.max(1, Math.ceil(filteredBookings.length / PER_PAGE));
+    const bookings = filteredBookings.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+    const meta = { total: filteredBookings.length, page, totalPages };
+
+    // Reset to page 1 when filters change
+    useEffect(() => { setPage(1); }, [search, statusFilter]);
 
     const confirmBooking = useConfirmBooking();
     const cancelBooking = useCancelBooking();
@@ -86,6 +130,34 @@ export default function AdminBookingsPage() {
                 <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={onOpen}>
                     Reserva Manual
                 </Button>
+            </div>
+
+            {/* Filters */}
+            <div className="space-y-3">
+                <Input
+                    placeholder="Buscar por nombre de cancha o sede..."
+                    variant="bordered"
+                    size="sm"
+                    value={search}
+                    onValueChange={setSearch}
+                    startContent={<Search className="h-4 w-4 text-default-400" />}
+                    isClearable
+                    onClear={() => setSearch("")}
+                    className="max-w-md"
+                />
+                <div className="flex flex-wrap gap-2">
+                    {STATUS_FILTERS.map((f) => (
+                        <Chip
+                            key={f.key}
+                            color={statusFilter === f.key ? f.color : "default"}
+                            variant={statusFilter === f.key ? "solid" : "bordered"}
+                            className="cursor-pointer"
+                            onClick={() => setStatusFilter(f.key)}
+                        >
+                            {f.label} ({statusCounts[f.key] || 0})
+                        </Chip>
+                    ))}
+                </div>
             </div>
 
           {/* Booking Cards Grid */}

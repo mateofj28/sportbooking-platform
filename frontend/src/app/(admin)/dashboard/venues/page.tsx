@@ -8,8 +8,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
-import { Plus, Trash2, Pencil } from "lucide-react";
-import { useState } from "react";
+import { Plus, Trash2, Pencil, Search } from "lucide-react";
+import { useState, useMemo } from "react";
 import { useFacilities } from "@/hooks/use-facilities";
 import type { Venue } from "@/types";
 
@@ -24,6 +24,17 @@ export default function AdminVenuesPage() {
 
   const { data: venues, isLoading } = useQuery({ queryKey: ["venues"], queryFn: () => apiClient.get<Venue[]>("/venues") });
   const { data: facilities } = useFacilities();
+
+  const [search, setSearch] = useState("");
+
+  const filteredVenues = useMemo(() => {
+    if (!venues) return [];
+    if (!search) return venues;
+    const q = search.toLowerCase();
+    return venues.filter((v) =>
+      v.name.toLowerCase().includes(q) || v.city.toLowerCase().includes(q)
+    );
+  }, [venues, search]);
 
   // Count facilities per venue
   const facilitiesCountByVenue = (facilities || []).reduce((acc, f) => {
@@ -58,12 +69,32 @@ export default function AdminVenuesPage() {
         <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", city: "", country: "Colombia", description: "" }); onOpen(); }}>Nueva Sede</Button>
       </div>
 
+      {/* Filter */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        <Input
+          placeholder="Buscar por nombre o ciudad..."
+          variant="bordered"
+          size="sm"
+          value={search}
+          onValueChange={setSearch}
+          startContent={<Search className="h-4 w-4 text-default-400" />}
+          isClearable
+          onClear={() => setSearch("")}
+          className="max-w-md"
+        />
+        {search && (
+          <span className="text-xs text-default-500">
+            {filteredVenues.length} resultado{filteredVenues.length !== 1 ? "s" : ""}
+          </span>
+        )}
+      </div>
+
       <Table aria-label="Sedes">
         <TableHeader>
           <TableColumn>NOMBRE</TableColumn><TableColumn>DIRECCIÓN</TableColumn><TableColumn>CIUDAD</TableColumn><TableColumn>INSTALACIONES</TableColumn><TableColumn>ESTADO</TableColumn><TableColumn>ACCIONES</TableColumn>
         </TableHeader>
         <TableBody emptyContent="No hay sedes">
-          {(venues || []).map((v) => (
+          {filteredVenues.map((v) => (
             <TableRow key={v.id}>
               <TableCell className="font-medium"><Link href={`/dashboard/venues/${v.id}`} className="hover:text-primary transition-colors">{v.name}</Link></TableCell>
               <TableCell>{v.address}</TableCell>

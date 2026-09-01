@@ -101,7 +101,7 @@ async function main() {
           endDatetime: endDate,
           status,
           totalPrice,
-          currency: 'USD',
+          currency: 'ARS',
           notes: randomItem([null, 'Llevar pelotas', 'Somos 8 personas', 'Reserva para torneo', 'Práctica de equipo', null]),
           createdById: status === BookingStatus.CONFIRMED && Math.random() > 0.7 ? admin!.id : user.id,
           cancelledAt: status === BookingStatus.CANCELLED ? new Date() : null,

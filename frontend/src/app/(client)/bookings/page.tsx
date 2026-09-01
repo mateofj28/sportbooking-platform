@@ -153,7 +153,7 @@ export default function BookingsPage() {
                                   </span>
                               </div>
                               <p className="mt-1 text-sm font-medium text-success">
-                                  ${booking.totalPrice} {booking.currency}
+                                              ${Number(booking.totalPrice).toLocaleString("es-AR")} ARS
                               </p>
                           </div>
                             {(booking.status === "PENDING" || booking.status === "CONFIRMED") && (

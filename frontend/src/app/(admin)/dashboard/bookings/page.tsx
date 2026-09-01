@@ -126,7 +126,7 @@ export default function AdminBookingsPage() {
                             </div>
                             <div className="flex items-center gap-2">
                                 <DollarSign className="h-3.5 w-3.5 text-success" />
-                                <span className="font-semibold text-success">${booking.totalPrice} {booking.currency}</span>
+                                          <span className="font-semibold text-success">{Number(booking.totalPrice).toLocaleString("es-AR")} ARS</span>
                             </div>
                         </div>
 

@@ -1,10 +1,11 @@
 "use client";
 
-import { use } from "react";
-import { Card, CardBody, Chip, Spinner, Button, Link } from "@heroui/react";
+import { use, useState, useMemo } from "react";
+import { Card, CardBody, Chip, Spinner, Button, Link, Input } from "@heroui/react";
+import { Select, SelectItem } from "@heroui/select";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { ArrowLeft, MapPin, Clock, Users, Trophy } from "lucide-react";
+import { ArrowLeft, MapPin, Trophy, Search } from "lucide-react";
 import type { Venue, Facility } from "@/types";
 
 export default function VenueDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,7 +21,41 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
     queryFn: () => apiClient.get<Facility[]>("/facilities"),
   });
 
-  const facilities = (allFacilities || []).filter((f) => f.venueId === id);
+  const venueFacilities = useMemo(
+    () => (allFacilities || []).filter((f) => f.venueId === id),
+    [allFacilities, id]
+  );
+
+  // Filters
+  const [search, setSearch] = useState("");
+  const [filterSport, setFilterSport] = useState("");
+  const [filterSurface, setFilterSurface] = useState("");
+  const [filterLocation, setFilterLocation] = useState("");
+
+  // Unique sports and surfaces from this venue's facilities
+  const sportOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    venueFacilities.forEach((f) => map.set(f.sport.id, f.sport.name));
+    return Array.from(map, ([id, name]) => ({ id, name }));
+  }, [venueFacilities]);
+
+  const surfaceOptions = useMemo(() => {
+    const set = new Set(venueFacilities.map((f) => f.surfaceType).filter(Boolean));
+    return Array.from(set) as string[];
+  }, [venueFacilities]);
+
+  const facilities = useMemo(() => {
+    return venueFacilities.filter((f) => {
+      if (search && !f.name.toLowerCase().includes(search.toLowerCase())) return false;
+      if (filterSport && f.sport.id !== filterSport) return false;
+      if (filterSurface && f.surfaceType?.toLowerCase() !== filterSurface.toLowerCase()) return false;
+      if (filterLocation === "indoor" && !f.isIndoor) return false;
+      if (filterLocation === "exterior" && f.isIndoor) return false;
+      return true;
+    });
+  }, [venueFacilities, search, filterSport, filterSurface, filterLocation]);
+
+  const hasActiveFilters = !!(search || filterSport || filterSurface || filterLocation);
 
   if (loadingVenue || loadingFacilities) {
     return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;
@@ -57,11 +92,70 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
       {/* Installations */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold">Instalaciones ({facilities.length})</h2>
+          <h2 className="text-lg font-bold">
+            Instalaciones ({hasActiveFilters ? `${facilities.length} de ${venueFacilities.length}` : venueFacilities.length})
+          </h2>
           <Button as={Link} href="/dashboard/facilities" size="sm" color="primary" variant="flat">
             Gestionar instalaciones
           </Button>
         </div>
+
+        {/* Filters */}
+        {venueFacilities.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <Input
+              placeholder="Buscar por nombre..."
+              variant="bordered"
+              size="sm"
+              value={search}
+              onValueChange={setSearch}
+              startContent={<Search className="h-4 w-4 text-default-400" />}
+              isClearable
+              onClear={() => setSearch("")}
+            />
+            <Select
+              placeholder="Deporte"
+              variant="bordered"
+              size="sm"
+              selectedKeys={filterSport ? [filterSport] : []}
+              onSelectionChange={(keys: any) => setFilterSport(Array.from(keys)[0] as string || "")}
+            >
+              {sportOptions.map((s) => (
+                <SelectItem key={s.id}>{s.name}</SelectItem>
+              ))}
+            </Select>
+            <Select
+              placeholder="Superficie"
+              variant="bordered"
+              size="sm"
+              selectedKeys={filterSurface ? [filterSurface] : []}
+              onSelectionChange={(keys: any) => setFilterSurface(Array.from(keys)[0] as string || "")}
+            >
+              {surfaceOptions.map((s) => (
+                <SelectItem key={s}>{s}</SelectItem>
+              ))}
+            </Select>
+            <Select
+              placeholder="Ubicación"
+              variant="bordered"
+              size="sm"
+              selectedKeys={filterLocation ? [filterLocation] : []}
+              onSelectionChange={(keys: any) => setFilterLocation(Array.from(keys)[0] as string || "")}
+            >
+              <SelectItem key="indoor">Indoor</SelectItem>
+              <SelectItem key="exterior">Exterior</SelectItem>
+            </Select>
+          </div>
+        )}
+
+        {hasActiveFilters && (
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xs text-default-500">{facilities.length} resultado{facilities.length !== 1 ? "s" : ""}</span>
+            <Button size="sm" variant="light" color="danger" onPress={() => { setSearch(""); setFilterSport(""); setFilterSurface(""); setFilterLocation(""); }}>
+              Limpiar filtros
+            </Button>
+          </div>
+        )}
 
         {facilities.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -118,6 +212,13 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
               </Card>
             ))}
           </div>
+        ) : hasActiveFilters ? (
+          <Card className="border border-divider">
+            <CardBody className="flex flex-col items-center py-10">
+              <Trophy className="h-10 w-10 text-default-200" />
+              <p className="mt-3 text-sm text-default-500">No hay instalaciones que coincidan con los filtros</p>
+            </CardBody>
+          </Card>
         ) : (
           <Card className="border border-divider">
             <CardBody className="flex flex-col items-center py-10">

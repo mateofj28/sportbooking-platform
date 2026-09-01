@@ -27,6 +27,9 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   return { value, label };
 });
 
+// Profit percentage options: 0, 10, 20, ..., 100
+const PROFIT_OPTIONS = Array.from({ length: 11 }, (_, i) => i * 10);
+
 /** Format a number with thousand separators (dots) */
 function formatThousands(value: string): string {
   const num = value.replace(/\./g, "").replace(/[^0-9]/g, "");
@@ -191,17 +194,17 @@ export default function AdminPricingPage() {
               classNames={{ input: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" }}
             />
 
-            <Input
+            <Select
               label="Porcentaje de ganancia empresa (%)"
               variant="bordered"
-              type="number"
-              min="0"
-              max="100"
-              value={form.profitPercent}
-              onValueChange={(v) => setForm({ ...form, profitPercent: v })}
               startContent={<Percent className="h-4 w-4 text-default-400" />}
-              classNames={{ input: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" }}
-            />
+              selectedKeys={form.profitPercent ? [form.profitPercent] : []}
+              onSelectionChange={(keys: any) => setForm({ ...form, profitPercent: Array.from(keys)[0] as string || "0" })}
+            >
+              {PROFIT_OPTIONS.map((p) => (
+                <SelectItem key={String(p)} textValue={`${p}%`}>{p}%</SelectItem>
+              ))}
+            </Select>
 
             <div className="rounded-lg bg-default-100 p-3">
               <div className="flex items-center justify-between text-sm">

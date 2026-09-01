@@ -1,9 +1,14 @@
 "use client";
 
 import {
-  Button, Chip, Spinner, Card, CardBody, CardHeader, Divider, Input, Textarea,
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
+  Button, Chip, Spinner, Card, CardBody, CardHeader, Divider, Textarea,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, DatePicker,
 } from "@heroui/react";
+import { Select, SelectItem } from "@heroui/select";
+import { today, getLocalTimeZone } from "@internationalized/date";
+
+// Tipo mínimo para una fecha del DatePicker (year/month/day)
+type CalDate = { year: number; month: number; day: number };
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Plus, Trash2, Ban } from "lucide-react";
@@ -20,13 +25,32 @@ interface BlockedSlot {
   reason?: string;
 }
 
+// Opciones de hora cada 30 min en formato 12h (AM/PM)
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const hours = Math.floor(i / 2);
+  const minutes = i % 2 === 0 ? "00" : "30";
+  const value = `${hours.toString().padStart(2, "0")}:${minutes}`;
+  const h12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  const ampm = hours < 12 ? "AM" : "PM";
+  return { value, label: `${h12}:${minutes} ${ampm}` };
+});
+
+/** Convierte una fecha del calendario a string YYYY-MM-DD */
+function calendarDateToISO(d: CalDate | null): string {
+  if (!d) return "";
+  const mm = String(d.month).padStart(2, "0");
+  const dd = String(d.day).padStart(2, "0");
+  return `${d.year}-${mm}-${dd}`;
+}
+
 export default function AdminBlockedSlotsPage() {
   const queryClient = useQueryClient();
   const addToast = useToastStore((s) => s.addToast);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedFacility, setSelectedFacility] = useState<string>("");
-  const [form, setForm] = useState({ date: "", startTime: "08:00", endTime: "22:00", reason: "" });
+  const [dateValue, setDateValue] = useState<CalDate | null>(null);
+  const [form, setForm] = useState({ startTime: "08:00", endTime: "22:00", reason: "" });
 
   const { data: blockedSlots, isLoading } = useQuery({
     queryKey: ["blocked-slots", selectedFacility],
@@ -66,7 +90,7 @@ export default function AdminBlockedSlotsPage() {
               <Ban className="h-4 w-4 text-danger" />
               <h2 className="text-lg font-semibold">Bloqueos activos</h2>
             </div>
-            <Button size="sm" color="danger" variant="flat" startContent={<Plus className="h-3 w-3" />} onPress={onOpen}>
+            <Button size="sm" color="danger" variant="flat" startContent={<Plus className="h-3 w-3" />} onPress={() => { setDateValue(today(getLocalTimeZone())); setForm({ startTime: "08:00", endTime: "22:00", reason: "" }); onOpen(); }}>
               Bloquear horario
             </Button>
           </CardHeader>
@@ -99,20 +123,52 @@ export default function AdminBlockedSlotsPage() {
         <ModalContent>
           <ModalHeader>Bloquear Horario</ModalHeader>
           <ModalBody className="gap-4">
-            <Input label="Fecha" type="date" variant="bordered" value={form.date} onValueChange={(v) => setForm({ ...form, date: v })} />
+            <DatePicker
+              label="Fecha"
+              variant="bordered"
+              value={dateValue as any}
+              onChange={(v: any) => setDateValue(v)}
+              minValue={today(getLocalTimeZone()) as any}
+              showMonthAndYearPickers
+            />
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Desde" type="time" variant="bordered" value={form.startTime} onValueChange={(v) => setForm({ ...form, startTime: v })} />
-              <Input label="Hasta" type="time" variant="bordered" value={form.endTime} onValueChange={(v) => setForm({ ...form, endTime: v })} />
+              <Select
+                label="Desde"
+                variant="bordered"
+                selectedKeys={form.startTime ? [form.startTime] : []}
+                onSelectionChange={(keys: any) => setForm({ ...form, startTime: Array.from(keys)[0] as string || "08:00" })}
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <SelectItem key={t.value}>{t.label}</SelectItem>
+                ))}
+              </Select>
+              <Select
+                label="Hasta"
+                variant="bordered"
+                selectedKeys={form.endTime ? [form.endTime] : []}
+                onSelectionChange={(keys: any) => setForm({ ...form, endTime: Array.from(keys)[0] as string || "22:00" })}
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <SelectItem key={t.value}>{t.label}</SelectItem>
+                ))}
+              </Select>
             </div>
             <Textarea label="Motivo (opcional)" variant="bordered" value={form.reason} onValueChange={(v) => setForm({ ...form, reason: v })} placeholder="Ej: Mantenimiento de cancha" />
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onClose}>Cancelar</Button>
-            <Button color="danger" onPress={() => createMutation.mutate({
-              startDatetime: `${form.date}T${form.startTime}:00.000Z`,
-              endDatetime: `${form.date}T${form.endTime}:00.000Z`,
-              reason: form.reason || undefined,
-            })} isLoading={createMutation.isPending}>Bloquear</Button>
+            <Button
+              color="danger"
+              isDisabled={!dateValue}
+              onPress={() => createMutation.mutate({
+                startDatetime: `${calendarDateToISO(dateValue)}T${form.startTime}:00.000Z`,
+                endDatetime: `${calendarDateToISO(dateValue)}T${form.endTime}:00.000Z`,
+                reason: form.reason || undefined,
+              })}
+              isLoading={createMutation.isPending}
+            >
+              Bloquear
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

@@ -27,8 +27,25 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   return { value, label };
 });
 
-// Profit percentage options: 0, 10, 20, ..., 100
-const PROFIT_OPTIONS = Array.from({ length: 11 }, (_, i) => i * 10);
+/**
+ * Sanitiza el porcentaje de ganancia: acepta coma o punto (normaliza a punto),
+ * permite decimales, y limita el valor entre 0 y 100.
+ */
+function sanitizeProfitPercent(input: string): string {
+  // Reemplaza coma por punto y elimina cualquier cosa que no sea dígito o punto
+  let v = input.replace(/,/g, ".").replace(/[^0-9.]/g, "");
+  // Permite solo un punto decimal
+  const parts = v.split(".");
+  if (parts.length > 2) {
+    v = parts[0] + "." + parts.slice(1).join("");
+  }
+  // Limita a 100 (si es entero mayor a 100)
+  if (v !== "" && v !== ".") {
+    const num = Number(v);
+    if (!isNaN(num) && num > 100) v = "100";
+  }
+  return v;
+}
 
 /** Format a number with thousand separators (dots) */
 function formatThousands(value: string): string {
@@ -194,17 +211,16 @@ export default function AdminPricingPage() {
               classNames={{ input: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" }}
             />
 
-            <Select
+            <Input
               label="Porcentaje de ganancia empresa (%)"
               variant="bordered"
+              inputMode="decimal"
+              placeholder="Ej: 6.6"
               startContent={<Percent className="h-4 w-4 text-default-400" />}
-              selectedKeys={form.profitPercent ? [form.profitPercent] : []}
-              onSelectionChange={(keys: any) => setForm({ ...form, profitPercent: Array.from(keys)[0] as string || "0" })}
-            >
-              {PROFIT_OPTIONS.map((p) => (
-                <SelectItem key={String(p)} textValue={`${p}%`}>{p}%</SelectItem>
-              ))}
-            </Select>
+              value={form.profitPercent}
+              onValueChange={(v) => setForm({ ...form, profitPercent: sanitizeProfitPercent(v) })}
+              description="Valor entre 1 y 100. Acepta decimales (ej: 6.6 o 6,6)"
+            />
 
             <div className="rounded-lg bg-default-100 p-3">
               <div className="flex items-center justify-between text-sm">
@@ -224,13 +240,20 @@ export default function AdminPricingPage() {
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onClose}>Cancelar</Button>
-            <Button color="primary" onPress={() => createMutation.mutate({
-              startTime: form.startTime,
-              endTime: form.endTime,
-              pricePerHour: parsePriceValue(form.pricePerHour),
-              profitPercent: Number(form.profitPercent) || 0,
-              ...(form.dayOfWeek ? { dayOfWeek: parseInt(form.dayOfWeek) } : {}),
-            })} isLoading={createMutation.isPending}>Crear</Button>
+            <Button
+              color="primary"
+              isDisabled={!(Number(form.profitPercent) >= 1 && Number(form.profitPercent) <= 100)}
+              onPress={() => createMutation.mutate({
+                startTime: form.startTime,
+                endTime: form.endTime,
+                pricePerHour: parsePriceValue(form.pricePerHour),
+                profitPercent: Number(form.profitPercent) || 0,
+                ...(form.dayOfWeek ? { dayOfWeek: parseInt(form.dayOfWeek) } : {}),
+              })}
+              isLoading={createMutation.isPending}
+            >
+              Crear
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

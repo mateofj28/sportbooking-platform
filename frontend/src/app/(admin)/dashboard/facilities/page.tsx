@@ -52,6 +52,16 @@ const DURATION_BY_SPORT: Record<string, { min: number; max: number; options: num
 
 const DEFAULT_DURATION = { min: 60, max: 120, options: [60, 90, 120] };
 
+// Superficie sugerida por deporte (debe coincidir con SURFACE_TYPES)
+const SURFACE_BY_SPORT: Record<string, string> = {
+    futbol: "Césped natural",
+    tenis: "Arcilla",
+    padel: "Césped sintético",
+    basquetbol: "Cemento",
+    voleibol: "Madera",
+    yoga: "Parquet",
+};
+
 /** Normaliza el nombre del deporte a una clave (sin acentos, minúsculas) */
 function sportKey(name?: string): string {
     return (name || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -159,14 +169,17 @@ export default function AdminFacilitiesPage() {
     };
 
     const handleCreate = () => {
+        const defaultSport = sports?.[0];
+        const key = defaultSport ? sportKey(defaultSport.name) : "";
+        const durations = DURATION_BY_SPORT[key] || DEFAULT_DURATION;
         setForm({
             name: "",
             description: "",
             venueId: venues?.[0]?.id || "",
-            sportId: sports?.[0]?.id || "",
-            surfaceType: "",
-            minBookingDuration: "60",
-            maxBookingDuration: "120",
+            sportId: defaultSport?.id || "",
+            surfaceType: SURFACE_BY_SPORT[key] || "",
+            minBookingDuration: String(durations.min),
+            maxBookingDuration: String(durations.max),
         });
         onOpen();
     };
@@ -346,8 +359,10 @@ export default function AdminFacilitiesPage() {
                                 onSelectionChange={(keys: any) => {
                                     const sportId = Array.from(keys)[0] as string || "";
                                     const sport = sports?.find((s) => s.id === sportId);
-                                    const durations = sport ? (DURATION_BY_SPORT[sportKey(sport.name)] || DEFAULT_DURATION) : DEFAULT_DURATION;
-                                    setForm({ ...form, sportId, minBookingDuration: String(durations.min), maxBookingDuration: String(durations.max) });
+                                    const key = sport ? sportKey(sport.name) : "";
+                                    const durations = sport ? (DURATION_BY_SPORT[key] || DEFAULT_DURATION) : DEFAULT_DURATION;
+                                    const surface = SURFACE_BY_SPORT[key] || form.surfaceType;
+                                    setForm({ ...form, sportId, surfaceType: surface, minBookingDuration: String(durations.min), maxBookingDuration: String(durations.max) });
                                 }}
                             >
                                 {(sports || []).map((s) => (

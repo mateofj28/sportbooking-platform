@@ -125,6 +125,7 @@ export default function AdminFacilitiesPage() {
         venueId: "",
         sportId: "",
         surfaceType: "",
+        isIndoor: false,
         amenities: [] as string[],
         minBookingDuration: "60",
         maxBookingDuration: "120",
@@ -134,6 +135,7 @@ export default function AdminFacilitiesPage() {
         name: "",
         description: "",
         surfaceType: "",
+        isIndoor: false,
         amenities: [] as string[],
         minBookingDuration: "60",
         maxBookingDuration: "120",
@@ -162,7 +164,7 @@ export default function AdminFacilitiesPage() {
     });
 
     const editMutation = useMutation({
-        mutationFn: ({ id, ...data }: { id: string; name: string; description: string; surfaceType: string; amenities: string[]; minBookingDuration: number; maxBookingDuration: number }) =>
+        mutationFn: ({ id, ...data }: { id: string; name: string; description: string; surfaceType: string; isIndoor: boolean; amenities: string[]; minBookingDuration: number; maxBookingDuration: number }) =>
             apiClient.patch(`/facilities/${id}`, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["facilities"] });
@@ -177,6 +179,7 @@ export default function AdminFacilitiesPage() {
             name: facility.name,
             description: facility.description || "",
             surfaceType: facility.surfaceType || "",
+            isIndoor: !!facility.isIndoor,
             amenities: facility.amenities || [],
             minBookingDuration: String(facility.minBookingDuration),
             maxBookingDuration: String(facility.maxBookingDuration),
@@ -190,6 +193,7 @@ export default function AdminFacilitiesPage() {
             name: editForm.name,
             description: editForm.description,
             surfaceType: editForm.surfaceType,
+            isIndoor: editForm.isIndoor,
             amenities: editForm.amenities,
             minBookingDuration: parseInt(editForm.minBookingDuration),
             maxBookingDuration: parseInt(editForm.maxBookingDuration),
@@ -206,6 +210,7 @@ export default function AdminFacilitiesPage() {
             venueId: venues?.[0]?.id || "",
             sportId: defaultSport?.id || "",
             surfaceType: SURFACE_BY_SPORT[key] || "",
+            isIndoor: false,
             amenities: [],
             minBookingDuration: String(durations.min),
             maxBookingDuration: String(durations.max),
@@ -424,6 +429,32 @@ export default function AdminFacilitiesPage() {
                                 <SelectItem key={s}>{s}</SelectItem>
                             ))}
                         </Select>
+                        {/* Ubicación: Indoor / Exterior */}
+                        <div>
+                            <p className="text-xs text-default-500 mb-2">Ubicación</p>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setForm({ ...form, isIndoor: false })}
+                                    className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${!form.isIndoor
+                                        ? "border-primary bg-primary/10 text-primary"
+                                        : "border-divider hover:border-primary"
+                                        }`}
+                                >
+                                    ☀️ Exterior
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setForm({ ...form, isIndoor: true })}
+                                    className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${form.isIndoor
+                                        ? "border-primary bg-primary/10 text-primary"
+                                        : "border-divider hover:border-primary"
+                                        }`}
+                                >
+                                    🏠 Indoor
+                                </button>
+                            </div>
+                        </div>
                         {/* Duration - auto-calculated from sport */}
                         <div>
                             <p className="text-xs text-default-500 mb-2">Duración de reserva (según deporte seleccionado)</p>
@@ -494,6 +525,32 @@ export default function AdminFacilitiesPage() {
                                 <SelectItem key={s} textValue={s}>{s}</SelectItem>
                             ))}
                         </Select>
+                        {/* Ubicación: Indoor / Exterior */}
+                        <div>
+                            <p className="text-xs text-default-500 mb-2">Ubicación</p>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditForm({ ...editForm, isIndoor: false })}
+                                    className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${!editForm.isIndoor
+                                        ? "border-primary bg-primary/10 text-primary"
+                                        : "border-divider hover:border-primary"
+                                        }`}
+                                >
+                                    ☀️ Exterior
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setEditForm({ ...editForm, isIndoor: true })}
+                                    className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${editForm.isIndoor
+                                        ? "border-primary bg-primary/10 text-primary"
+                                        : "border-divider hover:border-primary"
+                                        }`}
+                                >
+                                    🏠 Indoor
+                                </button>
+                            </div>
+                        </div>
                         <div>
                             <p className="text-xs text-default-500 mb-2">Duración de reserva</p>
                             <div className="flex gap-2">

@@ -42,7 +42,11 @@ export default function AdminSchedulesPage() {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiClient.post(`/facilities/${selectedFacility}/schedules`, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["schedules", selectedFacility] }); onClose(); addToast("Item creado correctamente"); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["schedules", selectedFacility] }); onClose(); addToast("Horario creado correctamente"); },
+    onError: (error: any) => {
+      const msg = error?.message || error?.response?.data?.message || "No se pudo crear el horario";
+      addToast(Array.isArray(msg) ? msg[0] : msg);
+    },
   });
 
   const deleteMutation = useMutation({

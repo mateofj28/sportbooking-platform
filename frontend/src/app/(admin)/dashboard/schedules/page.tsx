@@ -41,8 +41,9 @@ export default function AdminSchedulesPage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   const [selectedFacility, setSelectedFacility] = useState<string>("");
-  const [form, setForm] = useState({ dayOfWeek: "0", openTime: "08:00", closeTime: "22:00" });
+  const [form, setForm] = useState({ days: [] as number[], openTime: "08:00", closeTime: "22:00" });
   const [editForm, setEditForm] = useState({ id: "", dayOfWeek: "0", openTime: "08:00", closeTime: "22:00" });
+  const [isCreating, setIsCreating] = useState(false);
 
   const { data: schedules, isLoading } = useQuery({
     queryKey: ["schedules", selectedFacility],
@@ -50,14 +51,45 @@ export default function AdminSchedulesPage() {
     enabled: !!selectedFacility,
   });
 
-  const createMutation = useMutation({
-    mutationFn: (data: any) => apiClient.post(`/facilities/${selectedFacility}/schedules`, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["schedules", selectedFacility] }); onClose(); addToast("Horario creado correctamente"); },
-    onError: (error: any) => {
-      const msg = error?.message || error?.response?.data?.message || "No se pudo crear el horario";
-      addToast(Array.isArray(msg) ? msg[0] : msg);
-    },
-  });
+  // (creación en lote más abajo con handleCreate)
+  // Alternar un día en la selección múltiple
+  const toggleDay = (day: number) =>
+    setForm((f) => ({ ...f, days: f.days.includes(day) ? f.days.filter((d) => d !== day) : [...f.days, day] }));
+
+  const setDays = (days: number[]) => setForm((f) => ({ ...f, days }));
+
+  // Crear horarios para todos los días seleccionados
+  const handleCreate = async () => {
+    if (form.days.length === 0) {
+      addToast("Selecciona al menos un día");
+      return;
+    }
+    setIsCreating(true);
+    const created: number[] = [];
+    const skipped: string[] = [];
+    for (const day of form.days) {
+      try {
+        await apiClient.post(`/facilities/${selectedFacility}/schedules`, {
+          dayOfWeek: day,
+          openTime: form.openTime,
+          closeTime: form.closeTime,
+        });
+        created.push(day);
+      } catch (error: any) {
+        const msg = error?.message || "error";
+        skipped.push(`${DAYS[day]}`);
+      }
+    }
+    setIsCreating(false);
+    queryClient.invalidateQueries({ queryKey: ["schedules", selectedFacility] });
+    onClose();
+    if (created.length > 0) {
+      addToast(`${created.length} horario${created.length !== 1 ? "s" : ""} creado${created.length !== 1 ? "s" : ""}`);
+    }
+    if (skipped.length > 0) {
+      addToast(`No se crearon (ya existían o solapan): ${skipped.join(", ")}`);
+    }
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/schedules/${id}`),
@@ -99,7 +131,7 @@ export default function AdminSchedulesPage() {
               <Clock className="h-4 w-4 text-primary" />
               <h2 className="text-lg font-semibold">Horarios configurados</h2>
             </div>
-            <Button size="sm" color="primary" startContent={<Plus className="h-3 w-3" />} onPress={onOpen}>
+            <Button size="sm" color="primary" startContent={<Plus className="h-3 w-3" />} onPress={() => { setForm({ days: [], openTime: "08:00", closeTime: "22:00" }); onOpen(); }}>
               Agregar
             </Button>
           </CardHeader>
@@ -133,20 +165,41 @@ export default function AdminSchedulesPage() {
         </Card>
       )}
 
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={isOpen} onClose={onClose} size="lg">
         <ModalContent>
           <ModalHeader>Agregar Horario</ModalHeader>
           <ModalBody className="gap-4">
-            <Select
-              label="Día de la semana"
-              variant="bordered"
-              selectedKeys={[form.dayOfWeek]}
-              onSelectionChange={(keys: any) => setForm({ ...form, dayOfWeek: Array.from(keys)[0] as string })}
-            >
-              {DAYS.map((day, i) => (
-                <SelectItem key={i.toString()}>{day}</SelectItem>
-              ))}
-            </Select>
+            {/* Selección de días */}
+            <div>
+              <p className="text-xs text-default-500 mb-2">Días de la semana</p>
+              {/* Atajos rápidos */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                <button type="button" onClick={() => setDays([0, 1, 2, 3, 4])} className="rounded-full border border-divider px-3 py-1 text-xs hover:border-primary hover:text-primary transition-colors">Lun a Vie</button>
+                <button type="button" onClick={() => setDays([5, 6])} className="rounded-full border border-divider px-3 py-1 text-xs hover:border-primary hover:text-primary transition-colors">Fin de semana</button>
+                <button type="button" onClick={() => setDays([0, 1, 2, 3, 4, 5, 6])} className="rounded-full border border-divider px-3 py-1 text-xs hover:border-primary hover:text-primary transition-colors">Todos</button>
+                <button type="button" onClick={() => setDays([])} className="rounded-full border border-divider px-3 py-1 text-xs hover:border-danger hover:text-danger transition-colors">Limpiar</button>
+              </div>
+              {/* Botones por día */}
+              <div className="flex flex-wrap gap-2">
+                {DAYS.map((day, i) => {
+                  const active = form.days.includes(i);
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => toggleDay(i)}
+                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${active
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-divider hover:border-primary"
+                        }`}
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <Select
                 label="Hora apertura"
@@ -169,10 +222,16 @@ export default function AdminSchedulesPage() {
                 ))}
               </Select>
             </div>
+
+            {form.days.length > 0 && (
+              <p className="text-xs text-default-500">
+                Se crearán {form.days.length} horario{form.days.length !== 1 ? "s" : ""} de {formatTime12h(form.openTime)} a {formatTime12h(form.closeTime)}
+              </p>
+            )}
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onClose}>Cancelar</Button>
-            <Button color="primary" onPress={() => createMutation.mutate({ dayOfWeek: parseInt(form.dayOfWeek), openTime: form.openTime, closeTime: form.closeTime })} isLoading={createMutation.isPending}>Crear</Button>
+            <Button color="primary" onPress={handleCreate} isLoading={isCreating} isDisabled={form.days.length === 0}>Crear</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

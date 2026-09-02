@@ -5,8 +5,26 @@ import { Card, CardBody, Chip, Spinner, Button, Link, Input } from "@heroui/reac
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { ArrowLeft, MapPin, Trophy, Search } from "lucide-react";
+import { ArrowLeft, MapPin, Trophy, Search, Goal, Target, CircleDot, Volleyball, Dumbbell } from "lucide-react";
 import type { Venue, Facility } from "@/types";
+import type { LucideIcon } from "lucide-react";
+
+/** Devuelve el ícono correspondiente al deporte (por nombre normalizado) */
+function getSportIcon(sportName?: string): LucideIcon {
+  const key = (sportName || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const map: Record<string, LucideIcon> = {
+    futbol: Goal,
+    tenis: Target,
+    padel: CircleDot,
+    padle: CircleDot,
+    basquetbol: CircleDot,
+    baloncesto: CircleDot,
+    voleibol: Volleyball,
+    volleyball: Volleyball,
+    yoga: Dumbbell,
+  };
+  return map[key] || Trophy;
+}
 
 export default function VenueDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -165,7 +183,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
                 <div className="flex items-center justify-between bg-primary/5 px-4 py-2.5 border-b border-divider">
                   <div className="flex items-center gap-2">
                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
-                      <Trophy className="h-3.5 w-3.5 text-primary" />
+                      {(() => { const Icon = getSportIcon(facility.sport.name); return <Icon className="h-3.5 w-3.5 text-primary" />; })()}
                     </div>
                     <span className="text-xs font-semibold text-primary">{facility.sport.name}</span>
                   </div>

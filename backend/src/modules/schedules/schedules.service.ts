@@ -45,6 +45,29 @@ export class SchedulesService {
         const schedule = await this.prisma.schedule.findUnique({ where: { id } });
         if (!schedule) throw new NotFoundException('Schedule not found');
 
+        const dayOfWeek = dto.dayOfWeek ?? schedule.dayOfWeek;
+        const openTime = dto.openTime ?? schedule.openTime;
+        const closeTime = dto.closeTime ?? schedule.closeTime;
+
+        if (openTime >= closeTime) {
+            throw new BadRequestException('La hora de cierre debe ser posterior a la de apertura');
+        }
+
+        // Validar solapamiento con otros horarios del mismo día (excluyendo el actual)
+        const sameDay = await this.prisma.schedule.findMany({
+            where: { facilityId: schedule.facilityId, dayOfWeek, isActive: true, id: { not: id } },
+        });
+
+        const overlaps = sameDay.some(
+            (s) => openTime < s.closeTime && closeTime > s.openTime,
+        );
+
+        if (overlaps) {
+            throw new BadRequestException(
+                `Ya existe un horario para ${DAY_NAMES[dayOfWeek] ?? 'ese día'} que se superpone con el rango indicado`,
+            );
+        }
+
         return this.prisma.schedule.update({
             where: { id },
             data: dto,

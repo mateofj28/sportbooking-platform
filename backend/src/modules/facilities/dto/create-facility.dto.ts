@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsBoolean, IsInt, Min } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsBoolean, IsInt, Min, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateFacilityDto {
@@ -42,6 +42,12 @@ export class CreateFacilityDto {
     @IsInt()
     capacity?: number;
 
+    @ApiProperty({ required: false, type: [String], description: 'Servicios disponibles (parrilla, ducha, wifi, etc.)' })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    amenities?: string[];
+
     @ApiProperty({ example: 60, description: 'Minimum booking duration in minutes' })
     @IsInt()
     @Min(15)
@@ -83,6 +89,12 @@ export class UpdateFacilityDto {
     @IsOptional()
     @IsInt()
     capacity?: number;
+
+    @ApiProperty({ required: false, type: [String] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    amenities?: string[];
 
     @ApiProperty({ required: false })
     @IsOptional()

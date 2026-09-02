@@ -41,6 +41,25 @@ const SURFACE_TYPES = [
     "Tartán",
 ];
 
+// Servicios/amenidades que puede ofrecer una instalación
+const AMENITIES = [
+    { key: "Vestuarios", emoji: "🚪" },
+    { key: "Duchas", emoji: "🚿" },
+    { key: "Baños", emoji: "🚻" },
+    { key: "WiFi", emoji: "📶" },
+    { key: "Estacionamiento", emoji: "🅿️" },
+    { key: "Parrilla", emoji: "🔥" },
+    { key: "Buffet", emoji: "🍔" },
+    { key: "Iluminación nocturna", emoji: "💡" },
+    { key: "Alquiler de equipos", emoji: "🎽" },
+    { key: "Cafetería", emoji: "☕" },
+    { key: "Tribunas", emoji: "🪑" },
+    { key: "Aire acondicionado", emoji: "❄️" },
+    { key: "Kiosco", emoji: "🏪" },
+    { key: "Seguridad", emoji: "🛡️" },
+    { key: "Accesible", emoji: "♿" },
+];
+
 // Duraciones recomendadas por deporte (slug → opciones en minutos)
 const DURATION_BY_SPORT: Record<string, { min: number; max: number; options: number[] }> = {
     futbol: { min: 60, max: 60, options: [60] },
@@ -106,6 +125,7 @@ export default function AdminFacilitiesPage() {
         venueId: "",
         sportId: "",
         surfaceType: "",
+        amenities: [] as string[],
         minBookingDuration: "60",
         maxBookingDuration: "120",
     });
@@ -114,9 +134,15 @@ export default function AdminFacilitiesPage() {
         name: "",
         description: "",
         surfaceType: "",
+        amenities: [] as string[],
         minBookingDuration: "60",
         maxBookingDuration: "120",
     });
+
+    const toggleCreateAmenity = (a: string) =>
+        setForm((f) => ({ ...f, amenities: f.amenities.includes(a) ? f.amenities.filter((x) => x !== a) : [...f.amenities, a] }));
+    const toggleEditAmenity = (a: string) =>
+        setEditForm((f) => ({ ...f, amenities: f.amenities.includes(a) ? f.amenities.filter((x) => x !== a) : [...f.amenities, a] }));
 
     const createMutation = useMutation({
         mutationFn: (data: any) => apiClient.post("/facilities", data),
@@ -136,7 +162,7 @@ export default function AdminFacilitiesPage() {
     });
 
     const editMutation = useMutation({
-        mutationFn: ({ id, ...data }: { id: string; name: string; description: string; surfaceType: string; minBookingDuration: number; maxBookingDuration: number }) =>
+        mutationFn: ({ id, ...data }: { id: string; name: string; description: string; surfaceType: string; amenities: string[]; minBookingDuration: number; maxBookingDuration: number }) =>
             apiClient.patch(`/facilities/${id}`, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["facilities"] });
@@ -151,6 +177,7 @@ export default function AdminFacilitiesPage() {
             name: facility.name,
             description: facility.description || "",
             surfaceType: facility.surfaceType || "",
+            amenities: facility.amenities || [],
             minBookingDuration: String(facility.minBookingDuration),
             maxBookingDuration: String(facility.maxBookingDuration),
         });
@@ -163,6 +190,7 @@ export default function AdminFacilitiesPage() {
             name: editForm.name,
             description: editForm.description,
             surfaceType: editForm.surfaceType,
+            amenities: editForm.amenities,
             minBookingDuration: parseInt(editForm.minBookingDuration),
             maxBookingDuration: parseInt(editForm.maxBookingDuration),
         });
@@ -178,6 +206,7 @@ export default function AdminFacilitiesPage() {
             venueId: venues?.[0]?.id || "",
             sportId: defaultSport?.id || "",
             surfaceType: SURFACE_BY_SPORT[key] || "",
+            amenities: [],
             minBookingDuration: String(durations.min),
             maxBookingDuration: String(durations.max),
         });
@@ -418,6 +447,28 @@ export default function AdminFacilitiesPage() {
                                 })()}
                             </div>
                         </div>
+                        {/* Amenidades / servicios */}
+                        <div>
+                            <p className="text-xs text-default-500 mb-2">Servicios disponibles</p>
+                            <div className="flex flex-wrap gap-2">
+                                {AMENITIES.map((a) => {
+                                    const active = form.amenities.includes(a.key);
+                                    return (
+                                        <button
+                                            key={a.key}
+                                            type="button"
+                                            onClick={() => toggleCreateAmenity(a.key)}
+                                            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${active
+                                                ? "border-primary bg-primary/10 text-primary"
+                                                : "border-divider text-default-600 hover:border-primary"
+                                                }`}
+                                        >
+                                            {a.emoji} {a.key}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="light" onPress={onClose}>Cancelar</Button>
@@ -459,6 +510,28 @@ export default function AdminFacilitiesPage() {
                                         {d} min
                                     </button>
                                 ))}
+                            </div>
+                        </div>
+                        {/* Amenidades / servicios */}
+                        <div>
+                            <p className="text-xs text-default-500 mb-2">Servicios disponibles</p>
+                            <div className="flex flex-wrap gap-2">
+                                {AMENITIES.map((a) => {
+                                    const active = editForm.amenities.includes(a.key);
+                                    return (
+                                        <button
+                                            key={a.key}
+                                            type="button"
+                                            onClick={() => toggleEditAmenity(a.key)}
+                                            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${active
+                                                ? "border-primary bg-primary/10 text-primary"
+                                                : "border-divider text-default-600 hover:border-primary"
+                                                }`}
+                                        >
+                                            {a.emoji} {a.key}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                     </ModalBody>

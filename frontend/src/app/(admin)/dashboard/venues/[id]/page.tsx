@@ -241,6 +241,15 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
                       <Chip size="sm" variant="flat" color="warning" className="text-[10px]">☀️ Exterior</Chip>
                     )}
                   </div>
+
+                  {/* Amenidades / servicios */}
+                  {facility.amenities && facility.amenities.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 border-t border-divider pt-2">
+                      {facility.amenities.map((a) => (
+                        <Chip key={a} size="sm" variant="flat" color="default" className="text-[10px]">{a}</Chip>
+                      ))}
+                    </div>
+                  )}
                 </CardBody>
               </Card>
             ))}

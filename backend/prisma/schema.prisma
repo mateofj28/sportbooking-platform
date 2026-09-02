@@ -108,6 +108,7 @@ model Facility {
   surfaceType        String?  @map("surface_type")
   isIndoor           Boolean  @default(false) @map("is_indoor")
   capacity           Int?
+  amenities          String[] @default([])
   isActive           Boolean  @default(true) @map("is_active")
   minBookingDuration Int      @map("min_booking_duration")
   maxBookingDuration Int      @map("max_booking_duration")

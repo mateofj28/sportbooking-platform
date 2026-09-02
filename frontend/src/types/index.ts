@@ -72,6 +72,7 @@ export interface Facility {
     surfaceType?: string;
     isIndoor: boolean;
     capacity?: number;
+    amenities?: string[];
     isActive: boolean;
     minBookingDuration: number;
     maxBookingDuration: number;

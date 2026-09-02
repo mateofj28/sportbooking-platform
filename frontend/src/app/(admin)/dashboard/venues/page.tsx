@@ -4,6 +4,7 @@ import {
   Button, Chip, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, useDisclosure, Link,
 } from "@heroui/react";
+import { Autocomplete, AutocompleteItem } from "@heroui/autocomplete";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
@@ -11,15 +12,18 @@ import { useToastStore } from "@/stores/toast-store";
 import { Plus, Trash2, Pencil, Search } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useFacilities } from "@/hooks/use-facilities";
+import { PROVINCE_NAMES, getLocalities } from "@/lib/argentina-locations";
 import type { Venue } from "@/types";
+
+const COUNTRY = "Argentina";
 
 export default function AdminVenuesPage() {
   const queryClient = useQueryClient();
   const addToast = useToastStore((s) => s.addToast);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
-  const [form, setForm] = useState({ name: "", slug: "", address: "", city: "", country: "", description: "" });
-  const [editForm, setEditForm] = useState({ id: "", name: "", address: "", city: "", country: "", description: "" });
+  const [form, setForm] = useState({ name: "", slug: "", address: "", province: "", city: "", description: "" });
+  const [editForm, setEditForm] = useState({ id: "", name: "", address: "", province: "", city: "", description: "" });
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: venues, isLoading } = useQuery({ queryKey: ["venues"], queryFn: () => apiClient.get<Venue[]>("/venues") });
@@ -43,11 +47,26 @@ export default function AdminVenuesPage() {
   }, {} as Record<string, number>);
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiClient.post("/venues", data),
+    mutationFn: (data: typeof form) => apiClient.post("/venues", {
+      name: data.name,
+      slug: data.slug,
+      address: data.address,
+      state: data.province,
+      city: data.city,
+      country: COUNTRY,
+      description: data.description || undefined,
+    }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onClose(); addToast("Sede creada correctamente"); },
   });
   const editMutation = useMutation({
-    mutationFn: ({ id, ...data }: any) => apiClient.patch(`/venues/${id}`, data),
+    mutationFn: (data: typeof editForm) => apiClient.patch(`/venues/${data.id}`, {
+      name: data.name,
+      address: data.address,
+      state: data.province,
+      city: data.city,
+      country: COUNTRY,
+      description: data.description || undefined,
+    }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onEditClose(); addToast("Sede actualizada"); },
   });
   const deleteMutation = useMutation({
@@ -56,7 +75,7 @@ export default function AdminVenuesPage() {
   });
 
   const handleEdit = (venue: Venue) => {
-    setEditForm({ id: venue.id, name: venue.name, address: venue.address, city: venue.city, country: venue.country, description: venue.description || "" });
+    setEditForm({ id: venue.id, name: venue.name, address: venue.address, province: venue.state || "", city: venue.city, description: venue.description || "" });
     onEditOpen();
   };
 
@@ -66,7 +85,7 @@ export default function AdminVenuesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold">Sedes</h1><p className="text-sm text-default-500 mt-1">Gestiona los complejos deportivos</p></div>
-        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", city: "", country: "Colombia", description: "" }); onOpen(); }}>Nueva Sede</Button>
+        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", province: "", city: "", description: "" }); onOpen(); }}>Nueva Sede</Button>
       </div>
 
       {/* Filter */}
@@ -123,12 +142,33 @@ export default function AdminVenuesPage() {
             <Input label="Nombre" variant="bordered" value={form.name} onValueChange={(v) => setForm({ ...form, name: v, slug: v.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })} />
             <Input label="Dirección" variant="bordered" value={form.address} onValueChange={(v) => setForm({ ...form, address: v })} />
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Ciudad" variant="bordered" value={form.city} onValueChange={(v) => setForm({ ...form, city: v })} />
-              <Input label="País" variant="bordered" value={form.country} onValueChange={(v) => setForm({ ...form, country: v })} />
+              <Autocomplete
+                label="Provincia"
+                placeholder="Buscar provincia..."
+                variant="bordered"
+                selectedKey={form.province || null}
+                onSelectionChange={(key) => setForm({ ...form, province: (key as string) || "", city: "" })}
+              >
+                {PROVINCE_NAMES.map((p) => (
+                  <AutocompleteItem key={p}>{p}</AutocompleteItem>
+                ))}
+              </Autocomplete>
+              <Autocomplete
+                label="Localidad"
+                placeholder={form.province ? "Buscar localidad..." : "Elige una provincia primero"}
+                variant="bordered"
+                isDisabled={!form.province}
+                selectedKey={form.city || null}
+                onSelectionChange={(key) => setForm({ ...form, city: (key as string) || "" })}
+              >
+                {getLocalities(form.province).map((c) => (
+                  <AutocompleteItem key={c}>{c}</AutocompleteItem>
+                ))}
+              </Autocomplete>
             </div>
             <Textarea label="Descripción" variant="bordered" value={form.description} onValueChange={(v) => setForm({ ...form, description: v })} />
           </ModalBody>
-          <ModalFooter><Button variant="light" onPress={onClose}>Cancelar</Button><Button color="primary" onPress={() => createMutation.mutate(form)} isLoading={createMutation.isPending}>Crear</Button></ModalFooter>
+          <ModalFooter><Button variant="light" onPress={onClose}>Cancelar</Button><Button color="primary" onPress={() => createMutation.mutate(form)} isLoading={createMutation.isPending} isDisabled={!form.name || !form.province || !form.city}>Crear</Button></ModalFooter>
         </ModalContent>
       </Modal>
 
@@ -139,8 +179,29 @@ export default function AdminVenuesPage() {
             <Input label="Nombre" variant="bordered" value={editForm.name} onValueChange={(v) => setEditForm({ ...editForm, name: v })} />
             <Input label="Dirección" variant="bordered" value={editForm.address} onValueChange={(v) => setEditForm({ ...editForm, address: v })} />
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Ciudad" variant="bordered" value={editForm.city} onValueChange={(v) => setEditForm({ ...editForm, city: v })} />
-              <Input label="País" variant="bordered" value={editForm.country} onValueChange={(v) => setEditForm({ ...editForm, country: v })} />
+              <Autocomplete
+                label="Provincia"
+                placeholder="Buscar provincia..."
+                variant="bordered"
+                selectedKey={editForm.province || null}
+                onSelectionChange={(key) => setEditForm({ ...editForm, province: (key as string) || "", city: "" })}
+              >
+                {PROVINCE_NAMES.map((p) => (
+                  <AutocompleteItem key={p}>{p}</AutocompleteItem>
+                ))}
+              </Autocomplete>
+              <Autocomplete
+                label="Localidad"
+                placeholder={editForm.province ? "Buscar localidad..." : "Elige una provincia primero"}
+                variant="bordered"
+                isDisabled={!editForm.province}
+                selectedKey={editForm.city || null}
+                onSelectionChange={(key) => setEditForm({ ...editForm, city: (key as string) || "" })}
+              >
+                {getLocalities(editForm.province).map((c) => (
+                  <AutocompleteItem key={c}>{c}</AutocompleteItem>
+                ))}
+              </Autocomplete>
             </div>
             <Textarea label="Descripción" variant="bordered" value={editForm.description} onValueChange={(v) => setEditForm({ ...editForm, description: v })} />
           </ModalBody>

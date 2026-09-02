@@ -121,7 +121,6 @@ export default function AdminVenuesPage() {
           <ModalHeader>Nueva Sede</ModalHeader>
           <ModalBody className="gap-4">
             <Input label="Nombre" variant="bordered" value={form.name} onValueChange={(v) => setForm({ ...form, name: v, slug: v.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })} />
-            <Input label="Slug" variant="bordered" value={form.slug} onValueChange={(v) => setForm({ ...form, slug: v })} />
             <Input label="Dirección" variant="bordered" value={form.address} onValueChange={(v) => setForm({ ...form, address: v })} />
             <div className="grid grid-cols-2 gap-4">
               <Input label="Ciudad" variant="bordered" value={form.city} onValueChange={(v) => setForm({ ...form, city: v })} />

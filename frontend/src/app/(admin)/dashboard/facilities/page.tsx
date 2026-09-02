@@ -172,8 +172,12 @@ export default function AdminFacilitiesPage() {
     };
 
     const handleSubmit = () => {
+        // La capacidad se deriva de la cantidad de jugadores del deporte seleccionado
+        const selectedSport = sports?.find((s) => s.id === form.sportId);
+        const capacity = selectedSport?.maxPlayers ?? undefined;
         createMutation.mutate({
             ...form,
+            capacity,
             minBookingDuration: parseInt(form.minBookingDuration),
             maxBookingDuration: parseInt(form.maxBookingDuration),
         });
@@ -351,6 +355,19 @@ export default function AdminFacilitiesPage() {
                                 ))}
                             </Select>
                         </div>
+                        {/* Capacidad derivada del deporte */}
+                        {(() => {
+                            const sport = sports?.find((s) => s.id === form.sportId);
+                            if (!sport) return null;
+                            return (
+                                <div className="rounded-lg bg-default-100 px-3 py-2 text-sm">
+                                    <span className="text-default-500">Capacidad (según deporte): </span>
+                                    <span className="font-semibold">
+                                        {sport.maxPlayers != null ? `${sport.maxPlayers} jugadores` : "No definida para este deporte"}
+                                    </span>
+                                </div>
+                            );
+                        })()}
                         <Textarea label="Descripción" placeholder="Descripción breve de la instalación" variant="bordered" value={form.description} onValueChange={(v) => setForm({ ...form, description: v })} />
                         <Select
                             label="Tipo de superficie"

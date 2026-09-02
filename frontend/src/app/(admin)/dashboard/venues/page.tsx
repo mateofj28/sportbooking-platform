@@ -12,7 +12,7 @@ import { useToastStore } from "@/stores/toast-store";
 import { Plus, Trash2, Pencil, Search } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useFacilities } from "@/hooks/use-facilities";
-import { PROVINCE_NAMES, getLocalities } from "@/lib/argentina-locations";
+import { fetchProvinces, fetchLocalities } from "@/lib/argentina-locations";
 import type { Venue } from "@/types";
 
 const COUNTRY = "Argentina";
@@ -22,12 +22,36 @@ export default function AdminVenuesPage() {
   const addToast = useToastStore((s) => s.addToast);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
-  const [form, setForm] = useState({ name: "", slug: "", address: "", province: "", city: "", description: "" });
-  const [editForm, setEditForm] = useState({ id: "", name: "", address: "", province: "", city: "", description: "" });
+  // province = id de Georef (para buscar localidades); provinceName = nombre (para guardar)
+  const [form, setForm] = useState({ name: "", slug: "", address: "", province: "", provinceName: "", city: "", description: "" });
+  const [editForm, setEditForm] = useState({ id: "", name: "", address: "", province: "", provinceName: "", city: "", description: "" });
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: venues, isLoading } = useQuery({ queryKey: ["venues"], queryFn: () => apiClient.get<Venue[]>("/venues") });
   const { data: facilities } = useFacilities();
+
+  // Provincias (API Georef). Se cargan una vez y se cachean.
+  const { data: provinces } = useQuery({
+    queryKey: ["ar-provinces"],
+    queryFn: fetchProvinces,
+    staleTime: 1000 * 60 * 60 * 24, // 24h
+  });
+
+  // Localidades según la provincia del formulario de creación
+  const { data: createLocalities, isFetching: loadingCreateLoc } = useQuery({
+    queryKey: ["ar-localities", form.province],
+    queryFn: () => fetchLocalities(form.province),
+    enabled: !!form.province,
+    staleTime: 1000 * 60 * 60 * 24,
+  });
+
+  // Localidades según la provincia del formulario de edición
+  const { data: editLocalities, isFetching: loadingEditLoc } = useQuery({
+    queryKey: ["ar-localities", editForm.province],
+    queryFn: () => fetchLocalities(editForm.province),
+    enabled: !!editForm.province,
+    staleTime: 1000 * 60 * 60 * 24,
+  });
 
   const [search, setSearch] = useState("");
 
@@ -51,7 +75,7 @@ export default function AdminVenuesPage() {
       name: data.name,
       slug: data.slug,
       address: data.address,
-      state: data.province,
+      state: data.provinceName,
       city: data.city,
       country: COUNTRY,
       description: data.description || undefined,
@@ -62,7 +86,7 @@ export default function AdminVenuesPage() {
     mutationFn: (data: typeof editForm) => apiClient.patch(`/venues/${data.id}`, {
       name: data.name,
       address: data.address,
-      state: data.province,
+      state: data.provinceName,
       city: data.city,
       country: COUNTRY,
       description: data.description || undefined,
@@ -75,7 +99,16 @@ export default function AdminVenuesPage() {
   });
 
   const handleEdit = (venue: Venue) => {
-    setEditForm({ id: venue.id, name: venue.name, address: venue.address, province: venue.state || "", city: venue.city, description: venue.description || "" });
+    const prov = (provinces || []).find((p) => p.nombre === venue.state);
+    setEditForm({
+      id: venue.id,
+      name: venue.name,
+      address: venue.address,
+      province: prov?.id || "",
+      provinceName: venue.state || "",
+      city: venue.city,
+      description: venue.description || "",
+    });
     onEditOpen();
   };
 
@@ -85,7 +118,7 @@ export default function AdminVenuesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold">Sedes</h1><p className="text-sm text-default-500 mt-1">Gestiona los complejos deportivos</p></div>
-        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", province: "", city: "", description: "" }); onOpen(); }}>Nueva Sede</Button>
+        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", province: "", provinceName: "", city: "", description: "" }); onOpen(); }}>Nueva Sede</Button>
       </div>
 
       {/* Filter */}
@@ -147,10 +180,14 @@ export default function AdminVenuesPage() {
                 placeholder="Buscar provincia..."
                 variant="bordered"
                 selectedKey={form.province || null}
-                onSelectionChange={(key) => setForm({ ...form, province: (key as string) || "", city: "" })}
+                onSelectionChange={(key) => {
+                  const id = (key as string) || "";
+                  const name = (provinces || []).find((p) => p.id === id)?.nombre || "";
+                  setForm({ ...form, province: id, provinceName: name, city: "" });
+                }}
               >
-                {PROVINCE_NAMES.map((p) => (
-                  <AutocompleteItem key={p}>{p}</AutocompleteItem>
+                {(provinces || []).map((p) => (
+                  <AutocompleteItem key={p.id}>{p.nombre}</AutocompleteItem>
                 ))}
               </Autocomplete>
               <Autocomplete
@@ -158,11 +195,12 @@ export default function AdminVenuesPage() {
                 placeholder={form.province ? "Buscar localidad..." : "Elige una provincia primero"}
                 variant="bordered"
                 isDisabled={!form.province}
+                isLoading={loadingCreateLoc}
                 selectedKey={form.city || null}
                 onSelectionChange={(key) => setForm({ ...form, city: (key as string) || "" })}
               >
-                {getLocalities(form.province).map((c) => (
-                  <AutocompleteItem key={c}>{c}</AutocompleteItem>
+                {(createLocalities || []).map((c) => (
+                  <AutocompleteItem key={c.nombre}>{c.nombre}</AutocompleteItem>
                 ))}
               </Autocomplete>
             </div>
@@ -184,10 +222,14 @@ export default function AdminVenuesPage() {
                 placeholder="Buscar provincia..."
                 variant="bordered"
                 selectedKey={editForm.province || null}
-                onSelectionChange={(key) => setEditForm({ ...editForm, province: (key as string) || "", city: "" })}
+                onSelectionChange={(key) => {
+                  const id = (key as string) || "";
+                  const name = (provinces || []).find((p) => p.id === id)?.nombre || "";
+                  setEditForm({ ...editForm, province: id, provinceName: name, city: "" });
+                }}
               >
-                {PROVINCE_NAMES.map((p) => (
-                  <AutocompleteItem key={p}>{p}</AutocompleteItem>
+                {(provinces || []).map((p) => (
+                  <AutocompleteItem key={p.id}>{p.nombre}</AutocompleteItem>
                 ))}
               </Autocomplete>
               <Autocomplete
@@ -195,11 +237,12 @@ export default function AdminVenuesPage() {
                 placeholder={editForm.province ? "Buscar localidad..." : "Elige una provincia primero"}
                 variant="bordered"
                 isDisabled={!editForm.province}
+                isLoading={loadingEditLoc}
                 selectedKey={editForm.city || null}
                 onSelectionChange={(key) => setEditForm({ ...editForm, city: (key as string) || "" })}
               >
-                {getLocalities(editForm.province).map((c) => (
-                  <AutocompleteItem key={c}>{c}</AutocompleteItem>
+                {(editLocalities || []).map((c) => (
+                  <AutocompleteItem key={c.nombre}>{c.nombre}</AutocompleteItem>
                 ))}
               </Autocomplete>
             </div>

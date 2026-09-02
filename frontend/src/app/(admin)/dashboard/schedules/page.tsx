@@ -2,7 +2,7 @@
 
 import {
   Button, Chip, Spinner, Card, CardBody, CardHeader, Divider,
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, useDisclosure,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
 } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +15,16 @@ import { VenueFacilityPicker } from "@/components/shared/venue-facility-picker";
 import type { Schedule } from "@/types";
 
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+
+// Opciones de hora cada 30 min en formato 12h (AM/PM)
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const hours = Math.floor(i / 2);
+  const minutes = i % 2 === 0 ? "00" : "30";
+  const value = `${hours.toString().padStart(2, "0")}:${minutes}`;
+  const h12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  const ampm = hours < 12 ? "AM" : "PM";
+  return { value, label: `${h12}:${minutes} ${ampm}` };
+});
 
 export default function AdminSchedulesPage() {
   const queryClient = useQueryClient();
@@ -104,8 +114,26 @@ export default function AdminSchedulesPage() {
               ))}
             </Select>
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Hora apertura" type="time" variant="bordered" value={form.openTime} onValueChange={(v) => setForm({ ...form, openTime: v })} />
-              <Input label="Hora cierre" type="time" variant="bordered" value={form.closeTime} onValueChange={(v) => setForm({ ...form, closeTime: v })} />
+              <Select
+                label="Hora apertura"
+                variant="bordered"
+                selectedKeys={form.openTime ? [form.openTime] : []}
+                onSelectionChange={(keys: any) => setForm({ ...form, openTime: Array.from(keys)[0] as string || "08:00" })}
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <SelectItem key={t.value}>{t.label}</SelectItem>
+                ))}
+              </Select>
+              <Select
+                label="Hora cierre"
+                variant="bordered"
+                selectedKeys={form.closeTime ? [form.closeTime] : []}
+                onSelectionChange={(keys: any) => setForm({ ...form, closeTime: Array.from(keys)[0] as string || "22:00" })}
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <SelectItem key={t.value}>{t.label}</SelectItem>
+                ))}
+              </Select>
             </div>
           </ModalBody>
           <ModalFooter>

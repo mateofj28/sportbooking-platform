@@ -30,6 +30,16 @@ const STATUS_FILTERS: { key: "ALL" | BookingStatus; label: string; color: "prima
     { key: "CANCELLED", label: "Canceladas", color: "danger" },
 ];
 
+// Opciones de hora cada 30 min en formato 12h (AM/PM)
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+    const hours = Math.floor(i / 2);
+    const minutes = i % 2 === 0 ? "00" : "30";
+    const value = `${hours.toString().padStart(2, "0")}:${minutes}`;
+    const h12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    const ampm = hours < 12 ? "AM" : "PM";
+    return { value, label: `${h12}:${minutes} ${ampm}` };
+});
+
 const PER_PAGE = 12;
 
 export default function AdminBookingsPage() {
@@ -265,8 +275,28 @@ export default function AdminBookingsPage() {
                       </Select>
                       <Input label="Fecha" type="date" variant="bordered" value={manualForm.date} onChange={(e) => setManualForm({ ...manualForm, date: e.target.value })} />
                       <div className="grid grid-cols-2 gap-4">
-                          <Input label="Inicio" type="time" variant="bordered" value={manualForm.startTime} onChange={(e) => setManualForm({ ...manualForm, startTime: e.target.value })} />
-                          <Input label="Fin" type="time" variant="bordered" value={manualForm.endTime} onChange={(e) => setManualForm({ ...manualForm, endTime: e.target.value })} />
+                            <Select
+                                label="Inicio"
+                                placeholder="Seleccionar"
+                                variant="bordered"
+                                selectedKeys={manualForm.startTime ? [manualForm.startTime] : []}
+                                onSelectionChange={(keys: any) => setManualForm({ ...manualForm, startTime: Array.from(keys)[0] as string || "" })}
+                            >
+                                {TIME_OPTIONS.map((t) => (
+                                    <SelectItem key={t.value}>{t.label}</SelectItem>
+                                ))}
+                            </Select>
+                            <Select
+                                label="Fin"
+                                placeholder="Seleccionar"
+                                variant="bordered"
+                                selectedKeys={manualForm.endTime ? [manualForm.endTime] : []}
+                                onSelectionChange={(keys: any) => setManualForm({ ...manualForm, endTime: Array.from(keys)[0] as string || "" })}
+                            >
+                                {TIME_OPTIONS.map((t) => (
+                                    <SelectItem key={t.value}>{t.label}</SelectItem>
+                                ))}
+                            </Select>
                       </div>
                       <Textarea label="Notas (opcional)" variant="bordered" value={manualForm.notes} onValueChange={(v) => setManualForm({ ...manualForm, notes: v })} />
                   </ModalBody>

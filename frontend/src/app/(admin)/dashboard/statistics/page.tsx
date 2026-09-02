@@ -115,6 +115,14 @@ export default function StatisticsPage() {
         .filter((b) => b.status !== "CANCELLED")
         .reduce((sum, b) => sum + Number(b.totalPrice), 0);
 
+    // Comisión de la empresa: totalPrice * (profitPercent / 100)
+    const totalCommission = filteredBookings
+        .filter((b) => b.status !== "CANCELLED")
+        .reduce((sum, b) => {
+            const pct = Number(b.facility?.pricing?.[0]?.profitPercent) || 0;
+            return sum + Number(b.totalPrice) * (pct / 100);
+        }, 0);
+
     const totalActive = filteredBookings.length - cancelledBookings.length;
     const occupancyRate = totalActive > 0 ? Math.round((confirmedBookings.length / totalActive) * 100) : 0;
 
@@ -208,8 +216,9 @@ export default function StatisticsPage() {
           </Card>
 
           {/* Stats Cards */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Ingresos" value={`$${totalRevenue.toLocaleString("es-AR", { minimumFractionDigits: 0 })}`} color="bg-success-50 text-success-600" />
+                <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Comisión empresa" value={`$${totalCommission.toLocaleString("es-AR", { maximumFractionDigits: 0 })}`} color="bg-emerald-100 text-emerald-600" />
               <StatCard icon={<Calendar className="h-5 w-5" />} label="Reservas" value={filteredBookings.length} color="bg-primary-50 text-primary-600" trend={`${pendingBookings.length} pendientes`} />
               <StatCard icon={<Activity className="h-5 w-5" />} label="Confirmación" value={`${occupancyRate}%`} color="bg-secondary-50 text-secondary-600" trend={`${cancelledBookings.length} canceladas`} trendUp={false} />
               <StatCard icon={<MapPin className="h-5 w-5" />} label="Instalaciones" value={facilities?.filter((f) => f.isActive).length || 0} color="bg-warning-50 text-warning-600" trend={`${sports?.length || 0} deportes`} />

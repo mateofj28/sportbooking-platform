@@ -7,7 +7,7 @@ import {
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { Plus, Trash2, DollarSign, Percent } from "lucide-react";
+import { Plus, Trash2, DollarSign, Percent, Pencil } from "lucide-react";
 import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
@@ -60,13 +60,30 @@ function parsePriceValue(formatted: string): number {
   return Number(raw) || 0;
 }
 
+/** Convierte "08:00" -> "8:00 AM" */
+function formatTime12h(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const ampm = h < 12 ? "AM" : "PM";
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
 export default function AdminPricingPage() {
   const queryClient = useQueryClient();
   const addToast = useToastStore((s) => s.addToast);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   const [selectedFacility, setSelectedFacility] = useState<string>("");
   const [form, setForm] = useState({
+    startTime: "08:00",
+    endTime: "22:00",
+    pricePerHour: "25.000",
+    profitPercent: "10",
+    dayOfWeek: "",
+  });
+  const [editForm, setEditForm] = useState({
+    id: "",
     startTime: "08:00",
     endTime: "22:00",
     pricePerHour: "25.000",
@@ -94,12 +111,40 @@ export default function AdminPricingPage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pricing", selectedFacility] }); addToast("Tarifa eliminada correctamente"); },
   });
 
+  const editMutation = useMutation({
+    mutationFn: ({ id, ...data }: any) => apiClient.patch(`/pricing/${id}`, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pricing", selectedFacility] }); onEditClose(); addToast("Tarifa actualizada correctamente"); },
+    onError: (error: any) => {
+      const msg = error?.message || error?.response?.data?.message || "No se pudo actualizar la tarifa";
+      addToast(Array.isArray(msg) ? msg[0] : msg);
+    },
+  });
+
+  const handleEdit = (p: Pricing) => {
+    setEditForm({
+      id: p.id,
+      startTime: p.startTime,
+      endTime: p.endTime,
+      pricePerHour: formatThousands(String(Math.round(Number(p.pricePerHour)))),
+      profitPercent: p.profitPercent != null ? String(p.profitPercent) : "0",
+      dayOfWeek: p.dayOfWeek != null ? String(p.dayOfWeek) : "",
+    });
+    onEditOpen();
+  };
+
   // Calculate final price
   const finalPrice = useMemo(() => {
     const base = parsePriceValue(form.pricePerHour);
     const percent = Number(form.profitPercent) || 0;
     return base + (base * percent / 100);
   }, [form.pricePerHour, form.profitPercent]);
+
+  // Precio final del formulario de edición
+  const editFinalPrice = useMemo(() => {
+    const base = parsePriceValue(editForm.pricePerHour);
+    const percent = Number(editForm.profitPercent) || 0;
+    return base + (base * percent / 100);
+  }, [editForm.pricePerHour, editForm.profitPercent]);
 
   const handlePriceChange = (value: string) => {
     setForm({ ...form, pricePerHour: formatThousands(value) });
@@ -145,7 +190,7 @@ export default function AdminPricingPage() {
                     <div className="flex items-center gap-3">
                       {p.dayOfWeek != null && <Chip size="sm" variant="flat">{DAYS[p.dayOfWeek]}</Chip>}
                       {p.dayOfWeek == null && <Chip size="sm" variant="flat" color="secondary">Todos los días</Chip>}
-                      <span className="text-sm">{p.startTime} - {p.endTime}</span>
+                      <span className="text-sm">{formatTime12h(p.startTime)} - {formatTime12h(p.endTime)}</span>
                       <Chip size="sm" color="success" variant="flat">
                         ${Number(p.pricePerHour).toLocaleString("es-AR")}/hr
                       </Chip>
@@ -155,9 +200,14 @@ export default function AdminPricingPage() {
                         </Chip>
                       )}
                     </div>
-                    <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(p.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(p)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(p.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -257,6 +307,101 @@ export default function AdminPricingPage() {
               isLoading={createMutation.isPending}
             >
               Crear
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal isOpen={isEditOpen} onClose={onEditClose}>
+        <ModalContent>
+          <ModalHeader>Editar Tarifa</ModalHeader>
+          <ModalBody className="gap-4">
+            <Select
+              label="Día (vacío = todos los días)"
+              variant="bordered"
+              selectedKeys={editForm.dayOfWeek ? [editForm.dayOfWeek] : []}
+              onSelectionChange={(keys: any) => setEditForm({ ...editForm, dayOfWeek: Array.from(keys)[0] as string || "" })}
+            >
+              {DAYS.map((day, i) => (
+                <SelectItem key={i.toString()}>{day}</SelectItem>
+              ))}
+            </Select>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Select
+                label="Desde"
+                variant="bordered"
+                selectedKeys={editForm.startTime ? [editForm.startTime] : []}
+                onSelectionChange={(keys: any) => setEditForm({ ...editForm, startTime: Array.from(keys)[0] as string || "08:00" })}
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <SelectItem key={t.value}>{t.label}</SelectItem>
+                ))}
+              </Select>
+              <Select
+                label="Hasta"
+                variant="bordered"
+                selectedKeys={editForm.endTime ? [editForm.endTime] : []}
+                onSelectionChange={(keys: any) => setEditForm({ ...editForm, endTime: Array.from(keys)[0] as string || "22:00" })}
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <SelectItem key={t.value}>{t.label}</SelectItem>
+                ))}
+              </Select>
+            </div>
+
+            <Input
+              label="Precio por hora (ARS)"
+              variant="bordered"
+              value={editForm.pricePerHour}
+              onValueChange={(v) => setEditForm({ ...editForm, pricePerHour: formatThousands(v) })}
+              startContent={<span className="text-default-400 text-sm">$</span>}
+              classNames={{ input: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" }}
+            />
+
+            <Input
+              label="Porcentaje de ganancia empresa (%)"
+              variant="bordered"
+              inputMode="decimal"
+              placeholder="Ej: 6.6"
+              startContent={<Percent className="h-4 w-4 text-default-400" />}
+              value={editForm.profitPercent}
+              onValueChange={(v) => setEditForm({ ...editForm, profitPercent: sanitizeProfitPercent(v) })}
+              description="Valor entre 1 y 100. Acepta decimales (ej: 6.6 o 6,6)"
+            />
+
+            <div className="rounded-lg bg-default-100 p-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-default-500">Precio base</span>
+                <span>${editForm.pricePerHour || "0"}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm mt-1">
+                <span className="text-default-500">Ganancia empresa ({editForm.profitPercent || 0}%)</span>
+                <span>+${formatThousands(String(Math.round(parsePriceValue(editForm.pricePerHour) * (Number(editForm.profitPercent) || 0) / 100)))}</span>
+              </div>
+              <Divider className="my-2" />
+              <div className="flex items-center justify-between font-semibold">
+                <span>Precio final / hora</span>
+                <span className="text-success">${formatThousands(String(Math.round(editFinalPrice)))}</span>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onEditClose}>Cancelar</Button>
+            <Button
+              color="primary"
+              isDisabled={!(Number(editForm.profitPercent) >= 1 && Number(editForm.profitPercent) <= 100)}
+              onPress={() => editMutation.mutate({
+                id: editForm.id,
+                startTime: editForm.startTime,
+                endTime: editForm.endTime,
+                pricePerHour: parsePriceValue(editForm.pricePerHour),
+                profitPercent: Number(editForm.profitPercent) || 0,
+              })}
+              isLoading={editMutation.isPending}
+            >
+              Guardar
             </Button>
           </ModalFooter>
         </ModalContent>

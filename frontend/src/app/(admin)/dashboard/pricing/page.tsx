@@ -83,6 +83,10 @@ export default function AdminPricingPage() {
   const createMutation = useMutation({
     mutationFn: (data: any) => apiClient.post(`/facilities/${selectedFacility}/pricing`, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pricing", selectedFacility] }); onClose(); addToast("Tarifa creada correctamente"); },
+    onError: (error: any) => {
+      const msg = error?.message || error?.response?.data?.message || "No se pudo crear la tarifa";
+      addToast(Array.isArray(msg) ? msg[0] : msg);
+    },
   });
 
   const deleteMutation = useMutation({

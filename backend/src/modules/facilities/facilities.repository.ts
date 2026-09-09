@@ -7,6 +7,7 @@ interface FacilityFilters {
     venueId?: string;
     isIndoor?: boolean;
     search?: string;
+    includeInactive?: boolean;
 }
 
 @Injectable()
@@ -14,7 +15,8 @@ export class FacilitiesRepository {
     constructor(private prisma: PrismaService) { }
 
     async findAll(filters: FacilityFilters) {
-        const where: Record<string, unknown> = { isActive: true };
+        const where: Record<string, unknown> = {};
+        if (!filters.includeInactive) where.isActive = true;
 
         if (filters.sportId) where.sportId = filters.sportId;
         if (filters.venueId) where.venueId = filters.venueId;

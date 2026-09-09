@@ -17,9 +17,9 @@ import {
     ModalFooter,
     Input,
     Textarea,
+    Switch,
     useDisclosure,
 } from "@heroui/react";
-import { useFacilities } from "@/hooks/use-facilities";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Plus, Trash2, Pencil, Search } from "lucide-react";
@@ -27,7 +27,7 @@ import { useState, useMemo } from "react";
 import { Select, SelectItem } from "@heroui/select";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
-import type { Sport, Venue } from "@/types";
+import type { Sport, Venue, Facility } from "@/types";
 
 const SURFACE_TYPES = [
     "Césped sintético",
@@ -90,7 +90,11 @@ export default function AdminFacilitiesPage() {
     const queryClient = useQueryClient();
     const addToast = useToastStore((s) => s.addToast);
     const [deleteId, setDeleteId] = useState<string | null>(null);
-    const { data: facilities, isLoading } = useFacilities();
+    // Admin ve todas las instalaciones (activas e inactivas)
+    const { data: facilities, isLoading } = useQuery({
+        queryKey: ["facilities", "admin-all"],
+        queryFn: () => apiClient.get<Facility[]>("/facilities", { includeInactive: "true" }),
+    });
     const { data: sports } = useQuery({
         queryKey: ["sports"],
         queryFn: () => apiClient.get<Sport[]>("/sports"),
@@ -160,6 +164,19 @@ export default function AdminFacilitiesPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["facilities"] });
             addToast("Item eliminado correctamente");
+        },
+    });
+
+    const toggleActiveMutation = useMutation({
+        mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+            apiClient.patch(`/facilities/${id}`, { isActive }),
+        onSuccess: (_data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["facilities"] });
+            addToast(variables.isActive ? "Instalación activada" : "Instalación desactivada");
+        },
+        onError: (error: any) => {
+            const msg = error?.message || "No se pudo cambiar el estado";
+            addToast(Array.isArray(msg) ? msg[0] : msg);
         },
     });
 
@@ -337,9 +354,17 @@ export default function AdminFacilitiesPage() {
                             <TableCell>{facility.venue.name}</TableCell>
                             <TableCell>{facility.surfaceType || "-"}</TableCell>
                             <TableCell>
-                                <Chip color={facility.isActive ? "success" : "danger"} size="sm" variant="dot">
-                                    {facility.isActive ? "Activa" : "Inactiva"}
-                                </Chip>
+                                <div className="flex items-center gap-2">
+                                    <Switch
+                                        size="sm"
+                                        isSelected={facility.isActive}
+                                        onValueChange={(val) => toggleActiveMutation.mutate({ id: facility.id, isActive: val })}
+                                        aria-label="Activar o desactivar instalación"
+                                    />
+                                    <Chip color={facility.isActive ? "success" : "danger"} size="sm" variant="dot">
+                                        {facility.isActive ? "Activa" : "Inactiva"}
+                                    </Chip>
+                                </div>
                             </TableCell>
                             <TableCell>
                                 <div className="flex gap-1">

@@ -16,6 +16,7 @@ export class FacilitiesService {
         venueId?: string;
         isIndoor?: boolean;
         search?: string;
+        includeInactive?: boolean;
     }) {
         return this.facilitiesRepository.findAll(filters);
     }

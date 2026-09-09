@@ -29,12 +29,14 @@ export class FacilitiesController {
         @Query('venueId') venueId?: string,
         @Query('isIndoor') isIndoor?: string,
         @Query('search') search?: string,
+        @Query('includeInactive') includeInactive?: string,
     ) {
         return this.facilitiesService.findAll({
             sportId,
             venueId,
             isIndoor: isIndoor ? isIndoor === 'true' : undefined,
             search,
+            includeInactive: includeInactive === 'true',
         });
     }
 

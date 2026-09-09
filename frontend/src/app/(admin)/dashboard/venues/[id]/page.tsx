@@ -115,6 +115,13 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
             {venue.description && (
               <p className="text-sm text-default-500 mt-2">{venue.description}</p>
             )}
+            {venue.amenities && venue.amenities.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {venue.amenities.map((a) => (
+                  <Chip key={a} size="sm" variant="flat" color="default">{a}</Chip>
+                ))}
+              </div>
+            )}
           </div>
           <Chip color={venue.isActive ? "success" : "danger"} variant="flat">
             {venue.isActive ? "Activa" : "Inactiva"}
@@ -242,14 +249,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
                     )}
                   </div>
 
-                  {/* Amenidades / servicios */}
-                  {facility.amenities && facility.amenities.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 border-t border-divider pt-2">
-                      {facility.amenities.map((a) => (
-                        <Chip key={a} size="sm" variant="flat" color="default" className="text-[10px]">{a}</Chip>
-                      ))}
-                    </div>
-                  )}
+
                 </CardBody>
               </Card>
             ))}

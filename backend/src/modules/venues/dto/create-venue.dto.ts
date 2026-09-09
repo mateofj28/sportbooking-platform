@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsNumber, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateVenueDto {
@@ -61,6 +61,12 @@ export class CreateVenueDto {
     @IsOptional()
     @IsString()
     imageUrl?: string;
+
+    @ApiProperty({ required: false, type: [String], description: 'Servicios disponibles (parrilla, ducha, wifi, etc.)' })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    amenities?: string[];
 }
 
 export class UpdateVenueDto {
@@ -118,4 +124,10 @@ export class UpdateVenueDto {
     @IsOptional()
     @IsString()
     imageUrl?: string;
+
+    @ApiProperty({ required: false, type: [String] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    amenities?: string[];
 }

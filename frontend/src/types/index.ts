@@ -56,6 +56,7 @@ export interface Venue {
     phone?: string;
     email?: string;
     imageUrl?: string;
+    amenities?: string[];
     isActive: boolean;
     sports?: { sport: Sport }[];
     facilities?: Facility[];
@@ -72,7 +73,6 @@ export interface Facility {
     surfaceType?: string;
     isIndoor: boolean;
     capacity?: number;
-    amenities?: string[];
     isActive: boolean;
     minBookingDuration: number;
     maxBookingDuration: number;

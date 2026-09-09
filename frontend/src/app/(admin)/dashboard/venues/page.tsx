@@ -17,15 +17,39 @@ import type { Venue } from "@/types";
 
 const COUNTRY = "Argentina";
 
+// Servicios/amenidades que puede ofrecer una sede
+const AMENITIES = [
+  { key: "Vestuarios", emoji: "🚪" },
+  { key: "Duchas", emoji: "🚿" },
+  { key: "Baños", emoji: "🚻" },
+  { key: "WiFi", emoji: "📶" },
+  { key: "Estacionamiento", emoji: "🅿️" },
+  { key: "Parrilla", emoji: "🔥" },
+  { key: "Buffet", emoji: "🍔" },
+  { key: "Iluminación nocturna", emoji: "💡" },
+  { key: "Alquiler de equipos", emoji: "🎽" },
+  { key: "Cafetería", emoji: "☕" },
+  { key: "Tribunas", emoji: "🪑" },
+  { key: "Aire acondicionado", emoji: "❄️" },
+  { key: "Kiosco", emoji: "🏪" },
+  { key: "Seguridad", emoji: "🛡️" },
+  { key: "Accesible", emoji: "♿" },
+];
+
 export default function AdminVenuesPage() {
   const queryClient = useQueryClient();
   const addToast = useToastStore((s) => s.addToast);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   // province = id de Georef (para buscar localidades); provinceName = nombre (para guardar)
-  const [form, setForm] = useState({ name: "", slug: "", address: "", province: "", provinceName: "", city: "", description: "" });
-  const [editForm, setEditForm] = useState({ id: "", name: "", address: "", province: "", provinceName: "", city: "", description: "" });
+  const [form, setForm] = useState({ name: "", slug: "", address: "", province: "", provinceName: "", city: "", description: "", amenities: [] as string[] });
+  const [editForm, setEditForm] = useState({ id: "", name: "", address: "", province: "", provinceName: "", city: "", description: "", amenities: [] as string[] });
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const toggleCreateAmenity = (a: string) =>
+    setForm((f) => ({ ...f, amenities: f.amenities.includes(a) ? f.amenities.filter((x) => x !== a) : [...f.amenities, a] }));
+  const toggleEditAmenity = (a: string) =>
+    setEditForm((f) => ({ ...f, amenities: f.amenities.includes(a) ? f.amenities.filter((x) => x !== a) : [...f.amenities, a] }));
 
   const { data: venues, isLoading } = useQuery({ queryKey: ["venues"], queryFn: () => apiClient.get<Venue[]>("/venues") });
   const { data: facilities } = useFacilities();
@@ -79,6 +103,7 @@ export default function AdminVenuesPage() {
       city: data.city,
       country: COUNTRY,
       description: data.description || undefined,
+      amenities: data.amenities,
     }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onClose(); addToast("Sede creada correctamente"); },
   });
@@ -90,6 +115,7 @@ export default function AdminVenuesPage() {
       city: data.city,
       country: COUNTRY,
       description: data.description || undefined,
+      amenities: data.amenities,
     }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onEditClose(); addToast("Sede actualizada"); },
   });
@@ -108,6 +134,7 @@ export default function AdminVenuesPage() {
       provinceName: venue.state || "",
       city: venue.city,
       description: venue.description || "",
+      amenities: venue.amenities || [],
     });
     onEditOpen();
   };
@@ -118,7 +145,7 @@ export default function AdminVenuesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold">Sedes</h1><p className="text-sm text-default-500 mt-1">Gestiona los complejos deportivos</p></div>
-        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", province: "", provinceName: "", city: "", description: "" }); onOpen(); }}>Nueva Sede</Button>
+        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", province: "", provinceName: "", city: "", description: "", amenities: [] }); onOpen(); }}>Nueva Sede</Button>
       </div>
 
       {/* Filter */}
@@ -205,6 +232,24 @@ export default function AdminVenuesPage() {
               </Autocomplete>
             </div>
             <Textarea label="Descripción" variant="bordered" value={form.description} onValueChange={(v) => setForm({ ...form, description: v })} />
+            <div>
+              <p className="text-xs text-default-500 mb-2">Servicios disponibles</p>
+              <div className="flex flex-wrap gap-2">
+                {AMENITIES.map((a) => {
+                  const active = form.amenities.includes(a.key);
+                  return (
+                    <button
+                      key={a.key}
+                      type="button"
+                      onClick={() => toggleCreateAmenity(a.key)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${active ? "border-primary bg-primary/10 text-primary" : "border-divider text-default-600 hover:border-primary"}`}
+                    >
+                      {a.emoji} {a.key}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </ModalBody>
           <ModalFooter><Button variant="light" onPress={onClose}>Cancelar</Button><Button color="primary" onPress={() => createMutation.mutate(form)} isLoading={createMutation.isPending} isDisabled={!form.name || !form.province || !form.city}>Crear</Button></ModalFooter>
         </ModalContent>
@@ -247,6 +292,24 @@ export default function AdminVenuesPage() {
               </Autocomplete>
             </div>
             <Textarea label="Descripción" variant="bordered" value={editForm.description} onValueChange={(v) => setEditForm({ ...editForm, description: v })} />
+            <div>
+              <p className="text-xs text-default-500 mb-2">Servicios disponibles</p>
+              <div className="flex flex-wrap gap-2">
+                {AMENITIES.map((a) => {
+                  const active = editForm.amenities.includes(a.key);
+                  return (
+                    <button
+                      key={a.key}
+                      type="button"
+                      onClick={() => toggleEditAmenity(a.key)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${active ? "border-primary bg-primary/10 text-primary" : "border-divider text-default-600 hover:border-primary"}`}
+                    >
+                      {a.emoji} {a.key}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </ModalBody>
           <ModalFooter><Button variant="light" onPress={onEditClose}>Cancelar</Button><Button color="primary" onPress={() => editMutation.mutate(editForm)} isLoading={editMutation.isPending}>Guardar</Button></ModalFooter>
         </ModalContent>

@@ -80,8 +80,9 @@ export default function AdminPricingPage() {
     endTime: "22:00",
     pricePerHour: "25.000",
     profitPercent: "10",
-    dayOfWeek: "",
+    days: [] as number[],
   });
+  const [isCreating, setIsCreating] = useState(false);
   const [editForm, setEditForm] = useState({
     id: "",
     startTime: "08:00",
@@ -97,14 +98,40 @@ export default function AdminPricingPage() {
     enabled: !!selectedFacility,
   });
 
-  const createMutation = useMutation({
-    mutationFn: (data: any) => apiClient.post(`/facilities/${selectedFacility}/pricing`, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pricing", selectedFacility] }); onClose(); addToast("Tarifa creada correctamente"); },
-    onError: (error: any) => {
-      const msg = error?.message || error?.response?.data?.message || "No se pudo crear la tarifa";
-      addToast(Array.isArray(msg) ? msg[0] : msg);
-    },
-  });
+  // Alternar / fijar días en la selección múltiple del formulario de crear
+  const toggleDay = (day: number) =>
+    setForm((f) => ({ ...f, days: f.days.includes(day) ? f.days.filter((d) => d !== day) : [...f.days, day] }));
+  const setDays = (days: number[]) => setForm((f) => ({ ...f, days }));
+
+  // Crear tarifa para los días seleccionados (una por día). Vacío = todos los días (una sola sin dayOfWeek).
+  const handleCreate = async () => {
+    setIsCreating(true);
+    const payloadBase = {
+      startTime: form.startTime,
+      endTime: form.endTime,
+      pricePerHour: parsePriceValue(form.pricePerHour),
+      profitPercent: Number(form.profitPercent) || 0,
+    };
+    const targets = form.days.length === 0 ? [null] : form.days;
+    const created: string[] = [];
+    const skipped: string[] = [];
+    for (const day of targets) {
+      try {
+        await apiClient.post(`/facilities/${selectedFacility}/pricing`, {
+          ...payloadBase,
+          ...(day !== null ? { dayOfWeek: day } : {}),
+        });
+        created.push(day !== null ? DAYS[day] : "Todos los días");
+      } catch {
+        skipped.push(day !== null ? DAYS[day] : "Todos los días");
+      }
+    }
+    setIsCreating(false);
+    queryClient.invalidateQueries({ queryKey: ["pricing", selectedFacility] });
+    onClose();
+    if (created.length > 0) addToast(`${created.length} tarifa${created.length !== 1 ? "s" : ""} creada${created.length !== 1 ? "s" : ""}`);
+    if (skipped.length > 0) addToast(`No se crearon (ya existían o solapan): ${skipped.join(", ")}`);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/pricing/${id}`),
@@ -151,7 +178,7 @@ export default function AdminPricingPage() {
   };
 
   const handleOpenModal = () => {
-    setForm({ startTime: "08:00", endTime: "22:00", pricePerHour: "25.000", profitPercent: "10", dayOfWeek: "" });
+    setForm({ startTime: "08:00", endTime: "22:00", pricePerHour: "25.000", profitPercent: "10", days: [] });
     onOpen();
   };
 
@@ -218,77 +245,97 @@ export default function AdminPricingPage() {
         </Card>
       )}
 
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={isOpen} onClose={onClose} size="3xl">
         <ModalContent>
           <ModalHeader>Agregar Tarifa</ModalHeader>
-          <ModalBody className="gap-4">
-            <Select
-              label="Día (vacío = todos los días)"
-              variant="bordered"
-              selectedKeys={form.dayOfWeek ? [form.dayOfWeek] : []}
-              onSelectionChange={(keys: any) => setForm({ ...form, dayOfWeek: Array.from(keys)[0] as string || "" })}
-            >
-              {DAYS.map((day, i) => (
-                <SelectItem key={i.toString()}>{day}</SelectItem>
-              ))}
-            </Select>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Select
-                label="Desde"
-                variant="bordered"
-                selectedKeys={form.startTime ? [form.startTime] : []}
-                onSelectionChange={(keys: any) => setForm({ ...form, startTime: Array.from(keys)[0] as string || "08:00" })}
-              >
-                {TIME_OPTIONS.map((t) => (
-                  <SelectItem key={t.value}>{t.label}</SelectItem>
-                ))}
-              </Select>
-              <Select
-                label="Hasta"
-                variant="bordered"
-                selectedKeys={form.endTime ? [form.endTime] : []}
-                onSelectionChange={(keys: any) => setForm({ ...form, endTime: Array.from(keys)[0] as string || "22:00" })}
-              >
-                {TIME_OPTIONS.map((t) => (
-                  <SelectItem key={t.value}>{t.label}</SelectItem>
-                ))}
-              </Select>
+          <ModalBody className="gap-5">
+            {/* Días de la semana */}
+            <div>
+              <p className="text-xs text-default-500 mb-2">Días (vacío = todos los días)</p>
+              <div className="flex flex-wrap gap-2 mb-3">
+                <button type="button" onClick={() => setDays([0, 1, 2, 3, 4])} className="rounded-full border border-divider px-3 py-1 text-xs hover:border-primary hover:text-primary transition-colors">Lun a Vie</button>
+                <button type="button" onClick={() => setDays([5, 6])} className="rounded-full border border-divider px-3 py-1 text-xs hover:border-primary hover:text-primary transition-colors">Fin de semana</button>
+                <button type="button" onClick={() => setDays([0, 1, 2, 3, 4, 5, 6])} className="rounded-full border border-divider px-3 py-1 text-xs hover:border-primary hover:text-primary transition-colors">Todos</button>
+                <button type="button" onClick={() => setDays([])} className="rounded-full border border-divider px-3 py-1 text-xs hover:border-danger hover:text-danger transition-colors">Limpiar</button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {DAYS.map((day, i) => {
+                  const active = form.days.includes(i);
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => toggleDay(i)}
+                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${active ? "border-primary bg-primary/10 text-primary" : "border-divider hover:border-primary"}`}
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <Input
-              label="Precio por hora (ARS)"
-              variant="bordered"
-              value={form.pricePerHour}
-              onValueChange={handlePriceChange}
-              startContent={<span className="text-default-400 text-sm">$</span>}
-              classNames={{ input: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" }}
-            />
+            {/* Dos columnas: izquierda inputs, derecha resumen */}
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <Select
+                    label="Desde"
+                    variant="bordered"
+                    selectedKeys={form.startTime ? [form.startTime] : []}
+                    onSelectionChange={(keys: any) => setForm({ ...form, startTime: Array.from(keys)[0] as string || "08:00" })}
+                  >
+                    {TIME_OPTIONS.map((t) => (<SelectItem key={t.value}>{t.label}</SelectItem>))}
+                  </Select>
+                  <Select
+                    label="Hasta"
+                    variant="bordered"
+                    selectedKeys={form.endTime ? [form.endTime] : []}
+                    onSelectionChange={(keys: any) => setForm({ ...form, endTime: Array.from(keys)[0] as string || "22:00" })}
+                  >
+                    {TIME_OPTIONS.map((t) => (<SelectItem key={t.value}>{t.label}</SelectItem>))}
+                  </Select>
+                </div>
 
-            <Input
-              label="Porcentaje de ganancia empresa (%)"
-              variant="bordered"
-              inputMode="decimal"
-              placeholder="Ej: 6.6"
-              startContent={<Percent className="h-4 w-4 text-default-400" />}
-              value={form.profitPercent}
-              onValueChange={(v) => setForm({ ...form, profitPercent: sanitizeProfitPercent(v) })}
-              description="Valor entre 1 y 100. Acepta decimales (ej: 6.6 o 6,6)"
-            />
+                <Input
+                  label="Precio por hora (ARS)"
+                  variant="bordered"
+                  value={form.pricePerHour}
+                  onValueChange={handlePriceChange}
+                  startContent={<span className="text-default-400 text-sm">$</span>}
+                  classNames={{ input: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" }}
+                />
 
-            <div className="rounded-lg bg-default-100 p-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-default-500">Precio base</span>
-                <span>${form.pricePerHour || "0"}</span>
+                <Input
+                  label="Porcentaje de ganancia empresa (%)"
+                  variant="bordered"
+                  inputMode="decimal"
+                  placeholder="Ej: 6.6"
+                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  value={form.profitPercent}
+                  onValueChange={(v) => setForm({ ...form, profitPercent: sanitizeProfitPercent(v) })}
+                  description="Valor entre 1 y 100. Acepta decimales"
+                />
               </div>
-              <div className="flex items-center justify-between text-sm mt-1">
-                <span className="text-default-500">Ganancia empresa ({form.profitPercent || 0}%)</span>
-                <span>+${formatThousands(String(Math.round(parsePriceValue(form.pricePerHour) * (Number(form.profitPercent) || 0) / 100)))}</span>
-              </div>
-              <Divider className="my-2" />
-              <div className="flex items-center justify-between font-semibold">
-                <span>Precio final / hora</span>
-                <span className="text-success">${formatThousands(String(Math.round(finalPrice)))}</span>
+
+              {/* Resumen de precio */}
+              <div className="rounded-lg bg-default-100 p-4 flex flex-col justify-center">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-default-500">Precio base</span>
+                  <span>${form.pricePerHour || "0"}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm mt-2">
+                  <span className="text-default-500">Ganancia empresa ({form.profitPercent || 0}%)</span>
+                  <span>+${formatThousands(String(Math.round(parsePriceValue(form.pricePerHour) * (Number(form.profitPercent) || 0) / 100)))}</span>
+                </div>
+                <Divider className="my-3" />
+                <div className="flex items-center justify-between font-semibold text-base">
+                  <span>Precio final / hora</span>
+                  <span className="text-success">${formatThousands(String(Math.round(finalPrice)))}</span>
+                </div>
+                {form.days.length > 0 && (
+                  <p className="text-xs text-default-400 mt-3">Se crearán {form.days.length} tarifa{form.days.length !== 1 ? "s" : ""} (una por día seleccionado)</p>
+                )}
               </div>
             </div>
           </ModalBody>
@@ -297,14 +344,8 @@ export default function AdminPricingPage() {
             <Button
               color="primary"
               isDisabled={!(Number(form.profitPercent) >= 1 && Number(form.profitPercent) <= 100)}
-              onPress={() => createMutation.mutate({
-                startTime: form.startTime,
-                endTime: form.endTime,
-                pricePerHour: parsePriceValue(form.pricePerHour),
-                profitPercent: Number(form.profitPercent) || 0,
-                ...(form.dayOfWeek ? { dayOfWeek: parseInt(form.dayOfWeek) } : {}),
-              })}
-              isLoading={createMutation.isPending}
+              onPress={handleCreate}
+              isLoading={isCreating}
             >
               Crear
             </Button>
@@ -313,77 +354,94 @@ export default function AdminPricingPage() {
       </Modal>
 
       {/* Edit Modal */}
-      <Modal isOpen={isEditOpen} onClose={onEditClose}>
+      <Modal isOpen={isEditOpen} onClose={onEditClose} size="3xl">
         <ModalContent>
           <ModalHeader>Editar Tarifa</ModalHeader>
-          <ModalBody className="gap-4">
-            <Select
-              label="Día (vacío = todos los días)"
-              variant="bordered"
-              selectedKeys={editForm.dayOfWeek ? [editForm.dayOfWeek] : []}
-              onSelectionChange={(keys: any) => setEditForm({ ...editForm, dayOfWeek: Array.from(keys)[0] as string || "" })}
-            >
-              {DAYS.map((day, i) => (
-                <SelectItem key={i.toString()}>{day}</SelectItem>
-              ))}
-            </Select>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Select
-                label="Desde"
-                variant="bordered"
-                selectedKeys={editForm.startTime ? [editForm.startTime] : []}
-                onSelectionChange={(keys: any) => setEditForm({ ...editForm, startTime: Array.from(keys)[0] as string || "08:00" })}
-              >
-                {TIME_OPTIONS.map((t) => (
-                  <SelectItem key={t.value}>{t.label}</SelectItem>
-                ))}
-              </Select>
-              <Select
-                label="Hasta"
-                variant="bordered"
-                selectedKeys={editForm.endTime ? [editForm.endTime] : []}
-                onSelectionChange={(keys: any) => setEditForm({ ...editForm, endTime: Array.from(keys)[0] as string || "22:00" })}
-              >
-                {TIME_OPTIONS.map((t) => (
-                  <SelectItem key={t.value}>{t.label}</SelectItem>
-                ))}
-              </Select>
+          <ModalBody className="gap-5">
+            {/* Día (selección única) */}
+            <div>
+              <p className="text-xs text-default-500 mb-2">Día (vacío = todos los días)</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditForm({ ...editForm, dayOfWeek: "" })}
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${editForm.dayOfWeek === "" ? "border-secondary bg-secondary/10 text-secondary" : "border-divider hover:border-primary"}`}
+                >
+                  Todos
+                </button>
+                {DAYS.map((day, i) => {
+                  const active = editForm.dayOfWeek === String(i);
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setEditForm({ ...editForm, dayOfWeek: String(i) })}
+                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${active ? "border-primary bg-primary/10 text-primary" : "border-divider hover:border-primary"}`}
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <Input
-              label="Precio por hora (ARS)"
-              variant="bordered"
-              value={editForm.pricePerHour}
-              onValueChange={(v) => setEditForm({ ...editForm, pricePerHour: formatThousands(v) })}
-              startContent={<span className="text-default-400 text-sm">$</span>}
-              classNames={{ input: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" }}
-            />
+            {/* Dos columnas */}
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <Select
+                    label="Desde"
+                    variant="bordered"
+                    selectedKeys={editForm.startTime ? [editForm.startTime] : []}
+                    onSelectionChange={(keys: any) => setEditForm({ ...editForm, startTime: Array.from(keys)[0] as string || "08:00" })}
+                  >
+                    {TIME_OPTIONS.map((t) => (<SelectItem key={t.value}>{t.label}</SelectItem>))}
+                  </Select>
+                  <Select
+                    label="Hasta"
+                    variant="bordered"
+                    selectedKeys={editForm.endTime ? [editForm.endTime] : []}
+                    onSelectionChange={(keys: any) => setEditForm({ ...editForm, endTime: Array.from(keys)[0] as string || "22:00" })}
+                  >
+                    {TIME_OPTIONS.map((t) => (<SelectItem key={t.value}>{t.label}</SelectItem>))}
+                  </Select>
+                </div>
 
-            <Input
-              label="Porcentaje de ganancia empresa (%)"
-              variant="bordered"
-              inputMode="decimal"
-              placeholder="Ej: 6.6"
-              startContent={<Percent className="h-4 w-4 text-default-400" />}
-              value={editForm.profitPercent}
-              onValueChange={(v) => setEditForm({ ...editForm, profitPercent: sanitizeProfitPercent(v) })}
-              description="Valor entre 1 y 100. Acepta decimales (ej: 6.6 o 6,6)"
-            />
+                <Input
+                  label="Precio por hora (ARS)"
+                  variant="bordered"
+                  value={editForm.pricePerHour}
+                  onValueChange={(v) => setEditForm({ ...editForm, pricePerHour: formatThousands(v) })}
+                  startContent={<span className="text-default-400 text-sm">$</span>}
+                  classNames={{ input: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" }}
+                />
 
-            <div className="rounded-lg bg-default-100 p-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-default-500">Precio base</span>
-                <span>${editForm.pricePerHour || "0"}</span>
+                <Input
+                  label="Porcentaje de ganancia empresa (%)"
+                  variant="bordered"
+                  inputMode="decimal"
+                  placeholder="Ej: 6.6"
+                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  value={editForm.profitPercent}
+                  onValueChange={(v) => setEditForm({ ...editForm, profitPercent: sanitizeProfitPercent(v) })}
+                  description="Valor entre 1 y 100. Acepta decimales"
+                />
               </div>
-              <div className="flex items-center justify-between text-sm mt-1">
-                <span className="text-default-500">Ganancia empresa ({editForm.profitPercent || 0}%)</span>
-                <span>+${formatThousands(String(Math.round(parsePriceValue(editForm.pricePerHour) * (Number(editForm.profitPercent) || 0) / 100)))}</span>
-              </div>
-              <Divider className="my-2" />
-              <div className="flex items-center justify-between font-semibold">
-                <span>Precio final / hora</span>
-                <span className="text-success">${formatThousands(String(Math.round(editFinalPrice)))}</span>
+
+              <div className="rounded-lg bg-default-100 p-4 flex flex-col justify-center">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-default-500">Precio base</span>
+                  <span>${editForm.pricePerHour || "0"}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm mt-2">
+                  <span className="text-default-500">Ganancia empresa ({editForm.profitPercent || 0}%)</span>
+                  <span>+${formatThousands(String(Math.round(parsePriceValue(editForm.pricePerHour) * (Number(editForm.profitPercent) || 0) / 100)))}</span>
+                </div>
+                <Divider className="my-3" />
+                <div className="flex items-center justify-between font-semibold text-base">
+                  <span>Precio final / hora</span>
+                  <span className="text-success">${formatThousands(String(Math.round(editFinalPrice)))}</span>
+                </div>
               </div>
             </div>
           </ModalBody>
@@ -398,6 +456,7 @@ export default function AdminPricingPage() {
                 endTime: editForm.endTime,
                 pricePerHour: parsePriceValue(editForm.pricePerHour),
                 profitPercent: Number(editForm.profitPercent) || 0,
+                dayOfWeek: editForm.dayOfWeek === "" ? null : parseInt(editForm.dayOfWeek),
               })}
               isLoading={editMutation.isPending}
             >

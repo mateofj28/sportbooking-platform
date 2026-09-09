@@ -64,12 +64,13 @@ export class PricingService {
 
         const startTime = dto.startTime ?? pricing.startTime;
         const endTime = dto.endTime ?? pricing.endTime;
+        const dayOfWeek = dto.dayOfWeek !== undefined ? dto.dayOfWeek : pricing.dayOfWeek;
 
         if (startTime >= endTime) {
             throw new BadRequestException('La hora de fin debe ser posterior a la de inicio');
         }
 
-        await this.assertNoOverlap(pricing.facilityId, pricing.dayOfWeek, startTime, endTime, id);
+        await this.assertNoOverlap(pricing.facilityId, dayOfWeek, startTime, endTime, id);
 
         return this.prisma.pricing.update({
             where: { id },

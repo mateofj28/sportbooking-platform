@@ -38,6 +38,13 @@ export class CreatePricingDto {
 }
 
 export class UpdatePricingDto {
+    @ApiProperty({ required: false, description: '0=Monday, 6=Sunday, null=all days' })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    @Max(6)
+    dayOfWeek?: number | null;
+
     @ApiProperty({ required: false })
     @IsOptional()
     @IsString()

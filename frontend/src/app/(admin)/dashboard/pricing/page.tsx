@@ -81,6 +81,7 @@ export default function AdminPricingPage() {
     pricePerHour: "25.000",
     profitPercent: "10",
     days: [] as number[],
+    allDays: false,
   });
   const [isCreating, setIsCreating] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -98,13 +99,26 @@ export default function AdminPricingPage() {
     enabled: !!selectedFacility,
   });
 
-  // Alternar / fijar días en la selección múltiple del formulario de crear
+  // Al elegir un día específico, se desactiva "todos los días"
   const toggleDay = (day: number) =>
-    setForm((f) => ({ ...f, days: f.days.includes(day) ? f.days.filter((d) => d !== day) : [...f.days, day] }));
-  const setDays = (days: number[]) => setForm((f) => ({ ...f, days }));
+    setForm((f) => ({
+      ...f,
+      allDays: false,
+      days: f.days.includes(day) ? f.days.filter((d) => d !== day) : [...f.days, day],
+    }));
+  // Atajos: fijan días específicos y desactivan "todos"
+  const setDays = (days: number[]) => setForm((f) => ({ ...f, days, allDays: false }));
+  // "Todos los días": opción exclusiva -> una sola tarifa sin dayOfWeek
+  const setAllDays = () => setForm((f) => ({ ...f, allDays: true, days: [] }));
 
-  // Crear tarifa para los días seleccionados (una por día). Vacío = todos los días (una sola sin dayOfWeek).
+  // Validez de la selección: o "todos los días" o al menos un día específico
+  const hasDaySelection = form.allDays || form.days.length > 0;
+
   const handleCreate = async () => {
+    if (!hasDaySelection) {
+      addToast("Selecciona 'Todos los días' o al menos un día");
+      return;
+    }
     setIsCreating(true);
     const payloadBase = {
       startTime: form.startTime,
@@ -112,7 +126,8 @@ export default function AdminPricingPage() {
       pricePerHour: parsePriceValue(form.pricePerHour),
       profitPercent: Number(form.profitPercent) || 0,
     };
-    const targets = form.days.length === 0 ? [null] : form.days;
+    // allDays => una sola tarifa sin dayOfWeek. Si no, una tarifa por cada día específico.
+    const targets: (number | null)[] = form.allDays ? [null] : form.days;
     const created: string[] = [];
     const skipped: string[] = [];
     for (const day of targets) {
@@ -178,7 +193,7 @@ export default function AdminPricingPage() {
   };
 
   const handleOpenModal = () => {
-    setForm({ startTime: "08:00", endTime: "22:00", pricePerHour: "25.000", profitPercent: "10", days: [] });
+    setForm({ startTime: "08:00", endTime: "22:00", pricePerHour: "25.000", profitPercent: "10", days: [], allDays: false });
     onOpen();
   };
 
@@ -251,22 +266,27 @@ export default function AdminPricingPage() {
           <ModalBody className="gap-5">
             {/* Días de la semana */}
             <div>
-              <p className="text-xs text-default-500 mb-2">Días (vacío = todos los días)</p>
+              <p className="text-xs text-default-500 mb-2">¿Para qué días aplica esta tarifa?</p>
               <div className="flex flex-wrap gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={setAllDays}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${form.allDays ? "border-secondary bg-secondary/10 text-secondary" : "border-divider hover:border-secondary hover:text-secondary"}`}
+                >
+                  Todos los días
+                </button>
                 <button type="button" onClick={() => setDays([0, 1, 2, 3, 4])} className="rounded-full border border-divider px-3 py-1 text-xs hover:border-primary hover:text-primary transition-colors">Lun a Vie</button>
                 <button type="button" onClick={() => setDays([5, 6])} className="rounded-full border border-divider px-3 py-1 text-xs hover:border-primary hover:text-primary transition-colors">Fin de semana</button>
-                <button type="button" onClick={() => setDays([0, 1, 2, 3, 4, 5, 6])} className="rounded-full border border-divider px-3 py-1 text-xs hover:border-primary hover:text-primary transition-colors">Todos</button>
-                <button type="button" onClick={() => setDays([])} className="rounded-full border border-divider px-3 py-1 text-xs hover:border-danger hover:text-danger transition-colors">Limpiar</button>
               </div>
               <div className="flex flex-wrap gap-2">
                 {DAYS.map((day, i) => {
-                  const active = form.days.includes(i);
+                  const active = !form.allDays && form.days.includes(i);
                   return (
                     <button
                       key={i}
                       type="button"
                       onClick={() => toggleDay(i)}
-                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${active ? "border-primary bg-primary/10 text-primary" : "border-divider hover:border-primary"}`}
+                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${active ? "border-primary bg-primary/10 text-primary" : "border-divider hover:border-primary"} ${form.allDays ? "opacity-40" : ""}`}
                     >
                       {day}
                     </button>
@@ -333,7 +353,10 @@ export default function AdminPricingPage() {
                   <span>Precio final / hora</span>
                   <span className="text-success">${formatThousands(String(Math.round(finalPrice)))}</span>
                 </div>
-                {form.days.length > 0 && (
+                {form.allDays && (
+                  <p className="text-xs text-default-400 mt-3">Se creará 1 tarifa para todos los días</p>
+                )}
+                {!form.allDays && form.days.length > 0 && (
                   <p className="text-xs text-default-400 mt-3">Se crearán {form.days.length} tarifa{form.days.length !== 1 ? "s" : ""} (una por día seleccionado)</p>
                 )}
               </div>
@@ -343,7 +366,7 @@ export default function AdminPricingPage() {
             <Button variant="light" onPress={onClose}>Cancelar</Button>
             <Button
               color="primary"
-              isDisabled={!(Number(form.profitPercent) >= 1 && Number(form.profitPercent) <= 100)}
+              isDisabled={!hasDaySelection || !(Number(form.profitPercent) >= 1 && Number(form.profitPercent) <= 100)}
               onPress={handleCreate}
               isLoading={isCreating}
             >

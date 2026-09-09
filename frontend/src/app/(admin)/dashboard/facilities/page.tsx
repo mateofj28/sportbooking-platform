@@ -17,7 +17,6 @@ import {
     ModalFooter,
     Input,
     Textarea,
-    Switch,
     useDisclosure,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -354,17 +353,23 @@ export default function AdminFacilitiesPage() {
                             <TableCell>{facility.venue.name}</TableCell>
                             <TableCell>{facility.surfaceType || "-"}</TableCell>
                             <TableCell>
-                                <div className="flex items-center gap-2">
-                                    <Switch
+                                <button
+                                    type="button"
+                                    disabled={toggleActiveMutation.isPending}
+                                    onClick={() => toggleActiveMutation.mutate({ id: facility.id, isActive: !facility.isActive })}
+                                    className="disabled:opacity-50"
+                                    aria-label="Activar o desactivar instalación"
+                                >
+                                    <Chip
+                                        color={facility.isActive ? "success" : "danger"}
                                         size="sm"
-                                        isSelected={facility.isActive}
-                                        onValueChange={(val) => toggleActiveMutation.mutate({ id: facility.id, isActive: val })}
-                                        aria-label="Activar o desactivar instalación"
-                                    />
-                                    <Chip color={facility.isActive ? "success" : "danger"} size="sm" variant="dot">
+                                        variant="flat"
+                                        className="cursor-pointer"
+                                        startContent={<span className={`mx-1 h-2 w-2 rounded-full ${facility.isActive ? "bg-success" : "bg-danger"}`} />}
+                                    >
                                         {facility.isActive ? "Activa" : "Inactiva"}
                                     </Chip>
-                                </div>
+                                </button>
                             </TableCell>
                             <TableCell>
                                 <div className="flex gap-1">

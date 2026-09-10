@@ -359,6 +359,9 @@ export default function AdminPricingPage() {
                 {!form.allDays && form.days.length > 0 && (
                   <p className="text-xs text-default-400 mt-3">Se crearán {form.days.length} tarifa{form.days.length !== 1 ? "s" : ""} (una por día seleccionado)</p>
                 )}
+                {!hasDaySelection && (
+                  <p className="text-xs text-warning mt-3">Selecciona &quot;Todos los días&quot; o al menos un día para poder crear la tarifa</p>
+                )}
               </div>
             </div>
           </ModalBody>

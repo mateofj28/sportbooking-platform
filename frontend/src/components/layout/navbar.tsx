@@ -53,6 +53,13 @@ export function Navbar() {
             </NavbarContent>
 
             <NavbarContent className="hidden gap-6 sm:flex" justify="center">
+                {isAuthenticated && user?.role === "CLIENT" && (
+                    <NavbarItem>
+                        <Link href="/inicio" className="text-sm font-medium text-white hover:text-blue-200">
+                            Inicio
+                        </Link>
+                    </NavbarItem>
+                )}
                 <NavbarItem>
                     <Link href="/facilities" className="text-sm font-medium text-white hover:text-blue-200">
                         Instalaciones
@@ -178,6 +185,13 @@ export function Navbar() {
             </NavbarContent>
 
             <NavbarMenu>
+                {isAuthenticated && user?.role === "CLIENT" && (
+                    <NavbarMenuItem>
+                        <Link className="w-full" href="/inicio" size="lg">
+                            Inicio
+                        </Link>
+                    </NavbarMenuItem>
+                )}
                 <NavbarMenuItem>
                     <Link className="w-full" href="/facilities" size="lg">
                         Instalaciones

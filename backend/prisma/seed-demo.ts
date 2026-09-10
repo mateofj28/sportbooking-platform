@@ -51,8 +51,7 @@ async function main() {
 
   // Create 50 bookings spread across last 14 days and next 7 days
   const statuses: BookingStatus[] = [
-    BookingStatus.CONFIRMED, BookingStatus.CONFIRMED, BookingStatus.CONFIRMED,
-    BookingStatus.PENDING, BookingStatus.PENDING,
+    BookingStatus.CONFIRMED, BookingStatus.CONFIRMED, BookingStatus.CONFIRMED, BookingStatus.CONFIRMED, BookingStatus.CONFIRMED,
     BookingStatus.CANCELLED,
     BookingStatus.COMPLETED, BookingStatus.COMPLETED, BookingStatus.COMPLETED, BookingStatus.COMPLETED,
   ];
@@ -118,14 +117,12 @@ async function main() {
   console.log(`✅ ${bookings.length} reservas creadas`);
 
   // Summary
-  const pending = bookings.filter(b => b.status === 'PENDING').length;
   const confirmed = bookings.filter(b => b.status === 'CONFIRMED').length;
   const cancelled = bookings.filter(b => b.status === 'CANCELLED').length;
   const completed = bookings.filter(b => b.status === 'COMPLETED').length;
   const totalRevenue = bookings.filter(b => b.status !== 'CANCELLED').reduce((s, b) => s + Number(b.totalPrice), 0);
 
   console.log(`\n📊 Resumen:`);
-  console.log(`   Pendientes: ${pending}`);
   console.log(`   Confirmadas: ${confirmed}`);
   console.log(`   Canceladas: ${cancelled}`);
   console.log(`   Completadas: ${completed}`);

@@ -32,7 +32,6 @@ const STATUS_MAP: Record<BookingStatus, { label: string; color: "warning" | "suc
 
 const FILTER_TABS: { key: "ALL" | BookingStatus; label: string }[] = [
     { key: "ALL", label: "Todas" },
-    { key: "PENDING", label: "Pendientes" },
     { key: "CONFIRMED", label: "Confirmadas" },
     { key: "CANCELLED", label: "Canceladas" },
     { key: "COMPLETED", label: "Completadas" },
@@ -156,7 +155,7 @@ export default function BookingsPage() {
                                               ${Number(booking.totalPrice).toLocaleString("es-AR")} ARS
                               </p>
                           </div>
-                            {(booking.status === "PENDING" || booking.status === "CONFIRMED") && (
+                                      {booking.status === "CONFIRMED" && (
                                 <Button
                                     color="danger"
                                     variant="light"

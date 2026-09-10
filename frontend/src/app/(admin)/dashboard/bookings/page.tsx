@@ -7,10 +7,10 @@ import {
 } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useConfirmBooking, useCancelBooking } from "@/hooks/use-bookings";
+import { useCancelBooking } from "@/hooks/use-bookings";
 import { useFacilities } from "@/hooks/use-facilities";
 import { apiClient } from "@/lib/api-client";
-import { CheckCircle, XCircle, Plus, Calendar, Clock, MapPin, User, DollarSign, Search } from "lucide-react";
+import { XCircle, Plus, Calendar, Clock, MapPin, User, DollarSign, Search } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useToastStore } from "@/stores/toast-store";
 import type { Booking, BookingStatus, User as UserType, PaginatedResult } from "@/types";
@@ -24,7 +24,6 @@ const STATUS_MAP: Record<BookingStatus, { label: string; color: "warning" | "suc
 
 const STATUS_FILTERS: { key: "ALL" | BookingStatus; label: string; color: "primary" | "warning" | "success" | "danger" | "default" }[] = [
     { key: "ALL", label: "Todas", color: "primary" },
-    { key: "PENDING", label: "Pendientes", color: "warning" },
     { key: "CONFIRMED", label: "Confirmadas", color: "success" },
     { key: "COMPLETED", label: "Completadas", color: "default" },
     { key: "CANCELLED", label: "Canceladas", color: "danger" },
@@ -88,7 +87,6 @@ export default function AdminBookingsPage() {
     // Reset to page 1 when filters change
     useEffect(() => { setPage(1); }, [search, statusFilter]);
 
-    const confirmBooking = useConfirmBooking();
     const cancelBooking = useCancelBooking();
     const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -135,7 +133,7 @@ export default function AdminBookingsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold">Gestión de Reservas</h1>
-                    <p className="text-sm text-default-500 mt-1">Confirma, cancela y gestiona las reservas</p>
+                    <p className="text-sm text-default-500 mt-1">Gestiona y cancela las reservas</p>
                 </div>
                 <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={onOpen}>
                     Reserva Manual
@@ -213,25 +211,13 @@ export default function AdminBookingsPage() {
                         </div>
 
                         {/* Actions */}
-                        {(booking.status === "PENDING" || booking.status === "CONFIRMED") && (
-                            <div className="flex gap-2 pt-2 border-t border-divider mt-1">
-                                {booking.status === "PENDING" && (
-                                    <Button
-                                        size="sm"
-                                        color="success"
-                                        variant="flat"
-                                        className="flex-1"
-                                        startContent={<CheckCircle className="h-3.5 w-3.5" />}
-                                        onPress={() => confirmBooking.mutate(booking.id, { onSuccess: () => { addToast("Reserva confirmada"); queryClient.invalidateQueries({ queryKey: ["bookings"] }); } })}
-                                    >
-                                        Confirmar
-                                    </Button>
-                                )}
+                                  {booking.status === "CONFIRMED" && (
+                                      <div className="flex gap-2 pt-2 border-t border-divider mt-1">
                                 <Button
                                     size="sm"
                                     color="danger"
                                     variant="flat"
-                                    className={booking.status === "PENDING" ? "flex-1" : "w-full"}
+                                              className="w-full"
                                     startContent={<XCircle className="h-3.5 w-3.5" />}
                                     onPress={() => cancelBooking.mutate({ id: booking.id }, { onSuccess: () => { addToast("Reserva cancelada"); queryClient.invalidateQueries({ queryKey: ["bookings"] }); } })}
                                 >

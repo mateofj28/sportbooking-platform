@@ -35,15 +35,3 @@ export function useCancelBooking() {
         },
     });
 }
-
-export function useConfirmBooking() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: (id: string) =>
-            apiClient.patch<Booking>(`/bookings/${id}/confirm`),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["bookings"] });
-        },
-    });
-}

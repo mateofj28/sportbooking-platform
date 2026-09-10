@@ -102,7 +102,7 @@ export class FacilitiesService {
             this.prisma.booking.findMany({
                 where: {
                     facilityId: id,
-                    status: { in: [BookingStatus.PENDING, BookingStatus.CONFIRMED] },
+                    status: BookingStatus.CONFIRMED,
                     startDatetime: { gte: dayStart },
                     endDatetime: { lte: dayEnd },
                 },

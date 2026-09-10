@@ -180,7 +180,7 @@ model Booking {
   userId             String        @map("user_id")
   startDatetime      DateTime      @map("start_datetime")
   endDatetime        DateTime      @map("end_datetime")
-  status             BookingStatus @default(PENDING)
+  status             BookingStatus @default(CONFIRMED)
   totalPrice         Decimal       @map("total_price") @db.Decimal(10, 2)
   currency           String        @default("ARS")
   notes              String?

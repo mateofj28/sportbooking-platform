@@ -56,14 +56,6 @@ export class BookingsController {
         return this.bookingsService.createManual(dto, adminId);
     }
 
-    @Patch(':id/confirm')
-    @UseGuards(RolesGuard)
-    @Roles(Role.ADMIN)
-    @ApiOperation({ summary: 'Confirm booking (Admin)' })
-    confirm(@Param('id') id: string) {
-        return this.bookingsService.confirm(id);
-    }
-
     @Patch(':id/cancel')
     @ApiOperation({ summary: 'Cancel booking' })
     cancel(

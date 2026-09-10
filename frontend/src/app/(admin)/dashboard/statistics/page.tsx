@@ -13,7 +13,7 @@ import { BookingStatusDonut, BookingsByDayBar, RevenueAreaChart, SportRevenueBar
 import type { Booking, Facility, Sport, User, PaginatedResult } from "@/types";
 
 type DateRange = "today" | "week" | "month" | "quarter" | "all";
-type StatusFilter = "ALL" | "CONFIRMED" | "COMPLETED" | "PENDING";
+type StatusFilter = "ALL" | "CONFIRMED" | "COMPLETED";
 
 const DATE_OPTIONS: { key: DateRange; label: string }[] = [
     { key: "today", label: "Hoy" },
@@ -27,7 +27,6 @@ const STATUS_OPTIONS: { key: StatusFilter; label: string }[] = [
     { key: "ALL", label: "Todos los estados" },
     { key: "CONFIRMED", label: "Confirmadas" },
     { key: "COMPLETED", label: "Completadas" },
-    { key: "PENDING", label: "Pendientes" },
 ];
 
 function getDateStart(range: DateRange): Date | null {
@@ -107,7 +106,6 @@ export default function StatisticsPage() {
   }, [allBookings, dateRange, sportFilter, venueFilter, statusFilter]);
 
     // Computed stats from filtered data
-    const pendingBookings = filteredBookings.filter((b) => b.status === "PENDING");
     const confirmedBookings = filteredBookings.filter((b) => b.status === "CONFIRMED");
     const cancelledBookings = filteredBookings.filter((b) => b.status === "CANCELLED");
     const completedBookings = filteredBookings.filter((b) => b.status === "COMPLETED");
@@ -219,7 +217,7 @@ export default function StatisticsPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Ingresos" value={`$${totalRevenue.toLocaleString("es-AR", { minimumFractionDigits: 0 })}`} color="bg-success-50 text-success-600" />
                 <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Comisión empresa" value={`$${totalCommission.toLocaleString("es-AR", { maximumFractionDigits: 0 })}`} color="bg-emerald-100 text-emerald-600" />
-              <StatCard icon={<Calendar className="h-5 w-5" />} label="Reservas" value={filteredBookings.length} color="bg-primary-50 text-primary-600" trend={`${pendingBookings.length} pendientes`} />
+                <StatCard icon={<Calendar className="h-5 w-5" />} label="Reservas" value={filteredBookings.length} color="bg-primary-50 text-primary-600" trend={`${confirmedBookings.length} confirmadas`} />
               <StatCard icon={<Activity className="h-5 w-5" />} label="Confirmación" value={`${occupancyRate}%`} color="bg-secondary-50 text-secondary-600" trend={`${cancelledBookings.length} canceladas`} trendUp={false} />
               <StatCard icon={<MapPin className="h-5 w-5" />} label="Instalaciones" value={facilities?.filter((f) => f.isActive).length || 0} color="bg-warning-50 text-warning-600" trend={`${sports?.length || 0} deportes`} />
                 <StatCard icon={<Users className="h-5 w-5" />} label="Usuarios nuevos" value={newUsers} color="bg-primary-50 text-primary-600" trend={`de ${usersData?.data?.length || 0} totales`} trendUp={newUsers > 0 ? true : undefined} />

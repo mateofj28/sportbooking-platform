@@ -54,7 +54,7 @@ export class BookingsRepository {
     async findConflicting(facilityId: string, startDatetime: Date, endDatetime: Date, excludeId?: string) {
         const where: Record<string, unknown> = {
             facilityId,
-            status: { in: [BookingStatus.PENDING, BookingStatus.CONFIRMED] },
+            status: BookingStatus.CONFIRMED,
             startDatetime: { lt: endDatetime },
             endDatetime: { gt: startDatetime },
         };
@@ -80,19 +80,12 @@ export class BookingsRepository {
         return this.prisma.booking.create({
             data: {
                 ...data,
-                status: data.status || BookingStatus.PENDING,
+                status: data.status || BookingStatus.CONFIRMED,
             },
             include: {
                 facility: { include: { sport: true, venue: true } },
                 user: { select: { id: true, firstName: true, lastName: true, email: true } },
             },
-        });
-    }
-
-    async updateStatus(id: string, status: BookingStatus) {
-        return this.prisma.booking.update({
-            where: { id },
-            data: { status },
         });
     }
 

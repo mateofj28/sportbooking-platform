@@ -48,6 +48,7 @@ export class BookingsService {
             currency: 'ARS',
             notes: dto.notes,
             createdById: userId,
+            status: BookingStatus.CONFIRMED,
         });
     }
 
@@ -70,14 +71,6 @@ export class BookingsService {
             createdById: adminId,
             status: BookingStatus.CONFIRMED,
         });
-    }
-
-    async confirm(id: string) {
-        const booking = await this.findById(id);
-        if (booking.status !== BookingStatus.PENDING) {
-            throw new BadRequestException('Solo se pueden confirmar reservas pendientes');
-        }
-        return this.bookingsRepository.updateStatus(id, BookingStatus.CONFIRMED);
     }
 
     async cancel(id: string, userId: string, dto: CancelBookingDto) {

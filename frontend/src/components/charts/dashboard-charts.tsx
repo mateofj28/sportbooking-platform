@@ -36,7 +36,6 @@ function useChartColors() {
 export function BookingStatusDonut({ bookings }: DashboardChartsProps) {
     const colors = useChartColors();
     const data = [
-        { name: "Pendientes", value: bookings.filter((b) => b.status === "PENDING").length, color: COLORS.PENDING },
         { name: "Confirmadas", value: bookings.filter((b) => b.status === "CONFIRMED").length, color: COLORS.CONFIRMED },
         { name: "Canceladas", value: bookings.filter((b) => b.status === "CANCELLED").length, color: COLORS.CANCELLED },
         { name: "Completadas", value: bookings.filter((b) => b.status === "COMPLETED").length, color: COLORS.COMPLETED },

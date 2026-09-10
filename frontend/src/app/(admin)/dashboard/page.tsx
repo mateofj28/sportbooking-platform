@@ -272,6 +272,8 @@ function TodayBookings() {
 }
 
 function TodaySummary() {
+    const { user } = useAuthStore();
+    const isVenueAdmin = user?.role === "VENUE_ADMIN";
     const today = new Date().toISOString().split("T")[0];
 
     const { data: bookingsData } = useQuery({
@@ -332,12 +334,15 @@ function TodaySummary() {
             value: `$${formatPrice(todayRevenue)}`,
             bg: "bg-success/10",
         },
-        {
-            icon: <TrendingUp className="h-5 w-5 text-emerald-500" />,
-            label: "Comisión empresa hoy",
-            value: `$${formatPrice(todayCommission)}`,
-            bg: "bg-emerald-500/10",
-        },
+        // La comisión de la empresa solo es visible para el admin general
+        ...(!isVenueAdmin
+            ? [{
+                icon: <TrendingUp className="h-5 w-5 text-emerald-500" />,
+                label: "Comisión empresa hoy",
+                value: `$${formatPrice(todayCommission)}`,
+                bg: "bg-emerald-500/10",
+            }]
+            : []),
         {
             icon: <MapPin className="h-5 w-5 text-warning" />,
             label: "Canchas ocupadas",
@@ -349,7 +354,7 @@ function TodaySummary() {
     return (
         <div>
             <h2 className="text-lg font-bold mb-4">Resumen del día</h2>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <div className={`grid grid-cols-2 gap-3 ${isVenueAdmin ? "lg:grid-cols-4" : "lg:grid-cols-5"}`}>
                 {stats.map((stat, i) => (
                     <Card key={i} className="border border-divider">
                         <CardBody className="flex-row items-center gap-3 p-4">

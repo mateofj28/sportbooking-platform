@@ -60,11 +60,13 @@ export function Navbar() {
                         </Link>
                     </NavbarItem>
                 )}
-                <NavbarItem>
-                    <Link href="/facilities" className="text-sm font-medium text-white hover:text-blue-200">
-                        Instalaciones
-                    </Link>
-                </NavbarItem>
+                {user?.role !== "VENUE_ADMIN" && (
+                    <NavbarItem>
+                        <Link href="/facilities" className="text-sm font-medium text-white hover:text-blue-200">
+                            Instalaciones
+                        </Link>
+                    </NavbarItem>
+                )}
                 {isAuthenticated && (
                     <NavbarItem>
                         <Link href="/bookings" className="text-sm font-medium text-white hover:text-blue-200">
@@ -192,11 +194,13 @@ export function Navbar() {
                         </Link>
                     </NavbarMenuItem>
                 )}
-                <NavbarMenuItem>
-                    <Link className="w-full" href="/facilities" size="lg">
-                        Instalaciones
-                    </Link>
-                </NavbarMenuItem>
+                {user?.role !== "VENUE_ADMIN" && (
+                    <NavbarMenuItem>
+                        <Link className="w-full" href="/facilities" size="lg">
+                            Instalaciones
+                        </Link>
+                    </NavbarMenuItem>
+                )}
                 {isAuthenticated && (
                     <>
                         <NavbarMenuItem>

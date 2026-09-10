@@ -57,29 +57,35 @@ export default function FacilitiesPage() {
                     />
                     <Select
                         placeholder="Filtrar por deporte"
-                        selectedKeys={sportId ? [sportId] : []}
+                        selectedKeys={[sportId || "__all__"]}
                         onSelectionChange={(keys: any) => {
                             const selected = Array.from(keys)[0] as string;
-                            setSportId(selected || "");
+                            setSportId(selected === "__all__" ? "" : (selected || ""));
                         }}
                         className="max-w-xs"
                         variant="bordered"
                     >
-                        {(sports || []).map((sport) => (
+                        {[
+                            { id: "__all__", name: "Todos los deportes" },
+                            ...(sports || []),
+                        ].map((sport) => (
                             <SelectItem key={sport.id}>{sport.name}</SelectItem>
                         ))}
                     </Select>
                     <Select
                         placeholder="Filtrar por sede"
-                        selectedKeys={venueId ? [venueId] : []}
+                        selectedKeys={[venueId || "__all__"]}
                         onSelectionChange={(keys: any) => {
                             const selected = Array.from(keys)[0] as string;
-                            setVenueId(selected || "");
+                            setVenueId(selected === "__all__" ? "" : (selected || ""));
                         }}
                         className="max-w-xs"
                         variant="bordered"
                     >
-                        {(venues || []).map((v) => (
+                        {[
+                            { id: "__all__", name: "Todos los complejos" },
+                            ...(venues || []),
+                        ].map((v) => (
                             <SelectItem key={v.id}>{v.name}</SelectItem>
                         ))}
                     </Select>

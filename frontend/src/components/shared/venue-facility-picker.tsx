@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { useAuthStore } from "@/stores/auth-store";
 import { Autocomplete, AutocompleteItem } from "@heroui/autocomplete";
 import { useMemo, useState } from "react";
 import type { Facility, Venue } from "@/types";
@@ -13,6 +14,8 @@ interface VenueFacilityPickerProps {
 }
 
 export function VenueFacilityPicker({ selectedFacilityId, onFacilityChange, className }: VenueFacilityPickerProps) {
+  const { user } = useAuthStore();
+  const isVenueAdmin = user?.role === "VENUE_ADMIN";
   const [selectedVenueId, setSelectedVenueId] = useState<string>("");
 
   const { data: venues } = useQuery({
@@ -47,25 +50,28 @@ export function VenueFacilityPicker({ selectedFacilityId, onFacilityChange, clas
   };
 
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 ${className || ""}`}>
-      <Autocomplete
-        label="Sede"
-        placeholder="Buscar sede..."
-        variant="bordered"
-        defaultItems={venues || []}
-        selectedKey={selectedVenueId || null}
-        onSelectionChange={(key) => handleVenueChange(key as string | null)}
-        allowsCustomValue={false}
-      >
-        {(venue) => (
-          <AutocompleteItem key={venue.id} textValue={`${venue.name} — ${venue.city}`}>
-            <div>
-              <p className="text-sm font-medium">{venue.name}</p>
-              <p className="text-xs text-default-400">{venue.city}</p>
-            </div>
-          </AutocompleteItem>
-        )}
-      </Autocomplete>
+    <div className={`grid grid-cols-1 gap-3 ${isVenueAdmin ? "" : "sm:grid-cols-2"} ${className || ""}`}>
+      {/* El admin de sede no ve el selector de sede: solo gestiona la suya */}
+      {!isVenueAdmin && (
+        <Autocomplete
+          label="Sede"
+          placeholder="Buscar sede..."
+          variant="bordered"
+          defaultItems={venues || []}
+          selectedKey={selectedVenueId || null}
+          onSelectionChange={(key) => handleVenueChange(key as string | null)}
+          allowsCustomValue={false}
+        >
+          {(venue) => (
+            <AutocompleteItem key={venue.id} textValue={`${venue.name} — ${venue.city}`}>
+              <div>
+                <p className="text-sm font-medium">{venue.name}</p>
+                <p className="text-xs text-default-400">{venue.city}</p>
+              </div>
+            </AutocompleteItem>
+          )}
+        </Autocomplete>
+      )}
 
       <Autocomplete
         label="Instalación"
@@ -81,7 +87,9 @@ export function VenueFacilityPicker({ selectedFacilityId, onFacilityChange, clas
           <AutocompleteItem key={facility.id} textValue={`${facility.name} — ${facility.sport.name}`}>
             <div>
               <p className="text-sm font-medium">{facility.name}</p>
-              <p className="text-xs text-default-400">{facility.sport.name} • {facility.venue.name}</p>
+              <p className="text-xs text-default-400">
+                {isVenueAdmin ? facility.sport.name : `${facility.sport.name} • ${facility.venue.name}`}
+              </p>
             </div>
           </AutocompleteItem>
         )}

@@ -62,6 +62,21 @@ function generateTimeSlots(openTime: string, closeTime: string, durationMin: num
     return slots;
 }
 
+/** Convierte "09:00" -> "9:00 AM" (envuelve horas >= 24 para cruces de medianoche) */
+function formatTime12h(time: string): string {
+    if (!time) return "";
+    const [rawH, m] = time.split(":").map(Number);
+    const h = ((rawH % 24) + 24) % 24;
+    const ampm = h < 12 ? "AM" : "PM";
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
+/** Formatea un precio con separador de miles con coma: 25000 -> "25,000" */
+function formatPrice(value: number): string {
+    return Math.round(value).toLocaleString("en-US");
+}
+
 function getRemainingDaysOfMonth(): Date[] {
     const days: Date[] = [];
     const today = new Date();
@@ -292,7 +307,7 @@ export default function FacilityDetailPage({
                                                         : "border-divider bg-default-100 text-default-300 cursor-not-allowed line-through"
                                                     }`}
                                             >
-                                                {slotTime}
+                                                {formatTime12h(slotTime)}
                                             </button>
                                         );
                                     })}
@@ -333,14 +348,14 @@ export default function FacilityDetailPage({
                                                 📅 {selectedDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
                                             </span>
                                             <span className="flex items-center gap-1">
-                                                🕐 {selectedSlot} - {endTime}
+                                                🕐 {formatTime12h(selectedSlot)} - {formatTime12h(endTime)}
                                             </span>
                                             <span className="flex items-center gap-1">
                                                 ⏱️ {duration} min
                                             </span>
                                         </div>
                                         <p className="text-xl font-bold text-success">
-                                            ${price.toFixed(2)} ARS
+                                            ${formatPrice(price)} ARS
                                         </p>
                                     </div>
 
@@ -389,9 +404,9 @@ export default function FacilityDetailPage({
                                         className="flex items-center gap-2 rounded-lg bg-default-100 px-3 py-2"
                                     >
                                         <Clock className="h-3.5 w-3.5 text-default-500" />
-                                        <span className="text-sm">{price.startTime} - {price.endTime}</span>
+                                        <span className="text-sm">{formatTime12h(price.startTime)} - {formatTime12h(price.endTime)}</span>
                                         <Chip size="sm" color="success" variant="flat">
-                                            ${price.pricePerHour}/hr
+                                            ${formatPrice(Number(price.pricePerHour))}/hr
                                         </Chip>
                                     </div>
                                 ))}

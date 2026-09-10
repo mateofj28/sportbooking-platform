@@ -4,7 +4,7 @@ import {
     BadRequestException,
     ConflictException,
 } from '@nestjs/common';
-import { BookingStatus } from '@prisma/client';
+import { BookingStatus, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BookingsRepository } from './bookings.repository';
 import { CreateBookingDto, ManualBookingDto, CancelBookingDto } from './dto/create-booking.dto';
@@ -16,11 +16,28 @@ export class BookingsService {
         private readonly prisma: PrismaService,
     ) { }
 
-    async findAll(userId?: string, isAdmin = false, status?: BookingStatus, page = 1, limit = 20) {
-        if (isAdmin) {
+    async findAll(
+        user: { id: string; role: Role; venueId?: string | null },
+        status?: BookingStatus,
+        page = 1,
+        limit = 20,
+    ) {
+        // ADMIN general: todas las reservas
+        if (user.role === Role.ADMIN) {
             return this.bookingsRepository.findAll(undefined, status, page, limit);
         }
-        return this.bookingsRepository.findAll(userId, status, page, limit);
+        // ADMIN de sede: solo reservas de las instalaciones de su sede
+        if (user.role === Role.VENUE_ADMIN && user.venueId) {
+            return this.bookingsRepository.findAll(
+                undefined,
+                status,
+                page,
+                limit,
+                user.venueId,
+            );
+        }
+        // Cliente (o admin de sede sin sede asignada): solo sus reservas
+        return this.bookingsRepository.findAll(user.id, status, page, limit);
     }
 
     async findById(id: string) {

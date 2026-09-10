@@ -25,15 +25,14 @@ export class BookingsController {
     constructor(private readonly bookingsService: BookingsService) { }
 
     @Get()
-    @ApiOperation({ summary: 'List bookings (Admin: all, Client: own)' })
+    @ApiOperation({ summary: 'List bookings (Admin: all, Venue admin: su sede, Client: own)' })
     findAll(
-        @CurrentUser() user: { id: string; role: Role },
+        @CurrentUser() user: { id: string; role: Role; venueId?: string | null },
         @Query('status') status?: BookingStatus,
         @Query('page') page?: number,
         @Query('limit') limit?: number,
     ) {
-        const isAdmin = user.role === Role.ADMIN;
-        return this.bookingsService.findAll(user.id, isAdmin, status, page ? +page : 1, limit ? +limit : 20);
+        return this.bookingsService.findAll(user, status, page ? +page : 1, limit ? +limit : 20);
     }
 
     @Get(':id')

@@ -6,10 +6,18 @@ import { BookingStatus } from '@prisma/client';
 export class BookingsRepository {
     constructor(private prisma: PrismaService) { }
 
-    async findAll(userId?: string, status?: BookingStatus, page = 1, limit = 20) {
+    async findAll(
+        userId?: string,
+        status?: BookingStatus,
+        page = 1,
+        limit = 20,
+        venueId?: string,
+    ) {
         const where: Record<string, unknown> = {};
         if (userId) where.userId = userId;
         if (status) where.status = status;
+        // Filtra por sede a través de la instalación (para admins de sede)
+        if (venueId) where.facility = { venueId };
 
         const skip = (page - 1) * limit;
 

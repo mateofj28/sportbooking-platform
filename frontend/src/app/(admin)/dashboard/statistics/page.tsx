@@ -4,6 +4,7 @@ import { Card, CardBody, CardHeader, Chip, Spinner, Divider, Progress } from "@h
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { useAuthStore } from "@/stores/auth-store";
 import {
     Calendar, MapPin, TrendingUp, Clock, Activity, ArrowUpRight, ArrowDownRight, Users, Filter,
 } from "lucide-react";
@@ -41,6 +42,8 @@ function getDateStart(range: DateRange): Date | null {
 }
 
 export default function StatisticsPage() {
+    const { user } = useAuthStore();
+    const isVenueAdmin = user?.role === "VENUE_ADMIN";
     const [dateRange, setDateRange] = useState<DateRange>("month");
     const [sportFilter, setSportFilter] = useState("");
     const [venueFilter, setVenueFilter] = useState("");
@@ -50,7 +53,15 @@ export default function StatisticsPage() {
         queryKey: ["stats-bookings"],
         queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=500"),
     });
-    const allBookings = bookingsResponse?.data || [];
+    // El backend ya limita las reservas a la sede del admin de sede.
+    // Filtramos también en el cliente como salvaguarda de consistencia.
+    const allBookings = useMemo(() => {
+        const raw = bookingsResponse?.data || [];
+        if (isVenueAdmin && user?.venueId) {
+            return raw.filter((b) => b.facility?.venue?.id === user.venueId);
+        }
+        return raw;
+    }, [bookingsResponse, isVenueAdmin, user?.venueId]);
 
     const { data: facilities } = useQuery({
         queryKey: ["admin-facilities"],
@@ -153,7 +164,7 @@ export default function StatisticsPage() {
                       <Filter className="h-4 w-4 text-default-500" />
                       <span className="text-sm font-semibold">Filtros</span>
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className={`grid gap-3 sm:grid-cols-2 ${isVenueAdmin ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
                       <Select
                           label="Período"
                           size="sm"
@@ -176,17 +187,19 @@ export default function StatisticsPage() {
                               <SelectItem key={s.id}>{s.name}</SelectItem>
                           ))}
                       </Select>
-                      <Select
-                          label="Sede"
-                          size="sm"
-                          variant="bordered"
-                          selectedKeys={venueFilter ? [venueFilter] : []}
-                          onSelectionChange={(keys: any) => setVenueFilter(Array.from(keys)[0] as string || "")}
-                      >
-                          {venues.map((v) => (
-                              <SelectItem key={v.id}>{v.name}</SelectItem>
-                          ))}
-                      </Select>
+                        {!isVenueAdmin && (
+                            <Select
+                                label="Sede"
+                                size="sm"
+                                variant="bordered"
+                                selectedKeys={venueFilter ? [venueFilter] : []}
+                                onSelectionChange={(keys: any) => setVenueFilter(Array.from(keys)[0] as string || "")}
+                            >
+                                {venues.map((v) => (
+                                    <SelectItem key={v.id}>{v.name}</SelectItem>
+                                ))}
+                            </Select>
+                        )}
                       <Select
                           label="Estado"
                           size="sm"
@@ -214,9 +227,11 @@ export default function StatisticsPage() {
           </Card>
 
           {/* Stats Cards */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${isVenueAdmin ? "xl:grid-cols-5" : "xl:grid-cols-6"}`}>
                 <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Ingresos" value={`$${Math.round(totalRevenue).toLocaleString("en-US")}`} color="bg-success-50 text-success-600" />
-                <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Comisión empresa" value={`$${Math.round(totalCommission).toLocaleString("en-US")}`} color="bg-emerald-100 text-emerald-600" />
+                {!isVenueAdmin && (
+                    <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Comisión empresa" value={`$${Math.round(totalCommission).toLocaleString("en-US")}`} color="bg-emerald-100 text-emerald-600" />
+                )}
                 <StatCard icon={<Calendar className="h-5 w-5" />} label="Reservas" value={filteredBookings.length} color="bg-primary-50 text-primary-600" trend={`${confirmedBookings.length} confirmadas`} />
               <StatCard icon={<Activity className="h-5 w-5" />} label="Confirmación" value={`${occupancyRate}%`} color="bg-secondary-50 text-secondary-600" trend={`${cancelledBookings.length} canceladas`} trendUp={false} />
               <StatCard icon={<MapPin className="h-5 w-5" />} label="Instalaciones" value={facilities?.filter((f) => f.isActive).length || 0} color="bg-warning-50 text-warning-600" trend={`${sports?.length || 0} deportes`} />

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Input, Spinner } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
 import { useFacilities } from "@/hooks/use-facilities";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -13,10 +14,11 @@ import { FacilityCard } from "@/components/cards/facility-card";
 import { Search } from "lucide-react";
 import type { Sport, Venue } from "@/types";
 
-export default function FacilitiesPage() {
-    const [search, setSearch] = useState("");
-    const [sportId, setSportId] = useState("");
-    const [venueId, setVenueId] = useState("");
+function FacilitiesContent() {
+    const searchParams = useSearchParams();
+    const [search, setSearch] = useState(() => searchParams.get("search") || "");
+    const [sportId, setSportId] = useState(() => searchParams.get("sportId") || "");
+    const [venueId, setVenueId] = useState(() => searchParams.get("venueId") || "");
     const debouncedSearch = useDebounce(search, 400);
 
     const { data: sports } = useQuery({
@@ -117,5 +119,19 @@ export default function FacilitiesPage() {
             </main>
             <Footer />
         </div>
+    );
+}
+
+export default function FacilitiesPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="flex min-h-screen items-center justify-center">
+                    <Spinner size="lg" />
+                </div>
+            }
+        >
+            <FacilitiesContent />
+        </Suspense>
     );
 }

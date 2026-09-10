@@ -89,6 +89,12 @@ export default function AdminFacilitiesPage() {
         queryFn: () => apiClient.get<Venue[]>("/venues"),
     });
 
+    // Nombre de la sede del admin de sede (para el título)
+    const myVenueName = useMemo(
+        () => venues?.find((v) => v.id === user?.venueId)?.name || "",
+        [venues, user?.venueId],
+    );
+
     // Filters
     const [searchName, setSearchName] = useState("");
     const [filterSport, setFilterSport] = useState("");
@@ -244,7 +250,11 @@ export default function AdminFacilitiesPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold">Instalaciones</h1>
+                    <h1 className="text-2xl font-bold">
+                        {isVenueAdmin && myVenueName
+                            ? `Instalaciones de ${myVenueName}`
+                            : "Instalaciones"}
+                    </h1>
                     <p className="text-sm text-default-500 mt-1">Gestiona las canchas y campos</p>
                 </div>
                 <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={handleCreate}>
@@ -315,65 +325,69 @@ export default function AdminFacilitiesPage() {
 
             <Table aria-label="Instalaciones">
                 <TableHeader>
-                    <TableColumn>NOMBRE</TableColumn>
-                    <TableColumn>DEPORTE</TableColumn>
-                    <TableColumn>SEDE</TableColumn>
-                    <TableColumn>SUPERFICIE</TableColumn>
-                    <TableColumn>ESTADO</TableColumn>
-                    <TableColumn>ACCIONES</TableColumn>
+                    {[
+                        <TableColumn key="nombre">NOMBRE</TableColumn>,
+                        <TableColumn key="deporte">DEPORTE</TableColumn>,
+                        ...(!isVenueAdmin ? [<TableColumn key="sede">SEDE</TableColumn>] : []),
+                        <TableColumn key="superficie">SUPERFICIE</TableColumn>,
+                        <TableColumn key="estado">ESTADO</TableColumn>,
+                        <TableColumn key="acciones">ACCIONES</TableColumn>,
+                    ]}
                 </TableHeader>
                 <TableBody emptyContent="No hay instalaciones que coincidan con los filtros">
                     {filteredFacilities.map((facility) => (
                         <TableRow key={facility.id}>
-                            <TableCell className="font-medium">{facility.name}</TableCell>
-                            <TableCell>
-                                <Chip color="primary" size="sm" variant="flat">
-                                    {facility.sport.name}
-                                </Chip>
-                            </TableCell>
-                            <TableCell>{facility.venue.name}</TableCell>
-                            <TableCell>{facility.surfaceType || "-"}</TableCell>
-                            <TableCell>
-                                <button
-                                    type="button"
-                                    disabled={toggleActiveMutation.isPending}
-                                    onClick={() => toggleActiveMutation.mutate({ id: facility.id, isActive: !facility.isActive })}
-                                    className="disabled:opacity-50"
-                                    aria-label="Activar o desactivar instalación"
-                                >
-                                    <Chip
-                                        color={facility.isActive ? "success" : "danger"}
-                                        size="sm"
-                                        variant="flat"
-                                        className="cursor-pointer"
-                                        startContent={<span className={`mx-1 h-2 w-2 rounded-full ${facility.isActive ? "bg-success" : "bg-danger"}`} />}
-                                    >
-                                        {facility.isActive ? "Activa" : "Inactiva"}
+                            {[
+                                <TableCell key="nombre" className="font-medium">{facility.name}</TableCell>,
+                                <TableCell key="deporte">
+                                    <Chip color="primary" size="sm" variant="flat">
+                                        {facility.sport.name}
                                     </Chip>
-                                </button>
-                            </TableCell>
-                            <TableCell>
-                                <div className="flex gap-1">
-                                    <Button
-                                        size="sm"
-                                        color="primary"
-                                        variant="light"
-                                        isIconOnly
-                                        onPress={() => handleEdit(facility)}
+                                </TableCell>,
+                                ...(!isVenueAdmin ? [<TableCell key="sede">{facility.venue.name}</TableCell>] : []),
+                                <TableCell key="superficie">{facility.surfaceType || "-"}</TableCell>,
+                                <TableCell key="estado">
+                                    <button
+                                        type="button"
+                                        disabled={toggleActiveMutation.isPending}
+                                        onClick={() => toggleActiveMutation.mutate({ id: facility.id, isActive: !facility.isActive })}
+                                        className="disabled:opacity-50"
+                                        aria-label="Activar o desactivar instalación"
                                     >
-                                        <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        color="danger"
-                                        variant="light"
-                                        isIconOnly
-                                        onPress={() => setDeleteId(facility.id)}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </TableCell>
+                                        <Chip
+                                            color={facility.isActive ? "success" : "danger"}
+                                            size="sm"
+                                            variant="flat"
+                                            className="cursor-pointer"
+                                            startContent={<span className={`mx-1 h-2 w-2 rounded-full ${facility.isActive ? "bg-success" : "bg-danger"}`} />}
+                                        >
+                                            {facility.isActive ? "Activa" : "Inactiva"}
+                                        </Chip>
+                                    </button>
+                                </TableCell>,
+                                <TableCell key="acciones">
+                                    <div className="flex gap-1">
+                                        <Button
+                                            size="sm"
+                                            color="primary"
+                                            variant="light"
+                                            isIconOnly
+                                            onPress={() => handleEdit(facility)}
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            color="danger"
+                                            variant="light"
+                                            isIconOnly
+                                            onPress={() => setDeleteId(facility.id)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </TableCell>,
+                            ]}
                         </TableRow>
                     ))}
                 </TableBody>

@@ -40,7 +40,9 @@ function generateTimeSlots(openTime: string, closeTime: string, durationMin: num
     const [openH, openM] = openTime.split(":").map(Number);
     const [closeH, closeM] = closeTime.split(":").map(Number);
     const startMinutes = openH * 60 + openM;
-    const endMinutes = closeH * 60 + closeM;
+    let endMinutes = closeH * 60 + closeM;
+    // Si cruza medianoche (cierre <= apertura), extender el fin 24h
+    if (endMinutes <= startMinutes) endMinutes += 24 * 60;
 
     // If today, only show slots starting from next full hour
     let minStart = startMinutes;
@@ -52,8 +54,9 @@ function generateTimeSlots(openTime: string, closeTime: string, durationMin: num
     }
 
     for (let m = minStart; m + durationMin <= endMinutes; m += durationMin) {
-        const h = Math.floor(m / 60);
-        const min = m % 60;
+        const mInDay = m % (24 * 60);
+        const h = Math.floor(mInDay / 60);
+        const min = mInDay % 60;
         slots.push(`${h.toString().padStart(2, "0")}:${min.toString().padStart(2, "0")}`);
     }
     return slots;

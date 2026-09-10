@@ -65,7 +65,9 @@ export class FacilitiesService {
         const [openH, openM] = schedule.openTime.split(':').map(Number);
         const [closeH, closeM] = schedule.closeTime.split(':').map(Number);
         const startMin = openH * 60 + openM;
-        const endMin = closeH * 60 + closeM;
+        let endMin = closeH * 60 + closeM;
+        // Si cruza medianoche (cierre <= apertura), extender el fin 24h
+        if (endMin <= startMin) endMin += 24 * 60;
         const duration = facility.minBookingDuration;
 
         // Get existing bookings for that day
@@ -97,20 +99,23 @@ export class FacilitiesService {
         const isToday = date.toDateString() === now.toDateString();
 
         for (let m = startMin; m + duration <= endMin; m += duration) {
-            const h = Math.floor(m / 60);
-            const min = m % 60;
+            const dayOffset = Math.floor(m / (24 * 60)); // 1 si el slot cae en la madrugada del día siguiente
+            const mInDay = m % (24 * 60);
+            const h = Math.floor(mInDay / 60);
+            const min = mInDay % 60;
             const timeStr = `${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
 
-            // Check if in the past for today
-            if (isToday && (h * 60 + min) <= (now.getHours() * 60 + now.getMinutes())) {
+            // Datetime real del slot (puede ser el día siguiente si cruza medianoche)
+            const slotStart = new Date(dateStr);
+            slotStart.setDate(slotStart.getDate() + dayOffset);
+            slotStart.setHours(h, min, 0, 0);
+            const slotEnd = new Date(slotStart.getTime() + duration * 60000);
+
+            // Check if in the past (comparado con el datetime real)
+            if (slotStart <= now) {
                 slots.push({ time: timeStr, available: false });
                 continue;
             }
-
-            // Check conflicts with bookings
-            const slotStart = new Date(dateStr);
-            slotStart.setHours(h, min, 0, 0);
-            const slotEnd = new Date(slotStart.getTime() + duration * 60000);
 
             const hasConflict = bookings.some(
                 (b) => new Date(b.startDatetime) < slotEnd && new Date(b.endDatetime) > slotStart,

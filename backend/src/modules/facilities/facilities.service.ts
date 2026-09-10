@@ -45,6 +45,18 @@ export class FacilitiesService {
     }
 
     async getAvailability(id: string, dateStr: string) {
+        // Zona horaria de Argentina: UTC-3. Trabajamos las horas como "hora local AR".
+        const AR_OFFSET_MIN = 3 * 60; // Argentina está 3h detrás de UTC
+
+        // dateStr = "YYYY-MM-DD". Parseamos las partes sin depender de la zona del servidor.
+        const [year, month, day] = dateStr.split('-').map(Number);
+
+        /** Instante UTC real correspondiente a una hora local AR de la fecha base + dayOffset días */
+        const arLocalToUtc = (minutesFromMidnight: number, dayOffset = 0) => {
+            // hora local AR -> UTC sumando el offset
+            return new Date(Date.UTC(year, month - 1, day + dayOffset, 0, minutesFromMidnight + AR_OFFSET_MIN, 0, 0));
+        };
+
         const facility = await this.prisma.facility.findUnique({
             where: { id },
             include: { schedules: true, pricing: { where: { isActive: true } } },
@@ -52,8 +64,11 @@ export class FacilitiesService {
 
         if (!facility) throw new NotFoundException('Instalación no encontrada');
 
-        const date = new Date(dateStr);
-        const dayOfWeek = (date.getDay() + 6) % 7;
+        // Día de la semana en hora local AR (0=Lunes ... 6=Domingo)
+        const localMidnightUtc = arLocalToUtc(0);
+        const jsDay = localMidnightUtc.getUTCDay(); // 0=Domingo
+        const dayOfWeek = (jsDay + 6) % 7;
+
         const schedule = facility.schedules.find(
             (s) => s.dayOfWeek === dayOfWeek && s.isActive,
         );
@@ -63,7 +78,6 @@ export class FacilitiesService {
         }
 
         // Regla de negocio: debe existir un precio que aplique a este día
-        // (una tarifa "todos los días" con dayOfWeek null, o una específica del día)
         const hasPricing = facility.pricing.some(
             (p) => p.dayOfWeek === null || p.dayOfWeek === dayOfWeek,
         );
@@ -72,20 +86,17 @@ export class FacilitiesService {
             return { available: false, slots: [], message: 'Sin tarifa para este día' };
         }
 
-        // Generate all possible slots
+        // Rango de apertura en minutos desde medianoche (local AR)
         const [openH, openM] = schedule.openTime.split(':').map(Number);
         const [closeH, closeM] = schedule.closeTime.split(':').map(Number);
         const startMin = openH * 60 + openM;
         let endMin = closeH * 60 + closeM;
-        // Si cruza medianoche (cierre <= apertura), extender el fin 24h
-        if (endMin <= startMin) endMin += 24 * 60;
+        if (endMin <= startMin) endMin += 24 * 60; // cruza medianoche
         const duration = facility.minBookingDuration;
 
-        // Get existing bookings for that day
-        const dayStart = new Date(dateStr);
-        dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(dateStr);
-        dayEnd.setHours(23, 59, 59, 999);
+        // Ventana del día (en UTC real) para traer reservas/bloqueos
+        const dayStart = arLocalToUtc(0);
+        const dayEnd = arLocalToUtc(48 * 60); // hasta el final del día siguiente (cubre slots de madrugada)
 
         const [bookings, blockedSlots] = await Promise.all([
             this.prisma.booking.findMany({
@@ -107,22 +118,18 @@ export class FacilitiesService {
 
         const slots: { time: string; available: boolean }[] = [];
         const now = new Date();
-        const isToday = date.toDateString() === now.toDateString();
 
         for (let m = startMin; m + duration <= endMin; m += duration) {
-            const dayOffset = Math.floor(m / (24 * 60)); // 1 si el slot cae en la madrugada del día siguiente
             const mInDay = m % (24 * 60);
             const h = Math.floor(mInDay / 60);
             const min = mInDay % 60;
             const timeStr = `${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
 
-            // Datetime real del slot (puede ser el día siguiente si cruza medianoche)
-            const slotStart = new Date(dateStr);
-            slotStart.setDate(slotStart.getDate() + dayOffset);
-            slotStart.setHours(h, min, 0, 0);
+            // Instante UTC real del slot (m ya considera el cruce de medianoche)
+            const slotStart = arLocalToUtc(m);
             const slotEnd = new Date(slotStart.getTime() + duration * 60000);
 
-            // Check if in the past (comparado con el datetime real)
+            // ¿Está en el pasado? (comparación de instantes reales)
             if (slotStart <= now) {
                 slots.push({ time: timeStr, available: false });
                 continue;

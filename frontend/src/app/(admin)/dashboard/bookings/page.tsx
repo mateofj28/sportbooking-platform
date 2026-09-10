@@ -122,7 +122,14 @@ export default function AdminBookingsPage() {
   };
 
     const formatDate = (d: string) => new Date(d).toLocaleDateString("es-AR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
-    const formatTime = (d: string) => new Date(d).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    const formatTime = (dateStr: string) => {
+        const d = new Date(dateStr);
+        let h = d.getHours();
+        const m = d.getMinutes();
+        const ampm = h < 12 ? "a. m." : "p. m.";
+        h = h % 12; if (h === 0) h = 12;
+        return `${h}:${String(m).padStart(2, "0")} ${ampm}`;
+    };
 
     if (isLoading) {
       return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;
@@ -206,7 +213,7 @@ export default function AdminBookingsPage() {
                             </div>
                             <div className="flex items-center gap-2">
                                 <DollarSign className="h-3.5 w-3.5 text-success" />
-                                          <span className="font-semibold text-success">{Number(booking.totalPrice).toLocaleString("es-AR")} ARS</span>
+                                          <span className="font-semibold text-success">{Math.round(Number(booking.totalPrice)).toLocaleString("en-US")} ARS</span>
                             </div>
                         </div>
 

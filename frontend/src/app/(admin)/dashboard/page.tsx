@@ -8,6 +8,22 @@ import { useState, useEffect, useCallback } from "react";
 import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp } from "lucide-react";
 import type { Booking, Facility, PaginatedResult, User as UserType } from "@/types";
 
+/** Hora 12h en español sin cero adelante: "9:00 a. m." */
+function formatTime12h(dateStr: string): string {
+    const d = new Date(dateStr);
+    let h = d.getHours();
+    const m = d.getMinutes();
+    const ampm = h < 12 ? "a. m." : "p. m.";
+    h = h % 12;
+    if (h === 0) h = 12;
+    return `${h}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
+/** Precio con separador de miles con coma: 25000 -> "25,000" */
+function formatPrice(value: number): string {
+    return Math.round(value).toLocaleString("en-US");
+}
+
 const ADS = [
     {
         title: "🏆 Torneo de Fútbol 5",
@@ -169,7 +185,7 @@ function TodayBookings() {
     const totalPages = Math.ceil(todayBookings.length / perPage);
     const paginatedBookings = todayBookings.slice((page - 1) * perPage, page * perPage);
 
-    const formatTime = (d: string) => new Date(d).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    const formatTime = (d: string) => formatTime12h(d);
 
     return (
         <div>
@@ -212,7 +228,7 @@ function TodayBookings() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 flex-shrink-0">
-                                            <span className="text-sm font-bold text-success">${booking.totalPrice}</span>
+                                            <span className="text-sm font-bold text-success">${formatPrice(Number(booking.totalPrice))}</span>
                                             <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
                                                 {STATUS_LABELS[booking.status]}
                                             </Chip>
@@ -313,13 +329,13 @@ function TodaySummary() {
         {
             icon: <DollarSign className="h-5 w-5 text-success" />,
             label: "Ingresos hoy",
-            value: `$${todayRevenue.toLocaleString("es-AR")}`,
+            value: `$${formatPrice(todayRevenue)}`,
             bg: "bg-success/10",
         },
         {
             icon: <TrendingUp className="h-5 w-5 text-emerald-500" />,
             label: "Comisión empresa hoy",
-            value: `$${todayCommission.toLocaleString("es-AR", { maximumFractionDigits: 0 })}`,
+            value: `$${formatPrice(todayCommission)}`,
             bg: "bg-emerald-500/10",
         },
         {

@@ -5,10 +5,10 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, DatePicker,
 } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
-import { today, getLocalTimeZone } from "@internationalized/date";
+import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
 
-// Tipo mínimo para una fecha del DatePicker (year/month/day)
-type CalDate = { year: number; month: number; day: number };
+// El DatePicker de HeroUI requiere instancias de CalendarDate
+type CalDate = CalendarDate;
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Plus, Trash2, Ban, Pencil } from "lucide-react";
@@ -124,7 +124,7 @@ export default function AdminBlockedSlotsPage() {
     const end = new Date(slot.endDatetime);
     const pad = (n: number) => String(n).padStart(2, "0");
     setEditId(slot.id);
-    setEditDate({ year: start.getFullYear(), month: start.getMonth() + 1, day: start.getDate() });
+    setEditDate(new CalendarDate(start.getFullYear(), start.getMonth() + 1, start.getDate()));
     setEditForm({
       startTime: `${pad(start.getHours())}:${pad(start.getMinutes())}`,
       endTime: `${pad(end.getHours())}:${pad(end.getMinutes())}`,

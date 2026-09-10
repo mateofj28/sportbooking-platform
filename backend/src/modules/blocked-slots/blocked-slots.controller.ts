@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Param,
   Body,
@@ -10,7 +11,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { BlockedSlotsService } from './blocked-slots.service';
-import { CreateBlockedSlotDto } from './dto/create-blocked-slot.dto';
+import { CreateBlockedSlotDto, UpdateBlockedSlotDto } from './dto/create-blocked-slot.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -38,6 +39,12 @@ export class BlockedSlotsController {
     @CurrentUser('id') userId: string,
   ) {
     return this.blockedSlotsService.create(facilityId, dto, userId);
+  }
+
+  @Patch('blocked-slots/:id')
+  @ApiOperation({ summary: 'Update blocked slot (Admin)' })
+  update(@Param('id') id: string, @Body() dto: UpdateBlockedSlotDto) {
+    return this.blockedSlotsService.update(id, dto);
   }
 
   @Delete('blocked-slots/:id')

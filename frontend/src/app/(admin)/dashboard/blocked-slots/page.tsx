@@ -11,7 +11,7 @@ import { today, getLocalTimeZone } from "@internationalized/date";
 type CalDate = { year: number; month: number; day: number };
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { Plus, Trash2, Ban } from "lucide-react";
+import { Plus, Trash2, Ban, Pencil } from "lucide-react";
 import { useState } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
@@ -67,9 +67,14 @@ export default function AdminBlockedSlotsPage() {
   const addToast = useToastStore((s) => s.addToast);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   const [selectedFacility, setSelectedFacility] = useState<string>("");
   const [dateValue, setDateValue] = useState<CalDate | null>(null);
   const [form, setForm] = useState({ startTime: "08:00", endTime: "22:00", reason: "" });
+  // Estado del formulario de edición
+  const [editId, setEditId] = useState<string>("");
+  const [editDate, setEditDate] = useState<CalDate | null>(null);
+  const [editForm, setEditForm] = useState({ startTime: "08:00", endTime: "22:00", reason: "" });
 
   const { data: blockedSlots, isLoading } = useQuery({
     queryKey: ["blocked-slots", selectedFacility],
@@ -103,6 +108,43 @@ export default function AdminBlockedSlotsPage() {
     mutationFn: (id: string) => apiClient.delete(`/blocked-slots/${id}`),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] }); addToast("Item eliminado correctamente"); },
   });
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, ...data }: any) => apiClient.patch(`/blocked-slots/${id}`, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] }); onEditClose(); addToast("Bloqueo actualizado correctamente"); },
+    onError: (error: any) => {
+      const msg = error?.message || error?.response?.data?.message || "No se pudo actualizar el bloqueo";
+      addToast(Array.isArray(msg) ? msg[0] : msg);
+    },
+  });
+
+  // Abre el modal de edición precargando los datos del bloqueo
+  const handleEditOpen = (slot: BlockedSlot) => {
+    const start = new Date(slot.startDatetime);
+    const end = new Date(slot.endDatetime);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    setEditId(slot.id);
+    setEditDate({ year: start.getFullYear(), month: start.getMonth() + 1, day: start.getDate() });
+    setEditForm({
+      startTime: `${pad(start.getHours())}:${pad(start.getMinutes())}`,
+      endTime: `${pad(end.getHours())}:${pad(end.getMinutes())}`,
+      reason: slot.reason || "",
+    });
+    onEditOpen();
+  };
+
+  const handleEditBlock = () => {
+    const crosses = toMinutes(editForm.endTime) <= toMinutes(editForm.startTime);
+    if (crosses && toMinutes(editForm.endTime) > 2 * 60) {
+      addToast("Los bloqueos que cruzan medianoche solo pueden terminar hasta las 2:00 AM");
+      return;
+    }
+    editMutation.mutate({
+      id: editId,
+      ...buildBlockRange(calendarDateToISO(editDate), editForm.startTime, editForm.endTime),
+      reason: editForm.reason || undefined,
+    });
+  };
 
   const formatDT = (dt: string) => new Date(dt).toLocaleString("es-AR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
@@ -142,9 +184,14 @@ export default function AdminBlockedSlotsPage() {
                       <p className="text-sm font-medium">{formatDT(slot.startDatetime)} → {formatDT(slot.endDatetime)}</p>
                       {slot.reason && <p className="text-xs text-default-500 mt-0.5">{slot.reason}</p>}
                     </div>
-                    <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(slot.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEditOpen(slot)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(slot.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -200,6 +247,56 @@ export default function AdminBlockedSlotsPage() {
               isLoading={createMutation.isPending}
             >
               Bloquear
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal isOpen={isEditOpen} onClose={onEditClose}>
+        <ModalContent>
+          <ModalHeader>Editar Bloqueo</ModalHeader>
+          <ModalBody className="gap-4">
+            <DatePicker
+              label="Fecha"
+              variant="bordered"
+              value={editDate as any}
+              onChange={(v: any) => setEditDate(v)}
+              showMonthAndYearPickers
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <Select
+                label="Desde"
+                variant="bordered"
+                selectedKeys={editForm.startTime ? [editForm.startTime] : []}
+                onSelectionChange={(keys: any) => setEditForm({ ...editForm, startTime: Array.from(keys)[0] as string || "08:00" })}
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <SelectItem key={t.value}>{t.label}</SelectItem>
+                ))}
+              </Select>
+              <Select
+                label="Hasta"
+                variant="bordered"
+                selectedKeys={editForm.endTime ? [editForm.endTime] : []}
+                onSelectionChange={(keys: any) => setEditForm({ ...editForm, endTime: Array.from(keys)[0] as string || "22:00" })}
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <SelectItem key={t.value}>{t.label}</SelectItem>
+                ))}
+              </Select>
+            </div>
+            <Textarea label="Motivo (opcional)" variant="bordered" value={editForm.reason} onValueChange={(v) => setEditForm({ ...editForm, reason: v })} placeholder="Ej: Mantenimiento de cancha" />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onEditClose}>Cancelar</Button>
+            <Button
+              color="primary"
+              isDisabled={!editDate}
+              onPress={handleEditBlock}
+              isLoading={editMutation.isPending}
+            >
+              Guardar
             </Button>
           </ModalFooter>
         </ModalContent>

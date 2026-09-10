@@ -17,3 +17,20 @@ export class CreateBlockedSlotDto {
   @IsString()
   reason?: string;
 }
+
+export class UpdateBlockedSlotDto {
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDateString()
+  startDatetime?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDateString()
+  endDatetime?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}

@@ -26,6 +26,7 @@ import { useState, useMemo } from "react";
 import { Select, SelectItem } from "@heroui/select";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
+import { useAuthStore } from "@/stores/auth-store";
 import type { Sport, Venue, Facility } from "@/types";
 
 const SURFACE_TYPES = [
@@ -71,6 +72,8 @@ function sportKey(name?: string): string {
 export default function AdminFacilitiesPage() {
     const queryClient = useQueryClient();
     const addToast = useToastStore((s) => s.addToast);
+    const { user } = useAuthStore();
+    const isVenueAdmin = user?.role === "VENUE_ADMIN";
     const [deleteId, setDeleteId] = useState<string | null>(null);
     // Admin ve todas las instalaciones (activas e inactivas)
     const { data: facilities, isLoading } = useQuery({
@@ -95,13 +98,15 @@ export default function AdminFacilitiesPage() {
     const filteredFacilities = useMemo(() => {
         if (!facilities) return [];
         return facilities.filter((f) => {
+            // El admin de sede solo ve las instalaciones de su propia sede
+            if (isVenueAdmin && user?.venueId && f.venue.id !== user.venueId) return false;
             if (searchName && !f.name.toLowerCase().includes(searchName.toLowerCase())) return false;
             if (filterSport && f.sport.id !== filterSport) return false;
             if (filterVenue && f.venue.id !== filterVenue) return false;
             if (filterSurface && f.surfaceType?.toLowerCase() !== filterSurface.toLowerCase()) return false;
             return true;
         });
-    }, [facilities, searchName, filterSport, filterVenue, filterSurface]);
+    }, [facilities, isVenueAdmin, user?.venueId, searchName, filterSport, filterVenue, filterSurface]);
 
     const { isOpen, onOpen, onClose } = useDisclosure();
     const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
@@ -197,7 +202,8 @@ export default function AdminFacilitiesPage() {
         setForm({
             name: "",
             description: "",
-            venueId: venues?.[0]?.id || "",
+            // El admin de sede solo puede crear instalaciones en su propia sede
+            venueId: isVenueAdmin && user?.venueId ? user.venueId : (venues?.[0]?.id || ""),
             sportId: defaultSport?.id || "",
             surfaceType: SURFACE_BY_SPORT[key] || "",
             isIndoor: false,
@@ -247,7 +253,7 @@ export default function AdminFacilitiesPage() {
             </div>
 
             {/* Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 ${isVenueAdmin ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
                 <Input
                     placeholder="Buscar por nombre..."
                     variant="bordered"
@@ -269,17 +275,19 @@ export default function AdminFacilitiesPage() {
                         <SelectItem key={s.id}>{s.name}</SelectItem>
                     ))}
                 </Select>
-                <Select
-                    placeholder="Filtrar por sede"
-                    variant="bordered"
-                    size="sm"
-                    selectedKeys={filterVenue ? [filterVenue] : []}
-                    onSelectionChange={(keys: any) => setFilterVenue(Array.from(keys)[0] as string || "")}
-                >
-                    {(venues || []).map((v) => (
-                        <SelectItem key={v.id}>{v.name}</SelectItem>
-                    ))}
-                </Select>
+                {!isVenueAdmin && (
+                    <Select
+                        placeholder="Filtrar por sede"
+                        variant="bordered"
+                        size="sm"
+                        selectedKeys={filterVenue ? [filterVenue] : []}
+                        onSelectionChange={(keys: any) => setFilterVenue(Array.from(keys)[0] as string || "")}
+                    >
+                        {(venues || []).map((v) => (
+                            <SelectItem key={v.id}>{v.name}</SelectItem>
+                        ))}
+                    </Select>
+                )}
                 <Select
                     placeholder="Filtrar por superficie"
                     variant="bordered"
@@ -381,10 +389,14 @@ export default function AdminFacilitiesPage() {
                                 label="Sede"
                                 placeholder="Seleccionar sede"
                                 variant="bordered"
+                                isDisabled={isVenueAdmin}
                                 selectedKeys={form.venueId ? new Set([form.venueId]) as any : new Set() as any}
                                 onSelectionChange={(keys: any) => setForm({ ...form, venueId: Array.from(keys)[0] as string || "" })}
                             >
-                                {(venues || []).map((v) => (
+                                {(isVenueAdmin
+                                    ? (venues || []).filter((v) => v.id === user?.venueId)
+                                    : (venues || [])
+                                ).map((v) => (
                                     <SelectItem key={v.id} textValue={`${v.name} — ${v.city}`}>{v.name} — {v.city}</SelectItem>
                                 ))}
                             </Select>

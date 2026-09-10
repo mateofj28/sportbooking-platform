@@ -2,6 +2,47 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePricingDto, UpdatePricingDto } from './dto/create-pricing.dto';
 
+// Cierre máximo permitido en madrugada (02:00)
+const MAX_OVERNIGHT_CLOSE = 2 * 60; // minutos
+
+/** "HH:MM" -> minutos desde medianoche */
+function toMinutes(t: string): number {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+}
+
+/** Rango en minutos [inicio, fin). Si cruza medianoche, extiende el fin +24h */
+function rangeMinutes(start: string, end: string): [number, number] {
+    const s = toMinutes(start);
+    let e = toMinutes(end);
+    if (e <= s) e += 24 * 60;
+    return [s, e];
+}
+
+/** Dos rangos (posiblemente nocturnos) se solapan */
+function rangesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
+    const [aS, aE] = rangeMinutes(startA, endA);
+    const [bS, bE] = rangeMinutes(startB, endB);
+    return aS < bE && bS < aE;
+}
+
+/**
+ * Valida un rango. Permite rangos normales o que cruzan medianoche
+ * siempre que el cierre no pase de las 02:00.
+ */
+function validateRange(start: string, end: string) {
+    const s = toMinutes(start);
+    const e = toMinutes(end);
+    if (s === e) {
+        throw new BadRequestException('La hora de inicio y fin no pueden ser iguales');
+    }
+    if (e < s && e > MAX_OVERNIGHT_CLOSE) {
+        throw new BadRequestException(
+            'Las franjas que cruzan medianoche solo pueden terminar hasta las 2:00 AM',
+        );
+    }
+}
+
 @Injectable()
 export class PricingService {
     constructor(private prisma: PrismaService) { }
@@ -14,10 +55,7 @@ export class PricingService {
     }
 
     async create(facilityId: string, dto: CreatePricingDto) {
-        // La hora de fin debe ser posterior a la de inicio
-        if (dto.startTime >= dto.endTime) {
-            throw new BadRequestException('La hora de fin debe ser posterior a la de inicio');
-        }
+        validateRange(dto.startTime, dto.endTime);
 
         await this.assertNoOverlap(facilityId, dto.dayOfWeek ?? null, dto.startTime, dto.endTime);
 
@@ -47,8 +85,8 @@ export class PricingService {
             const sameDay =
                 dayOfWeek === null || p.dayOfWeek === null || p.dayOfWeek === dayOfWeek;
             if (!sameDay) return false;
-            // Se solapan las horas
-            return startTime < p.endTime && endTime > p.startTime;
+            // Se solapan las horas (con soporte de cruce de medianoche)
+            return rangesOverlap(startTime, endTime, p.startTime, p.endTime);
         });
 
         if (conflict) {
@@ -66,9 +104,7 @@ export class PricingService {
         const endTime = dto.endTime ?? pricing.endTime;
         const dayOfWeek = dto.dayOfWeek !== undefined ? dto.dayOfWeek : pricing.dayOfWeek;
 
-        if (startTime >= endTime) {
-            throw new BadRequestException('La hora de fin debe ser posterior a la de inicio');
-        }
+        validateRange(startTime, endTime);
 
         await this.assertNoOverlap(pricing.facilityId, dayOfWeek, startTime, endTime, id);
 

@@ -43,6 +43,25 @@ function calendarDateToISO(d: CalDate | null): string {
   return `${d.year}-${mm}-${dd}`;
 }
 
+/** "HH:MM" -> minutos */
+function toMinutes(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+/**
+ * Construye los datetimes de un bloqueo. Si la hora de fin es menor o igual a la
+ * de inicio, se interpreta que cruza medianoche y el fin cae al día siguiente.
+ */
+function buildBlockRange(dateISO: string, startTime: string, endTime: string) {
+  const start = new Date(`${dateISO}T${startTime}:00`);
+  const end = new Date(`${dateISO}T${endTime}:00`);
+  if (toMinutes(endTime) <= toMinutes(startTime)) {
+    end.setDate(end.getDate() + 1); // cruza medianoche
+  }
+  return { startDatetime: start.toISOString(), endDatetime: end.toISOString() };
+}
+
 export default function AdminBlockedSlotsPage() {
   const queryClient = useQueryClient();
   const addToast = useToastStore((s) => s.addToast);
@@ -60,8 +79,25 @@ export default function AdminBlockedSlotsPage() {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiClient.post(`/facilities/${selectedFacility}/blocked-slots`, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] }); onClose(); addToast("Item creado correctamente"); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] }); onClose(); addToast("Bloqueo creado correctamente"); },
+    onError: (error: any) => {
+      const msg = error?.message || error?.response?.data?.message || "No se pudo crear el bloqueo";
+      addToast(Array.isArray(msg) ? msg[0] : msg);
+    },
   });
+
+  // Crea el bloqueo validando el límite de 2 AM para rangos que cruzan medianoche
+  const handleCreateBlock = () => {
+    const crosses = toMinutes(form.endTime) <= toMinutes(form.startTime);
+    if (crosses && toMinutes(form.endTime) > 2 * 60) {
+      addToast("Los bloqueos que cruzan medianoche solo pueden terminar hasta las 2:00 AM");
+      return;
+    }
+    createMutation.mutate({
+      ...buildBlockRange(calendarDateToISO(dateValue), form.startTime, form.endTime),
+      reason: form.reason || undefined,
+    });
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/blocked-slots/${id}`),
@@ -160,11 +196,7 @@ export default function AdminBlockedSlotsPage() {
             <Button
               color="danger"
               isDisabled={!dateValue}
-              onPress={() => createMutation.mutate({
-                startDatetime: `${calendarDateToISO(dateValue)}T${form.startTime}:00.000Z`,
-                endDatetime: `${calendarDateToISO(dateValue)}T${form.endTime}:00.000Z`,
-                reason: form.reason || undefined,
-              })}
+              onPress={handleCreateBlock}
               isLoading={createMutation.isPending}
             >
               Bloquear

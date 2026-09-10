@@ -8,6 +8,7 @@ interface FacilityFilters {
     isIndoor?: boolean;
     search?: string;
     includeInactive?: boolean;
+    bookableOnly?: boolean; // solo instalaciones con horario y precio definidos
 }
 
 @Injectable()
@@ -23,6 +24,13 @@ export class FacilitiesRepository {
         if (filters.isIndoor !== undefined) where.isIndoor = filters.isIndoor;
         if (filters.search) {
             where.name = { contains: filters.search, mode: 'insensitive' };
+        }
+
+        // Regla de negocio: para reservar, la instalación debe tener al menos
+        // un horario activo y al menos un precio activo definidos.
+        if (filters.bookableOnly) {
+            where.schedules = { some: { isActive: true } };
+            where.pricing = { some: { isActive: true } };
         }
 
         return this.prisma.facility.findMany({

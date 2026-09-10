@@ -9,6 +9,7 @@ interface FacilityFilters {
     venueId?: string;
     isIndoor?: string;
     search?: string;
+    bookableOnly?: string;
 }
 
 export function useFacilities(filters: FacilityFilters = {}) {

@@ -17,6 +17,7 @@ export class FacilitiesService {
         isIndoor?: boolean;
         search?: string;
         includeInactive?: boolean;
+        bookableOnly?: boolean;
     }) {
         return this.facilitiesRepository.findAll(filters);
     }
@@ -46,7 +47,7 @@ export class FacilitiesService {
     async getAvailability(id: string, dateStr: string) {
         const facility = await this.prisma.facility.findUnique({
             where: { id },
-            include: { schedules: true },
+            include: { schedules: true, pricing: { where: { isActive: true } } },
         });
 
         if (!facility) throw new NotFoundException('Instalación no encontrada');
@@ -58,7 +59,17 @@ export class FacilitiesService {
         );
 
         if (!schedule) {
-            return { available: false, slots: [], message: 'Cerrado este día' };
+            return { available: false, slots: [], message: 'Sin horario para este día' };
+        }
+
+        // Regla de negocio: debe existir un precio que aplique a este día
+        // (una tarifa "todos los días" con dayOfWeek null, o una específica del día)
+        const hasPricing = facility.pricing.some(
+            (p) => p.dayOfWeek === null || p.dayOfWeek === dayOfWeek,
+        );
+
+        if (!hasPricing) {
+            return { available: false, slots: [], message: 'Sin tarifa para este día' };
         }
 
         // Generate all possible slots

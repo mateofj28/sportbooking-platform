@@ -26,6 +26,7 @@ export default function FacilitiesPage() {
     const { data: facilities, isLoading } = useFacilities({
         search: debouncedSearch || undefined,
         sportId: sportId || undefined,
+        bookableOnly: "true",
     });
 
     return (

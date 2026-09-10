@@ -11,11 +11,12 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { FacilityCard } from "@/components/cards/facility-card";
 import { Search } from "lucide-react";
-import type { Sport } from "@/types";
+import type { Sport, Venue } from "@/types";
 
 export default function FacilitiesPage() {
     const [search, setSearch] = useState("");
     const [sportId, setSportId] = useState("");
+    const [venueId, setVenueId] = useState("");
     const debouncedSearch = useDebounce(search, 400);
 
     const { data: sports } = useQuery({
@@ -23,9 +24,15 @@ export default function FacilitiesPage() {
         queryFn: () => apiClient.get<Sport[]>("/sports"),
     });
 
+    const { data: venues } = useQuery({
+        queryKey: ["venues"],
+        queryFn: () => apiClient.get<Venue[]>("/venues"),
+    });
+
     const { data: facilities, isLoading } = useFacilities({
         search: debouncedSearch || undefined,
         sportId: sportId || undefined,
+        venueId: venueId || undefined,
         bookableOnly: "true",
     });
 
@@ -60,6 +67,20 @@ export default function FacilitiesPage() {
                     >
                         {(sports || []).map((sport) => (
                             <SelectItem key={sport.id}>{sport.name}</SelectItem>
+                        ))}
+                    </Select>
+                    <Select
+                        placeholder="Filtrar por sede"
+                        selectedKeys={venueId ? [venueId] : []}
+                        onSelectionChange={(keys: any) => {
+                            const selected = Array.from(keys)[0] as string;
+                            setVenueId(selected || "");
+                        }}
+                        className="max-w-xs"
+                        variant="bordered"
+                    >
+                        {(venues || []).map((v) => (
+                            <SelectItem key={v.id}>{v.name}</SelectItem>
                         ))}
                     </Select>
                 </div>

@@ -7,7 +7,7 @@ import {
 import { BookingStatus, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BookingsRepository } from './bookings.repository';
-import { CreateBookingDto, ManualBookingDto, CancelBookingDto } from './dto/create-booking.dto';
+import { CreateBookingDto, ManualBookingDto, CancelBookingDto, CreateRecurringBookingDto } from './dto/create-booking.dto';
 
 @Injectable()
 export class BookingsService {
@@ -99,6 +99,134 @@ export class BookingsService {
             throw new BadRequestException('No se puede cancelar una reserva completada');
         }
         return this.bookingsRepository.cancel(id, userId, dto.reason);
+    }
+
+    /**
+     * Crea una reserva recurrente (turno fijo): genera una reserva concreta por
+     * cada día de la semana coincidente entre startDate y endDate (inclusive).
+     * Las fechas en conflicto se saltan y se informan en el resultado.
+     *
+     * @param actor   usuario autenticado que ejecuta la acción
+     * @param dto     datos de la recurrencia
+     */
+    async createRecurring(
+        actor: { id: string; role: Role; venueId?: string | null },
+        dto: CreateRecurringBookingDto,
+    ) {
+        // Zona horaria de Argentina: UTC-3. Interpretamos las horas como hora local AR.
+        const AR_OFFSET_MIN = 3 * 60;
+
+        const [startH, startM] = dto.startTime.split(':').map(Number);
+        const [endH, endM] = dto.endTime.split(':').map(Number);
+        const startMin = startH * 60 + startM;
+        let endMin = endH * 60 + endM;
+        const crossesMidnight = endMin <= startMin;
+        if (crossesMidnight) endMin += 24 * 60;
+
+        // Determinar el cliente destinatario
+        let targetUserId = actor.id;
+        if (actor.role === Role.VENUE_ADMIN || actor.role === Role.ADMIN) {
+            if (dto.userId) targetUserId = dto.userId;
+        }
+
+        // Validar acceso del admin de sede sobre la instalación
+        const facility = await this.prisma.facility.findUnique({
+            where: { id: dto.facilityId },
+            include: { venue: true },
+        });
+        if (!facility) throw new NotFoundException('Instalación no encontrada');
+        if (
+            actor.role === Role.VENUE_ADMIN &&
+            facility.venueId !== actor.venueId
+        ) {
+            throw new BadRequestException(
+                'Solo puedes crear turnos fijos en instalaciones de tu sede',
+            );
+        }
+
+        // Parsear fechas base (YYYY-MM-DD)
+        const [sy, sm, sd] = dto.startDate.split('-').map(Number);
+        const [ey, em, ed] = dto.endDate.split('-').map(Number);
+        const rangeStart = new Date(Date.UTC(sy, sm - 1, sd));
+        const rangeEnd = new Date(Date.UTC(ey, em - 1, ed));
+
+        if (rangeEnd < rangeStart) {
+            throw new BadRequestException('La fecha de fin debe ser posterior a la de inicio');
+        }
+
+        // Límite de seguridad: máximo ~6 meses
+        const maxMs = 190 * 24 * 60 * 60 * 1000;
+        if (rangeEnd.getTime() - rangeStart.getTime() > maxMs) {
+            throw new BadRequestException('El rango máximo permitido es de 6 meses');
+        }
+
+        // Crear la entidad de recurrencia
+        const recurring = await this.prisma.recurringBooking.create({
+            data: {
+                facilityId: dto.facilityId,
+                userId: targetUserId,
+                dayOfWeek: dto.dayOfWeek,
+                startTime: dto.startTime,
+                endTime: dto.endTime,
+                startDate: rangeStart,
+                endDate: rangeEnd,
+                createdById: actor.id,
+            },
+        });
+
+        const created: { date: string; bookingId: string }[] = [];
+        const skipped: { date: string; reason: string }[] = [];
+
+        // Iterar día por día en el rango
+        for (
+            let cursor = new Date(rangeStart);
+            cursor <= rangeEnd;
+            cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000)
+        ) {
+            // dayOfWeek local AR (0=Lunes..6=Domingo). Como cursor es medianoche UTC
+            // de la fecha, el día calendario AR coincide con la fecha nominal.
+            const jsDay = cursor.getUTCDay(); // 0=Domingo
+            const arDayOfWeek = (jsDay + 6) % 7;
+            if (arDayOfWeek !== dto.dayOfWeek) continue;
+
+            const y = cursor.getUTCFullYear();
+            const mo = cursor.getUTCMonth();
+            const d = cursor.getUTCDate();
+            const dateLabel = `${y}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+            // Hora local AR -> instante UTC real (sumar offset)
+            const startDatetime = new Date(Date.UTC(y, mo, d, 0, startMin + AR_OFFSET_MIN));
+            const endDatetime = new Date(Date.UTC(y, mo, d, 0, endMin + AR_OFFSET_MIN));
+
+            try {
+                await this.validateBooking(dto.facilityId, startDatetime, endDatetime);
+                const totalPrice = await this.calculatePrice(dto.facilityId, startDatetime, endDatetime);
+                const booking = await this.bookingsRepository.create({
+                    facilityId: dto.facilityId,
+                    userId: targetUserId,
+                    startDatetime,
+                    endDatetime,
+                    totalPrice,
+                    currency: 'ARS',
+                    notes: dto.notes,
+                    createdById: actor.id,
+                    status: BookingStatus.CONFIRMED,
+                    recurringBookingId: recurring.id,
+                });
+                created.push({ date: dateLabel, bookingId: booking.id });
+            } catch (err: any) {
+                skipped.push({ date: dateLabel, reason: err?.message || 'No disponible' });
+            }
+        }
+
+        return {
+            recurringBookingId: recurring.id,
+            totalDates: created.length + skipped.length,
+            createdCount: created.length,
+            skippedCount: skipped.length,
+            created,
+            skipped,
+        };
     }
 
     private async validateBooking(

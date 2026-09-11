@@ -84,6 +84,7 @@ export class BookingsRepository {
         notes?: string;
         createdById: string;
         status?: BookingStatus;
+        recurringBookingId?: string;
     }) {
         return this.prisma.booking.create({
             data: {

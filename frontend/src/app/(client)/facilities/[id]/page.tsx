@@ -12,7 +12,7 @@ import {
     Spinner,
 } from "@heroui/react";
 import { useFacility } from "@/hooks/use-facilities";
-import { useCreateBooking } from "@/hooks/use-bookings";
+import { useCreateBooking, useCreateRecurringBooking } from "@/hooks/use-bookings";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
@@ -110,12 +110,22 @@ export default function FacilityDetailPage({
     const { isAuthenticated } = useAuthStore();
     const { data: facility, isLoading } = useFacility(id);
     const createBooking = useCreateBooking();
+    const createRecurring = useCreateRecurringBooking();
 
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [duration, setDuration] = useState<number>(60);
     const [notes, setNotes] = useState("");
     const [step, setStep] = useState<"select" | "confirm">("select");
+
+    // Modo de reserva: única o turno fijo (semanal)
+    const [mode, setMode] = useState<"single" | "recurring">("single");
+    const [recurringEndDate, setRecurringEndDate] = useState<string>("");
+    const [recurringResult, setRecurringResult] = useState<null | {
+        createdCount: number;
+        skippedCount: number;
+        skipped: { date: string; reason: string }[];
+    }>(null);
 
     const days = useMemo(() => getRemainingDaysOfMonth(), []);
 
@@ -199,6 +209,39 @@ export default function FacilityDetailPage({
         );
     };
 
+    const handleRecurringBooking = () => {
+        if (!isAuthenticated) {
+            router.push("/login");
+            return;
+        }
+        if (!selectedSlot || !recurringEndDate) return;
+
+        const startDate = selectedDate.toISOString().split("T")[0];
+        // dayOfWeek AR: usamos el día de la fecha seleccionada (0=Lunes..6=Domingo)
+        const dow = (selectedDate.getDay() + 6) % 7;
+
+        createRecurring.mutate(
+            {
+                facilityId: id,
+                dayOfWeek: dow,
+                startTime: selectedSlot,
+                endTime: endTime,
+                startDate,
+                endDate: recurringEndDate,
+                notes: notes || undefined,
+            },
+            {
+                onSuccess: (res) => {
+                    setRecurringResult({
+                        createdCount: res.createdCount,
+                        skippedCount: res.skippedCount,
+                        skipped: res.skipped,
+                    });
+                },
+            }
+        );
+    };
+
     if (isLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
@@ -257,9 +300,35 @@ export default function FacilityDetailPage({
                         <p className="text-xs text-default-500">Selecciona el día, horario y duración</p>
                     </CardHeader>
                     <CardBody className="gap-6">
+                        {/* Selector de modo: reserva única o turno fijo */}
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => { setMode("single"); setRecurringResult(null); }}
+                                className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${mode === "single"
+                                    ? "border-primary bg-primary/10 text-primary"
+                                    : "border-divider hover:border-primary"
+                                    }`}
+                            >
+                                Reserva única
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setMode("recurring"); setRecurringResult(null); }}
+                                className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${mode === "recurring"
+                                    ? "border-primary bg-primary/10 text-primary"
+                                    : "border-divider hover:border-primary"
+                                    }`}
+                            >
+                                Turno fijo (semanal)
+                            </button>
+                        </div>
+
                         {/* Step 1: Date Selector - Horizontal scroll of days */}
                         <div>
-                            <p className="mb-3 text-sm font-semibold text-default-700">1. Elige el día</p>
+                            <p className="mb-3 text-sm font-semibold text-default-700">
+                                {mode === "recurring" ? "1. Elige el día de la semana" : "1. Elige el día"}
+                            </p>
                             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                                 {days.map((day) => {
                                     const isSelected = day.toDateString() === selectedDate.toDateString();
@@ -353,16 +422,36 @@ export default function FacilityDetailPage({
                             </div>
                         )}
 
+                        {/* Turno fijo: fecha hasta */}
+                        {mode === "recurring" && selectedSlot && (
+                            <div>
+                                <p className="mb-3 text-sm font-semibold text-default-700">
+                                    4. Repetir cada {selectedDate.toLocaleDateString("es-AR", { weekday: "long" })} hasta:
+                                </p>
+                                <input
+                                    type="date"
+                                    value={recurringEndDate}
+                                    min={selectedDate.toISOString().split("T")[0]}
+                                    onChange={(e) => setRecurringEndDate(e.target.value)}
+                                    className="rounded-lg border border-divider bg-background px-3 py-2 text-sm"
+                                />
+                            </div>
+                        )}
+
                         {/* Summary & Confirm */}
-                        {selectedSlot && (
+                        {selectedSlot && !recurringResult && (
                             <>
                                 <Divider />
                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                                     <div className="space-y-1">
-                                        <p className="text-sm font-semibold text-default-700">Resumen de tu reserva</p>
+                                        <p className="text-sm font-semibold text-default-700">
+                                            {mode === "recurring" ? "Resumen del turno fijo" : "Resumen de tu reserva"}
+                                        </p>
                                         <div className="flex flex-wrap items-center gap-3 text-sm text-default-600">
                                             <span className="flex items-center gap-1">
-                                                📅 {selectedDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
+                                                📅 {mode === "recurring"
+                                                    ? `Todos los ${selectedDate.toLocaleDateString("es-AR", { weekday: "long" })}`
+                                                    : selectedDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
                                             </span>
                                             <span className="flex items-center gap-1">
                                                 🕐 {formatTime12h(selectedSlot)} - {formatTime12h(endTime)}
@@ -372,7 +461,7 @@ export default function FacilityDetailPage({
                                             </span>
                                         </div>
                                         <p className="text-xl font-bold text-success">
-                                            ${formatPrice(price)} ARS
+                                            ${formatPrice(price)} ARS {mode === "recurring" && <span className="text-xs font-normal text-default-400">por fecha</span>}
                                         </p>
                                     </div>
 
@@ -386,16 +475,30 @@ export default function FacilityDetailPage({
                                             className="max-w-xs"
                                             minRows={1}
                                         />
-                                        <Button
-                                            color="primary"
-                                            size="lg"
-                                            onPress={handleBooking}
-                                            isLoading={createBooking.isPending}
-                                            startContent={<Check className="h-4 w-4" />}
-                                            className="font-semibold"
-                                        >
-                                            {isAuthenticated ? "Confirmar Reserva" : "Iniciar sesión para reservar"}
-                                        </Button>
+                                        {mode === "single" ? (
+                                            <Button
+                                                color="primary"
+                                                size="lg"
+                                                onPress={handleBooking}
+                                                isLoading={createBooking.isPending}
+                                                startContent={<Check className="h-4 w-4" />}
+                                                className="font-semibold"
+                                            >
+                                                {isAuthenticated ? "Confirmar Reserva" : "Iniciar sesión para reservar"}
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                color="primary"
+                                                size="lg"
+                                                onPress={handleRecurringBooking}
+                                                isLoading={createRecurring.isPending}
+                                                isDisabled={!recurringEndDate}
+                                                startContent={<Check className="h-4 w-4" />}
+                                                className="font-semibold"
+                                            >
+                                                {isAuthenticated ? "Crear turno fijo" : "Iniciar sesión para reservar"}
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -404,6 +507,46 @@ export default function FacilityDetailPage({
                                         {(createBooking.error as any)?.message || "Error al crear la reserva"}
                                     </p>
                                 )}
+                                {createRecurring.isError && (
+                                    <p className="text-center text-sm text-danger">
+                                        {(createRecurring.error as any)?.message || "Error al crear el turno fijo"}
+                                    </p>
+                                )}
+                            </>
+                        )}
+
+                        {/* Resultado del turno fijo */}
+                        {recurringResult && (
+                            <>
+                                <Divider />
+                                <div className="rounded-lg bg-success/10 p-4">
+                                    <p className="text-sm font-semibold text-success">
+                                        Turno fijo creado: {recurringResult.createdCount} reserva{recurringResult.createdCount !== 1 ? "s" : ""} confirmada{recurringResult.createdCount !== 1 ? "s" : ""}.
+                                    </p>
+                                    {recurringResult.skippedCount > 0 && (
+                                        <div className="mt-2">
+                                            <p className="text-xs text-default-600">
+                                                {recurringResult.skippedCount} fecha{recurringResult.skippedCount !== 1 ? "s" : ""} no se pudo reservar:
+                                            </p>
+                                            <ul className="mt-1 space-y-0.5">
+                                                {recurringResult.skipped.map((s) => (
+                                                    <li key={s.date} className="text-xs text-default-500">
+                                                        • {s.date}: {s.reason}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    <Button
+                                        size="sm"
+                                        color="primary"
+                                        variant="flat"
+                                        className="mt-3"
+                                        onPress={() => router.push("/bookings")}
+                                    >
+                                        Ver mis reservas
+                                    </Button>
+                                </div>
                             </>
                         )}
                     </CardBody>

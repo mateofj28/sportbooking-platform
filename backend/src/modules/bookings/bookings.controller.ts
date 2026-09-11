@@ -11,7 +11,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Role, BookingStatus } from '@prisma/client';
 import { BookingsService } from './bookings.service';
-import { CreateBookingDto, ManualBookingDto, CancelBookingDto } from './dto/create-booking.dto';
+import { CreateBookingDto, ManualBookingDto, CancelBookingDto, CreateRecurringBookingDto } from './dto/create-booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -45,6 +45,15 @@ export class BookingsController {
     @ApiOperation({ summary: 'Create booking' })
     create(@Body() dto: CreateBookingDto, @CurrentUser('id') userId: string) {
         return this.bookingsService.create(dto, userId);
+    }
+
+    @Post('recurring')
+    @ApiOperation({ summary: 'Create recurring booking (turno fijo)' })
+    createRecurring(
+        @Body() dto: CreateRecurringBookingDto,
+        @CurrentUser() user: { id: string; role: Role; venueId?: string | null },
+    ) {
+        return this.bookingsService.createRecurring(user, dto);
     }
 
     @Post('manual')

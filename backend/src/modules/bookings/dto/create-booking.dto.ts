@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsDateString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsDateString, IsInt, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateBookingDto {
@@ -35,4 +35,47 @@ export class CancelBookingDto {
     @IsOptional()
     @IsString()
     reason?: string;
+}
+
+export class CreateRecurringBookingDto {
+    @ApiProperty()
+    @IsString()
+    @IsNotEmpty()
+    facilityId: string;
+
+    @ApiProperty({ example: 3, description: '0=Lunes ... 6=Domingo' })
+    @IsInt()
+    @Min(0)
+    @Max(6)
+    dayOfWeek: number;
+
+    @ApiProperty({ example: '20:00' })
+    @IsString()
+    @IsNotEmpty()
+    startTime: string;
+
+    @ApiProperty({ example: '22:00' })
+    @IsString()
+    @IsNotEmpty()
+    endTime: string;
+
+    @ApiProperty({ example: '2026-09-15', description: 'Fecha de inicio (YYYY-MM-DD)' })
+    @IsDateString()
+    @IsNotEmpty()
+    startDate: string;
+
+    @ApiProperty({ example: '2026-12-15', description: 'Fecha de fin inclusive (YYYY-MM-DD)' })
+    @IsDateString()
+    @IsNotEmpty()
+    endDate: string;
+
+    @ApiProperty({ required: false, description: 'Cliente para el que se crea (solo admin de sede)' })
+    @IsOptional()
+    @IsString()
+    userId?: string;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    notes?: string;
 }

@@ -43,6 +43,8 @@ model User {
   cancelledBookings Booking[]   @relation("BookingCanceller")
   blockedSlots    BlockedSlot[]
   venue           Venue?        @relation("VenueAdmins", fields: [venueId], references: [id])
+  recurringBookings        RecurringBooking[] @relation("UserRecurringBookings")
+  createdRecurringBookings RecurringBooking[] @relation("RecurringBookingCreator")
 
   @@map("users")
 }
@@ -121,6 +123,7 @@ model Facility {
   pricing      Pricing[]
   blockedSlots BlockedSlot[]
   bookings     Booking[]
+  recurringBookings RecurringBooking[]
 
   @@map("facilities")
 }
@@ -188,6 +191,7 @@ model Booking {
   cancelledById      String?       @map("cancelled_by")
   cancellationReason String?       @map("cancellation_reason")
   createdById        String        @map("created_by")
+  recurringBookingId String?       @map("recurring_booking_id")
   createdAt          DateTime      @default(now()) @map("created_at")
   updatedAt          DateTime      @updatedAt @map("updated_at")
 
@@ -195,6 +199,29 @@ model Booking {
   user        User     @relation("UserBookings", fields: [userId], references: [id])
   createdBy   User     @relation("BookingCreator", fields: [createdById], references: [id])
   cancelledBy User?    @relation("BookingCanceller", fields: [cancelledById], references: [id])
+  recurringBooking RecurringBooking? @relation(fields: [recurringBookingId], references: [id], onDelete: SetNull)
 
   @@map("bookings")
+}
+
+model RecurringBooking {
+  id            String    @id @default(uuid())
+  facilityId    String    @map("facility_id")
+  userId        String    @map("user_id")
+  dayOfWeek     Int       @map("day_of_week") // 0=Lunes ... 6=Domingo (consistente con schedules)
+  startTime     String    @map("start_time")  // "20:00"
+  endTime       String    @map("end_time")    // "22:00"
+  startDate     DateTime  @map("start_date")  // desde
+  endDate       DateTime  @map("end_date")    // hasta (inclusive)
+  isActive      Boolean   @default(true) @map("is_active")
+  createdById   String    @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  facility  Facility  @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  user      User      @relation("UserRecurringBookings", fields: [userId], references: [id])
+  createdBy User      @relation("RecurringBookingCreator", fields: [createdById], references: [id])
+  bookings  Booking[]
+
+  @@map("recurring_bookings")
 }

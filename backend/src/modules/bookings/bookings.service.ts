@@ -229,6 +229,117 @@ export class BookingsService {
         };
     }
 
+    /**
+     * Lista los turnos fijos (recurrencias) según el rol:
+     * - ADMIN: todos
+     * - VENUE_ADMIN: los de las instalaciones de su sede
+     * - CLIENT: los propios
+     */
+    async findRecurring(user: { id: string; role: Role; venueId?: string | null }) {
+        const where: Record<string, unknown> = {};
+        if (user.role === Role.ADMIN) {
+            // sin filtro
+        } else if (user.role === Role.VENUE_ADMIN && user.venueId) {
+            where.facility = { venueId: user.venueId };
+        } else {
+            where.userId = user.id;
+        }
+
+        const now = new Date();
+
+        const list = await this.prisma.recurringBooking.findMany({
+            where,
+            include: {
+                facility: {
+                    include: {
+                        sport: true,
+                        venue: { select: { id: true, name: true, city: true } },
+                    },
+                },
+                user: { select: { id: true, firstName: true, lastName: true, email: true } },
+                bookings: {
+                    select: { id: true, startDatetime: true, endDatetime: true, status: true },
+                    orderBy: { startDatetime: 'asc' },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        // Agregar contadores útiles para la UI
+        return list.map((r) => {
+            const upcoming = r.bookings.filter(
+                (b) => b.status === BookingStatus.CONFIRMED && new Date(b.startDatetime) >= now,
+            );
+            return {
+                ...r,
+                upcomingCount: upcoming.length,
+                totalCount: r.bookings.length,
+            };
+        });
+    }
+
+    /**
+     * Cancela un turno fijo completo: desactiva la recurrencia y cancela todas
+     * las reservas futuras (no completadas ni ya canceladas) de la serie.
+     */
+    async cancelRecurring(
+        id: string,
+        user: { id: string; role: Role; venueId?: string | null },
+        reason?: string,
+    ) {
+        const recurring = await this.prisma.recurringBooking.findUnique({
+            where: { id },
+            include: { facility: true },
+        });
+        if (!recurring) throw new NotFoundException('Turno fijo no encontrado');
+
+        // Autorización
+        if (user.role === Role.CLIENT && recurring.userId !== user.id) {
+            throw new BadRequestException('No puedes cancelar este turno fijo');
+        }
+        if (
+            user.role === Role.VENUE_ADMIN &&
+            recurring.facility.venueId !== user.venueId
+        ) {
+            throw new BadRequestException('No puedes cancelar turnos fijos de otra sede');
+        }
+
+        const now = new Date();
+
+        // Cancelar todas las reservas futuras confirmadas de la serie
+        const futureBookings = await this.prisma.booking.findMany({
+            where: {
+                recurringBookingId: id,
+                status: BookingStatus.CONFIRMED,
+                startDatetime: { gte: now },
+            },
+            select: { id: true },
+        });
+
+        await this.prisma.$transaction([
+            ...futureBookings.map((b) =>
+                this.prisma.booking.update({
+                    where: { id: b.id },
+                    data: {
+                        status: BookingStatus.CANCELLED,
+                        cancelledAt: now,
+                        cancelledById: user.id,
+                        cancellationReason: reason || 'Turno fijo cancelado',
+                    },
+                }),
+            ),
+            this.prisma.recurringBooking.update({
+                where: { id },
+                data: { isActive: false },
+            }),
+        ]);
+
+        return {
+            recurringBookingId: id,
+            cancelledCount: futureBookings.length,
+        };
+    }
+
     private async validateBooking(
         facilityId: string,
         startDatetime: Date,

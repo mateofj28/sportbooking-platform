@@ -14,14 +14,26 @@ import {
     Textarea,
     useDisclosure,
 } from "@heroui/react";
-import { useBookings, useCancelBooking } from "@/hooks/use-bookings";
+import { useBookings, useCancelBooking, useRecurringBookings, useCancelRecurringBooking, type RecurringBooking } from "@/hooks/use-bookings";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { Calendar, MapPin, Clock, X } from "lucide-react";
+import { Calendar, MapPin, Clock, X, Repeat } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Booking, BookingStatus } from "@/types";
+
+const DAYS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
+
+/** "20:00" -> "8:00 p. m." (formato español sin cero adelante) */
+function formatTime12h(time: string): string {
+    if (!time) return "";
+    const [rawH, m] = time.split(":").map(Number);
+    const h = ((rawH % 24) + 24) % 24;
+    const ampm = h < 12 ? "a. m." : "p. m.";
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
+}
 
 const STATUS_MAP: Record<BookingStatus, { label: string; color: "warning" | "success" | "danger" | "default" }> = {
     PENDING: { label: "Pendiente", color: "warning" },
@@ -40,7 +52,12 @@ const FILTER_TABS: { key: "ALL" | BookingStatus; label: string }[] = [
 export default function BookingsPage() {
     const { isAuthenticated, isHydrated } = useAuthStore();
     const router = useRouter();
+    const [activeTab, setActiveTab] = useState<"bookings" | "recurring">("bookings");
     const [activeFilter, setActiveFilter] = useState<"ALL" | BookingStatus>("ALL");
+
+    const { data: recurringList, isLoading: recurringLoading } = useRecurringBookings();
+    const cancelRecurring = useCancelRecurringBooking();
+    const [seriesToCancel, setSeriesToCancel] = useState<RecurringBooking | null>(null);
 
     useEffect(() => {
         if (isHydrated && !isAuthenticated) {
@@ -92,6 +109,94 @@ export default function BookingsPage() {
                 <h1 className="text-3xl font-bold">Mis Reservas</h1>
               <p className="mt-2 text-default-500">Gestiona todas tus reservas deportivas</p>
 
+                {/* Main tabs: reservas vs turnos fijos */}
+                <div className="mt-6 flex gap-2 border-b border-divider">
+                    <button
+                        onClick={() => setActiveTab("bookings")}
+                        className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors ${activeTab === "bookings"
+                            ? "border-primary text-primary"
+                            : "border-transparent text-default-500 hover:text-default-700"
+                            }`}
+                    >
+                        Reservas
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("recurring")}
+                        className={`-mb-px flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${activeTab === "recurring"
+                            ? "border-primary text-primary"
+                            : "border-transparent text-default-500 hover:text-default-700"
+                            }`}
+                    >
+                        <Repeat className="h-4 w-4" />
+                        Turnos fijos
+                        {recurringList && recurringList.length > 0 && (
+                            <span className="rounded-full bg-default-200 px-1.5 text-xs font-bold">
+                                {recurringList.length}
+                            </span>
+                        )}
+                    </button>
+                </div>
+
+                {activeTab === "recurring" ? (
+                    <div className="mt-6 space-y-4">
+                        {recurringLoading ? (
+                            <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+                        ) : recurringList && recurringList.length > 0 ? (
+                            recurringList.map((r) => (
+                                <Card key={r.id}>
+                                    <CardBody className="flex-row items-center justify-between gap-4 p-4">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-3">
+                                                <h3 className="font-semibold">{r.facility.name}</h3>
+                                                <Chip color={r.isActive ? "success" : "default"} size="sm" variant="flat">
+                                                    {r.isActive ? "Activo" : "Finalizado"}
+                                                </Chip>
+                                            </div>
+                                            <div className="mt-2 flex flex-wrap gap-4 text-sm text-default-500">
+                                                <span className="flex items-center gap-1">
+                                                    <Repeat className="h-3 w-3" />
+                                                    Todos los {DAYS_ES[r.dayOfWeek]}
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <Clock className="h-3 w-3" />
+                                                    {formatTime12h(r.startTime)} — {formatTime12h(r.endTime)}
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <MapPin className="h-3 w-3" />
+                                                    {r.facility.venue.name}
+                                                </span>
+                                            </div>
+                                            <p className="mt-1 text-xs text-default-400">
+                                                {r.upcomingCount} reserva{r.upcomingCount !== 1 ? "s" : ""} próxima{r.upcomingCount !== 1 ? "s" : ""} · {r.totalCount} en total ·
+                                                hasta el {new Date(r.endDate).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}
+                                            </p>
+                                        </div>
+                                        {r.isActive && r.upcomingCount > 0 && (
+                                            <Button
+                                                color="danger"
+                                                variant="light"
+                                                size="sm"
+                                                startContent={<X className="h-4 w-4" />}
+                                                onPress={() => setSeriesToCancel(r)}
+                                            >
+                                                Cancelar todo
+                                            </Button>
+                                        )}
+                                    </CardBody>
+                                </Card>
+                            ))
+                        ) : (
+                            <div className="py-12 text-center">
+                                <Repeat className="mx-auto h-12 w-12 text-default-300" />
+                                <p className="mt-4 text-lg text-default-500">No tienes turnos fijos</p>
+                                <Button color="primary" variant="flat" className="mt-4" as="a" href="/facilities">
+                                    Explorar instalaciones
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <>
               {/* Filter tabs */}
               <div className="mt-6 flex flex-wrap gap-2">
                   {FILTER_TABS.map((tab) => {
@@ -184,6 +289,8 @@ export default function BookingsPage() {
                       </div>
                   )}
               </div>
+                    </>
+                )}
           </main>
           <Footer />
 
@@ -208,6 +315,36 @@ export default function BookingsPage() {
                   </ModalFooter>
               </ModalContent>
           </Modal>
+
+            {/* Modal: cancelar toda la serie de turno fijo */}
+            <Modal isOpen={!!seriesToCancel} onClose={() => setSeriesToCancel(null)}>
+                <ModalContent>
+                    <ModalHeader>Cancelar turno fijo</ModalHeader>
+                    <ModalBody>
+                        <p className="text-default-600">
+                            Se cancelarán todas las reservas futuras de este turno fijo
+                            {seriesToCancel && ` (${seriesToCancel.upcomingCount} próxima${seriesToCancel.upcomingCount !== 1 ? "s" : ""})`}.
+                            Las reservas ya pasadas no se modifican. Esta acción no se puede deshacer.
+                        </p>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="light" onPress={() => setSeriesToCancel(null)}>Volver</Button>
+                        <Button
+                            color="danger"
+                            isLoading={cancelRecurring.isPending}
+                            onPress={() => {
+                                if (!seriesToCancel) return;
+                                cancelRecurring.mutate(
+                                    { id: seriesToCancel.id },
+                                    { onSuccess: () => setSeriesToCancel(null) },
+                                );
+                            }}
+                        >
+                            Cancelar todo el turno fijo
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
       </div>
   );
 }

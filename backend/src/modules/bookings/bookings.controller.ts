@@ -35,6 +35,14 @@ export class BookingsController {
         return this.bookingsService.findAll(user, status, page ? +page : 1, limit ? +limit : 20);
     }
 
+    @Get('recurring')
+    @ApiOperation({ summary: 'List recurring bookings (turnos fijos)' })
+    findRecurring(
+        @CurrentUser() user: { id: string; role: Role; venueId?: string | null },
+    ) {
+        return this.bookingsService.findRecurring(user);
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Get booking by ID' })
     findById(@Param('id') id: string) {
@@ -62,6 +70,16 @@ export class BookingsController {
     @ApiOperation({ summary: 'Create manual booking (Admin)' })
     createManual(@Body() dto: ManualBookingDto, @CurrentUser('id') adminId: string) {
         return this.bookingsService.createManual(dto, adminId);
+    }
+
+    @Patch('recurring/:id/cancel')
+    @ApiOperation({ summary: 'Cancel entire recurring booking series (turno fijo)' })
+    cancelRecurring(
+        @Param('id') id: string,
+        @CurrentUser() user: { id: string; role: Role; venueId?: string | null },
+        @Body() dto: CancelBookingDto,
+    ) {
+        return this.bookingsService.cancelRecurring(id, user, dto.reason);
     }
 
     @Patch(':id/cancel')

@@ -13,7 +13,7 @@ import {
 } from "@heroui/react";
 import { useFacility } from "@/hooks/use-facilities";
 import { useCreateBooking, useCreateRecurringBooking } from "@/hooks/use-bookings";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
@@ -132,24 +132,64 @@ export default function FacilityDetailPage({
     const dayOfWeek = useMemo(() => (selectedDate.getDay() + 6) % 7, [selectedDate]);
     const schedule = facility?.schedules?.find((s) => s.dayOfWeek === dayOfWeek && s.isActive);
 
-    // Fetch real availability from backend
-    const dateStr = selectedDate.toISOString().split("T")[0];
-    const { data: availability } = useQuery({
-        queryKey: ["availability", id, dateStr],
-        queryFn: () => apiClient.get<{ available: boolean; slots: { time: string; available: boolean }[]; message?: string }>(`/facilities/${id}/availability`, { date: dateStr }),
-        enabled: !!facility && !!schedule,
+    // Precargar disponibilidad de todos los días con horario activo, para que la
+    // habilitación del día y las horas usen la misma fuente (el backend).
+    const dayInfos = useMemo(
+        () =>
+            days.map((day) => {
+                const dow = (day.getDay() + 6) % 7;
+                const hasSchedule = !!facility?.schedules?.find((s) => s.dayOfWeek === dow && s.isActive);
+                return { dateStr: day.toISOString().split("T")[0], hasSchedule };
+            }),
+        [days, facility?.schedules],
+    );
+
+    const availabilityQueries = useQueries({
+        queries: dayInfos.map((info) => ({
+            queryKey: ["availability", id, info.dateStr],
+            queryFn: () => apiClient.get<{ available: boolean; slots: { time: string; available: boolean }[]; message?: string }>(`/facilities/${id}/availability`, { date: info.dateStr }),
+            enabled: !!facility && info.hasSchedule,
+            staleTime: 60_000,
+        })),
     });
 
-    // Generate available time slots (fallback to local if API not ready)
+    const availabilityByDate = useMemo(() => {
+        const map: Record<string, { available: boolean; slots: { time: string; available: boolean }[] } | undefined> = {};
+        dayInfos.forEach((info, i) => {
+            map[info.dateStr] = availabilityQueries[i]?.data as any;
+        });
+        return map;
+    }, [dayInfos, availabilityQueries]);
+
+    const loadingByDate = useMemo(() => {
+        const map: Record<string, boolean> = {};
+        dayInfos.forEach((info, i) => { map[info.dateStr] = !!availabilityQueries[i]?.isLoading; });
+        return map;
+    }, [dayInfos, availabilityQueries]);
+
+    /** ¿El día tiene al menos un slot disponible? (misma fuente que las horas) */
+    const dayHasAvailableSlots = (day: Date): boolean => {
+        const dow = (day.getDay() + 6) % 7;
+        const daySchedule = facility?.schedules?.find((s) => s.dayOfWeek === dow && s.isActive);
+        if (!daySchedule || !facility) return false;
+        const ds = day.toISOString().split("T")[0];
+        const resp = availabilityByDate[ds];
+        if (loadingByDate[ds] || !resp) {
+            const isDayToday = day.toDateString() === new Date().toDateString();
+            return generateTimeSlots(daySchedule.openTime, daySchedule.closeTime, facility.minBookingDuration, isDayToday).length > 0;
+        }
+        return resp.slots.some((s) => s.available);
+    };
+
+    const dateStr = selectedDate.toISOString().split("T")[0];
+    const availability = availabilityByDate[dateStr];
+
     const isToday = selectedDate.toDateString() === new Date().toDateString();
     const timeSlots = useMemo(() => {
-        // Preferir siempre la disponibilidad calculada por el backend (marca pasados/ocupados)
         if (availability?.slots) {
             return availability.slots;
         }
         if (!schedule || !facility) return [];
-        // Fallback local: generar todos los slots del rango y marcar como no
-        // disponibles los que ya pasaron (hora de Argentina) si es hoy.
         const nowMin = argentinaNowMinutes();
         return generateTimeSlots(schedule.openTime, schedule.closeTime, facility.minBookingDuration, false)
             .map((t) => {
@@ -331,12 +371,8 @@ export default function FacilityDetailPage({
                                 {days.map((day) => {
                                     const isSelected = day.toDateString() === selectedDate.toDateString();
                                     const isDayToday = day.toDateString() === new Date().toDateString();
-                                    const dayDow = (day.getDay() + 6) % 7;
-                                    const daySchedule = facility.schedules?.find((s) => s.dayOfWeek === dayDow && s.isActive);
-                                    // Check if the day has available slots
-                                    const dayHasSlots = daySchedule
-                                        ? generateTimeSlots(daySchedule.openTime, daySchedule.closeTime, facility.minBookingDuration, isDayToday).length > 0
-                                        : false;
+                                    // Habilitación según disponibilidad real (misma fuente que las horas)
+                                    const dayHasSlots = dayHasAvailableSlots(day);
                                     return (
                                         <button
                                             key={day.toISOString()}

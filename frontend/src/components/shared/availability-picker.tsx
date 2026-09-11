@@ -1,9 +1,15 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import type { Facility } from "@/types";
+
+interface AvailabilityResponse {
+    available: boolean;
+    slots: { time: string; available: boolean }[];
+    message?: string;
+}
 
 const DAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const MONTHS_ES = [
@@ -98,12 +104,62 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
     const dayOfWeek = useMemo(() => (selectedDate.getDay() + 6) % 7, [selectedDate]);
     const schedule = facility.schedules?.find((s) => s.dayOfWeek === dayOfWeek && s.isActive);
 
-    const dateStr = selectedDate.toISOString().split("T")[0];
-    const { data: availability } = useQuery({
-        queryKey: ["availability", facility.id, dateStr],
-        queryFn: () => apiClient.get<{ available: boolean; slots: { time: string; available: boolean }[]; message?: string }>(`/facilities/${facility.id}/availability`, { date: dateStr }),
-        enabled: !!schedule,
+    // Precargar disponibilidad de TODOS los días que tienen horario activo.
+    // Así la habilitación del día y la lista de horas usan la MISMA fuente
+    // (el backend), evitando días "habilitados" que luego no tienen horas.
+    const dayInfos = useMemo(
+        () =>
+            days.map((day) => {
+                const dow = (day.getDay() + 6) % 7;
+                const hasSchedule = !!facility.schedules?.find((s) => s.dayOfWeek === dow && s.isActive);
+                return { day, dateStr: day.toISOString().split("T")[0], hasSchedule };
+            }),
+        [days, facility.schedules],
+    );
+
+    const availabilityQueries = useQueries({
+        queries: dayInfos.map((info) => ({
+            queryKey: ["availability", facility.id, info.dateStr],
+            queryFn: () => apiClient.get<AvailabilityResponse>(`/facilities/${facility.id}/availability`, { date: info.dateStr }),
+            enabled: info.hasSchedule,
+            staleTime: 60_000,
+        })),
     });
+
+    // Mapa dateStr -> disponibilidad (slots del backend)
+    const availabilityByDate = useMemo(() => {
+        const map: Record<string, AvailabilityResponse | undefined> = {};
+        dayInfos.forEach((info, i) => {
+            map[info.dateStr] = availabilityQueries[i]?.data as AvailabilityResponse | undefined;
+        });
+        return map;
+    }, [dayInfos, availabilityQueries]);
+
+    const loadingByDate = useMemo(() => {
+        const map: Record<string, boolean> = {};
+        dayInfos.forEach((info, i) => {
+            map[info.dateStr] = !!availabilityQueries[i]?.isLoading;
+        });
+        return map;
+    }, [dayInfos, availabilityQueries]);
+
+    /** ¿El día tiene al menos un slot disponible? */
+    const dayHasAvailableSlots = (day: Date): boolean => {
+        const dow = (day.getDay() + 6) % 7;
+        const daySchedule = facility.schedules?.find((s) => s.dayOfWeek === dow && s.isActive);
+        if (!daySchedule) return false;
+        const ds = day.toISOString().split("T")[0];
+        const resp = availabilityByDate[ds];
+        // Si aún carga, lo dejamos habilitado provisionalmente (se recalcula al llegar)
+        if (loadingByDate[ds] || !resp) {
+            const isDayToday = day.toDateString() === new Date().toDateString();
+            return generateTimeSlots(daySchedule.openTime, daySchedule.closeTime, facility.minBookingDuration, isDayToday).length > 0;
+        }
+        return resp.slots.some((s) => s.available);
+    };
+
+    const dateStr = selectedDate.toISOString().split("T")[0];
+    const availability = availabilityByDate[dateStr];
 
     const isToday = selectedDate.toDateString() === new Date().toDateString();
     const timeSlots = useMemo(() => {
@@ -146,6 +202,21 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
         return Number(pricing.pricePerHour) * (duration / 60);
     }, [facility, selectedSlot, duration, dayOfWeek]);
 
+    // Si el día seleccionado no tiene horarios disponibles, saltar al primer
+    // día que sí tenga (una vez que la disponibilidad terminó de cargar).
+    useEffect(() => {
+        const anyLoading = Object.values(loadingByDate).some(Boolean);
+        if (anyLoading) return;
+        if (!dayHasAvailableSlots(selectedDate)) {
+            const firstOk = days.find((d) => dayHasAvailableSlots(d));
+            if (firstOk && firstOk.toDateString() !== selectedDate.toDateString()) {
+                setSelectedDate(firstOk);
+                setSelectedSlot(null);
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [availabilityByDate, loadingByDate]);
+
     // Notificar al padre cuando cambia la selección
     useEffect(() => {
         if (selectedSlot && schedule) {
@@ -172,11 +243,8 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
                     {days.map((day) => {
                         const isSelected = day.toDateString() === selectedDate.toDateString();
                         const isDayToday = day.toDateString() === new Date().toDateString();
-                        const dayDow = (day.getDay() + 6) % 7;
-                        const daySchedule = facility.schedules?.find((s) => s.dayOfWeek === dayDow && s.isActive);
-                        const dayHasSlots = daySchedule
-                            ? generateTimeSlots(daySchedule.openTime, daySchedule.closeTime, facility.minBookingDuration, isDayToday).length > 0
-                            : false;
+                        // Habilitación según disponibilidad REAL (backend), misma fuente que las horas
+                        const dayHasSlots = dayHasAvailableSlots(day);
                         return (
                             <button
                                 key={day.toISOString()}

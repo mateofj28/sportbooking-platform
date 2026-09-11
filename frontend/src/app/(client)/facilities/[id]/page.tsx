@@ -35,6 +35,15 @@ const MONTHS_ES = [
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
 
+/** Minutos desde medianoche en hora local de Argentina (UTC-3), sin depender de la zona del navegador */
+function argentinaNowMinutes(): number {
+    const now = new Date();
+    // Hora UTC + offset de Argentina (-3h)
+    const arMs = now.getTime() + now.getTimezoneOffset() * 60000 - 3 * 60 * 60000;
+    const ar = new Date(arMs);
+    return ar.getHours() * 60 + ar.getMinutes();
+}
+
 function generateTimeSlots(openTime: string, closeTime: string, durationMin: number, isToday: boolean) {
     const slots: string[] = [];
     const [openH, openM] = openTime.split(":").map(Number);
@@ -44,12 +53,11 @@ function generateTimeSlots(openTime: string, closeTime: string, durationMin: num
     // Si cruza medianoche (cierre <= apertura), extender el fin 24h
     if (endMinutes <= startMinutes) endMinutes += 24 * 60;
 
-    // If today, only show slots starting from next full hour
+    // Si es hoy, solo mostrar slots que empiecen después de la hora actual (hora AR)
     let minStart = startMinutes;
     if (isToday) {
-        const now = new Date();
-        const nowMinutes = now.getHours() * 60 + now.getMinutes();
-        // Round up to next slot
+        const nowMinutes = argentinaNowMinutes();
+        // Redondear hacia arriba al siguiente slot
         minStart = Math.max(startMinutes, Math.ceil(nowMinutes / durationMin) * durationMin);
     }
 
@@ -62,12 +70,12 @@ function generateTimeSlots(openTime: string, closeTime: string, durationMin: num
     return slots;
 }
 
-/** Convierte "09:00" -> "9:00 AM" (envuelve horas >= 24 para cruces de medianoche) */
+/** Convierte "09:00" -> "9:00 a. m." (sin cero adelante, formato español; envuelve horas >= 24 para cruces de medianoche) */
 function formatTime12h(time: string): string {
     if (!time) return "";
     const [rawH, m] = time.split(":").map(Number);
     const h = ((rawH % 24) + 24) % 24;
-    const ampm = h < 12 ? "AM" : "PM";
+    const ampm = h < 12 ? "a. m." : "p. m.";
     const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
     return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
 }
@@ -126,12 +134,21 @@ export default function FacilityDetailPage({
     // Generate available time slots (fallback to local if API not ready)
     const isToday = selectedDate.toDateString() === new Date().toDateString();
     const timeSlots = useMemo(() => {
+        // Preferir siempre la disponibilidad calculada por el backend (marca pasados/ocupados)
         if (availability?.slots) {
             return availability.slots;
         }
         if (!schedule || !facility) return [];
-        return generateTimeSlots(schedule.openTime, schedule.closeTime, facility.minBookingDuration, isToday)
-            .map((t) => ({ time: t, available: true }));
+        // Fallback local: generar todos los slots del rango y marcar como no
+        // disponibles los que ya pasaron (hora de Argentina) si es hoy.
+        const nowMin = argentinaNowMinutes();
+        return generateTimeSlots(schedule.openTime, schedule.closeTime, facility.minBookingDuration, false)
+            .map((t) => {
+                if (!isToday) return { time: t, available: true };
+                const [h, m] = t.split(":").map(Number);
+                const slotMin = h * 60 + m;
+                return { time: t, available: slotMin > nowMin };
+            });
     }, [availability, schedule, facility, isToday]);
 
     // Duration options

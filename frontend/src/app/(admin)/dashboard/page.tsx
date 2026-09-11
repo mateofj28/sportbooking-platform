@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useState, useEffect, useCallback } from "react";
 import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp } from "lucide-react";
-import type { Booking, Facility, PaginatedResult, User as UserType } from "@/types";
+import type { Booking, Facility, PaginatedResult, User as UserType, Venue } from "@/types";
 
 /** Hora 12h en español sin cero adelante: "9:00 a. m." */
 function formatTime12h(dateStr: string): string {
@@ -59,7 +59,16 @@ const ADS = [
 
 export default function DashboardPage() {
     const { user } = useAuthStore();
+    const isVenueAdmin = user?.role === "VENUE_ADMIN";
     const [activeIndex, setActiveIndex] = useState(0);
+
+    // Nombre de la sede del admin de sede (para el saludo)
+    const { data: venues } = useQuery({
+        queryKey: ["venues"],
+        queryFn: () => apiClient.get<Venue[]>("/venues"),
+        enabled: isVenueAdmin,
+    });
+    const myVenueName = venues?.find((v) => v.id === user?.venueId)?.name || "";
 
     const nextSlide = useCallback(() => {
         setActiveIndex((prev) => (prev + 1) % ADS.length);
@@ -82,7 +91,9 @@ export default function DashboardPage() {
                     Hola, {user?.firstName} 👋
                 </h1>
                 <p className="text-sm text-default-500 mt-1">
-                    Bienvenido al panel de administración de SportBooking
+                    {isVenueAdmin && myVenueName
+                        ? `Bienvenido al panel administrador de ${myVenueName}`
+                        : "Bienvenido al panel de administración de SportBooking"}
                 </p>
             </div>
 

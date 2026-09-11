@@ -18,7 +18,7 @@ export function useAuth() {
             if (data.user.role === "ADMIN" || data.user.role === "VENUE_ADMIN") {
                 router.push("/dashboard");
             } else {
-                router.push("/facilities");
+                router.push("/inicio");
             }
         },
     });
@@ -28,7 +28,7 @@ export function useAuth() {
             apiClient.post<AuthResponse>("/auth/register", data),
         onSuccess: (data) => {
             setAuth(data.user, data.accessToken, data.refreshToken);
-            router.push("/facilities");
+            router.push("/inicio");
         },
     });
 

@@ -31,6 +31,10 @@ function FacilitiesContent() {
         queryFn: () => apiClient.get<Venue[]>("/venues"),
     });
 
+    // Solo se listan canchas cuando hay al menos un filtro activo
+    // (búsqueda, deporte o complejo). Por defecto no se muestran todas.
+    const hasActiveFilter = Boolean(debouncedSearch || sportId || venueId);
+
     const { data: facilities, isLoading } = useFacilities({
         search: debouncedSearch || undefined,
         sportId: sportId || undefined,
@@ -95,7 +99,16 @@ function FacilitiesContent() {
 
                 {/* Facility List */}
                 <div className="mt-8">
-                    {isLoading ? (
+                    {!hasActiveFilter ? (
+                        <div className="py-12 text-center">
+                            <p className="text-lg text-default-500">
+                                Selecciona un complejo para ver sus canchas
+                            </p>
+                            <p className="text-sm text-default-400">
+                                También puedes filtrar por deporte o buscar por nombre
+                            </p>
+                        </div>
+                    ) : isLoading ? (
                         <div className="flex justify-center py-12">
                             <Spinner size="lg" />
                         </div>

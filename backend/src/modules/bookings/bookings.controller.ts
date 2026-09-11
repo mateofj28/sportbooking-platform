@@ -66,10 +66,13 @@ export class BookingsController {
 
     @Post('manual')
     @UseGuards(RolesGuard)
-    @Roles(Role.ADMIN)
-    @ApiOperation({ summary: 'Create manual booking (Admin)' })
-    createManual(@Body() dto: ManualBookingDto, @CurrentUser('id') adminId: string) {
-        return this.bookingsService.createManual(dto, adminId);
+    @Roles(Role.ADMIN, Role.VENUE_ADMIN)
+    @ApiOperation({ summary: 'Create manual booking (Admin / Venue admin)' })
+    createManual(
+        @Body() dto: ManualBookingDto,
+        @CurrentUser() actor: { id: string; role: Role; venueId?: string | null },
+    ) {
+        return this.bookingsService.createManual(dto, actor);
     }
 
     @Patch('recurring/:id/cancel')

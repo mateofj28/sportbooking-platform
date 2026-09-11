@@ -74,6 +74,32 @@ export class UsersRepository {
         });
     }
 
+    /**
+     * Busca un cliente por email o DNI EXACTO (no lista). Solo clientes activos.
+     * Devuelve un único usuario o null.
+     */
+    async lookupClient(params: { email?: string; dni?: string }) {
+        const { email, dni } = params;
+        if (!email && !dni) return null;
+
+        return this.prisma.user.findFirst({
+            where: {
+                isActive: true,
+                role: 'CLIENT',
+                ...(email ? { email: { equals: email, mode: 'insensitive' as const } } : {}),
+                ...(dni ? { dni } : {}),
+            },
+            select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                phone: true,
+                dni: true,
+            },
+        });
+    }
+
     async update(id: string, data: any) {
         return this.prisma.user.update({
             where: { id },

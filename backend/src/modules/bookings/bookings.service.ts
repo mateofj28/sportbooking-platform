@@ -69,9 +69,26 @@ export class BookingsService {
         });
     }
 
-    async createManual(dto: ManualBookingDto, adminId: string) {
+    async createManual(
+        dto: ManualBookingDto,
+        actor: { id: string; role: Role; venueId?: string | null },
+    ) {
         const startDatetime = new Date(dto.startDatetime);
         const endDatetime = new Date(dto.endDatetime);
+
+        // El admin de sede solo puede crear reservas en instalaciones de su sede
+        if (actor.role === Role.VENUE_ADMIN) {
+            const facility = await this.prisma.facility.findUnique({
+                where: { id: dto.facilityId },
+                select: { venueId: true },
+            });
+            if (!facility) throw new NotFoundException('Instalación no encontrada');
+            if (facility.venueId !== actor.venueId) {
+                throw new BadRequestException(
+                    'Solo puedes crear reservas en instalaciones de tu sede',
+                );
+            }
+        }
 
         await this.validateBooking(dto.facilityId, startDatetime, endDatetime);
 
@@ -85,7 +102,7 @@ export class BookingsService {
             totalPrice,
             currency: 'ARS',
             notes: dto.notes,
-            createdById: adminId,
+            createdById: actor.id,
             status: BookingStatus.CONFIRMED,
         });
     }

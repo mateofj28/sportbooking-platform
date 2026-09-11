@@ -13,7 +13,7 @@ import { apiClient } from "@/lib/api-client";
 import { XCircle, Plus, Calendar, Clock, MapPin, User, DollarSign, Search } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useToastStore } from "@/stores/toast-store";
-import type { Booking, BookingStatus, User as UserType, PaginatedResult } from "@/types";
+import type { Booking, BookingStatus } from "@/types";
 
 const STATUS_MAP: Record<BookingStatus, { label: string; color: "warning" | "success" | "danger" | "default" }> = {
     PENDING: { label: "Pendiente", color: "warning" },
@@ -91,14 +91,43 @@ export default function AdminBookingsPage() {
     const { isOpen, onOpen, onClose } = useDisclosure();
 
     const { data: facilities } = useFacilities();
-    const { data: usersData } = useQuery({
-        queryKey: ["users"],
-      queryFn: () => apiClient.get<PaginatedResult<UserType>>("/users"),
-  });
 
     const [manualForm, setManualForm] = useState({
       facilityId: "", userId: "", date: "", startTime: "", endTime: "", notes: "",
   });
+
+    // Búsqueda puntual de cliente por email o DNI (no se lista a todos los usuarios)
+    const [clientSearchType, setClientSearchType] = useState<"email" | "dni">("email");
+    const [clientSearchValue, setClientSearchValue] = useState("");
+    const [foundClient, setFoundClient] = useState<{ id: string; firstName: string; lastName: string; email: string; dni?: string } | null>(null);
+    const [clientLookupError, setClientLookupError] = useState("");
+    const [clientLookupLoading, setClientLookupLoading] = useState(false);
+
+    const handleClientLookup = async () => {
+        const value = clientSearchValue.trim();
+        if (!value) return;
+        setClientLookupLoading(true);
+        setClientLookupError("");
+        setFoundClient(null);
+        try {
+            const params: Record<string, string> = clientSearchType === "email" ? { email: value } : { dni: value };
+            const client = await apiClient.get<{ id: string; firstName: string; lastName: string; email: string; dni?: string }>("/users/lookup", params);
+            setFoundClient(client);
+            setManualForm((f) => ({ ...f, userId: client.id }));
+        } catch (err: any) {
+            setClientLookupError(err?.message || "No se encontró un cliente con esos datos");
+            setManualForm((f) => ({ ...f, userId: "" }));
+        } finally {
+            setClientLookupLoading(false);
+        }
+    };
+
+    const resetManualForm = () => {
+        setManualForm({ facilityId: "", userId: "", date: "", startTime: "", endTime: "", notes: "" });
+        setClientSearchValue("");
+        setFoundClient(null);
+        setClientLookupError("");
+    };
 
     const manualBookingMutation = useMutation({
         mutationFn: (data: { facilityId: string; userId: string; startDatetime: string; endDatetime: string; notes?: string }) =>
@@ -106,7 +135,7 @@ export default function AdminBookingsPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["bookings"] });
             onClose();
-            setManualForm({ facilityId: "", userId: "", date: "", startTime: "", endTime: "", notes: "" });
+            resetManualForm();
             addToast("Reserva creada correctamente");
         },
     });
@@ -256,16 +285,63 @@ export default function AdminBookingsPage() {
           )}
 
           {/* Manual Booking Modal */}
-          <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+            <Modal isOpen={isOpen} onClose={() => { onClose(); resetManualForm(); }} size="2xl">
               <ModalContent>
                   <ModalHeader>Reserva Manual</ModalHeader>
                   <ModalBody className="gap-4">
                       <Select label="Instalación" placeholder="Seleccionar" variant="bordered" selectedKeys={manualForm.facilityId ? [manualForm.facilityId] : []} onSelectionChange={(keys: any) => setManualForm({ ...manualForm, facilityId: Array.from(keys)[0] as string || "" })}>
                           {(facilities || []).map((f) => (<SelectItem key={f.id}>{f.name}</SelectItem>))}
                       </Select>
-                      <Select label="Usuario" placeholder="Seleccionar" variant="bordered" selectedKeys={manualForm.userId ? [manualForm.userId] : []} onSelectionChange={(keys: any) => setManualForm({ ...manualForm, userId: Array.from(keys)[0] as string || "" })}>
-                          {(usersData?.data || []).map((u) => (<SelectItem key={u.id}>{u.firstName} {u.lastName} ({u.email})</SelectItem>))}
-                      </Select>
+                        {/* Búsqueda de cliente por email o DNI (sin listar a todos) */}
+                        <div className="rounded-lg border border-divider p-3">
+                            <p className="mb-2 text-sm font-medium">Cliente</p>
+                            <div className="flex gap-2">
+                                <Select
+                                    aria-label="Buscar por"
+                                    variant="bordered"
+                                    size="sm"
+                                    className="max-w-[120px]"
+                                    selectedKeys={[clientSearchType]}
+                                    onSelectionChange={(keys: any) => {
+                                        setClientSearchType((Array.from(keys)[0] as "email" | "dni") || "email");
+                                        setFoundClient(null);
+                                        setClientLookupError("");
+                                    }}
+                                >
+                                    <SelectItem key="email">Email</SelectItem>
+                                    <SelectItem key="dni">DNI</SelectItem>
+                                </Select>
+                                <Input
+                                    aria-label="Valor de búsqueda"
+                                    variant="bordered"
+                                    size="sm"
+                                    placeholder={clientSearchType === "email" ? "cliente@email.com" : "Número de DNI"}
+                                    value={clientSearchValue}
+                                    onValueChange={setClientSearchValue}
+                                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleClientLookup(); } }}
+                                />
+                                <Button
+                                    size="sm"
+                                    color="primary"
+                                    variant="flat"
+                                    isLoading={clientLookupLoading}
+                                    onPress={handleClientLookup}
+                                    startContent={!clientLookupLoading && <Search className="h-4 w-4" />}
+                                >
+                                    Buscar
+                                </Button>
+                            </div>
+                            {foundClient && (
+                                <div className="mt-2 flex items-center gap-2 rounded-md bg-success/10 px-3 py-2 text-sm">
+                                    <User className="h-4 w-4 text-success" />
+                                    <span className="font-medium">{foundClient.firstName} {foundClient.lastName}</span>
+                                    <span className="text-default-500">· {foundClient.email}</span>
+                                </div>
+                            )}
+                            {clientLookupError && (
+                                <p className="mt-2 text-sm text-danger">{clientLookupError}</p>
+                            )}
+                        </div>
                       <Input label="Fecha" type="date" variant="bordered" value={manualForm.date} onChange={(e) => setManualForm({ ...manualForm, date: e.target.value })} />
                       <div className="grid grid-cols-2 gap-4">
                             <Select
@@ -295,7 +371,7 @@ export default function AdminBookingsPage() {
                   </ModalBody>
                   <ModalFooter>
                       <Button variant="light" onPress={onClose}>Cancelar</Button>
-                      <Button color="primary" onPress={handleManualSubmit} isLoading={manualBookingMutation.isPending}>Crear Reserva</Button>
+                        <Button color="primary" onPress={handleManualSubmit} isLoading={manualBookingMutation.isPending} isDisabled={!manualForm.userId}>Crear Reserva</Button>
                   </ModalFooter>
               </ModalContent>
           </Modal>

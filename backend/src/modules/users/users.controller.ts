@@ -50,6 +50,20 @@ export class UsersController {
         return this.usersService.adminCreate(dto);
     }
 
+    @Get('lookup')
+    @UseGuards(RolesGuard)
+    @Roles(Role.ADMIN, Role.VENUE_ADMIN)
+    @ApiOperation({ summary: 'Buscar un cliente por email o DNI exacto (para reservas manuales)' })
+    lookupClient(
+        @Query('email') email?: string,
+        @Query('dni') dni?: string,
+    ) {
+        return this.usersService.lookupClient({
+            email: email?.trim() || undefined,
+            dni: dni?.trim() || undefined,
+        });
+    }
+
     @Get(':id')
     @UseGuards(RolesGuard)
     @Roles(Role.ADMIN)

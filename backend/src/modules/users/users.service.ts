@@ -20,6 +20,18 @@ export class UsersService {
         return user;
     }
 
+    /**
+     * Búsqueda puntual de un cliente por email o DNI exacto (para reservas manuales).
+     * No expone la lista de usuarios.
+     */
+    async lookupClient(params: { email?: string; dni?: string }) {
+        const user = await this.usersRepository.lookupClient(params);
+        if (!user) {
+            throw new NotFoundException('No se encontró un cliente con esos datos');
+        }
+        return user;
+    }
+
     async updateProfile(userId: string, dto: UpdateUserDto) {
         return this.usersRepository.update(userId, dto);
     }

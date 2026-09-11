@@ -7,8 +7,9 @@ import {
 } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCancelBooking } from "@/hooks/use-bookings";
-import { useFacilities } from "@/hooks/use-facilities";
+import { useCancelBooking, useCreateRecurringBooking } from "@/hooks/use-bookings";
+import { useFacilities, useFacility } from "@/hooks/use-facilities";
+import { AvailabilityPicker, type AvailabilitySelection, formatPrice } from "@/components/shared/availability-picker";
 import { apiClient } from "@/lib/api-client";
 import { XCircle, Plus, Calendar, Clock, MapPin, User, DollarSign, Search } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
@@ -28,16 +29,6 @@ const STATUS_FILTERS: { key: "ALL" | BookingStatus; label: string; color: "prima
     { key: "COMPLETED", label: "Completadas", color: "default" },
     { key: "CANCELLED", label: "Canceladas", color: "danger" },
 ];
-
-// Opciones de hora cada 30 min en formato 12h (AM/PM)
-const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
-    const hours = Math.floor(i / 2);
-    const minutes = i % 2 === 0 ? "00" : "30";
-    const value = `${hours.toString().padStart(2, "0")}:${minutes}`;
-    const h12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-    const ampm = hours < 12 ? "AM" : "PM";
-    return { value, label: `${h12}:${minutes} ${ampm}` };
-});
 
 const PER_PAGE = 12;
 
@@ -92,9 +83,17 @@ export default function AdminBookingsPage() {
 
     const { data: facilities } = useFacilities();
 
-    const [manualForm, setManualForm] = useState({
-      facilityId: "", userId: "", date: "", startTime: "", endTime: "", notes: "",
-  });
+    // Reserva manual: instalación, cliente, selección de disponibilidad, notas
+    const [manualFacilityId, setManualFacilityId] = useState("");
+    const [manualUserId, setManualUserId] = useState("");
+    const [manualNotes, setManualNotes] = useState("");
+    const [selection, setSelection] = useState<AvailabilitySelection | null>(null);
+    const [manualMode, setManualMode] = useState<"single" | "recurring">("single");
+    const [recurringResult, setRecurringResult] = useState<null | { createdCount: number; skippedCount: number; skipped: { date: string; reason: string }[] }>(null);
+
+    // Cargar la instalación seleccionada con horarios/precios para el picker
+    const { data: selectedFacility } = useFacility(manualFacilityId);
+    const createRecurring = useCreateRecurringBooking();
 
     // Búsqueda puntual de cliente por email o DNI (no se lista a todos los usuarios)
     const [clientSearchType, setClientSearchType] = useState<"email" | "dni">("email");
@@ -113,20 +112,33 @@ export default function AdminBookingsPage() {
             const params: Record<string, string> = clientSearchType === "email" ? { email: value } : { dni: value };
             const client = await apiClient.get<{ id: string; firstName: string; lastName: string; email: string; dni?: string }>("/users/lookup", params);
             setFoundClient(client);
-            setManualForm((f) => ({ ...f, userId: client.id }));
+            setManualUserId(client.id);
         } catch (err: any) {
             setClientLookupError(err?.message || "No se encontró un cliente con esos datos");
-            setManualForm((f) => ({ ...f, userId: "" }));
+            setManualUserId("");
         } finally {
             setClientLookupLoading(false);
         }
     };
 
     const resetManualForm = () => {
-        setManualForm({ facilityId: "", userId: "", date: "", startTime: "", endTime: "", notes: "" });
+        setManualFacilityId("");
+        setManualUserId("");
+        setManualNotes("");
+        setSelection(null);
+        setManualMode("single");
+        setRecurringResult(null);
         setClientSearchValue("");
         setFoundClient(null);
         setClientLookupError("");
+    };
+
+    // Construye un ISO local (AR) a partir de la fecha seleccionada + hora "HH:mm"
+    const buildLocalIso = (date: Date, time: string) => {
+        const y = date.getFullYear();
+        const mo = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${mo}-${d}T${time}:00`;
     };
 
     const manualBookingMutation = useMutation({
@@ -138,17 +150,45 @@ export default function AdminBookingsPage() {
             resetManualForm();
             addToast("Reserva creada correctamente");
         },
+        onError: (error: any) => {
+            const msg = error?.message || "No se pudo crear la reserva";
+            addToast(Array.isArray(msg) ? msg[0] : msg);
+        },
     });
 
     const handleManualSubmit = () => {
-      manualBookingMutation.mutate({
-          facilityId: manualForm.facilityId,
-          userId: manualForm.userId,
-        startDatetime: `${manualForm.date}T${manualForm.startTime}:00`,
-        endDatetime: `${manualForm.date}T${manualForm.endTime}:00`,
-        notes: manualForm.notes || undefined,
-    });
-  };
+        if (!manualFacilityId || !manualUserId || !selection) return;
+        manualBookingMutation.mutate({
+            facilityId: manualFacilityId,
+            userId: manualUserId,
+            startDatetime: buildLocalIso(selection.date, selection.startTime),
+            endDatetime: buildLocalIso(selection.date, selection.endTime),
+            notes: manualNotes || undefined,
+        });
+    };
+
+    const handleManualRecurringSubmit = () => {
+        if (!manualFacilityId || !manualUserId || !selection) return;
+        const startDate = buildLocalIso(selection.date, "00:00").split("T")[0];
+        createRecurring.mutate(
+            {
+                facilityId: manualFacilityId,
+                userId: manualUserId,
+                dayOfWeek: selection.dayOfWeek,
+                startTime: selection.startTime,
+                endTime: selection.endTime,
+                startDate,
+                notes: manualNotes || undefined,
+            },
+            {
+                onSuccess: (res) => {
+                    setRecurringResult({ createdCount: res.createdCount, skippedCount: res.skippedCount, skipped: res.skipped });
+                    queryClient.invalidateQueries({ queryKey: ["bookings"] });
+                    addToast(`Turno fijo creado: ${res.createdCount} reserva(s)`);
+                },
+            }
+        );
+    };
 
     const formatDate = (d: string) => new Date(d).toLocaleDateString("es-AR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
     const formatTime = (dateStr: string) => {
@@ -289,7 +329,17 @@ export default function AdminBookingsPage() {
               <ModalContent>
                   <ModalHeader>Reserva Manual</ModalHeader>
                   <ModalBody className="gap-4">
-                      <Select label="Instalación" placeholder="Seleccionar" variant="bordered" selectedKeys={manualForm.facilityId ? [manualForm.facilityId] : []} onSelectionChange={(keys: any) => setManualForm({ ...manualForm, facilityId: Array.from(keys)[0] as string || "" })}>
+                        <Select
+                            label="Instalación"
+                            placeholder="Seleccionar"
+                            variant="bordered"
+                            selectedKeys={manualFacilityId ? [manualFacilityId] : []}
+                            onSelectionChange={(keys: any) => {
+                                setManualFacilityId(Array.from(keys)[0] as string || "");
+                                setSelection(null);
+                                setRecurringResult(null);
+                            }}
+                        >
                           {(facilities || []).map((f) => (<SelectItem key={f.id}>{f.name}</SelectItem>))}
                       </Select>
                         {/* Búsqueda de cliente por email o DNI (sin listar a todos) */}
@@ -342,36 +392,92 @@ export default function AdminBookingsPage() {
                                 <p className="mt-2 text-sm text-danger">{clientLookupError}</p>
                             )}
                         </div>
-                      <Input label="Fecha" type="date" variant="bordered" value={manualForm.date} onChange={(e) => setManualForm({ ...manualForm, date: e.target.value })} />
-                      <div className="grid grid-cols-2 gap-4">
-                            <Select
-                                label="Inicio"
-                                placeholder="Seleccionar"
-                                variant="bordered"
-                                selectedKeys={manualForm.startTime ? [manualForm.startTime] : []}
-                                onSelectionChange={(keys: any) => setManualForm({ ...manualForm, startTime: Array.from(keys)[0] as string || "" })}
-                            >
-                                {TIME_OPTIONS.map((t) => (
-                                    <SelectItem key={t.value}>{t.label}</SelectItem>
-                                ))}
-                            </Select>
-                            <Select
-                                label="Fin"
-                                placeholder="Seleccionar"
-                                variant="bordered"
-                                selectedKeys={manualForm.endTime ? [manualForm.endTime] : []}
-                                onSelectionChange={(keys: any) => setManualForm({ ...manualForm, endTime: Array.from(keys)[0] as string || "" })}
-                            >
-                                {TIME_OPTIONS.map((t) => (
-                                    <SelectItem key={t.value}>{t.label}</SelectItem>
-                                ))}
-                            </Select>
-                      </div>
-                      <Textarea label="Notas (opcional)" variant="bordered" value={manualForm.notes} onValueChange={(v) => setManualForm({ ...manualForm, notes: v })} />
+                        {/* Toggle: reserva única / turno fijo */}
+                        {manualFacilityId && (
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => { setManualMode("single"); setRecurringResult(null); }}
+                                    className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${manualMode === "single" ? "border-primary bg-primary/10 text-primary" : "border-divider hover:border-primary"}`}
+                                >
+                                    Reserva única
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setManualMode("recurring"); setRecurringResult(null); }}
+                                    className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${manualMode === "recurring" ? "border-primary bg-primary/10 text-primary" : "border-divider hover:border-primary"}`}
+                                >
+                                    Turno fijo (semanal)
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Selector de disponibilidad (mismo flujo que el cliente) */}
+                        {manualFacilityId && selectedFacility && !recurringResult && (
+                            <AvailabilityPicker
+                                key={manualFacilityId}
+                                facility={selectedFacility}
+                                onChange={setSelection}
+                                dayLabel={manualMode === "recurring" ? "1. Elige el día de la semana" : "1. Elige el día"}
+                            />
+                        )}
+
+                        {manualMode === "recurring" && selection && !recurringResult && (
+                            <div className="rounded-lg bg-primary/5 px-4 py-3 text-sm text-default-600">
+                                Se reservarán las próximas <strong>4</strong> fechas de ese día. Las que no estén disponibles se omitirán y te avisaremos cuáles.
+                            </div>
+                        )}
+
+                        {/* Resultado del turno fijo */}
+                        {recurringResult && (
+                            <div className="rounded-lg bg-success/10 p-4">
+                                <p className="text-sm font-semibold text-success">
+                                    Turno fijo creado: {recurringResult.createdCount} reserva{recurringResult.createdCount !== 1 ? "s" : ""} confirmada{recurringResult.createdCount !== 1 ? "s" : ""}.
+                                </p>
+                                {recurringResult.skippedCount > 0 && (
+                                    <div className="mt-2">
+                                        <p className="text-xs text-default-600">{recurringResult.skippedCount} fecha(s) no se pudo reservar:</p>
+                                        <ul className="mt-1 space-y-0.5">
+                                            {recurringResult.skipped.map((s) => (
+                                                <li key={s.date} className="text-xs text-default-500">• {s.date}: {s.reason}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {!recurringResult && (
+                            <Textarea label="Notas (opcional)" variant="bordered" value={manualNotes} onValueChange={setManualNotes} />
+                        )}
                   </ModalBody>
                   <ModalFooter>
-                      <Button variant="light" onPress={onClose}>Cancelar</Button>
-                        <Button color="primary" onPress={handleManualSubmit} isLoading={manualBookingMutation.isPending} isDisabled={!manualForm.userId}>Crear Reserva</Button>
+                        {recurringResult ? (
+                            <Button color="primary" onPress={() => { onClose(); resetManualForm(); }}>Listo</Button>
+                        ) : (
+                            <>
+                                <Button variant="light" onPress={() => { onClose(); resetManualForm(); }}>Cancelar</Button>
+                                {manualMode === "single" ? (
+                                    <Button
+                                        color="primary"
+                                        onPress={handleManualSubmit}
+                                        isLoading={manualBookingMutation.isPending}
+                                        isDisabled={!manualUserId || !selection}
+                                    >
+                                        Crear Reserva {selection ? `· $${formatPrice(selection.price)} ARS` : ""}
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        color="primary"
+                                        onPress={handleManualRecurringSubmit}
+                                        isLoading={createRecurring.isPending}
+                                        isDisabled={!manualUserId || !selection}
+                                    >
+                                        Crear turno fijo (4 fechas)
+                                    </Button>
+                                )}
+                            </>
+                        )}
                   </ModalFooter>
               </ModalContent>
           </Modal>

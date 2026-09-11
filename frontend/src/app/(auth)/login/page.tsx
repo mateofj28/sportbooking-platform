@@ -5,10 +5,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth.schema";
 import { useAuth } from "@/hooks/use-auth";
-import { Trophy, Mail, Lock, ArrowRight } from "lucide-react";
+import { Trophy, Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 
 export default function LoginPage() {
     const { login } = useAuth();
+    const [showPassword, setShowPassword] = useState(false);
 
     const {
         register,
@@ -87,10 +89,20 @@ export default function LoginPage() {
                             {...register("password")}
                             label="Contraseña"
                             placeholder="••••••••"
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             variant="bordered"
                             size="lg"
                             startContent={<Lock className="h-4 w-4 text-default-400" />}
+                            endContent={
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((v) => !v)}
+                                    className="text-default-400 hover:text-default-600 focus:outline-none"
+                                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                >
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            }
                             isInvalid={!!errors.password}
                             errorMessage={errors.password?.message}
                             classNames={{ inputWrapper: "bg-default-50" }}

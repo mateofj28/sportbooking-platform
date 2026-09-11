@@ -157,7 +157,11 @@ export default function AdminFacilitiesPage() {
         mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
             apiClient.patch(`/facilities/${id}`, { isActive }),
         onSuccess: (_data, variables) => {
-            queryClient.invalidateQueries({ queryKey: ["facilities"] });
+            // Actualizar solo la instalación afectada en la caché, por id.
+            // Evita reordenar la lista y confundir filas con nombres repetidos.
+            queryClient.setQueryData<Facility[]>(["facilities", "admin-all"], (prev) =>
+                prev?.map((f) => (f.id === variables.id ? { ...f, isActive: variables.isActive } : f)),
+            );
             addToast(variables.isActive ? "Instalación activada" : "Instalación desactivada");
         },
         onError: (error: any) => {
@@ -349,7 +353,7 @@ export default function AdminFacilitiesPage() {
                                 <TableCell key="estado">
                                     <button
                                         type="button"
-                                        disabled={toggleActiveMutation.isPending}
+                                        disabled={toggleActiveMutation.isPending && toggleActiveMutation.variables?.id === facility.id}
                                         onClick={() => toggleActiveMutation.mutate({ id: facility.id, isActive: !facility.isActive })}
                                         className="disabled:opacity-50"
                                         aria-label="Activar o desactivar instalación"

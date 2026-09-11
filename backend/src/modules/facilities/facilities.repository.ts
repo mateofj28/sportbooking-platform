@@ -39,7 +39,10 @@ export class FacilitiesRepository {
                 sport: true,
                 venue: { select: { id: true, name: true, city: true, address: true } },
             },
-            orderBy: { name: 'asc' },
+            // Orden determinista: desempatar por id para que filas con el mismo
+            // nombre no cambien de posición entre recargas (evita confusión al
+            // activar/desactivar instalaciones con nombres repetidos).
+            orderBy: [{ name: 'asc' }, { id: 'asc' }],
         });
     }
 

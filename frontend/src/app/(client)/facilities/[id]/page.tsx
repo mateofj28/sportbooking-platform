@@ -120,7 +120,6 @@ export default function FacilityDetailPage({
 
     // Modo de reserva: única o turno fijo (semanal)
     const [mode, setMode] = useState<"single" | "recurring">("single");
-    const [recurringEndDate, setRecurringEndDate] = useState<string>("");
     const [recurringResult, setRecurringResult] = useState<null | {
         createdCount: number;
         skippedCount: number;
@@ -214,7 +213,7 @@ export default function FacilityDetailPage({
             router.push("/login");
             return;
         }
-        if (!selectedSlot || !recurringEndDate) return;
+        if (!selectedSlot) return;
 
         const startDate = selectedDate.toISOString().split("T")[0];
         // dayOfWeek AR: usamos el día de la fecha seleccionada (0=Lunes..6=Domingo)
@@ -227,7 +226,6 @@ export default function FacilityDetailPage({
                 startTime: selectedSlot,
                 endTime: endTime,
                 startDate,
-                endDate: recurringEndDate,
                 notes: notes || undefined,
             },
             {
@@ -422,19 +420,12 @@ export default function FacilityDetailPage({
                             </div>
                         )}
 
-                        {/* Turno fijo: fecha hasta */}
+                        {/* Turno fijo: aviso de las 4 ocurrencias */}
                         {mode === "recurring" && selectedSlot && (
-                            <div>
-                                <p className="mb-3 text-sm font-semibold text-default-700">
-                                    4. Repetir cada {selectedDate.toLocaleDateString("es-AR", { weekday: "long" })} hasta:
-                                </p>
-                                <input
-                                    type="date"
-                                    value={recurringEndDate}
-                                    min={selectedDate.toISOString().split("T")[0]}
-                                    onChange={(e) => setRecurringEndDate(e.target.value)}
-                                    className="rounded-lg border border-divider bg-background px-3 py-2 text-sm"
-                                />
+                            <div className="rounded-lg bg-primary/5 px-4 py-3 text-sm text-default-600">
+                                Se reservarán las próximas <strong>4</strong> fechas de los{" "}
+                                {selectedDate.toLocaleDateString("es-AR", { weekday: "long" })}. Las que no estén
+                                disponibles se omitirán y te avisaremos cuáles.
                             </div>
                         )}
 
@@ -491,12 +482,11 @@ export default function FacilityDetailPage({
                                                 color="primary"
                                                 size="lg"
                                                 onPress={handleRecurringBooking}
-                                                isLoading={createRecurring.isPending}
-                                                isDisabled={!recurringEndDate}
+                                                    isLoading={createRecurring.isPending}
                                                 startContent={<Check className="h-4 w-4" />}
                                                 className="font-semibold"
                                             >
-                                                {isAuthenticated ? "Crear turno fijo" : "Iniciar sesión para reservar"}
+                                                    {isAuthenticated ? "Crear turno fijo (4 fechas)" : "Iniciar sesión para reservar"}
                                             </Button>
                                         )}
                                     </div>

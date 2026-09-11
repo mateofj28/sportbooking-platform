@@ -29,8 +29,7 @@ export interface CreateRecurringBookingData {
     dayOfWeek: number; // 0=Lunes..6=Domingo
     startTime: string; // "20:00"
     endTime: string;   // "22:00"
-    startDate: string; // "2026-09-15"
-    endDate: string;   // "2026-12-15"
+    startDate: string; // "2026-09-15" (punto de partida; se generan 4 ocurrencias)
     userId?: string;
     notes?: string;
 }

@@ -59,15 +59,10 @@ export class CreateRecurringBookingDto {
     @IsNotEmpty()
     endTime: string;
 
-    @ApiProperty({ example: '2026-09-15', description: 'Fecha de inicio (YYYY-MM-DD)' })
+    @ApiProperty({ example: '2026-09-15', description: 'Fecha de inicio (YYYY-MM-DD). Se generan las próximas N ocurrencias del día elegido a partir de esta fecha.' })
     @IsDateString()
     @IsNotEmpty()
     startDate: string;
-
-    @ApiProperty({ example: '2026-12-15', description: 'Fecha de fin inclusive (YYYY-MM-DD)' })
-    @IsDateString()
-    @IsNotEmpty()
-    endDate: string;
 
     @ApiProperty({ required: false, description: 'Cliente para el que se crea (solo admin de sede)' })
     @IsOptional()

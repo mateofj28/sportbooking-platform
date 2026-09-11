@@ -144,23 +144,28 @@ export class BookingsService {
             );
         }
 
-        // Parsear fechas base (YYYY-MM-DD)
+        // Turno fijo: siempre las próximas 4 ocurrencias del día elegido
+        const OCCURRENCES = 4;
+
+        // Parsear fecha base (YYYY-MM-DD) como medianoche UTC
         const [sy, sm, sd] = dto.startDate.split('-').map(Number);
-        const [ey, em, ed] = dto.endDate.split('-').map(Number);
-        const rangeStart = new Date(Date.UTC(sy, sm - 1, sd));
-        const rangeEnd = new Date(Date.UTC(ey, em - 1, ed));
+        const base = new Date(Date.UTC(sy, sm - 1, sd));
 
-        if (rangeEnd < rangeStart) {
-            throw new BadRequestException('La fecha de fin debe ser posterior a la de inicio');
+        // Encontrar la primera fecha (>= base) cuyo día de semana AR coincida
+        const arDow = (dt: Date) => ((dt.getUTCDay() + 6) % 7); // 0=Lunes..6=Domingo
+        const firstDate = new Date(base);
+        for (let i = 0; i < 7 && arDow(firstDate) !== dto.dayOfWeek; i++) {
+            firstDate.setUTCDate(firstDate.getUTCDate() + 1);
         }
 
-        // Límite de seguridad: máximo ~6 meses
-        const maxMs = 190 * 24 * 60 * 60 * 1000;
-        if (rangeEnd.getTime() - rangeStart.getTime() > maxMs) {
-            throw new BadRequestException('El rango máximo permitido es de 6 meses');
+        // Generar las 4 fechas (semanales)
+        const dates: Date[] = [];
+        for (let i = 0; i < OCCURRENCES; i++) {
+            dates.push(new Date(firstDate.getTime() + i * 7 * 24 * 60 * 60 * 1000));
         }
+        const lastDate = dates[dates.length - 1];
 
-        // Crear la entidad de recurrencia
+        // Crear la entidad de recurrencia (startDate = primera, endDate = última)
         const recurring = await this.prisma.recurringBooking.create({
             data: {
                 facilityId: dto.facilityId,
@@ -168,8 +173,8 @@ export class BookingsService {
                 dayOfWeek: dto.dayOfWeek,
                 startTime: dto.startTime,
                 endTime: dto.endTime,
-                startDate: rangeStart,
-                endDate: rangeEnd,
+                startDate: firstDate,
+                endDate: lastDate,
                 createdById: actor.id,
             },
         });
@@ -177,18 +182,7 @@ export class BookingsService {
         const created: { date: string; bookingId: string }[] = [];
         const skipped: { date: string; reason: string }[] = [];
 
-        // Iterar día por día en el rango
-        for (
-            let cursor = new Date(rangeStart);
-            cursor <= rangeEnd;
-            cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000)
-        ) {
-            // dayOfWeek local AR (0=Lunes..6=Domingo). Como cursor es medianoche UTC
-            // de la fecha, el día calendario AR coincide con la fecha nominal.
-            const jsDay = cursor.getUTCDay(); // 0=Domingo
-            const arDayOfWeek = (jsDay + 6) % 7;
-            if (arDayOfWeek !== dto.dayOfWeek) continue;
-
+        for (const cursor of dates) {
             const y = cursor.getUTCFullYear();
             const mo = cursor.getUTCMonth();
             const d = cursor.getUTCDate();

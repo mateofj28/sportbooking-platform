@@ -81,7 +81,8 @@ export default function AdminBookingsPage() {
     const cancelBooking = useCancelBooking();
     const { isOpen, onOpen, onClose } = useDisclosure();
 
-    const { data: facilities } = useFacilities();
+    // Solo instalaciones reservables: con horario activo Y tarifa activa
+    const { data: facilities } = useFacilities({ bookableOnly: "true" });
 
     // Reserva manual: instalación, cliente, selección de disponibilidad, notas
     const [manualFacilityId, setManualFacilityId] = useState("");

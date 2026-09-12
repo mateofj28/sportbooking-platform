@@ -11,6 +11,7 @@ import { Plus, Trash2, DollarSign, Percent, Pencil } from "lucide-react";
 import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
+import { useAuthStore } from "@/stores/auth-store";
 import { VenueFacilityPicker } from "@/components/shared/venue-facility-picker";
 import type { Pricing } from "@/types";
 
@@ -71,6 +72,8 @@ function formatTime12h(time: string): string {
 export default function AdminPricingPage() {
   const queryClient = useQueryClient();
   const addToast = useToastStore((s) => s.addToast);
+  const { user } = useAuthStore();
+  const isVenueAdmin = user?.role === "VENUE_ADMIN";
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
@@ -334,7 +337,8 @@ export default function AdminPricingPage() {
                   startContent={<Percent className="h-4 w-4 text-default-400" />}
                   value={form.profitPercent}
                   onValueChange={(v) => setForm({ ...form, profitPercent: sanitizeProfitPercent(v) })}
-                  description="Valor entre 1 y 100. Acepta decimales"
+                  isReadOnly={isVenueAdmin}
+                  description={isVenueAdmin ? "Definido por la administración general" : "Valor entre 1 y 100. Acepta decimales"}
                 />
               </div>
 
@@ -450,7 +454,8 @@ export default function AdminPricingPage() {
                   startContent={<Percent className="h-4 w-4 text-default-400" />}
                   value={editForm.profitPercent}
                   onValueChange={(v) => setEditForm({ ...editForm, profitPercent: sanitizeProfitPercent(v) })}
-                  description="Valor entre 1 y 100. Acepta decimales"
+                  isReadOnly={isVenueAdmin}
+                  description={isVenueAdmin ? "Definido por la administración general" : "Valor entre 1 y 100. Acepta decimales"}
                 />
               </div>
 

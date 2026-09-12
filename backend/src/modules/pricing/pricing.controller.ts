@@ -15,6 +15,7 @@ import { CreatePricingDto, UpdatePricingDto } from './dto/create-pricing.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Pricing')
 @Controller()
@@ -35,7 +36,12 @@ export class PricingController {
     create(
         @Param('facilityId') facilityId: string,
         @Body() dto: CreatePricingDto,
+        @CurrentUser() user: { role: Role },
     ) {
+        // El admin de sede no puede definir el % de comisión de la empresa
+        if (user.role === Role.VENUE_ADMIN) {
+            delete dto.profitPercent;
+        }
         return this.pricingService.create(facilityId, dto);
     }
 
@@ -44,7 +50,15 @@ export class PricingController {
     @Roles(Role.ADMIN)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Update pricing (Admin)' })
-    update(@Param('id') id: string, @Body() dto: UpdatePricingDto) {
+    update(
+        @Param('id') id: string,
+        @Body() dto: UpdatePricingDto,
+        @CurrentUser() user: { role: Role },
+    ) {
+        // El admin de sede no puede modificar el % de comisión de la empresa
+        if (user.role === Role.VENUE_ADMIN) {
+            delete dto.profitPercent;
+        }
         return this.pricingService.update(id, dto);
     }
 

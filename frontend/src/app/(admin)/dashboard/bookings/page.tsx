@@ -201,6 +201,8 @@ export default function AdminBookingsPage() {
         return `${h}:${String(m).padStart(2, "0")} ${ampm}`;
     };
 
+    const hasFacilities = (facilities || []).length > 0;
+
     if (isLoading) {
       return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;
   }
@@ -330,19 +332,34 @@ export default function AdminBookingsPage() {
               <ModalContent>
                   <ModalHeader>Reserva Manual</ModalHeader>
                   <ModalBody className="gap-4">
-                        <Select
-                            label="Instalación"
-                            placeholder="Seleccionar"
-                            variant="bordered"
-                            selectedKeys={manualFacilityId ? [manualFacilityId] : []}
-                            onSelectionChange={(keys: any) => {
-                                setManualFacilityId(Array.from(keys)[0] as string || "");
-                                setSelection(null);
-                                setRecurringResult(null);
-                            }}
-                        >
-                          {(facilities || []).map((f) => (<SelectItem key={f.id}>{f.name}</SelectItem>))}
-                      </Select>
+                        {(facilities || []).length === 0 ? (
+                            <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-center">
+                                <p className="text-sm font-semibold text-warning-700">
+                                    No hay instalaciones disponibles para reservar
+                                </p>
+                                <p className="mt-1 text-sm text-default-600">
+                                    Para que una instalación aparezca aquí, debe tener configurado
+                                    un <strong>horario</strong> y una <strong>tarifa</strong> activos.
+                                    Configúralos en las secciones <strong>Horarios</strong> y <strong>Precios</strong>.
+                                </p>
+                            </div>
+                        ) : (
+                                <Select
+                                    label="Instalación"
+                                    placeholder="Seleccionar"
+                                    variant="bordered"
+                                    selectedKeys={manualFacilityId ? [manualFacilityId] : []}
+                                    onSelectionChange={(keys: any) => {
+                                        setManualFacilityId(Array.from(keys)[0] as string || "");
+                                        setSelection(null);
+                                        setRecurringResult(null);
+                                    }}
+                                >
+                                    {(facilities || []).map((f) => (<SelectItem key={f.id}>{f.name}</SelectItem>))}
+                                </Select>
+                        )}
+                        {hasFacilities && (
+                            <>
                         {/* Búsqueda de cliente por email o DNI (sin listar a todos) */}
                         <div className="rounded-lg border border-divider p-3">
                             <p className="mb-2 text-sm font-medium">Cliente</p>
@@ -451,9 +468,13 @@ export default function AdminBookingsPage() {
                         {!recurringResult && (
                             <Textarea label="Notas (opcional)" variant="bordered" value={manualNotes} onValueChange={setManualNotes} />
                         )}
+                            </>
+                        )}
                   </ModalBody>
                   <ModalFooter>
-                        {recurringResult ? (
+                        {!hasFacilities ? (
+                            <Button color="primary" onPress={() => { onClose(); resetManualForm(); }}>Cerrar</Button>
+                        ) : recurringResult ? (
                             <Button color="primary" onPress={() => { onClose(); resetManualForm(); }}>Listo</Button>
                         ) : (
                             <>

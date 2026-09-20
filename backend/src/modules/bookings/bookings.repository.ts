@@ -36,7 +36,7 @@ export class BookingsRepository {
                     },
                     user: { select: { id: true, firstName: true, lastName: true, email: true } },
                 },
-                orderBy: { startDatetime: 'desc' },
+                orderBy: { startDatetime: 'asc' },
             }),
             this.prisma.booking.count({ where }),
         ]);

@@ -10,6 +10,7 @@ import { useFacilities, useFacility } from "@/hooks/use-facilities";
 import { useCreateRecurringBooking } from "@/hooks/use-bookings";
 import { AvailabilityPicker, type AvailabilitySelection, formatPrice } from "@/components/shared/availability-picker";
 import { useToastStore } from "@/stores/toast-store";
+import { useAuthStore } from "@/stores/auth-store";
 import { ArrowLeft, Search, User, Check, CalendarDays } from "lucide-react";
 
 interface FoundClient {
@@ -24,9 +25,16 @@ export default function NewManualBookingPage() {
     const router = useRouter();
     const queryClient = useQueryClient();
     const addToast = useToastStore((s) => s.addToast);
+    const { user } = useAuthStore();
+    const isVenueAdmin = user?.role === "VENUE_ADMIN";
 
-    // Solo instalaciones reservables (horario + tarifa activos)
-    const { data: facilities } = useFacilities({ bookableOnly: "true" });
+    // Solo instalaciones reservables (horario + tarifa activos).
+    // Para el admin de sede se pasa explícitamente su venueId como salvaguarda,
+    // además del scope que fuerza el backend con el token.
+    const { data: facilities } = useFacilities({
+        bookableOnly: "true",
+        ...(isVenueAdmin && user?.venueId ? { venueId: user.venueId } : {}),
+    });
     const hasFacilities = (facilities || []).length > 0;
 
     const [facilityId, setFacilityId] = useState("");

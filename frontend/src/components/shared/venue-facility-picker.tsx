@@ -24,8 +24,10 @@ export function VenueFacilityPicker({ selectedFacilityId, onFacilityChange, clas
   });
 
   const { data: facilities } = useQuery({
-    queryKey: ["facilities"],
-    queryFn: () => apiClient.get<Facility[]>("/facilities"),
+    queryKey: ["facilities", isVenueAdmin ? user?.venueId : "all"],
+    queryFn: () => apiClient.get<Facility[]>("/facilities",
+      isVenueAdmin && user?.venueId ? { venueId: user.venueId } : undefined,
+    ),
   });
 
   // Filter facilities by selected venue

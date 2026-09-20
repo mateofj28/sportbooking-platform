@@ -75,10 +75,14 @@ export default function AdminFacilitiesPage() {
     const { user } = useAuthStore();
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
     const [deleteId, setDeleteId] = useState<string | null>(null);
-    // Admin ve todas las instalaciones (activas e inactivas)
+    // Admin ve todas las instalaciones (activas e inactivas).
+    // El admin de sede pasa su venueId como salvaguarda (además del scope del backend).
     const { data: facilities, isLoading } = useQuery({
-        queryKey: ["facilities", "admin-all"],
-        queryFn: () => apiClient.get<Facility[]>("/facilities", { includeInactive: "true" }),
+        queryKey: ["facilities", "admin-all", isVenueAdmin ? user?.venueId : "all"],
+        queryFn: () => apiClient.get<Facility[]>("/facilities", {
+            includeInactive: "true",
+            ...(isVenueAdmin && user?.venueId ? { venueId: user.venueId } : {}),
+        }),
     });
     const { data: sports } = useQuery({
         queryKey: ["sports"],
@@ -159,8 +163,9 @@ export default function AdminFacilitiesPage() {
         onSuccess: (_data, variables) => {
             // Actualizar solo la instalación afectada en la caché, por id.
             // Evita reordenar la lista y confundir filas con nombres repetidos.
-            queryClient.setQueryData<Facility[]>(["facilities", "admin-all"], (prev) =>
-                prev?.map((f) => (f.id === variables.id ? { ...f, isActive: variables.isActive } : f)),
+            queryClient.setQueryData<Facility[]>(
+                ["facilities", "admin-all", isVenueAdmin ? user?.venueId : "all"],
+                (prev) => prev?.map((f) => (f.id === variables.id ? { ...f, isActive: variables.isActive } : f)),
             );
             addToast(variables.isActive ? "Instalación activada" : "Instalación desactivada");
         },

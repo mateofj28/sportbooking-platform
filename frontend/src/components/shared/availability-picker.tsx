@@ -63,6 +63,22 @@ export function formatPrice(value: number): string {
     return Math.round(value).toLocaleString("en-US");
 }
 
+/** Normaliza el nombre del deporte (sin acentos, minúsculas) */
+function sportKey(name?: string): string {
+    return (name || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+/** Duraciones permitidas por deporte (minutos). Fútbol/Fútbol 5/7/11 solo 60. */
+function durationOptionsForSport(sportName: string | undefined, min: number, max: number): number[] {
+    const key = sportKey(sportName);
+    // Cualquier variante de fútbol: única opción de 60 min
+    if (key.includes("futbol") || key.includes("futsal")) return [60];
+    // Resto: derivar de min/max en pasos de 30
+    const options: number[] = [];
+    for (let d = min; d <= max; d += 30) options.push(d);
+    return options.length ? options : [min];
+}
+
 function getRemainingDaysOfMonth(): Date[] {
     const days: Date[] = [];
     const today = new Date();
@@ -176,12 +192,16 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
     }, [availability, schedule, facility, isToday]);
 
     const durationOptions = useMemo(() => {
-        const options: number[] = [];
-        for (let d = facility.minBookingDuration; d <= facility.maxBookingDuration; d += 30) {
-            options.push(d);
-        }
-        return options.length ? options : [facility.minBookingDuration];
+        return durationOptionsForSport(facility.sport?.name, facility.minBookingDuration, facility.maxBookingDuration);
     }, [facility]);
+
+    // Asegurar que la duración seleccionada sea válida para las opciones disponibles
+    useEffect(() => {
+        if (durationOptions.length && !durationOptions.includes(duration)) {
+            setDuration(durationOptions[0]);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [durationOptions]);
 
     const endTime = useMemo(() => {
         if (!selectedSlot) return "";
@@ -194,9 +214,20 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
 
     const price = useMemo(() => {
         if (!facility.pricing || !selectedSlot) return 0;
+        const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+        const slotMin = toMin(selectedSlot);
         const pricing = facility.pricing.find((p) => {
+            if (!p.isActive) return false;
             const matchDay = p.dayOfWeek === null || p.dayOfWeek === undefined || p.dayOfWeek === dayOfWeek;
-            return matchDay && selectedSlot >= p.startTime && selectedSlot < p.endTime;
+            if (!matchDay) return false;
+            const start = toMin(p.startTime);
+            let end = toMin(p.endTime);
+            // Rango que cruza medianoche (ej: 19:00-02:00): extender el fin 24h
+            if (end <= start) {
+                // El slot puede estar en la parte nocturna (>= start) o de madrugada (< end original)
+                return slotMin >= start || slotMin < toMin(p.endTime);
+            }
+            return slotMin >= start && slotMin < end;
         });
         if (!pricing) return 0;
         return Number(pricing.pricePerHour) * (duration / 60);

@@ -8,6 +8,7 @@ import { XCircle, Plus, Calendar, Clock, MapPin, User, DollarSign, Search } from
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useToastStore } from "@/stores/toast-store";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 import type { Booking, BookingStatus } from "@/types";
 
 const STATUS_MAP: Record<BookingStatus, { label: string; color: "warning" | "success" | "danger" | "default" }> = {
@@ -70,6 +71,21 @@ export default function AdminBookingsPage() {
     useEffect(() => { setPage(1); }, [search, statusFilter]);
 
     const cancelBooking = useCancelBooking();
+    const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
+
+    const handleConfirmCancel = () => {
+        if (!bookingToCancel) return;
+        cancelBooking.mutate(
+            { id: bookingToCancel.id },
+            {
+                onSuccess: () => {
+                    addToast("Reserva cancelada");
+                    queryClient.invalidateQueries({ queryKey: ["bookings"] });
+                    setBookingToCancel(null);
+                },
+            }
+        );
+    };
 
     const formatDate = (d: string) => new Date(d).toLocaleDateString("es-AR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
     const formatTime = (dateStr: string) => {
@@ -173,7 +189,7 @@ export default function AdminBookingsPage() {
                                                 variant="flat"
                                                 className="w-full"
                                                 startContent={<XCircle className="h-3.5 w-3.5" />}
-                                                onPress={() => cancelBooking.mutate({ id: booking.id }, { onSuccess: () => { addToast("Reserva cancelada"); queryClient.invalidateQueries({ queryKey: ["bookings"] }); } })}
+                                                onPress={() => setBookingToCancel(booking)}
                                             >
                                                 Cancelar
                                             </Button>
@@ -201,6 +217,19 @@ export default function AdminBookingsPage() {
                     </div>
                 </div>
             )}
+
+            {/* Confirmación de cancelación */}
+            <ConfirmModal
+                isOpen={!!bookingToCancel}
+                onClose={() => setBookingToCancel(null)}
+                onConfirm={handleConfirmCancel}
+                title="Cancelar reserva"
+                message={bookingToCancel
+                    ? `¿Seguro que deseas cancelar la reserva de ${bookingToCancel.user.firstName} ${bookingToCancel.user.lastName} en ${bookingToCancel.facility.name}? Esta acción no se puede deshacer.`
+                    : "Esta acción no se puede deshacer."}
+                confirmLabel="Sí, cancelar reserva"
+                isLoading={cancelBooking.isPending}
+            />
         </div>
     );
 }

@@ -459,7 +459,7 @@ export default function FacilityDetailPage({
                         {/* Turno fijo: aviso de las 4 ocurrencias */}
                         {mode === "recurring" && selectedSlot && (
                             <div className="rounded-lg bg-primary/5 px-4 py-3 text-sm text-default-600">
-                                Se reservarán las próximas <strong>4</strong> fechas de los{" "}
+                                Se reservarán las próximas <strong>8</strong> fechas de los{" "}
                                 {selectedDate.toLocaleDateString("es-AR", { weekday: "long" })}. Las que no estén
                                 disponibles se omitirán y te avisaremos cuáles.
                             </div>
@@ -522,7 +522,7 @@ export default function FacilityDetailPage({
                                                 startContent={<Check className="h-4 w-4" />}
                                                 className="font-semibold"
                                             >
-                                                    {isAuthenticated ? "Crear turno fijo (4 fechas)" : "Iniciar sesión para reservar"}
+                                                    {isAuthenticated ? "Crear turno fijo (8 fechas)" : "Iniciar sesión para reservar"}
                                             </Button>
                                         )}
                                     </div>

@@ -303,7 +303,7 @@ export default function NewManualBookingPage() {
                                 </div>
                                 {mode === "recurring" && (
                                     <p className="rounded-lg bg-primary/5 px-3 py-2 text-xs text-default-600">
-                                        Se reservarán las próximas <strong>4</strong> fechas de ese día. Las no disponibles se omiten y se informan.
+                                                Se reservarán las próximas <strong>8</strong> fechas de ese día. Las no disponibles se omiten y se informan.
                                     </p>
                                 )}
                                 <Textarea label="Notas (opcional)" variant="bordered" value={notes} onValueChange={setNotes} minRows={2} />
@@ -333,7 +333,7 @@ export default function NewManualBookingPage() {
                                     </Button>
                                 ) : (
                                     <Button color="primary" size="lg" startContent={<CalendarDays className="h-4 w-4" />} isLoading={createRecurring.isPending} isDisabled={!userId || !selection} onPress={handleRecurringSubmit}>
-                                        Crear turno fijo (4 fechas)
+                                                    Crear turno fijo (8 fechas)
                                     </Button>
                                 )}
                                 {!userId && <p className="text-xs text-default-400">Busca y selecciona un cliente para continuar.</p>}

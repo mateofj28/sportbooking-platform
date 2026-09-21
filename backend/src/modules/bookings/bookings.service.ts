@@ -183,8 +183,8 @@ export class BookingsService {
             );
         }
 
-        // Turno fijo: siempre las próximas 4 ocurrencias del día elegido
-        const OCCURRENCES = 4;
+        // Turno fijo: siempre las próximas 8 ocurrencias del día elegido
+        const OCCURRENCES = 8;
 
         // Parsear fecha base (YYYY-MM-DD) como medianoche UTC
         const [sy, sm, sd] = dto.startDate.split('-').map(Number);

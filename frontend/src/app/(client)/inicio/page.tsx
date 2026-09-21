@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { Card, CardBody, Chip, Button, Spinner, Input } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { getBookingStatusChip } from "@/lib/booking-status";
 import { useAuthStore } from "@/stores/auth-store";
 import { useBookings } from "@/hooks/use-bookings";
 import { Navbar } from "@/components/layout/navbar";
@@ -160,11 +161,11 @@ export default function ClientHomePage() {
                     ) : upcoming.length > 0 ? (
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             {upcoming.map((b) => (
-                                <Card key={b.id} className="border border-divider">
+                                <Card key={b.id} isPressable onPress={() => router.push(`/bookings/${b.id}`)} className="border border-divider">
                                     <CardBody className="gap-2 p-4">
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-center justify-between gap-2">
                                             <h3 className="font-semibold text-sm truncate">{b.facility.name}</h3>
-                                            <Chip size="sm" color="success" variant="flat">Confirmada</Chip>
+                                            {(() => { const c = getBookingStatusChip(b); return <Chip size="sm" color={c.color} variant="flat">{c.label}</Chip>; })()}
                                         </div>
                                         <p className="text-xs text-default-400 flex items-center gap-1">
                                             <MapPin className="h-3 w-3" /> {b.facility.venue?.name}

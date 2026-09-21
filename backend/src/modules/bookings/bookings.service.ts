@@ -66,6 +66,7 @@ export class BookingsService {
             notes: dto.notes,
             createdById: userId,
             status: BookingStatus.CONFIRMED,
+            paymentStatus: 'PAID', // reserva única: se considera pagada al crear
         });
     }
 
@@ -104,6 +105,7 @@ export class BookingsService {
             notes: dto.notes,
             createdById: actor.id,
             status: BookingStatus.CONFIRMED,
+            paymentStatus: 'PAID', // reserva manual única: pagada al crear
         });
     }
 

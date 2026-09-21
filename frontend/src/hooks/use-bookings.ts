@@ -98,6 +98,14 @@ export function useCancelRecurringBooking() {
     });
 }
 
+export function useBooking(id: string) {
+    return useQuery({
+        queryKey: ["booking", id],
+        queryFn: () => apiClient.get<Booking>(`/bookings/${id}`),
+        enabled: !!id,
+    });
+}
+
 export function useMarkBookingPaid() {
     const queryClient = useQueryClient();
 

@@ -118,6 +118,7 @@ export interface Booking {
     endDatetime: string;
     status: BookingStatus;
     paymentStatus?: PaymentStatus;
+    recurringBookingId?: string | null;
     totalPrice: number;
     currency: string;
     notes?: string;

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { BookingStatus } from '@prisma/client';
+import { BookingStatus, PaymentStatus } from '@prisma/client';
 
 @Injectable()
 export class BookingsRepository {
@@ -84,6 +84,7 @@ export class BookingsRepository {
         notes?: string;
         createdById: string;
         status?: BookingStatus;
+        paymentStatus?: PaymentStatus;
         recurringBookingId?: string;
     }) {
         return this.prisma.booking.create({

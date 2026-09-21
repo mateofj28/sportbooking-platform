@@ -1,10 +1,11 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { Button, Card, CardBody, Chip, Divider, Spinner } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { useBooking, useMarkBookingPaid, useCancelBooking } from "@/hooks/use-bookings";
 import { getBookingStatusChip } from "@/lib/booking-status";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ArrowLeft, MapPin, Calendar, Clock, User, Check, X, Repeat, ShieldCheck } from "lucide-react";
@@ -46,6 +47,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     const { data: booking, isLoading } = useBooking(id);
     const markPaid = useMarkBookingPaid();
     const cancelBooking = useCancelBooking();
+    const [confirmCancel, setConfirmCancel] = useState(false);
 
     if (isLoading) {
         return <div className="flex min-h-screen items-center justify-center"><Spinner size="lg" /></div>;
@@ -185,8 +187,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                                         color="danger"
                                         variant="light"
                                         startContent={<X className="h-4 w-4" />}
-                                        isLoading={cancelBooking.isPending}
-                                        onPress={() => cancelBooking.mutate({ id: booking.id }, { onSuccess: () => router.push("/bookings") })}
+                                        onPress={() => setConfirmCancel(true)}
                                     >
                                         Cancelar reserva
                                     </Button>
@@ -197,6 +198,19 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                 </div>
             </main>
             <Footer />
+
+            <ConfirmModal
+                isOpen={confirmCancel}
+                onClose={() => setConfirmCancel(false)}
+                onConfirm={() => cancelBooking.mutate(
+                    { id: booking.id },
+                    { onSuccess: () => { setConfirmCancel(false); router.push("/bookings"); } },
+                )}
+                title="Cancelar reserva"
+                message={`¿Seguro que deseas cancelar la reserva en ${booking.facility.name} del ${formatDateLong(booking.startDatetime)}? Esta acción no se puede deshacer.`}
+                confirmLabel="Sí, cancelar reserva"
+                isLoading={cancelBooking.isPending}
+            />
         </div>
     );
 }

@@ -230,7 +230,10 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
             return slotMin >= start && slotMin < end;
         });
         if (!pricing) return 0;
-        return Number(pricing.pricePerHour) * (duration / 60);
+        // Precio base (neto) + comisión de servicio (profitPercent), igual que el backend
+        const base = Number(pricing.pricePerHour) * (duration / 60);
+        const commission = base * (Number(pricing.profitPercent) || 0) / 100;
+        return base + commission;
     }, [facility, selectedSlot, duration, dayOfWeek]);
 
     // Si el día seleccionado no tiene horarios disponibles, saltar al primer

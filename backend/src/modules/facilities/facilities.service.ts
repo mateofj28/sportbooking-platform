@@ -116,6 +116,26 @@ export class FacilitiesService {
             }),
         ]);
 
+        // Tarifas activas que aplican a este día
+        const dayPricing = facility.pricing.filter(
+            (p) => p.dayOfWeek === null || p.dayOfWeek === dayOfWeek,
+        );
+        const toMin = (t: string) => {
+            const [hh, mm] = t.split(':').map(Number);
+            return hh * 60 + mm;
+        };
+        /** ¿El slot (minutos en el día, 0-1439) está cubierto por alguna tarifa? */
+        const slotHasPricing = (mInDay: number): boolean =>
+            dayPricing.some((p) => {
+                const start = toMin(p.startTime);
+                const end = toMin(p.endTime);
+                if (end <= start) {
+                    // Tarifa que cruza medianoche (ej: 19:00-02:00)
+                    return mInDay >= start || mInDay < end;
+                }
+                return mInDay >= start && mInDay < end;
+            });
+
         const slots: { time: string; available: boolean }[] = [];
         const now = new Date();
 
@@ -124,6 +144,11 @@ export class FacilitiesService {
             const h = Math.floor(mInDay / 60);
             const min = mInDay % 60;
             const timeStr = `${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
+
+            // Si el slot no tiene tarifa definida, no se ofrece (se omite)
+            if (!slotHasPricing(mInDay)) {
+                continue;
+            }
 
             // Instante UTC real del slot (m ya considera el cruce de medianoche)
             const slotStart = arLocalToUtc(m);

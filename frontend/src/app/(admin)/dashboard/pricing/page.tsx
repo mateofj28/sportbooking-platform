@@ -7,7 +7,7 @@ import {
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { Plus, Trash2, DollarSign, Percent, Pencil } from "lucide-react";
+import { Plus, Trash2, DollarSign, Percent, Pencil, AlertTriangle } from "lucide-react";
 import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
@@ -101,6 +101,59 @@ export default function AdminPricingPage() {
     queryFn: () => apiClient.get<Pricing[]>(`/facilities/${selectedFacility}/pricing`),
     enabled: !!selectedFacility,
   });
+
+  // Horarios de la instalación, para detectar franjas sin tarifa
+  const { data: schedules } = useQuery({
+    queryKey: ["schedules", selectedFacility],
+    queryFn: () => apiClient.get<{ id: string; dayOfWeek: number; openTime: string; closeTime: string; isActive: boolean }[]>(`/facilities/${selectedFacility}/schedules`),
+    enabled: !!selectedFacility,
+  });
+
+  // Calcula, por cada día con horario activo, los tramos del horario que NO
+  // tienen ninguna tarifa que los cubra (huecos).
+  const uncoveredRanges = useMemo(() => {
+    if (!schedules || !pricing) return [] as { dayOfWeek: number; from: string; to: string }[];
+    const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+    const fromMin = (mAbs: number) => {
+      const mm = ((mAbs % (24 * 60)) + 24 * 60) % (24 * 60);
+      return `${String(Math.floor(mm / 60)).padStart(2, "0")}:${String(mm % 60).padStart(2, "0")}`;
+    };
+    const STEP = 30;
+    const result: { dayOfWeek: number; from: string; to: string }[] = [];
+
+    for (const s of schedules.filter((x) => x.isActive)) {
+      const open = toMin(s.openTime);
+      let close = toMin(s.closeTime);
+      if (close <= open) close += 24 * 60; // cruza medianoche
+
+      // Tarifas que aplican a este día (específicas o null)
+      const dayPricing = pricing.filter((p) => p.dayOfWeek === null || p.dayOfWeek === undefined || p.dayOfWeek === s.dayOfWeek);
+      const covered = (mAbs: number) => {
+        const mInDay = ((mAbs % (24 * 60)) + 24 * 60) % (24 * 60);
+        return dayPricing.some((p) => {
+          const ps = toMin(p.startTime);
+          const pe = toMin(p.endTime);
+          if (pe <= ps) return mInDay >= ps || mInDay < pe; // cruza medianoche
+          return mInDay >= ps && mInDay < pe;
+        });
+      };
+
+      // Recorrer el horario en pasos y agrupar los tramos no cubiertos
+      let gapStart: number | null = null;
+      for (let m = open; m < close; m += STEP) {
+        if (!covered(m)) {
+          if (gapStart === null) gapStart = m;
+        } else if (gapStart !== null) {
+          result.push({ dayOfWeek: s.dayOfWeek, from: fromMin(gapStart), to: fromMin(m) });
+          gapStart = null;
+        }
+      }
+      if (gapStart !== null) {
+        result.push({ dayOfWeek: s.dayOfWeek, from: fromMin(gapStart), to: fromMin(close) });
+      }
+    }
+    return result;
+  }, [schedules, pricing]);
 
   // Al elegir un día específico, se desactiva "todos los días"
   const toggleDay = (day: number) =>
@@ -225,6 +278,24 @@ export default function AdminPricingPage() {
             </Button>
           </CardHeader>
           <Divider />
+          {uncoveredRanges.length > 0 && (
+            <div className="mx-4 mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3">
+              <div className="flex items-center gap-2 text-warning-700">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-sm font-semibold">Faltan tarifas por definir</span>
+              </div>
+              <p className="mt-1 text-xs text-default-600">
+                Estas franjas del horario no tienen tarifa. Las reservas en esos rangos no estarán disponibles hasta que definas un precio.
+              </p>
+              <ul className="mt-2 space-y-1">
+                {uncoveredRanges.map((r, i) => (
+                  <li key={`${r.dayOfWeek}-${i}`} className="text-xs text-default-700">
+                    • <span className="font-medium">{DAYS[r.dayOfWeek]}</span>: {formatTime12h(r.from)} - {formatTime12h(r.to)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <CardBody>
             {isLoading ? (
               <Spinner />

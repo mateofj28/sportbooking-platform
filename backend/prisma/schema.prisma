@@ -20,6 +20,11 @@ enum BookingStatus {
   COMPLETED
 }
 
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
 model User {
   id                String    @id @default(uuid())
   email             String    @unique
@@ -184,6 +189,7 @@ model Booking {
   startDatetime      DateTime      @map("start_datetime")
   endDatetime        DateTime      @map("end_datetime")
   status             BookingStatus @default(CONFIRMED)
+  paymentStatus      PaymentStatus @default(PENDING) @map("payment_status")
   totalPrice         Decimal       @map("total_price") @db.Decimal(10, 2)
   currency           String        @default("ARS")
   notes              String?

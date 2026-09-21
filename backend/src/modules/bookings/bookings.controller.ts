@@ -94,4 +94,13 @@ export class BookingsController {
     ) {
         return this.bookingsService.cancel(id, userId, dto);
     }
+
+    @Patch(':id/pay')
+    @ApiOperation({ summary: 'Marcar reserva como pagada' })
+    markAsPaid(
+        @Param('id') id: string,
+        @CurrentUser() user: { id: string; role: Role; venueId?: string | null },
+    ) {
+        return this.bookingsService.markAsPaid(id, user);
+    }
 }

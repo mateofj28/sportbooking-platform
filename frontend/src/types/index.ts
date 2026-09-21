@@ -108,6 +108,8 @@ export interface Pricing {
 // Booking types
 export type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
 
+export type PaymentStatus = "PENDING" | "PAID";
+
 export interface Booking {
     id: string;
     facilityId: string;
@@ -115,6 +117,7 @@ export interface Booking {
     startDatetime: string;
     endDatetime: string;
     status: BookingStatus;
+    paymentStatus?: PaymentStatus;
     totalPrice: number;
     currency: string;
     notes?: string;

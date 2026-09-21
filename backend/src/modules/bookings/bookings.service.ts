@@ -107,6 +107,28 @@ export class BookingsService {
         });
     }
 
+    /**
+     * Marca una reserva como pagada. Por ahora solo cambia el estado de pago
+     * (sin pasarela). El cliente solo puede pagar sus propias reservas.
+     */
+    async markAsPaid(id: string, user: { id: string; role: Role; venueId?: string | null }) {
+        const booking = await this.findById(id);
+        if (booking.status === BookingStatus.CANCELLED) {
+            throw new BadRequestException('No se puede pagar una reserva cancelada');
+        }
+        // Autorización: cliente solo sus reservas; venue admin solo su sede
+        if (user.role === Role.CLIENT && booking.userId !== user.id) {
+            throw new BadRequestException('No puedes pagar esta reserva');
+        }
+        if (user.role === Role.VENUE_ADMIN && booking.facility.venueId !== user.venueId) {
+            throw new BadRequestException('No puedes gestionar reservas de otra sede');
+        }
+        return this.prisma.booking.update({
+            where: { id },
+            data: { paymentStatus: 'PAID' },
+        });
+    }
+
     async cancel(id: string, userId: string, dto: CancelBookingDto) {
         const booking = await this.findById(id);
         if (booking.status === BookingStatus.CANCELLED) {
@@ -461,6 +483,11 @@ export class BookingsService {
             return 0;
         }
 
-        return Number(pricing.pricePerHour) * durationHours;
+        // Precio base (neto de la cancha)
+        const base = Number(pricing.pricePerHour) * durationHours;
+        // Comisión de servicio de la empresa (profitPercent)
+        const commission = base * (Number(pricing.profitPercent) || 0) / 100;
+        // El total pagado por el cliente incluye la comisión
+        return base + commission;
     }
 }

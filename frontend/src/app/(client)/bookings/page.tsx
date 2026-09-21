@@ -14,11 +14,11 @@ import {
     Textarea,
     useDisclosure,
 } from "@heroui/react";
-import { useBookings, useCancelBooking, useRecurringBookings, useCancelRecurringBooking, type RecurringBooking } from "@/hooks/use-bookings";
+import { useBookings, useCancelBooking, useRecurringBookings, useCancelRecurringBooking, useMarkBookingPaid, type RecurringBooking } from "@/hooks/use-bookings";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { Calendar, MapPin, Clock, X, Repeat } from "lucide-react";
+import { Calendar, MapPin, Clock, X, Repeat, DollarSign } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Booking, BookingStatus } from "@/types";
@@ -68,6 +68,7 @@ export default function BookingsPage() {
     const { data: bookingsResponse, isLoading } = useBookings();
     const bookings = Array.isArray(bookingsResponse?.data) ? bookingsResponse.data : [];
     const cancelBooking = useCancelBooking();
+    const markPaid = useMarkBookingPaid();
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [cancelReason, setCancelReason] = useState("");
@@ -236,11 +237,16 @@ export default function BookingsPage() {
                               <Card key={booking.id}>
                                   <CardBody className="flex-row items-center justify-between gap-4 p-4">
                                       <div className="flex-1">
-                                          <div className="flex items-center gap-3">
+                                          <div className="flex flex-wrap items-center gap-2">
                                   <h3 className="font-semibold">{booking.facility.name}</h3>
                                   <Chip color={status.color} size="sm" variant="flat">
                                       {status.label}
                                   </Chip>
+                                              {booking.status !== "CANCELLED" && (
+                                                  <Chip color={booking.paymentStatus === "PAID" ? "success" : "warning"} size="sm" variant="flat">
+                                                      {booking.paymentStatus === "PAID" ? "Pagado" : "Pago pendiente"}
+                                                  </Chip>
+                                              )}
                               </div>
                               <div className="mt-2 flex flex-wrap gap-4 text-sm text-default-500">
                                   <span className="flex items-center gap-1">
@@ -257,20 +263,33 @@ export default function BookingsPage() {
                                   </span>
                               </div>
                               <p className="mt-1 text-sm font-medium text-success">
-                                              ${Number(booking.totalPrice).toLocaleString("es-AR")} ARS
+                                              Total: ${Math.round(Number(booking.totalPrice)).toLocaleString("en-US")} ARS
                               </p>
                           </div>
-                                      {booking.status === "CONFIRMED" && (
-                                <Button
-                                    color="danger"
-                                    variant="light"
-                                    size="sm"
-                                    startContent={<X className="h-4 w-4" />}
-                                    onPress={() => handleCancelClick(booking)}
-                                >
-                                    Cancelar
-                                </Button>
-                            )}
+                                      <div className="flex flex-col items-end gap-2">
+                                          {booking.status === "CONFIRMED" && booking.paymentStatus !== "PAID" && (
+                                              <Button
+                                                  color="primary"
+                                                  size="sm"
+                                                  startContent={<DollarSign className="h-4 w-4" />}
+                                                  isLoading={markPaid.isPending && markPaid.variables === booking.id}
+                                                  onPress={() => markPaid.mutate(booking.id)}
+                                              >
+                                                  Pagar
+                                              </Button>
+                                          )}
+                                          {booking.status === "CONFIRMED" && (
+                                              <Button
+                                                  color="danger"
+                                                  variant="light"
+                                                  size="sm"
+                                                  startContent={<X className="h-4 w-4" />}
+                                                  onPress={() => handleCancelClick(booking)}
+                                              >
+                                                  Cancelar
+                                              </Button>
+                                          )}
+                                      </div>
                         </CardBody>
                     </Card>
                 );

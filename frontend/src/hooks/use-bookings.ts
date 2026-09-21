@@ -98,6 +98,17 @@ export function useCancelRecurringBooking() {
     });
 }
 
+export function useMarkBookingPaid() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: string) => apiClient.patch<Booking>(`/bookings/${id}/pay`, {}),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["bookings"] });
+        },
+    });
+}
+
 export function useCancelBooking() {
     const queryClient = useQueryClient();
 

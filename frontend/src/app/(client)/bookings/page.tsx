@@ -262,7 +262,22 @@ export default function BookingsPage() {
                                               Total: ${Math.round(Number(booking.totalPrice)).toLocaleString("en-US")} ARS
                               </p>
                           </div>
-                                      <span className="text-sm text-primary whitespace-nowrap">Ver detalle →</span>
+                                      <div className="flex flex-col items-end gap-2">
+                                          {booking.status === "CONFIRMED" && booking.paymentStatus !== "PAID" && (
+                                              <div onClick={(e) => e.stopPropagation()}>
+                                                  <Button
+                                                      color="primary"
+                                                      size="sm"
+                                                      startContent={<DollarSign className="h-4 w-4" />}
+                                                      isLoading={markPaid.isPending && markPaid.variables === booking.id}
+                                                      onPress={() => markPaid.mutate(booking.id)}
+                                                  >
+                                                      Pagar
+                                                  </Button>
+                                              </div>
+                                          )}
+                                          <span className="text-xs text-primary whitespace-nowrap">Ver detalle →</span>
+                                      </div>
                         </CardBody>
                     </Card>
                 );

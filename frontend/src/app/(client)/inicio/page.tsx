@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { getBookingStatusChip } from "@/lib/booking-status";
 import { useAuthStore } from "@/stores/auth-store";
-import { useBookings } from "@/hooks/use-bookings";
+import { useBookings, useMarkBookingPaid } from "@/hooks/use-bookings";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { useRouter } from "next/navigation";
@@ -52,6 +52,7 @@ const ADS = [
 export default function ClientHomePage() {
     const router = useRouter();
     const { user, isAuthenticated, isHydrated } = useAuthStore();
+    const markPaid = useMarkBookingPaid();
     const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
@@ -176,7 +177,21 @@ export default function ClientHomePage() {
                                         <p className="text-xs text-default-500 flex items-center gap-1">
                                             <Clock className="h-3 w-3" /> {formatTime12h(b.startDatetime)} - {formatTime12h(b.endDatetime)}
                                         </p>
-                                        <p className="text-sm font-bold text-success mt-1">${formatPrice(b.totalPrice)} ARS</p>
+                                        <div className="mt-1 flex items-center justify-between">
+                                            <p className="text-sm font-bold text-success">${formatPrice(b.totalPrice)} ARS</p>
+                                            {b.status === "CONFIRMED" && b.paymentStatus !== "PAID" && (
+                                                <div onClick={(e) => e.stopPropagation()}>
+                                                    <Button
+                                                        color="primary"
+                                                        size="sm"
+                                                        isLoading={markPaid.isPending && markPaid.variables === b.id}
+                                                        onPress={() => markPaid.mutate(b.id)}
+                                                    >
+                                                        Pagar
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </CardBody>
                                 </Card>
                             ))}

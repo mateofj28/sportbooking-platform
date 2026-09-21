@@ -4,7 +4,7 @@ import { Button, Card, CardBody, CardHeader, Divider, Input, Spinner, Textarea }
 import { Select, SelectItem } from "@heroui/select";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { apiClient } from "@/lib/api-client";
 import { useFacilities, useFacility } from "@/hooks/use-facilities";
 import { useCreateRecurringBooking } from "@/hooks/use-bookings";
@@ -37,7 +37,27 @@ export default function NewManualBookingPage() {
     });
     const hasFacilities = (facilities || []).length > 0;
 
+    // Complejo (sede): el admin general elige; el admin de sede no lo ve (solo su sede)
+    const [venueId, setVenueId] = useState("");
     const [facilityId, setFacilityId] = useState("");
+
+    // Solo complejos que tienen al menos una instalación reservable
+    const venueOptions = useMemo(() => {
+        const map = new Map<string, { id: string; name: string; city?: string }>();
+        (facilities || []).forEach((f) => {
+            if (f.venue && !map.has(f.venue.id)) {
+                map.set(f.venue.id, { id: f.venue.id, name: f.venue.name, city: f.venue.city });
+            }
+        });
+        return Array.from(map.values());
+    }, [facilities]);
+
+    // Instalaciones filtradas por el complejo elegido (para admin general)
+    const facilityOptions = useMemo(() => {
+        if (isVenueAdmin) return facilities || [];
+        if (!venueId) return [];
+        return (facilities || []).filter((f) => f.venue?.id === venueId);
+    }, [facilities, venueId, isVenueAdmin]);
     const [userId, setUserId] = useState("");
     const [notes, setNotes] = useState("");
     const [selection, setSelection] = useState<AvailabilitySelection | null>(null);
@@ -184,17 +204,39 @@ export default function NewManualBookingPage() {
                         <Card>
                             <CardHeader className="pb-0"><h2 className="text-base font-semibold">1. Instalación y cliente</h2></CardHeader>
                             <CardBody className="gap-4">
+                                        {/* Complejo: solo para admin general (el de sede solo tiene el suyo) */}
+                                        {!isVenueAdmin && (
+                                            <Select
+                                                label="Complejo"
+                                                placeholder="Seleccionar complejo"
+                                                variant="bordered"
+                                                selectedKeys={venueId ? [venueId] : []}
+                                                onSelectionChange={(keys: any) => {
+                                                    setVenueId(Array.from(keys)[0] as string || "");
+                                                    setFacilityId("");
+                                                    setSelection(null);
+                                                }}
+                                            >
+                                                {venueOptions.map((v) => (
+                                                    <SelectItem key={v.id} textValue={v.city ? `${v.name} — ${v.city}` : v.name}>
+                                                        {v.name}{v.city ? ` — ${v.city}` : ""}
+                                                    </SelectItem>
+                                                ))}
+                                            </Select>
+                                        )}
+
                                 <Select
                                     label="Instalación"
-                                    placeholder="Seleccionar"
+                                            placeholder={!isVenueAdmin && !venueId ? "Primero elige un complejo" : "Seleccionar"}
                                     variant="bordered"
+                                            isDisabled={!isVenueAdmin && !venueId}
                                     selectedKeys={facilityId ? [facilityId] : []}
                                     onSelectionChange={(keys: any) => {
                                         setFacilityId(Array.from(keys)[0] as string || "");
                                         setSelection(null);
                                     }}
                                 >
-                                    {(facilities || []).map((f) => (<SelectItem key={f.id}>{f.name}</SelectItem>))}
+                                            {facilityOptions.map((f) => (<SelectItem key={f.id}>{f.name}</SelectItem>))}
                                 </Select>
 
                                 <div>

@@ -241,7 +241,7 @@ export default function AdminPricingPage() {
                       </Chip>
                       {p.profitPercent != null && (
                         <Chip size="sm" color="warning" variant="flat">
-                          +{p.profitPercent}% empresa
+                          +{p.profitPercent}% comisión
                         </Chip>
                       )}
                     </div>
@@ -330,7 +330,7 @@ export default function AdminPricingPage() {
                 />
 
                 <Input
-                  label="Porcentaje de ganancia empresa (%)"
+                  label="Comisión de servicio (%)"
                   variant="bordered"
                   inputMode="decimal"
                   placeholder="Ej: 6.6"
@@ -349,7 +349,7 @@ export default function AdminPricingPage() {
                   <span>${form.pricePerHour || "0"}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm mt-2">
-                  <span className="text-default-500">Ganancia empresa ({form.profitPercent || 0}%)</span>
+                  <span className="text-default-500">Comisión de servicio ({form.profitPercent || 0}%)</span>
                   <span>+${formatThousands(String(Math.round(parsePriceValue(form.pricePerHour) * (Number(form.profitPercent) || 0) / 100)))}</span>
                 </div>
                 <Divider className="my-3" />
@@ -447,7 +447,7 @@ export default function AdminPricingPage() {
                 />
 
                 <Input
-                  label="Porcentaje de ganancia empresa (%)"
+                  label="Comisión de servicio (%)"
                   variant="bordered"
                   inputMode="decimal"
                   placeholder="Ej: 6.6"
@@ -465,7 +465,7 @@ export default function AdminPricingPage() {
                   <span>${editForm.pricePerHour || "0"}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm mt-2">
-                  <span className="text-default-500">Ganancia empresa ({editForm.profitPercent || 0}%)</span>
+                  <span className="text-default-500">Comisión de servicio ({editForm.profitPercent || 0}%)</span>
                   <span>+${formatThousands(String(Math.round(parsePriceValue(editForm.pricePerHour) * (Number(editForm.profitPercent) || 0) / 100)))}</span>
                 </div>
                 <Divider className="my-3" />

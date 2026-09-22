@@ -47,4 +47,26 @@ export class BookingsCronService {
             `Cancelación automática: ${result.count} reserva(s) de turno fijo sin pago (< 24h) canceladas`,
         );
     }
+
+    /**
+     * Marca como COMPLETED las reservas pagadas cuya hora de fin ya pasó.
+     * Regla de negocio: si estaba pagada y no se canceló, se asume que se usó.
+     */
+    @Cron(CronExpression.EVERY_HOUR)
+    async completePastPaidBookings() {
+        const now = new Date();
+
+        const result = await this.prisma.booking.updateMany({
+            where: {
+                status: BookingStatus.CONFIRMED,
+                paymentStatus: 'PAID',
+                endDatetime: { lt: now },
+            },
+            data: { status: BookingStatus.COMPLETED },
+        });
+
+        if (result.count > 0) {
+            this.logger.log(`Completado automático: ${result.count} reserva(s) pagada(s) ya pasada(s) marcadas como COMPLETED`);
+        }
+    }
 }

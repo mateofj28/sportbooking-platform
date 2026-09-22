@@ -75,7 +75,7 @@ export interface RecurringBooking {
         venue: { id: string; name: string; city: string };
     };
     user: { id: string; firstName: string; lastName: string; email: string };
-    bookings: { id: string; startDatetime: string; endDatetime: string; status: string }[];
+    bookings: { id: string; startDatetime: string; endDatetime: string; status: string; paymentStatus?: string; totalPrice?: number }[];
 }
 
 export function useRecurringBookings() {

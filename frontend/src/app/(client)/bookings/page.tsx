@@ -145,7 +145,7 @@ export default function BookingsPage() {
                             <div className="flex justify-center py-12"><Spinner size="lg" /></div>
                         ) : recurringList && recurringList.length > 0 ? (
                             recurringList.map((r) => (
-                                <Card key={r.id}>
+                                <Card key={r.id} isPressable onPress={() => router.push(`/bookings/recurring/${r.id}`)} className="w-full">
                                     <CardBody className="flex-row items-center justify-between gap-4 p-4">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3">
@@ -174,15 +174,17 @@ export default function BookingsPage() {
                                             </p>
                                         </div>
                                         {r.isActive && r.upcomingCount > 0 && (
-                                            <Button
-                                                color="danger"
-                                                variant="light"
-                                                size="sm"
-                                                startContent={<X className="h-4 w-4" />}
-                                                onPress={() => setSeriesToCancel(r)}
-                                            >
-                                                Cancelar todo
-                                            </Button>
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                                <Button
+                                                    color="danger"
+                                                    variant="light"
+                                                    size="sm"
+                                                    startContent={<X className="h-4 w-4" />}
+                                                    onPress={() => setSeriesToCancel(r)}
+                                                >
+                                                    Cancelar todo
+                                                </Button>
+                                            </div>
                                         )}
                                     </CardBody>
                                 </Card>

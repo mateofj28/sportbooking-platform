@@ -303,7 +303,7 @@ export class BookingsService {
                 },
                 user: { select: { id: true, firstName: true, lastName: true, email: true } },
                 bookings: {
-                    select: { id: true, startDatetime: true, endDatetime: true, status: true },
+                    select: { id: true, startDatetime: true, endDatetime: true, status: true, paymentStatus: true, totalPrice: true },
                     orderBy: { startDatetime: 'asc' },
                 },
             },

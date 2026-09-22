@@ -3,11 +3,11 @@
 import { use, useMemo } from "react";
 import { Button, Card, CardBody, CardHeader, Chip, Divider, Spinner } from "@heroui/react";
 import { useRouter } from "next/navigation";
-import { useRecurringBookings } from "@/hooks/use-bookings";
+import { useRecurringBookings, useMarkBookingPaid } from "@/hooks/use-bookings";
 import { getBookingStatusChip } from "@/lib/booking-status";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { ArrowLeft, MapPin, Clock, Repeat, Calendar } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Repeat, Calendar, DollarSign } from "lucide-react";
 
 const DAYS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
 
@@ -35,6 +35,7 @@ export default function RecurringDetailPage({ params }: { params: Promise<{ id: 
     const { id } = use(params);
     const router = useRouter();
     const { data: list, isLoading } = useRecurringBookings();
+    const markPaid = useMarkBookingPaid();
 
     const recurring = useMemo(() => list?.find((r) => r.id === id), [list, id]);
 
@@ -124,7 +125,22 @@ export default function RecurringDetailPage({ params }: { params: Promise<{ id: 
                                             <p className="text-xs text-default-400">{formatHour(b.startDatetime)} — {formatHour(b.endDatetime)}</p>
                                         </div>
                                     </div>
-                                    <Chip color={chip.color} size="sm" variant="flat">{chip.label}</Chip>
+                                    <div className="flex items-center gap-2">
+                                        {b.status === "CONFIRMED" && b.paymentStatus !== "PAID" && !b.isPast && (
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                                <Button
+                                                    color="primary"
+                                                    size="sm"
+                                                    startContent={<DollarSign className="h-4 w-4" />}
+                                                    isLoading={markPaid.isPending && markPaid.variables === b.id}
+                                                    onPress={() => markPaid.mutate(b.id)}
+                                                >
+                                                    Pagar
+                                                </Button>
+                                            </div>
+                                        )}
+                                        <Chip color={chip.color} size="sm" variant="flat">{chip.label}</Chip>
+                                    </div>
                                 </CardBody>
                             </Card>
                         );

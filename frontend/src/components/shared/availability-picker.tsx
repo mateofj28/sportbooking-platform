@@ -68,12 +68,18 @@ function sportKey(name?: string): string {
     return (name || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-/** Duraciones permitidas por deporte (minutos). Fútbol/Fútbol 5/7/11 solo 60. */
+/**
+ * Duraciones permitidas por deporte (minutos).
+ * - Fútbol / Fútbol 5/7/11 / Futsal: solo 60
+ * - Tenis: solo 90
+ * - Pádel: solo 90
+ * - Resto: derivar de min/max en pasos de 30
+ */
 export function durationOptionsForSport(sportName: string | undefined, min: number, max: number): number[] {
     const key = sportKey(sportName);
-    // Cualquier variante de fútbol: única opción de 60 min
     if (key.includes("futbol") || key.includes("futsal")) return [60];
-    // Resto: derivar de min/max en pasos de 30
+    if (key.includes("tenis")) return [90];
+    if (key.includes("padel") || key.includes("padle")) return [90];
     const options: number[] = [];
     for (let d = min; d <= max; d += 30) options.push(d);
     return options.length ? options : [min];

@@ -5,7 +5,7 @@ import { Card, CardBody } from "@heroui/react";
 const FAQ = [
   {
     question: "¿Cómo creo una nueva instalación?",
-    answer: "Ve a Dashboard → Instalaciones → Nueva Instalación. Selecciona la sede, el deporte, define la superficie y las duraciones permitidas.",
+    answer: "Ve a Dashboard → Instalaciones → Nueva Instalación. Selecciona el complejo, el deporte, define la superficie y las duraciones permitidas.",
   },
   {
     question: "¿Cómo configuro los horarios de una cancha?",
@@ -52,8 +52,8 @@ const FAQ = [
     answer: "En la pantalla de login, presiona '¿Olvidaste tu contraseña?'. Recibirás un email con un enlace para crear una nueva contraseña.",
   },
   {
-    question: "¿Puedo tener múltiples sedes?",
-    answer: "Sí. En Dashboard → Sedes puedes crear tantas sedes como necesites. Cada sede puede tener sus propias instalaciones y deportes.",
+    question: "¿Puedo tener múltiples complejos?",
+    answer: "Sí. En Dashboard → Complejos puedes crear tantos complejos como necesites. Cada complejo puede tener sus propias instalaciones y deportes.",
   },
   {
     question: "¿Qué pasa si un cliente reserva y no asiste?",

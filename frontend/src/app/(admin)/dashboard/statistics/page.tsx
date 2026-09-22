@@ -189,7 +189,7 @@ export default function StatisticsPage() {
                       </Select>
                         {!isVenueAdmin && (
                             <Select
-                                label="Sede"
+                                label="Complejo"
                                 size="sm"
                                 variant="bordered"
                                 selectedKeys={venueFilter ? [venueFilter] : []}

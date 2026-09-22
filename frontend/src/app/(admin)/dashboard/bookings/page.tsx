@@ -116,7 +116,7 @@ export default function AdminBookingsPage() {
             {/* Filters */}
             <div className="space-y-3">
                 <Input
-                    placeholder="Buscar por nombre de cancha o sede..."
+                    placeholder="Buscar por nombre de cancha o complejo..."
                     variant="bordered"
                     size="sm"
                     value={search}

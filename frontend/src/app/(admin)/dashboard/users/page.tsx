@@ -21,7 +21,7 @@ const ROLE_COLORS: Record<string, "secondary" | "warning" | "default"> = {
 
 const ROLE_LABELS: Record<string, string> = {
     ADMIN: "Admin General",
-    VENUE_ADMIN: "Admin Sede",
+    VENUE_ADMIN: "Admin Complejo",
     CLIENT: "Cliente",
 };
 
@@ -186,11 +186,11 @@ export default function AdminUsersPage() {
                     onSelectionChange={(keys: any) => setFilterRole(Array.from(keys)[0] as string || "")}
                 >
                     <SelectItem key="CLIENT">Cliente</SelectItem>
-                    <SelectItem key="VENUE_ADMIN">Admin Sede</SelectItem>
+                    <SelectItem key="VENUE_ADMIN">Admin Complejo</SelectItem>
                     <SelectItem key="ADMIN">Admin General</SelectItem>
                 </Select>
                 <Select
-                    placeholder="Filtrar por sede"
+                    placeholder="Filtrar por complejo"
                     variant="bordered"
                     size="sm"
                     selectedKeys={filterVenue ? [filterVenue] : []}
@@ -219,7 +219,7 @@ export default function AdminUsersPage() {
                     <TableColumn>DNI</TableColumn>
                     <TableColumn>EMAIL</TableColumn>
                     <TableColumn>ROL</TableColumn>
-                    <TableColumn>SEDE</TableColumn>
+                    <TableColumn>COMPLEJO</TableColumn>
                     <TableColumn>ESTADO</TableColumn>
                     <TableColumn>ACCIONES</TableColumn>
                 </TableHeader>
@@ -294,13 +294,13 @@ export default function AdminUsersPage() {
                             onSelectionChange={(keys: any) => setCreateForm({ ...createForm, role: Array.from(keys)[0] as string || "CLIENT" })}
                         >
                             <SelectItem key="CLIENT" textValue="Cliente">Cliente</SelectItem>
-                            <SelectItem key="VENUE_ADMIN" textValue="Admin de Sede">Admin de Sede</SelectItem>
+                            <SelectItem key="VENUE_ADMIN" textValue="Admin de Complejo">Admin de Complejo</SelectItem>
                             <SelectItem key="ADMIN" textValue="Admin General">Admin General</SelectItem>
                         </Select>
                         {createForm.role === "VENUE_ADMIN" && (
                             <Select
-                                label="Sede asignada"
-                                placeholder="Seleccionar sede"
+                                label="Complejo asignado"
+                                placeholder="Seleccionar complejo"
                                 variant="bordered"
                                 selectedKeys={createForm.venueId ? [createForm.venueId] : []}
                                 onSelectionChange={(keys: any) => setCreateForm({ ...createForm, venueId: Array.from(keys)[0] as string || "" })}
@@ -343,14 +343,14 @@ export default function AdminUsersPage() {
                             onSelectionChange={(keys: any) => setEditRole(Array.from(keys)[0] as string || "")}
                         >
                             <SelectItem key="CLIENT" textValue="Cliente">Cliente</SelectItem>
-                            <SelectItem key="VENUE_ADMIN" textValue="Admin de Sede">Admin de Sede</SelectItem>
+                            <SelectItem key="VENUE_ADMIN" textValue="Admin de Complejo">Admin de Complejo</SelectItem>
                             <SelectItem key="ADMIN" textValue="Admin General">Admin General</SelectItem>
                         </Select>
 
                         {editRole === "VENUE_ADMIN" && (
                             <Select
-                                label="Sede asignada"
-                                placeholder="Seleccionar sede"
+                                label="Complejo asignado"
+                                placeholder="Seleccionar complejo"
                                 variant="bordered"
                                 selectedKeys={editVenueId ? new Set([editVenueId]) as any : new Set() as any}
                                 onSelectionChange={(keys: any) => setEditVenueId(Array.from(keys)[0] as string || "")}

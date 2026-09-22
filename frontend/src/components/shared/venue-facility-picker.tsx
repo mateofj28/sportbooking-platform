@@ -56,8 +56,8 @@ export function VenueFacilityPicker({ selectedFacilityId, onFacilityChange, clas
       {/* El admin de sede no ve el selector de sede: solo gestiona la suya */}
       {!isVenueAdmin && (
         <Autocomplete
-          label="Sede"
-          placeholder="Buscar sede..."
+          label="Complejo"
+          placeholder="Buscar complejo..."
           variant="bordered"
           defaultItems={venues || []}
           selectedKey={selectedVenueId || null}

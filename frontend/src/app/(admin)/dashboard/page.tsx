@@ -52,7 +52,7 @@ const ADS = [
     {
         title: "⚡ SportBooking Pro",
         subtitle: "Próximamente",
-        description: "Gestión avanzada, reportes y multi-sede.",
+        description: "Gestión avanzada, reportes y multi-complejo.",
         bg: "from-pink-500 to-pink-700",
     },
 ];

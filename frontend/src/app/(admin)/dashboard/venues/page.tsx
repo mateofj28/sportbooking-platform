@@ -105,7 +105,7 @@ export default function AdminVenuesPage() {
       description: data.description || undefined,
       amenities: data.amenities,
     }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onClose(); addToast("Sede creada correctamente"); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onClose(); addToast("Complejo creado correctamente"); },
   });
   const editMutation = useMutation({
     mutationFn: (data: typeof editForm) => apiClient.patch(`/venues/${data.id}`, {
@@ -117,11 +117,11 @@ export default function AdminVenuesPage() {
       description: data.description || undefined,
       amenities: data.amenities,
     }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onEditClose(); addToast("Sede actualizada"); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onEditClose(); addToast("Complejo actualizado"); },
   });
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/venues/${id}`),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); addToast("Sede eliminada"); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); addToast("Complejo eliminado"); },
   });
 
   const handleEdit = (venue: Venue) => {
@@ -145,7 +145,7 @@ export default function AdminVenuesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold">Complejos</h1><p className="text-sm text-default-500 mt-1">Gestiona los complejos deportivos</p></div>
-        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", province: "", provinceName: "", city: "", description: "", amenities: [] }); onOpen(); }}>Nueva Sede</Button>
+        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", province: "", provinceName: "", city: "", description: "", amenities: [] }); onOpen(); }}>Nuevo Complejo</Button>
       </div>
 
       {/* Filter */}
@@ -168,11 +168,11 @@ export default function AdminVenuesPage() {
         )}
       </div>
 
-      <Table aria-label="Sedes">
+      <Table aria-label="Complejos">
         <TableHeader>
           <TableColumn>NOMBRE</TableColumn><TableColumn>DIRECCIÓN</TableColumn><TableColumn>CIUDAD</TableColumn><TableColumn>INSTALACIONES</TableColumn><TableColumn>ESTADO</TableColumn><TableColumn>ACCIONES</TableColumn>
         </TableHeader>
-        <TableBody emptyContent="No hay sedes">
+        <TableBody emptyContent="No hay complejos">
           {filteredVenues.map((v) => (
             <TableRow key={v.id}>
               <TableCell className="font-medium"><Link href={`/dashboard/venues/${v.id}`} className="hover:text-primary transition-colors">{v.name}</Link></TableCell>
@@ -197,7 +197,7 @@ export default function AdminVenuesPage() {
 
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
-          <ModalHeader>Nueva Sede</ModalHeader>
+          <ModalHeader>Nuevo Complejo</ModalHeader>
           <ModalBody className="gap-4">
             <Input label="Nombre" variant="bordered" value={form.name} onValueChange={(v) => setForm({ ...form, name: v, slug: v.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })} />
             <Input label="Dirección" variant="bordered" value={form.address} onValueChange={(v) => setForm({ ...form, address: v })} />
@@ -257,7 +257,7 @@ export default function AdminVenuesPage() {
 
       <Modal isOpen={isEditOpen} onClose={onEditClose} size="2xl">
         <ModalContent>
-          <ModalHeader>Editar Sede</ModalHeader>
+          <ModalHeader>Editar Complejo</ModalHeader>
           <ModalBody className="gap-4">
             <Input label="Nombre" variant="bordered" value={editForm.name} onValueChange={(v) => setEditForm({ ...editForm, name: v })} />
             <Input label="Dirección" variant="bordered" value={editForm.address} onValueChange={(v) => setEditForm({ ...editForm, address: v })} />
@@ -315,7 +315,7 @@ export default function AdminVenuesPage() {
         </ModalContent>
       </Modal>
 
-      <ConfirmModal isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteMutation.mutate(deleteId!); setDeleteId(null); }} title="Eliminar sede" message="¿Estás seguro? Esta acción no se puede deshacer." confirmLabel="Eliminar" />
+      <ConfirmModal isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteMutation.mutate(deleteId!); setDeleteId(null); }} title="Eliminar complejo" message="¿Estás seguro? Esta acción no se puede deshacer." confirmLabel="Eliminar" />
     </div>
   );
 }

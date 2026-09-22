@@ -49,7 +49,7 @@ export default function LoginPage() {
                     <div className="mt-10 space-y-4">
                         <FeatureItem text="Reserva confirmada al instante" />
                         <FeatureItem text="Cancela hasta 24h antes sin costo" />
-                        <FeatureItem text="Múltiples deportes y sedes" />
+                        <FeatureItem text="Múltiples deportes y complejos" />
                     </div>
                 </div>
             </div>

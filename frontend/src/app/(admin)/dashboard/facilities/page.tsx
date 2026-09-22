@@ -296,7 +296,7 @@ export default function AdminFacilitiesPage() {
                 </Select>
                 {!isVenueAdmin && (
                     <Select
-                        placeholder="Filtrar por sede"
+                        placeholder="Filtrar por complejo"
                         variant="bordered"
                         size="sm"
                         selectedKeys={filterVenue ? [filterVenue] : []}
@@ -337,7 +337,7 @@ export default function AdminFacilitiesPage() {
                     {[
                         <TableColumn key="nombre">NOMBRE</TableColumn>,
                         <TableColumn key="deporte">DEPORTE</TableColumn>,
-                        ...(!isVenueAdmin ? [<TableColumn key="sede">SEDE</TableColumn>] : []),
+                        ...(!isVenueAdmin ? [<TableColumn key="sede">COMPLEJO</TableColumn>] : []),
                         <TableColumn key="superficie">SUPERFICIE</TableColumn>,
                         <TableColumn key="estado">ESTADO</TableColumn>,
                         <TableColumn key="acciones">ACCIONES</TableColumn>,
@@ -409,8 +409,8 @@ export default function AdminFacilitiesPage() {
                         <Input label="Nombre" placeholder="Ej: Cancha de Fútbol 5 - A" variant="bordered" value={form.name} onValueChange={(v) => setForm({ ...form, name: v })} />
                         <div className="grid grid-cols-2 gap-4">
                             <Select
-                                label="Sede"
-                                placeholder="Seleccionar sede"
+                                label="Complejo"
+                                placeholder="Seleccionar complejo"
                                 variant="bordered"
                                 isDisabled={isVenueAdmin}
                                 selectedKeys={form.venueId ? new Set([form.venueId]) as any : new Set() as any}

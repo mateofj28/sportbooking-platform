@@ -95,7 +95,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   if (!venue) {
-    return <div className="py-12 text-center text-default-500">Sede no encontrada</div>;
+    return <div className="py-12 text-center text-default-500">Complejo no encontrado</div>;
   }
 
   return (
@@ -103,7 +103,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
       {/* Back + Header */}
       <div>
         <Button as={Link} href="/dashboard/venues" variant="light" size="sm" startContent={<ArrowLeft className="h-4 w-4" />} className="mb-3">
-          Volver a Sedes
+          Volver a Complejos
         </Button>
         <div className="flex items-start justify-between">
           <div>
@@ -265,7 +265,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
           <Card className="border border-divider">
             <CardBody className="flex flex-col items-center py-10">
               <Trophy className="h-10 w-10 text-default-200" />
-              <p className="mt-3 text-sm text-default-500">Esta sede no tiene instalaciones aún</p>
+                  <p className="mt-3 text-sm text-default-500">Este complejo no tiene instalaciones aún</p>
               <Button as={Link} href="/dashboard/facilities" size="sm" color="primary" variant="flat" className="mt-3">
                 Crear instalación
               </Button>

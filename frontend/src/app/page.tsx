@@ -236,7 +236,7 @@ export default function HomePage() {
                                 <FeatureCard icon={<Clock className="h-5 w-5 text-success" />} title="Disponibilidad en tiempo real" description="Consulta horarios actualizados y reserva al instante sin sorpresas." />
                             </AnimateOnScroll>
                             <AnimateOnScroll direction="left" delay={200}>
-                                <FeatureCard icon={<MapPin className="h-5 w-5 text-secondary" />} title="Múltiples sedes" description="Encuentra la cancha más cercana y compara precios entre complejos." />
+                                <FeatureCard icon={<MapPin className="h-5 w-5 text-secondary" />} title="Múltiples complejos" description="Encuentra la cancha más cercana y compara precios entre complejos." />
                             </AnimateOnScroll>
                             <AnimateOnScroll direction="right" delay={300}>
                                 <FeatureCard icon={<Shield className="h-5 w-5 text-warning" />} title="Reserva segura" description="Tu reserva queda confirmada al instante. Cancelación flexible." />

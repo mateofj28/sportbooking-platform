@@ -36,11 +36,12 @@ function formatTime12h(time: string): string {
     return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-type BookingFilter = "ALL" | "PENDING_PAYMENT" | BookingStatus;
+type BookingFilter = "ALL" | "PENDING_PAYMENT" | "PAID" | BookingStatus;
 
 const FILTER_TABS: { key: BookingFilter; label: string }[] = [
     { key: "ALL", label: "Todas" },
     { key: "PENDING_PAYMENT", label: "Pendiente de pago" },
+    { key: "PAID", label: "Pagadas" },
     { key: "CANCELLED", label: "Canceladas" },
     { key: "COMPLETED", label: "Completadas" },
 ];
@@ -75,6 +76,7 @@ export default function BookingsPage() {
     const matchesFilter = (b: Booking, f: BookingFilter): boolean => {
         if (f === "ALL") return true;
         if (f === "PENDING_PAYMENT") return b.status === "CONFIRMED" && b.paymentStatus === "PENDING";
+        if (f === "PAID") return b.status === "CONFIRMED" && b.paymentStatus === "PAID";
         return b.status === f;
     };
     const filteredBookings = bookings?.filter((b) => matchesFilter(b, activeFilter)) || [];

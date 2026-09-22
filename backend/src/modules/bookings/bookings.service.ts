@@ -429,8 +429,15 @@ export class BookingsService {
             );
         }
 
-        // Rule 5: Check within schedule
-        const dayOfWeek = (startDatetime.getDay() + 6) % 7; // Convert to 0=Monday
+        // Rule 5: Check within schedule (en HORA LOCAL DE ARGENTINA, UTC-3,
+        // sin depender de la zona horaria del servidor que corre en UTC)
+        const AR_OFFSET_MIN = 3 * 60;
+        const toAr = (d: Date) => new Date(d.getTime() - AR_OFFSET_MIN * 60000);
+        const startAr = toAr(startDatetime);
+        const endAr = toAr(endDatetime);
+
+        // Día de la semana AR (0=Lunes..6=Domingo)
+        const dayOfWeek = ((startAr.getUTCDay() + 6) % 7);
         const schedule = facility.schedules.find(
             (s) => s.dayOfWeek === dayOfWeek && s.isActive,
         );
@@ -439,10 +446,20 @@ export class BookingsService {
             throw new BadRequestException('La instalación está cerrada este día');
         }
 
-        const startTimeStr = startDatetime.toTimeString().slice(0, 5);
-        const endTimeStr = endDatetime.toTimeString().slice(0, 5);
+        // Minutos desde medianoche AR de inicio y fin
+        const startMinAr = startAr.getUTCHours() * 60 + startAr.getUTCMinutes();
+        let endMinAr = endAr.getUTCHours() * 60 + endAr.getUTCMinutes();
 
-        if (startTimeStr < schedule.openTime || endTimeStr > schedule.closeTime) {
+        const [openH, openM] = schedule.openTime.split(':').map(Number);
+        const [closeH, closeM] = schedule.closeTime.split(':').map(Number);
+        const openMin = openH * 60 + openM;
+        let closeMin = closeH * 60 + closeM;
+        // Horario que cruza medianoche (ej: 19:00-02:00): extender el cierre 24h
+        if (closeMin <= openMin) closeMin += 24 * 60;
+        // Si el fin quedó "antes" del inicio en minutos del día, es de madrugada: +24h
+        if (endMinAr <= startMinAr) endMinAr += 24 * 60;
+
+        if (startMinAr < openMin || endMinAr > closeMin) {
             throw new BadRequestException(
                 `El horario de atención es ${schedule.openTime} - ${schedule.closeTime}`,
             );
@@ -478,11 +495,17 @@ export class BookingsService {
         startDatetime: Date,
         endDatetime: Date,
     ): Promise<number> {
-        const dayOfWeek = (startDatetime.getDay() + 6) % 7;
+        // Día y hora en horario local de Argentina (UTC-3)
+        const AR_OFFSET_MIN = 3 * 60;
+        const startAr = new Date(startDatetime.getTime() - AR_OFFSET_MIN * 60000);
+        const dayOfWeek = (startAr.getUTCDay() + 6) % 7;
+        const slotMin = startAr.getUTCHours() * 60 + startAr.getUTCMinutes();
         const durationHours =
             (endDatetime.getTime() - startDatetime.getTime()) / 3600000;
 
-        const pricing = await this.prisma.pricing.findFirst({
+        // Traer todas las tarifas activas que apliquen al día y elegir la que
+        // cubre la franja horaria del inicio (soporta rangos que cruzan medianoche).
+        const candidates = await this.prisma.pricing.findMany({
             where: {
                 facilityId,
                 isActive: true,
@@ -490,6 +513,18 @@ export class BookingsService {
             },
             orderBy: { dayOfWeek: 'desc' }, // Prefer specific day over null
         });
+
+        const toMin = (t: string) => {
+            const [h, m] = t.split(':').map(Number);
+            return h * 60 + m;
+        };
+        const pricing =
+            candidates.find((p) => {
+                const start = toMin(p.startTime);
+                const end = toMin(p.endTime);
+                if (end <= start) return slotMin >= start || slotMin < end;
+                return slotMin >= start && slotMin < end;
+            }) || candidates[0];
 
         if (!pricing) {
             return 0;

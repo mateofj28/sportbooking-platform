@@ -9,6 +9,16 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { BookingsRepository } from './bookings.repository';
 import { CreateBookingDto, ManualBookingDto, CancelBookingDto, CreateRecurringBookingDto } from './dto/create-booking.dto';
 
+/** "19:00" -> "7:00 p. m." (formato español sin cero adelante) */
+function formatTime12h(time: string): string {
+    if (!time) return '';
+    const [rawH, m] = time.split(':').map(Number);
+    const h = ((rawH % 24) + 24) % 24;
+    const ampm = h < 12 ? 'a. m.' : 'p. m.';
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
 @Injectable()
 export class BookingsService {
     constructor(
@@ -436,32 +446,48 @@ export class BookingsService {
         const startAr = toAr(startDatetime);
         const endAr = toAr(endDatetime);
 
-        // Día de la semana AR (0=Lunes..6=Domingo)
-        const dayOfWeek = ((startAr.getUTCDay() + 6) % 7);
-        const schedule = facility.schedules.find(
-            (s) => s.dayOfWeek === dayOfWeek && s.isActive,
-        );
+        const dayOfWeek = (startAr.getUTCDay() + 6) % 7; // 0=Lunes..6=Domingo
+        const prevDayOfWeek = (dayOfWeek + 6) % 7;       // día anterior
 
-        if (!schedule) {
+        const startMinAr = startAr.getUTCHours() * 60 + startAr.getUTCMinutes();
+        let endMinAr = endAr.getUTCHours() * 60 + endAr.getUTCMinutes();
+        if (endMinAr <= startMinAr) endMinAr += 24 * 60; // reserva que cruza medianoche
+
+        const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+
+        /**
+         * ¿La reserva cabe en este horario?
+         * dayShift=0 -> el slot cae en la parte del MISMO día (franja nocturna).
+         * dayShift=1 -> el slot es la MADRUGADA de una jornada que empezó el día
+         *               anterior (ej: reserva sábado 01:00 pertenece a viernes 19:00-02:00).
+         */
+        const fitsSchedule = (openTime: string, closeTime: string, dayShift: number): boolean => {
+            const open = toMin(openTime);
+            let close = toMin(closeTime);
+            if (close <= open) close += 24 * 60; // cruza medianoche
+            // Trasladar el slot al marco de referencia del schedule
+            const s = startMinAr + dayShift * 24 * 60;
+            const e = endMinAr + dayShift * 24 * 60;
+            return s >= open && e <= close;
+        };
+
+        const sameDay = facility.schedules.find((x) => x.dayOfWeek === dayOfWeek && x.isActive);
+        const prevDay = facility.schedules.find((x) => x.dayOfWeek === prevDayOfWeek && x.isActive);
+
+        const okSameDay = !!sameDay && fitsSchedule(sameDay.openTime, sameDay.closeTime, 0);
+        // Solo tiene sentido revisar el día anterior si su horario cruza medianoche
+        const okPrevDay = !!prevDay
+            && toMin(prevDay.closeTime) <= toMin(prevDay.openTime)
+            && fitsSchedule(prevDay.openTime, prevDay.closeTime, 1);
+
+        if (!sameDay && !prevDay) {
             throw new BadRequestException('La instalación está cerrada este día');
         }
 
-        // Minutos desde medianoche AR de inicio y fin
-        const startMinAr = startAr.getUTCHours() * 60 + startAr.getUTCMinutes();
-        let endMinAr = endAr.getUTCHours() * 60 + endAr.getUTCMinutes();
-
-        const [openH, openM] = schedule.openTime.split(':').map(Number);
-        const [closeH, closeM] = schedule.closeTime.split(':').map(Number);
-        const openMin = openH * 60 + openM;
-        let closeMin = closeH * 60 + closeM;
-        // Horario que cruza medianoche (ej: 19:00-02:00): extender el cierre 24h
-        if (closeMin <= openMin) closeMin += 24 * 60;
-        // Si el fin quedó "antes" del inicio en minutos del día, es de madrugada: +24h
-        if (endMinAr <= startMinAr) endMinAr += 24 * 60;
-
-        if (startMinAr < openMin || endMinAr > closeMin) {
+        if (!okSameDay && !okPrevDay) {
+            const ref = sameDay || prevDay!;
             throw new BadRequestException(
-                `El horario de atención es ${schedule.openTime} - ${schedule.closeTime}`,
+                `El horario de atención es ${formatTime12h(ref.openTime)} - ${formatTime12h(ref.closeTime)}`,
             );
         }
 

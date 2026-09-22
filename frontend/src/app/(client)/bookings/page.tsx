@@ -216,9 +216,9 @@ export default function BookingsPage() {
                           >
                               {tab.label}
                               {count > 0 && (
-                                  <span className={`absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none ${activeFilter === tab.key
-                                      ? "bg-white text-primary shadow"
-                                      : "bg-primary text-white"
+                                  <span className={`absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none shadow ${activeFilter === tab.key
+                                      ? "bg-white !text-primary"
+                                      : "bg-primary !text-white"
                                       }`}>
                                       {count}
                                   </span>

@@ -19,9 +19,6 @@ export function getBookingStatusChip(booking: Pick<Booking, "status" | "paymentS
     if (booking.paymentStatus === "PENDING") {
         return { label: "Pendiente de pago", color: "warning" };
     }
-    // Pagada: distinguir turno fijo (ya pagado) de reserva única (lista para usar)
-    if (booking.recurringBookingId) {
-        return { label: "Pagada", color: "success" };
-    }
-    return { label: "Lista para usar", color: "success" };
+    // Pagada (tanto reservas únicas como turnos fijos ya pagados)
+    return { label: "Pagada", color: "success" };
 }

@@ -36,16 +36,11 @@ function formatTime12h(time: string): string {
     return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-const STATUS_MAP: Record<BookingStatus, { label: string; color: "warning" | "success" | "danger" | "default" }> = {
-    PENDING: { label: "Pendiente", color: "warning" },
-    CONFIRMED: { label: "Confirmada", color: "success" },
-    CANCELLED: { label: "Cancelada", color: "danger" },
-    COMPLETED: { label: "Completada", color: "default" },
-};
+type BookingFilter = "ALL" | "PENDING_PAYMENT" | BookingStatus;
 
-const FILTER_TABS: { key: "ALL" | BookingStatus; label: string }[] = [
+const FILTER_TABS: { key: BookingFilter; label: string }[] = [
     { key: "ALL", label: "Todas" },
-    { key: "CONFIRMED", label: "Confirmadas" },
+    { key: "PENDING_PAYMENT", label: "Pendiente de pago" },
     { key: "CANCELLED", label: "Canceladas" },
     { key: "COMPLETED", label: "Completadas" },
 ];
@@ -54,7 +49,7 @@ export default function BookingsPage() {
     const { isAuthenticated, isHydrated } = useAuthStore();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<"bookings" | "recurring">("bookings");
-    const [activeFilter, setActiveFilter] = useState<"ALL" | BookingStatus>("ALL");
+    const [activeFilter, setActiveFilter] = useState<BookingFilter>("ALL");
 
     const { data: recurringList, isLoading: recurringLoading } = useRecurringBookings();
     const cancelRecurring = useCancelRecurringBooking();
@@ -77,9 +72,12 @@ export default function BookingsPage() {
     if (!isHydrated) return <div className="flex min-h-screen items-center justify-center"><Spinner size="lg" /></div>;
     if (!isAuthenticated) return null;
 
-    const filteredBookings = bookings?.filter((b) =>
-        activeFilter === "ALL" ? true : b.status === activeFilter
-    ) || [];
+    const matchesFilter = (b: Booking, f: BookingFilter): boolean => {
+        if (f === "ALL") return true;
+        if (f === "PENDING_PAYMENT") return b.status === "CONFIRMED" && b.paymentStatus === "PENDING";
+        return b.status === f;
+    };
+    const filteredBookings = bookings?.filter((b) => matchesFilter(b, activeFilter)) || [];
 
     const handleCancelClick = (booking: Booking) => {
         setSelectedBooking(booking);
@@ -204,9 +202,7 @@ export default function BookingsPage() {
               {/* Filter tabs */}
               <div className="mt-6 flex flex-wrap gap-2">
                   {FILTER_TABS.map((tab) => {
-                      const count = tab.key === "ALL"
-                          ? bookings?.length || 0
-                          : bookings?.filter((b) => b.status === tab.key).length || 0;
+                      const count = bookings?.filter((b) => matchesFilter(b, tab.key)).length || 0;
                       return (
                           <button
                               key={tab.key}

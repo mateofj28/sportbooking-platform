@@ -27,6 +27,7 @@ import { Select, SelectItem } from "@heroui/select";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
 import { useAuthStore } from "@/stores/auth-store";
+import { durationOptionsForSport } from "@/components/shared/availability-picker";
 import type { Sport, Venue, Facility } from "@/types";
 
 const SURFACE_TYPES = [
@@ -42,17 +43,6 @@ const SURFACE_TYPES = [
 ];
 
 
-
-// Duraciones recomendadas por deporte (slug → opciones en minutos)
-const DURATION_BY_SPORT: Record<string, { min: number; max: number; options: number[] }> = {
-    futbol: { min: 60, max: 60, options: [60] },
-    tenis: { min: 60, max: 90, options: [60, 90] },
-    padel: { min: 60, max: 90, options: [60, 90] },
-    basquetbol: { min: 60, max: 90, options: [60, 90] },
-    voleibol: { min: 60, max: 90, options: [60, 90] },
-};
-
-const DEFAULT_DURATION = { min: 60, max: 120, options: [60, 90, 120] };
 
 // Superficie sugerida por deporte (debe coincidir con SURFACE_TYPES)
 const SURFACE_BY_SPORT: Record<string, string> = {
@@ -136,6 +126,7 @@ export default function AdminFacilitiesPage() {
         description: "",
         surfaceType: "",
         isIndoor: false,
+        sportName: "",
         minBookingDuration: "60",
         maxBookingDuration: "120",
     });
@@ -192,6 +183,7 @@ export default function AdminFacilitiesPage() {
             description: facility.description || "",
             surfaceType: facility.surfaceType || "",
             isIndoor: !!facility.isIndoor,
+            sportName: facility.sport?.name || "",
             minBookingDuration: String(facility.minBookingDuration),
             maxBookingDuration: String(facility.maxBookingDuration),
         });
@@ -213,7 +205,7 @@ export default function AdminFacilitiesPage() {
     const handleCreate = () => {
         const defaultSport = sports?.[0];
         const key = defaultSport ? sportKey(defaultSport.name) : "";
-        const durations = DURATION_BY_SPORT[key] || DEFAULT_DURATION;
+        const opts = durationOptionsForSport(defaultSport?.name, 60, 120);
         setForm({
             name: "",
             description: "",
@@ -222,8 +214,8 @@ export default function AdminFacilitiesPage() {
             sportId: defaultSport?.id || "",
             surfaceType: SURFACE_BY_SPORT[key] || "",
             isIndoor: false,
-            minBookingDuration: String(durations.min),
-            maxBookingDuration: String(durations.max),
+            minBookingDuration: String(opts[0]),
+            maxBookingDuration: String(opts[opts.length - 1]),
         });
         onOpen();
     };
@@ -432,9 +424,9 @@ export default function AdminFacilitiesPage() {
                                     const sportId = Array.from(keys)[0] as string || "";
                                     const sport = sports?.find((s) => s.id === sportId);
                                     const key = sport ? sportKey(sport.name) : "";
-                                    const durations = sport ? (DURATION_BY_SPORT[key] || DEFAULT_DURATION) : DEFAULT_DURATION;
+                                    const opts = durationOptionsForSport(sport?.name, 60, 120);
                                     const surface = SURFACE_BY_SPORT[key] || form.surfaceType;
-                                    setForm({ ...form, sportId, surfaceType: surface, minBookingDuration: String(durations.min), maxBookingDuration: String(durations.max) });
+                                    setForm({ ...form, sportId, surfaceType: surface, minBookingDuration: String(opts[0]), maxBookingDuration: String(opts[opts.length - 1]) });
                                 }}
                             >
                                 {(sports || []).map((s) => (
@@ -499,8 +491,7 @@ export default function AdminFacilitiesPage() {
                             <div className="flex gap-2">
                                 {(() => {
                                     const sport = sports?.find((s) => s.id === form.sportId);
-                                    const durations = sport ? (DURATION_BY_SPORT[sportKey(sport.name)] || DEFAULT_DURATION) : DEFAULT_DURATION;
-                                    return durations.options.map((d) => (
+                                    return durationOptionsForSport(sport?.name, 60, 120).map((d) => (
                                         <button
                                             key={d}
                                             type="button"
@@ -568,16 +559,16 @@ export default function AdminFacilitiesPage() {
                             </div>
                         </div>
                         <div>
-                            <p className="text-xs text-default-500 mb-2">Duración de reserva</p>
+                            <p className="text-xs text-default-500 mb-2">Duración de reserva (según deporte)</p>
                             <div className="flex gap-2">
-                                {DEFAULT_DURATION.options.map((d) => (
+                                {durationOptionsForSport(editForm.sportName, 60, 120).map((d) => (
                                     <button
                                         key={d}
                                         type="button"
                                         onClick={() => setEditForm({ ...editForm, minBookingDuration: String(d), maxBookingDuration: String(d) })}
                                         className={`rounded-lg border px-4 py-2 text-sm font-medium transition-all ${editForm.minBookingDuration === String(d)
-                                                ? "border-primary bg-primary/10 text-primary"
-                                                : "border-divider hover:border-primary"
+                                            ? "border-primary bg-primary/10 text-primary"
+                                            : "border-divider hover:border-primary"
                                             }`}
                                     >
                                         {d} min

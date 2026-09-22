@@ -254,6 +254,16 @@ export class BookingsService {
             }
         }
 
+        // Si no se pudo crear ninguna fecha, no dejar una recurrencia vacía:
+        // se elimina y se informa el motivo (todas las fechas fallaron).
+        if (created.length === 0) {
+            await this.prisma.recurringBooking.delete({ where: { id: recurring.id } });
+            const reason = skipped[0]?.reason || 'No se pudo crear ninguna fecha';
+            throw new BadRequestException(
+                `No se pudo crear el turno fijo: ${reason}`,
+            );
+        }
+
         return {
             recurringBookingId: recurring.id,
             totalDates: created.length + skipped.length,

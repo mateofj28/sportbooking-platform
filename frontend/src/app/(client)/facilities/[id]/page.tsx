@@ -314,6 +314,9 @@ export default function FacilityDetailPage({
         <div className="flex min-h-screen flex-col">
             <Navbar />
             <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
+                <Button variant="light" size="sm" startContent={<ChevronLeft className="h-4 w-4" />} onPress={() => router.back()} className="mb-4">
+                    Volver
+                </Button>
                 {/* Header */}
                 <div className="mb-6">
                     <div className="flex items-start justify-between">

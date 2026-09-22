@@ -69,7 +69,7 @@ function sportKey(name?: string): string {
 }
 
 /** Duraciones permitidas por deporte (minutos). Fútbol/Fútbol 5/7/11 solo 60. */
-function durationOptionsForSport(sportName: string | undefined, min: number, max: number): number[] {
+export function durationOptionsForSport(sportName: string | undefined, min: number, max: number): number[] {
     const key = sportKey(sportName);
     // Cualquier variante de fútbol: única opción de 60 min
     if (key.includes("futbol") || key.includes("futsal")) return [60];

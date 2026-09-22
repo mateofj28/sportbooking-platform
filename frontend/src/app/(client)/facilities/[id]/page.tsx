@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useMemo } from "react";
+import { use, useState, useMemo, useEffect } from "react";
 import {
     Button,
     Card,
@@ -13,6 +13,7 @@ import {
 } from "@heroui/react";
 import { useFacility } from "@/hooks/use-facilities";
 import { useCreateBooking, useCreateRecurringBooking } from "@/hooks/use-bookings";
+import { durationOptionsForSport } from "@/components/shared/availability-picker";
 import { useQueries } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
@@ -200,15 +201,19 @@ export default function FacilityDetailPage({
             });
     }, [availability, schedule, facility, isToday]);
 
-    // Duration options
+    // Duration options (según deporte: fútbol solo 60 min)
     const durationOptions = useMemo(() => {
         if (!facility) return [];
-        const options: number[] = [];
-        for (let d = facility.minBookingDuration; d <= facility.maxBookingDuration; d += 30) {
-            options.push(d);
-        }
-        return options;
+        return durationOptionsForSport(facility.sport?.name, facility.minBookingDuration, facility.maxBookingDuration);
     }, [facility]);
+
+    // Asegurar que la duración seleccionada sea válida para las opciones disponibles
+    useEffect(() => {
+        if (durationOptions.length && !durationOptions.includes(duration)) {
+            setDuration(durationOptions[0]);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [durationOptions]);
 
     // Calculate end time
     const endTime = useMemo(() => {

@@ -220,15 +220,24 @@ export default function FacilityDetailPage({
         return `${endH.toString().padStart(2, "0")}:${endM.toString().padStart(2, "0")}`;
     }, [selectedSlot, duration]);
 
-    // Calculate price
+    // Calculate price (maneja tarifas que cruzan medianoche + comisión de servicio)
     const price = useMemo(() => {
         if (!facility?.pricing || !selectedSlot) return 0;
+        const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+        const slotMin = toMin(selectedSlot);
         const pricing = facility.pricing.find((p) => {
+            if (!p.isActive) return false;
             const matchDay = p.dayOfWeek === null || p.dayOfWeek === undefined || p.dayOfWeek === dayOfWeek;
-            return matchDay && selectedSlot >= p.startTime && selectedSlot < p.endTime;
+            if (!matchDay) return false;
+            const start = toMin(p.startTime);
+            const end = toMin(p.endTime);
+            if (end <= start) return slotMin >= start || slotMin < end; // cruza medianoche
+            return slotMin >= start && slotMin < end;
         });
         if (!pricing) return 0;
-        return Number(pricing.pricePerHour) * (duration / 60);
+        const base = Number(pricing.pricePerHour) * (duration / 60);
+        const commission = base * (Number(pricing.profitPercent) || 0) / 100;
+        return base + commission;
     }, [facility, selectedSlot, duration, dayOfWeek]);
 
     const handleBooking = () => {
@@ -578,28 +587,36 @@ export default function FacilityDetailPage({
                     </CardBody>
                 </Card>
 
-                {/* Pricing Info */}
-                {facility.pricing && facility.pricing.length > 0 && (
-                    <Card className="mt-4 shadow-sm">
-                        <CardBody>
-                            <p className="mb-3 text-sm font-semibold text-default-700">Tarifas</p>
-                            <div className="flex flex-wrap gap-3">
-                                {facility.pricing.map((price) => (
-                                    <div
-                                        key={price.id}
-                                        className="flex items-center gap-2 rounded-lg bg-default-100 px-3 py-2"
-                                    >
-                                        <Clock className="h-3.5 w-3.5 text-default-500" />
-                                        <span className="text-sm">{formatTime12h(price.startTime)} - {formatTime12h(price.endTime)}</span>
-                                        <Chip size="sm" color="success" variant="flat">
-                                            ${formatPrice(Number(price.pricePerHour))}/hr
-                                        </Chip>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardBody>
-                    </Card>
-                )}
+                {/* Pricing Info: solo las tarifas del día seleccionado */}
+                {(() => {
+                    const dayPricing = (facility.pricing || []).filter(
+                        (p) => p.dayOfWeek === null || p.dayOfWeek === undefined || p.dayOfWeek === dayOfWeek,
+                    );
+                    if (dayPricing.length === 0) return null;
+                    return (
+                        <Card className="mt-4 shadow-sm">
+                            <CardBody>
+                                <p className="mb-3 text-sm font-semibold text-default-700">
+                                    Tarifas del {selectedDate.toLocaleDateString("es-AR", { weekday: "long" })}
+                                </p>
+                                <div className="flex flex-wrap gap-3">
+                                    {dayPricing.map((price) => (
+                                        <div
+                                            key={price.id}
+                                            className="flex items-center gap-2 rounded-lg bg-default-100 px-3 py-2"
+                                        >
+                                            <Clock className="h-3.5 w-3.5 text-default-500" />
+                                            <span className="text-sm">{formatTime12h(price.startTime)} - {formatTime12h(price.endTime)}</span>
+                                            <Chip size="sm" color="success" variant="flat">
+                                                ${formatPrice(Number(price.pricePerHour))}/hr
+                                            </Chip>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardBody>
+                        </Card>
+                    );
+                })()}
             </main>
             <Footer />
         </div>

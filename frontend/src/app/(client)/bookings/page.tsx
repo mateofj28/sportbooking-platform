@@ -202,21 +202,23 @@ export default function BookingsPage() {
                 ) : (
                     <>
               {/* Filter tabs */}
-              <div className="mt-6 flex flex-wrap gap-2">
+                            <div className="mt-6 flex flex-wrap gap-3 pt-2 pr-2">
                   {FILTER_TABS.map((tab) => {
                       const count = bookings?.filter((b) => matchesFilter(b, tab.key)).length || 0;
                       return (
                           <button
                               key={tab.key}
                               onClick={() => setActiveFilter(tab.key)}
-                              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-all ${activeFilter === tab.key
+                              className={`relative rounded-full px-4 py-1.5 text-sm font-medium transition-all ${activeFilter === tab.key
                                       ? "bg-primary text-white shadow-sm"
                                       : "bg-default-100 text-default-600 hover:bg-default-200"
                                   }`}
                           >
                               {tab.label}
                               {count > 0 && (
-                                  <span className={`rounded-full px-1.5 text-xs font-bold ${activeFilter === tab.key ? "bg-white/20" : "bg-default-200"
+                                  <span className={`absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none ${activeFilter === tab.key
+                                      ? "bg-white text-primary shadow"
+                                      : "bg-primary text-white"
                                       }`}>
                                       {count}
                                   </span>

@@ -8,7 +8,7 @@ import { getBookingStatusChip } from "@/lib/booking-status";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { ArrowLeft, MapPin, Calendar, Clock, User, Check, X, Repeat, ShieldCheck } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Clock, User, Check, X, Repeat, ShieldCheck, AlertTriangle } from "lucide-react";
 
 const SPORT_IMAGES: Record<string, string> = {
     futbol: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=1200&h=400&fit=crop",
@@ -108,6 +108,17 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                             <div className="flex items-center gap-2 rounded-xl border border-secondary/30 bg-secondary/10 px-4 py-3 text-sm text-secondary-700">
                                 <Repeat className="h-4 w-4" />
                                 Esta reserva es parte de un <strong>turno fijo semanal</strong>.
+                            </div>
+                        )}
+
+                        {isRecurring && booking.paymentStatus !== "PAID" && booking.status === "CONFIRMED" && !isPast && (
+                            <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning-700">
+                                <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                                <span>
+                                    El pago debe realizarse <strong>al menos 24 horas antes</strong> de la fecha
+                                    (antes del <strong>{formatDateLong(new Date(new Date(booking.startDatetime).getTime() - 24 * 60 * 60 * 1000).toISOString())}</strong>).
+                                    De lo contrario, la reserva se cancelará automáticamente y el horario quedará disponible.
+                                </span>
                             </div>
                         )}
 

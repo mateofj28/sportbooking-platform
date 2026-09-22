@@ -245,6 +245,28 @@ export default function FacilityDetailPage({
         return base + commission;
     }, [facility, selectedSlot, duration, dayOfWeek]);
 
+    /**
+     * Construye el instante UTC real (ISO) para una hora "HH:mm" del día
+     * seleccionado, interpretada como HORA LOCAL DE ARGENTINA (UTC-3).
+     * Si el slot es de madrugada (hora < apertura y el horario cruza medianoche),
+     * corresponde al DÍA SIGUIENTE (la jornada arranca la noche anterior).
+     */
+    const buildArIso = (baseDate: Date, time: string): string => {
+        const [h, m] = time.split(":").map(Number);
+        const openH = schedule ? Number(schedule.openTime.split(":")[0]) : 0;
+        const openM = schedule ? Number(schedule.openTime.split(":")[1]) : 0;
+        const closeH = schedule ? Number(schedule.closeTime.split(":")[0]) : 0;
+        const closeM = schedule ? Number(schedule.closeTime.split(":")[1]) : 0;
+        const crossesMidnight = (closeH * 60 + closeM) <= (openH * 60 + openM);
+        const isEarlyMorning = crossesMidnight && (h * 60 + m) < (openH * 60 + openM);
+        // Fecha base en componentes (año/mes/día) del día elegido
+        const y = baseDate.getFullYear();
+        const mo = baseDate.getMonth();
+        const d = baseDate.getDate() + (isEarlyMorning ? 1 : 0);
+        // Hora local AR -> UTC: sumar 3h de offset
+        return new Date(Date.UTC(y, mo, d, h + 3, m, 0)).toISOString();
+    };
+
     const handleBooking = () => {
         if (!isAuthenticated) {
             router.push("/login");
@@ -252,9 +274,8 @@ export default function FacilityDetailPage({
         }
         if (!selectedSlot) return;
 
-        const dateStr = selectedDate.toISOString().split("T")[0];
-        const startDatetime = new Date(`${dateStr}T${selectedSlot}:00`).toISOString();
-        const endDatetime = new Date(`${dateStr}T${endTime}:00`).toISOString();
+        const startDatetime = buildArIso(selectedDate, selectedSlot);
+        const endDatetime = buildArIso(selectedDate, endTime);
 
         createBooking.mutate(
             { facilityId: id, startDatetime, endDatetime, notes: notes || undefined },

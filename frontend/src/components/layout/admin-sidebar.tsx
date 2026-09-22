@@ -28,7 +28,7 @@ const menuItems = [
     { href: "/dashboard/bookings", label: "Reservas", icon: Calendar },
     { href: "/dashboard/statistics", label: "Estadísticas", icon: BarChart3 },
     { href: "/dashboard/facilities", label: "Instalaciones", icon: MapPin },
-    { href: "/dashboard/venues", label: "Sedes", icon: MapPin },
+    { href: "/dashboard/venues", label: "Complejos", icon: MapPin },
     { href: "/dashboard/schedules", label: "Horarios", icon: Clock },
     { href: "/dashboard/pricing", label: "Precios", icon: DollarSign },
     { href: "/dashboard/blocked-slots", label: "Bloqueos", icon: Ban },

@@ -2,14 +2,14 @@
 
 import {
     Button, Chip, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-    Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem, useDisclosure,
+    Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, RadioGroup, Radio, useDisclosure,
 } from "@heroui/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
 import { Plus, Trash2, Pencil } from "lucide-react";
-import { useState, type ChangeEvent } from "react";
+import { useState } from "react";
 import type { Sport } from "@/types";
 
 export default function AdminSportsPage() {
@@ -105,16 +105,15 @@ export default function AdminSportsPage() {
                         <Input label="Nombre" placeholder="Ej: Fútbol" variant="bordered" value={form.name} onValueChange={(v) => setForm({ ...form, name: v })} />
                         <Input label="Descripción" placeholder="Descripción breve (opcional)" variant="bordered" value={form.description} onValueChange={(v) => setForm({ ...form, description: v })} />
                         <Input label="Cantidad de jugadores" type="number" min="1" placeholder="Ej: 22" variant="bordered" value={form.maxPlayers} onValueChange={(v) => setForm({ ...form, maxPlayers: v })} />
-                        <Select
+                        <RadioGroup
                             label="Modalidad de cobro"
-                            variant="bordered"
-                            selectedKeys={[form.billingType]}
-                            onChange={(e: ChangeEvent<HTMLSelectElement>) => setForm({ ...form, billingType: e.target.value })}
+                            value={form.billingType}
+                            onValueChange={(v) => setForm({ ...form, billingType: v })}
                             description={form.billingType === "MONTHLY" ? "Los jugadores abonan una mensualidad, no un turno individual." : "Los jugadores reservan y abonan por turno."}
                         >
-                            <SelectItem key="PER_SESSION">Por turno</SelectItem>
-                            <SelectItem key="MONTHLY">Mensualidad</SelectItem>
-                        </Select>
+                            <Radio value="PER_SESSION">Por turno</Radio>
+                            <Radio value="MONTHLY">Mensualidad</Radio>
+                        </RadioGroup>
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="light" onPress={onClose}>Cancelar</Button>
@@ -131,16 +130,15 @@ export default function AdminSportsPage() {
                         <Input label="Nombre" variant="bordered" value={editForm.name} onValueChange={(v) => setEditForm({ ...editForm, name: v })} />
                         <Input label="Descripción" variant="bordered" value={editForm.description} onValueChange={(v) => setEditForm({ ...editForm, description: v })} />
                         <Input label="Cantidad de jugadores" type="number" min="1" placeholder="Ej: 22" variant="bordered" value={editForm.maxPlayers} onValueChange={(v) => setEditForm({ ...editForm, maxPlayers: v })} />
-                        <Select
+                        <RadioGroup
                             label="Modalidad de cobro"
-                            variant="bordered"
-                            selectedKeys={[editForm.billingType]}
-                            onChange={(e: ChangeEvent<HTMLSelectElement>) => setEditForm({ ...editForm, billingType: e.target.value })}
+                            value={editForm.billingType}
+                            onValueChange={(v) => setEditForm({ ...editForm, billingType: v })}
                             description={editForm.billingType === "MONTHLY" ? "Los jugadores abonan una mensualidad, no un turno individual." : "Los jugadores reservan y abonan por turno."}
                         >
-                            <SelectItem key="PER_SESSION">Por turno</SelectItem>
-                            <SelectItem key="MONTHLY">Mensualidad</SelectItem>
-                        </Select>
+                            <Radio value="PER_SESSION">Por turno</Radio>
+                            <Radio value="MONTHLY">Mensualidad</Radio>
+                        </RadioGroup>
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="light" onPress={onEditClose}>Cancelar</Button>

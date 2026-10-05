@@ -140,6 +140,9 @@ export default function DashboardPage() {
 
             {/* Today's Summary Stats */}
             <TodaySummary />
+
+            {/* Revenue by venue (admin solo widget) */}
+            {user?.role !== "CLIENT" && <RevenueByVenue />}
       </div>
   );
 }
@@ -380,6 +383,150 @@ function TodaySummary() {
                     </Card>
                 ))}
             </div>
+        </div>
+    );
+}
+
+/**
+ * Widget de dinero acumulado por complejo.
+ * - ADMIN general: una fila por complejo + total repartido.
+ * - VENUE_ADMIN: solo su complejo.
+ * Cuenta solo reservas PAGADAS y no canceladas (plata efectivamente cobrada).
+ * La "plata del complejo" es el neto (total cobrado - comisión de la plataforma).
+ */
+function RevenueByVenue() {
+    const { user } = useAuthStore();
+    const isVenueAdmin = user?.role === "VENUE_ADMIN";
+
+    const { data: bookingsData, isLoading } = useQuery({
+        queryKey: ["revenue-by-venue-bookings"],
+        queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=1000"),
+    });
+
+    const allBookings = bookingsData?.data || [];
+
+    // Solo plata efectivamente cobrada (pagada y no cancelada)
+    const paidBookings = allBookings.filter(
+        (b) => b.status !== "CANCELLED" && b.paymentStatus === "PAID",
+    );
+
+    // Agrupar por complejo
+    const byVenue = new Map<
+        string,
+        { venueId: string; venueName: string; total: number; commission: number; count: number }
+    >();
+
+    for (const b of paidBookings) {
+        const venue = b.facility?.venue;
+        if (!venue) continue;
+        const pct = Number(b.facility?.pricing?.[0]?.profitPercent) || 0;
+        const total = Number(b.totalPrice);
+        const commission = total * (pct / 100);
+        const existing = byVenue.get(venue.id);
+        if (existing) {
+            existing.total += total;
+            existing.commission += commission;
+            existing.count += 1;
+        } else {
+            byVenue.set(venue.id, {
+                venueId: venue.id,
+                venueName: venue.name,
+                total,
+                commission,
+                count: 1,
+            });
+        }
+    }
+
+    const rows = Array.from(byVenue.values())
+        .map((r) => ({ ...r, venueEarnings: r.total - r.commission }))
+        .sort((a, b) => b.venueEarnings - a.venueEarnings);
+
+    const grandTotal = rows.reduce((s, r) => s + r.total, 0);
+    const grandCommission = rows.reduce((s, r) => s + r.commission, 0);
+    const grandVenueEarnings = rows.reduce((s, r) => s + r.venueEarnings, 0);
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <h2 className="text-lg font-bold">
+                        {isVenueAdmin ? "Ganancias de tu complejo" : "Ganancias por complejo"}
+                    </h2>
+                    <p className="text-xs text-default-500">
+                        {isVenueAdmin
+                            ? "Plata cobrada en reservas pagadas"
+                            : "Plata repartida entre los complejos (reservas pagadas)"}
+                    </p>
+                </div>
+            </div>
+
+            {isLoading ? (
+                <div className="flex justify-center py-8"><Spinner /></div>
+            ) : rows.length === 0 ? (
+                <Card className="border border-divider">
+                    <CardBody className="flex flex-col items-center py-8">
+                        <DollarSign className="h-10 w-10 text-default-200" />
+                        <p className="mt-3 text-sm text-default-500">Todavía no hay ganancias registradas</p>
+                    </CardBody>
+                </Card>
+            ) : (
+                <>
+                    {/* Total general: solo para el admin general */}
+                    {!isVenueAdmin && (
+                        <Card className="mb-3 border-none bg-gradient-to-r from-emerald-500 to-emerald-700 shadow-lg">
+                            <CardBody className="flex-row flex-wrap items-center justify-between gap-4 p-5">
+                                <div>
+                                    <p className="text-xs font-medium uppercase tracking-wider text-white/70">Total cobrado</p>
+                                    <p className="text-2xl font-bold text-white">${formatPrice(grandTotal)}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs font-medium uppercase tracking-wider text-white/70">Para los complejos</p>
+                                    <p className="text-lg font-bold text-white">${formatPrice(grandVenueEarnings)}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs font-medium uppercase tracking-wider text-white/70">Comisión empresa</p>
+                                    <p className="text-lg font-bold text-white">${formatPrice(grandCommission)}</p>
+                                </div>
+                            </CardBody>
+                        </Card>
+                    )}
+
+                    <div className="space-y-3">
+                        {rows.map((r) => (
+                            <Card key={r.venueId} className="border border-divider">
+                                <CardBody className="flex-row items-center justify-between gap-3 p-4">
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
+                                            <MapPin className="h-5 w-5 text-emerald-500" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="font-semibold text-sm truncate">{r.venueName}</p>
+                                            <p className="text-xs text-default-500">
+                                                {r.count} reserva{r.count !== 1 ? "s" : ""} pagada{r.count !== 1 ? "s" : ""}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4 flex-shrink-0 text-right">
+                                        {!isVenueAdmin && (
+                                            <div className="hidden sm:block">
+                                                <p className="text-[11px] text-default-400">Comisión</p>
+                                                <p className="text-sm font-medium text-emerald-600">${formatPrice(r.commission)}</p>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <p className="text-[11px] text-default-400">
+                                                {isVenueAdmin ? "Tu ganancia" : "Para el complejo"}
+                                            </p>
+                                            <p className="text-base font-bold text-success">${formatPrice(r.venueEarnings)}</p>
+                                        </div>
+                                    </div>
+                                </CardBody>
+                            </Card>
+                        ))}
+                    </div>
+                </>
+            )}
         </div>
     );
 }

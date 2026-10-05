@@ -2,14 +2,14 @@
 
 import {
     Button, Chip, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-    Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, useDisclosure,
+    Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem, useDisclosure,
 } from "@heroui/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
 import { Plus, Trash2, Pencil } from "lucide-react";
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import type { Sport } from "@/types";
 
 export default function AdminSportsPage() {
@@ -17,8 +17,8 @@ export default function AdminSportsPage() {
     const addToast = useToastStore((s) => s.addToast);
     const { isOpen, onOpen, onClose } = useDisclosure();
     const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
-    const [form, setForm] = useState({ name: "", description: "", maxPlayers: "" });
-    const [editForm, setEditForm] = useState({ id: "", name: "", description: "", maxPlayers: "" });
+    const [form, setForm] = useState({ name: "", description: "", maxPlayers: "", billingType: "PER_SESSION" });
+    const [editForm, setEditForm] = useState({ id: "", name: "", description: "", maxPlayers: "", billingType: "PER_SESSION" });
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const { data: sports, isLoading } = useQuery({
@@ -28,7 +28,7 @@ export default function AdminSportsPage() {
 
     const createMutation = useMutation({
         mutationFn: (data: any) => apiClient.post("/sports", data),
-        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); onClose(); setForm({ name: "", description: "", maxPlayers: "" }); addToast("Deporte creado correctamente"); },
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); onClose(); setForm({ name: "", description: "", maxPlayers: "", billingType: "PER_SESSION" }); addToast("Deporte creado correctamente"); },
     });
 
     const deleteMutation = useMutation({
@@ -42,14 +42,15 @@ export default function AdminSportsPage() {
     });
 
     const handleEdit = (sport: Sport) => {
-        setEditForm({ id: sport.id, name: sport.name, description: sport.description || "", maxPlayers: sport.maxPlayers != null ? String(sport.maxPlayers) : "" });
+        setEditForm({ id: sport.id, name: sport.name, description: sport.description || "", maxPlayers: sport.maxPlayers != null ? String(sport.maxPlayers) : "", billingType: sport.billingType || "PER_SESSION" });
         onEditOpen();
     };
 
-    const buildPayload = (f: { name: string; description: string; maxPlayers: string }) => ({
+    const buildPayload = (f: { name: string; description: string; maxPlayers: string; billingType: string }) => ({
         name: f.name,
         description: f.description || undefined,
         maxPlayers: f.maxPlayers ? parseInt(f.maxPlayers) : undefined,
+        billingType: f.billingType,
     });
 
     if (isLoading) return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;
@@ -69,6 +70,7 @@ export default function AdminSportsPage() {
                     <TableColumn>NOMBRE</TableColumn>
                     <TableColumn>DESCRIPCIÓN</TableColumn>
                     <TableColumn>JUGADORES</TableColumn>
+                    <TableColumn>MODALIDAD</TableColumn>
                     <TableColumn>ESTADO</TableColumn>
                     <TableColumn>ACCIONES</TableColumn>
                 </TableHeader>
@@ -78,6 +80,11 @@ export default function AdminSportsPage() {
                             <TableCell className="font-medium">{sport.name}</TableCell>
                             <TableCell className="text-default-500">{sport.description || "-"}</TableCell>
                             <TableCell className="text-default-500">{sport.maxPlayers != null ? sport.maxPlayers : "-"}</TableCell>
+                            <TableCell>
+                                <Chip color={sport.billingType === "MONTHLY" ? "secondary" : "primary"} size="sm" variant="flat">
+                                    {sport.billingType === "MONTHLY" ? "Mensualidad" : "Por turno"}
+                                </Chip>
+                            </TableCell>
                             <TableCell><Chip color={sport.isActive ? "success" : "danger"} size="sm" variant="dot">{sport.isActive ? "Activo" : "Inactivo"}</Chip></TableCell>
                             <TableCell>
                                 <div className="flex gap-1">
@@ -98,6 +105,16 @@ export default function AdminSportsPage() {
                         <Input label="Nombre" placeholder="Ej: Fútbol" variant="bordered" value={form.name} onValueChange={(v) => setForm({ ...form, name: v })} />
                         <Input label="Descripción" placeholder="Descripción breve (opcional)" variant="bordered" value={form.description} onValueChange={(v) => setForm({ ...form, description: v })} />
                         <Input label="Cantidad de jugadores" type="number" min="1" placeholder="Ej: 22" variant="bordered" value={form.maxPlayers} onValueChange={(v) => setForm({ ...form, maxPlayers: v })} />
+                        <Select
+                            label="Modalidad de cobro"
+                            variant="bordered"
+                            selectedKeys={[form.billingType]}
+                            onChange={(e: ChangeEvent<HTMLSelectElement>) => setForm({ ...form, billingType: e.target.value })}
+                            description={form.billingType === "MONTHLY" ? "Los jugadores abonan una mensualidad, no un turno individual." : "Los jugadores reservan y abonan por turno."}
+                        >
+                            <SelectItem key="PER_SESSION">Por turno</SelectItem>
+                            <SelectItem key="MONTHLY">Mensualidad</SelectItem>
+                        </Select>
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="light" onPress={onClose}>Cancelar</Button>
@@ -114,6 +131,16 @@ export default function AdminSportsPage() {
                         <Input label="Nombre" variant="bordered" value={editForm.name} onValueChange={(v) => setEditForm({ ...editForm, name: v })} />
                         <Input label="Descripción" variant="bordered" value={editForm.description} onValueChange={(v) => setEditForm({ ...editForm, description: v })} />
                         <Input label="Cantidad de jugadores" type="number" min="1" placeholder="Ej: 22" variant="bordered" value={editForm.maxPlayers} onValueChange={(v) => setEditForm({ ...editForm, maxPlayers: v })} />
+                        <Select
+                            label="Modalidad de cobro"
+                            variant="bordered"
+                            selectedKeys={[editForm.billingType]}
+                            onChange={(e: ChangeEvent<HTMLSelectElement>) => setEditForm({ ...editForm, billingType: e.target.value })}
+                            description={editForm.billingType === "MONTHLY" ? "Los jugadores abonan una mensualidad, no un turno individual." : "Los jugadores reservan y abonan por turno."}
+                        >
+                            <SelectItem key="PER_SESSION">Por turno</SelectItem>
+                            <SelectItem key="MONTHLY">Mensualidad</SelectItem>
+                        </Select>
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="light" onPress={onEditClose}>Cancelar</Button>

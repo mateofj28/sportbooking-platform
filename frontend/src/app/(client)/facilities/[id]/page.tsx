@@ -331,6 +331,8 @@ export default function FacilityDetailPage({
         );
     }
 
+    const isMonthly = facility.sport?.billingType === "MONTHLY";
+
     return (
         <div className="flex min-h-screen flex-col">
             <Navbar />
@@ -369,6 +371,26 @@ export default function FacilityDetailPage({
                     </div>
                 </div>
 
+                {/* Deportes por mensualidad: no se reserva por turno */}
+                {isMonthly ? (
+                    <Card className="shadow-sm">
+                        <CardBody className="items-center gap-3 py-10 text-center">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary/10">
+                                <Users className="h-6 w-6 text-secondary" />
+                            </div>
+                            <h2 className="text-lg font-bold">Este deporte se abona por mensualidad</h2>
+                            <p className="max-w-md text-sm text-default-500">
+                                {facility.sport.name} no se reserva por turno individual. Para sumarte,
+                                consultá en el complejo por la inscripción mensual y los horarios de las clases.
+                            </p>
+                            <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm text-default-600">
+                                <MapPin className="h-4 w-4" />
+                                <span>{facility.venue.name} — {facility.venue.address}, {facility.venue.city}</span>
+                            </div>
+                        </CardBody>
+                    </Card>
+                ) : (
+                    <>
                 {/* Booking Flow */}
                 <Card className="shadow-sm">
                     <CardHeader className="flex-col items-start gap-1 pb-0">
@@ -646,6 +668,8 @@ export default function FacilityDetailPage({
                         </Card>
                     );
                 })()}
+                    </>
+                )}
             </main>
             <Footer />
         </div>

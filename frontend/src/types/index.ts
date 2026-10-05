@@ -33,11 +33,14 @@ export interface RegisterData {
 }
 
 // Sport types
+export type BillingType = "PER_SESSION" | "MONTHLY";
+
 export interface Sport {
     id: string;
     name: string;
     description?: string;
     maxPlayers?: number;
+    billingType?: BillingType;
     isActive: boolean;
 }
 

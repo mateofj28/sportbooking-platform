@@ -124,13 +124,10 @@ export default function StatisticsPage() {
         .filter((b) => b.status !== "CANCELLED")
         .reduce((sum, b) => sum + Number(b.totalPrice), 0);
 
-    // Comisión de la empresa: totalPrice * (profitPercent / 100)
+    // Comisión de la empresa: monto real guardado en cada reserva
     const totalCommission = filteredBookings
         .filter((b) => b.status !== "CANCELLED")
-        .reduce((sum, b) => {
-            const pct = Number(b.facility?.pricing?.[0]?.profitPercent) || 0;
-            return sum + Number(b.totalPrice) * (pct / 100);
-        }, 0);
+        .reduce((sum, b) => sum + (Number(b.commissionAmount) || 0), 0);
 
     const totalActive = filteredBookings.length - cancelledBookings.length;
     const occupancyRate = totalActive > 0 ? Math.round((confirmedBookings.length / totalActive) * 100) : 0;

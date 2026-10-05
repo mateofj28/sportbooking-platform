@@ -123,6 +123,8 @@ export interface Booking {
     paymentStatus?: PaymentStatus;
     recurringBookingId?: string | null;
     totalPrice: number;
+    basePrice?: number;
+    commissionAmount?: number;
     currency: string;
     notes?: string;
     cancelledAt?: string;

@@ -64,14 +64,16 @@ export class BookingsService {
 
         await this.validateBooking(dto.facilityId, startDatetime, endDatetime);
 
-        const totalPrice = await this.calculatePrice(dto.facilityId, startDatetime, endDatetime);
+        const price = await this.calculatePrice(dto.facilityId, startDatetime, endDatetime);
 
         return this.bookingsRepository.create({
             facilityId: dto.facilityId,
             userId,
             startDatetime,
             endDatetime,
-            totalPrice,
+            totalPrice: price.total,
+            basePrice: price.base,
+            commissionAmount: price.commission,
             currency: 'ARS',
             notes: dto.notes,
             createdById: userId,
@@ -103,14 +105,16 @@ export class BookingsService {
 
         await this.validateBooking(dto.facilityId, startDatetime, endDatetime);
 
-        const totalPrice = await this.calculatePrice(dto.facilityId, startDatetime, endDatetime);
+        const price = await this.calculatePrice(dto.facilityId, startDatetime, endDatetime);
 
         return this.bookingsRepository.create({
             facilityId: dto.facilityId,
             userId: dto.userId,
             startDatetime,
             endDatetime,
-            totalPrice,
+            totalPrice: price.total,
+            basePrice: price.base,
+            commissionAmount: price.commission,
             currency: 'ARS',
             notes: dto.notes,
             createdById: actor.id,
@@ -245,13 +249,15 @@ export class BookingsService {
 
             try {
                 await this.validateBooking(dto.facilityId, startDatetime, endDatetime);
-                const totalPrice = await this.calculatePrice(dto.facilityId, startDatetime, endDatetime);
+                const price = await this.calculatePrice(dto.facilityId, startDatetime, endDatetime);
                 const booking = await this.bookingsRepository.create({
                     facilityId: dto.facilityId,
                     userId: targetUserId,
                     startDatetime,
                     endDatetime,
-                    totalPrice,
+                    totalPrice: price.total,
+                    basePrice: price.base,
+                    commissionAmount: price.commission,
                     currency: 'ARS',
                     notes: dto.notes,
                     createdById: actor.id,
@@ -520,7 +526,7 @@ export class BookingsService {
         facilityId: string,
         startDatetime: Date,
         endDatetime: Date,
-    ): Promise<number> {
+    ): Promise<{ base: number; commission: number; total: number }> {
         // Día y hora en horario local de Argentina (UTC-3)
         const AR_OFFSET_MIN = 3 * 60;
         const startAr = new Date(startDatetime.getTime() - AR_OFFSET_MIN * 60000);
@@ -553,7 +559,7 @@ export class BookingsService {
             }) || candidates[0];
 
         if (!pricing) {
-            return 0;
+            return { base: 0, commission: 0, total: 0 };
         }
 
         // Precio base (neto de la cancha)
@@ -561,6 +567,6 @@ export class BookingsService {
         // Comisión de servicio de la empresa (profitPercent)
         const commission = base * (Number(pricing.profitPercent) || 0) / 100;
         // El total pagado por el cliente incluye la comisión
-        return base + commission;
+        return { base, commission, total: base + commission };
     }
 }

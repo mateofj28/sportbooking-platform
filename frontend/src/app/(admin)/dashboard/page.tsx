@@ -313,11 +313,11 @@ function TodaySummary() {
 
     const todayRevenue = todayBookings.reduce((sum, b) => sum + Number(b.totalPrice), 0);
 
-    // Comisión de la empresa: totalPrice * (profitPercent / 100) de cada reserva
-    const todayCommission = todayBookings.reduce((sum, b) => {
-        const pct = Number(b.facility?.pricing?.[0]?.profitPercent) || 0;
-        return sum + Number(b.totalPrice) * (pct / 100);
-    }, 0);
+    // Comisión de la empresa: monto real guardado en cada reserva
+    const todayCommission = todayBookings.reduce(
+        (sum, b) => sum + (Number(b.commissionAmount) || 0),
+        0,
+    );
 
     // Users created today (approximate - check createdAt)
     const allUsers = usersData?.data || [];
@@ -419,9 +419,9 @@ function RevenueByVenue() {
     for (const b of paidBookings) {
         const venue = b.facility?.venue;
         if (!venue) continue;
-        const pct = Number(b.facility?.pricing?.[0]?.profitPercent) || 0;
         const total = Number(b.totalPrice);
-        const commission = total * (pct / 100);
+        // Comisión real guardada en la reserva (precio base + comisión = total)
+        const commission = Number(b.commissionAmount) || 0;
         const existing = byVenue.get(venue.id);
         if (existing) {
             existing.total += total;

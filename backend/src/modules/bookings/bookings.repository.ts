@@ -80,6 +80,8 @@ export class BookingsRepository {
         startDatetime: Date;
         endDatetime: Date;
         totalPrice: number;
+        basePrice?: number;
+        commissionAmount?: number;
         currency: string;
         notes?: string;
         createdById: string;

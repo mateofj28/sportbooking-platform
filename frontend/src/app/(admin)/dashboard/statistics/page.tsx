@@ -129,6 +129,34 @@ export default function StatisticsPage() {
         .filter((b) => b.status !== "CANCELLED")
         .reduce((sum, b) => sum + (Number(b.commissionAmount) || 0), 0);
 
+    // Reparto por complejo (según filtros): cuánto le corresponde a cada complejo
+    // (precio base) y cuánta comisión generó para la empresa.
+    const revenueByVenue = useMemo(() => {
+        const map = new Map<
+            string,
+            { venueId: string; venueName: string; total: number; base: number; commission: number; count: number }
+        >();
+        for (const b of filteredBookings) {
+            if (b.status === "CANCELLED") continue;
+            const venue = b.facility?.venue;
+            if (!venue) continue;
+            const total = Number(b.totalPrice) || 0;
+            const commission = Number(b.commissionAmount) || 0;
+            const base = Number(b.basePrice) || total - commission;
+            const e = map.get(venue.id) || {
+                venueId: venue.id, venueName: venue.name, total: 0, base: 0, commission: 0, count: 0,
+            };
+            e.total += total;
+            e.base += base;
+            e.commission += commission;
+            e.count += 1;
+            map.set(venue.id, e);
+        }
+        return Array.from(map.values()).sort((a, b) => b.base - a.base);
+    }, [filteredBookings]);
+
+    const totalBase = revenueByVenue.reduce((s, r) => s + r.base, 0);
+
     const totalActive = filteredBookings.length - cancelledBookings.length;
     const occupancyRate = totalActive > 0 ? Math.round((confirmedBookings.length / totalActive) * 100) : 0;
 
@@ -234,6 +262,67 @@ export default function StatisticsPage() {
               <StatCard icon={<MapPin className="h-5 w-5" />} label="Instalaciones" value={facilities?.filter((f) => f.isActive).length || 0} color="bg-warning-50 text-warning-600" trend={`${sports?.length || 0} deportes`} />
                 <StatCard icon={<Users className="h-5 w-5" />} label="Usuarios nuevos" value={newUsers} color="bg-primary-50 text-primary-600" trend={`de ${usersData?.data?.length || 0} totales`} trendUp={newUsers > 0 ? true : undefined} />
           </div>
+
+            {/* Reparto por complejo según filtros */}
+            <Card className="border border-divider">
+                <CardHeader className="flex-col items-start gap-1 pb-2">
+                    <h2 className="text-base font-semibold">
+                        {isVenueAdmin ? "Lo que le corresponde a tu complejo" : "Reparto por complejo"}
+                    </h2>
+                    <p className="text-xs text-default-400">
+                        Según los filtros aplicados ({filteredBookings.filter((b) => b.status !== "CANCELLED").length} reservas)
+                    </p>
+                </CardHeader>
+                <Divider />
+                <CardBody className="gap-3">
+                    {/* Totales: solo para el admin general */}
+                    {!isVenueAdmin && revenueByVenue.length > 0 && (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                            <div className="rounded-xl bg-success-50 p-3">
+                                <p className="text-[11px] font-medium uppercase tracking-wide text-success-600">Para los complejos</p>
+                                <p className="text-xl font-bold text-success-700">${Math.round(totalBase).toLocaleString("en-US")}</p>
+                            </div>
+                            <div className="rounded-xl bg-emerald-100 p-3">
+                                <p className="text-[11px] font-medium uppercase tracking-wide text-emerald-600">Para la empresa (comisión)</p>
+                                <p className="text-xl font-bold text-emerald-700">${Math.round(totalCommission).toLocaleString("en-US")}</p>
+                            </div>
+                            <div className="rounded-xl bg-default-100 p-3">
+                                <p className="text-[11px] font-medium uppercase tracking-wide text-default-500">Total cobrado</p>
+                                <p className="text-xl font-bold">${Math.round(totalRevenue).toLocaleString("en-US")}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {revenueByVenue.length === 0 ? (
+                        <p className="py-4 text-center text-sm text-default-400">Sin datos para los filtros aplicados</p>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b border-divider text-left text-xs text-default-400">
+                                        <th className="py-2 pr-3 font-medium">Complejo</th>
+                                        <th className="py-2 px-3 text-right font-medium">Reservas</th>
+                                        <th className="py-2 px-3 text-right font-medium">Le corresponde</th>
+                                        {!isVenueAdmin && <th className="py-2 px-3 text-right font-medium">Comisión empresa</th>}
+                                        <th className="py-2 pl-3 text-right font-medium">Total cobrado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {revenueByVenue.map((r) => (
+                                        <tr key={r.venueId} className="border-b border-divider/60 last:border-0">
+                                            <td className="py-2.5 pr-3 font-medium">{r.venueName}</td>
+                                            <td className="py-2.5 px-3 text-right text-default-500">{r.count}</td>
+                                            <td className="py-2.5 px-3 text-right font-semibold text-success-600">${Math.round(r.base).toLocaleString("en-US")}</td>
+                                            {!isVenueAdmin && <td className="py-2.5 px-3 text-right text-emerald-600">${Math.round(r.commission).toLocaleString("en-US")}</td>}
+                                            <td className="py-2.5 pl-3 text-right text-default-600">${Math.round(r.total).toLocaleString("en-US")}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </CardBody>
+            </Card>
 
           {/* Charts */}
           <div className="grid gap-6 md:grid-cols-2">

@@ -187,8 +187,10 @@ function TodayBookings() {
     const perPage = 6;
 
     const { data: bookingsData, isLoading } = useQuery({
-        queryKey: ["today-bookings"],
+        queryKey: ["bookings", "today-list"],
         queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=50"),
+        refetchOnMount: "always",
+        staleTime: 0,
     });
 
     const todayBookings = (bookingsData?.data || []).filter((b) => {
@@ -291,8 +293,10 @@ function TodaySummary() {
     const today = new Date().toISOString().split("T")[0];
 
     const { data: bookingsData } = useQuery({
-        queryKey: ["today-bookings"],
+        queryKey: ["bookings", "today-summary"],
         queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=100"),
+        refetchOnMount: "always",
+        staleTime: 0,
     });
 
     const { data: usersData } = useQuery({
@@ -413,8 +417,11 @@ function RevenueByVenue() {
     const [selectedDay, setSelectedDay] = useState<string>(argentinaToday());
 
     const { data: bookingsData, isLoading } = useQuery({
-        queryKey: ["revenue-by-venue-bookings"],
+        // Prefijo ["bookings"] para que las invalidaciones de pago/creación lo refresquen
+        queryKey: ["bookings", "revenue-by-venue"],
         queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=1000"),
+        refetchOnMount: "always",
+        staleTime: 0,
     });
 
     const allBookings = bookingsData?.data || [];

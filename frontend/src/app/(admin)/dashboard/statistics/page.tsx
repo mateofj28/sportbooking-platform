@@ -13,11 +13,12 @@ import { useState, useMemo } from "react";
 import { BookingStatusDonut, BookingsByDayBar, RevenueAreaChart, SportRevenueBar } from "@/components/charts/dashboard-charts";
 import type { Booking, Facility, Sport, User, PaginatedResult } from "@/types";
 
-type DateRange = "today" | "week" | "month" | "quarter" | "all";
+type DateRange = "today" | "yesterday" | "week" | "month" | "quarter" | "all";
 type StatusFilter = "ALL" | "CONFIRMED" | "COMPLETED";
 
 const DATE_OPTIONS: { key: DateRange; label: string }[] = [
     { key: "today", label: "Hoy" },
+    { key: "yesterday", label: "Ayer" },
     { key: "week", label: "Última semana" },
     { key: "month", label: "Último mes" },
     { key: "quarter", label: "Último trimestre" },
@@ -30,14 +31,21 @@ const STATUS_OPTIONS: { key: StatusFilter; label: string }[] = [
     { key: "COMPLETED", label: "Completadas" },
 ];
 
-function getDateStart(range: DateRange): Date | null {
+/** Devuelve el rango [start, end] para el filtro. end es null = hasta ahora. */
+function getDateRange(range: DateRange): { start: Date | null; end: Date | null } {
     const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     switch (range) {
-        case "today": return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        case "week": { const d = new Date(now); d.setDate(now.getDate() - 7); return d; }
-        case "month": { const d = new Date(now); d.setMonth(now.getMonth() - 1); return d; }
-        case "quarter": { const d = new Date(now); d.setMonth(now.getMonth() - 3); return d; }
-        case "all": return null;
+        case "today": return { start: startOfToday, end: null };
+        case "yesterday": {
+            const start = new Date(startOfToday);
+            start.setDate(start.getDate() - 1);
+            return { start, end: startOfToday }; // [ayer 00:00, hoy 00:00)
+        }
+        case "week": { const d = new Date(now); d.setDate(now.getDate() - 7); return { start: d, end: null }; }
+        case "month": { const d = new Date(now); d.setMonth(now.getMonth() - 1); return { start: d, end: null }; }
+        case "quarter": { const d = new Date(now); d.setMonth(now.getMonth() - 3); return { start: d, end: null }; }
+        case "all": return { start: null, end: null };
     }
 }
 
@@ -93,10 +101,13 @@ export default function StatisticsPage() {
         let result = allBookings;
 
       // Date filter
-      const dateStart = getDateStart(dateRange);
+        const { start: dateStart, end: dateEnd } = getDateRange(dateRange);
       if (dateStart) {
           result = result.filter((b) => new Date(b.startDatetime) >= dateStart);
       }
+        if (dateEnd) {
+            result = result.filter((b) => new Date(b.startDatetime) < dateEnd);
+        }
 
       // Sport filter
       if (sportFilter) {
@@ -163,9 +174,15 @@ export default function StatisticsPage() {
     // New users in the selected date range
     const newUsers = useMemo(() => {
         if (!usersData?.data) return 0;
-        const dateStart = getDateStart(dateRange);
+        const { start: dateStart, end: dateEnd } = getDateRange(dateRange);
         if (!dateStart) return usersData.data.length;
-        return usersData.data.filter((u) => u.createdAt && new Date(u.createdAt) >= dateStart).length;
+        return usersData.data.filter((u) => {
+            if (!u.createdAt) return false;
+            const created = new Date(u.createdAt);
+            if (created < dateStart) return false;
+            if (dateEnd && created >= dateEnd) return false;
+            return true;
+        }).length;
     }, [usersData, dateRange]);
 
     if (isLoading) {

@@ -387,16 +387,30 @@ function TodaySummary() {
     );
 }
 
+/** Fecha de hoy (YYYY-MM-DD) en hora local de Argentina (UTC-3) */
+function argentinaToday(): string {
+    const now = new Date();
+    const arMs = now.getTime() + now.getTimezoneOffset() * 60000 - 3 * 60 * 60000;
+    return new Date(arMs).toISOString().split("T")[0];
+}
+
+/** Día (YYYY-MM-DD) en hora local de Argentina de un instante ISO */
+function argentinaDay(iso: string): string {
+    const d = new Date(iso);
+    const arMs = d.getTime() - 3 * 60 * 60000;
+    return new Date(arMs).toISOString().split("T")[0];
+}
+
 /**
- * Widget de dinero acumulado por complejo.
- * - ADMIN general: una fila por complejo + total repartido.
- * - VENUE_ADMIN: solo su complejo.
- * Cuenta solo reservas PAGADAS y no canceladas (plata efectivamente cobrada).
- * La "plata del complejo" es el neto (total cobrado - comisión de la plataforma).
+ * Widget de ganancia por complejo en un día.
+ * - La ganancia que ve el complejo es el PRECIO BASE (sin la comisión de la empresa).
+ * - Cuenta solo reservas PAGADAS y no canceladas, por FECHA DE PAGO (paidAt) del día elegido.
+ * - ADMIN general: una fila por complejo + total del día. VENUE_ADMIN: solo su complejo.
  */
 function RevenueByVenue() {
     const { user } = useAuthStore();
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
+    const [selectedDay, setSelectedDay] = useState<string>(argentinaToday());
 
     const { data: bookingsData, isLoading } = useQuery({
         queryKey: ["revenue-by-venue-bookings"],
@@ -405,59 +419,77 @@ function RevenueByVenue() {
 
     const allBookings = bookingsData?.data || [];
 
-    // Solo plata efectivamente cobrada (pagada y no cancelada)
-    const paidBookings = allBookings.filter(
-        (b) => b.status !== "CANCELLED" && b.paymentStatus === "PAID",
-    );
+    // Solo reservas pagadas, no canceladas, cuya fecha de pago sea el día elegido
+    const paidBookings = allBookings.filter((b) => {
+        if (b.status === "CANCELLED" || b.paymentStatus !== "PAID") return false;
+        if (!b.paidAt) return false;
+        return argentinaDay(b.paidAt) === selectedDay;
+    });
 
-    // Agrupar por complejo
+    // Agrupar por complejo. "earnings" = precio base (lo que se entrega al complejo)
     const byVenue = new Map<
         string,
-        { venueId: string; venueName: string; total: number; commission: number; count: number }
+        { venueId: string; venueName: string; earnings: number; commission: number; count: number }
     >();
 
     for (const b of paidBookings) {
         const venue = b.facility?.venue;
         if (!venue) continue;
-        const total = Number(b.totalPrice);
-        // Comisión real guardada en la reserva (precio base + comisión = total)
+        const base = Number(b.basePrice) || 0;
         const commission = Number(b.commissionAmount) || 0;
         const existing = byVenue.get(venue.id);
         if (existing) {
-            existing.total += total;
+            existing.earnings += base;
             existing.commission += commission;
             existing.count += 1;
         } else {
             byVenue.set(venue.id, {
                 venueId: venue.id,
                 venueName: venue.name,
-                total,
+                earnings: base,
                 commission,
                 count: 1,
             });
         }
     }
 
-    const rows = Array.from(byVenue.values())
-        .map((r) => ({ ...r, venueEarnings: r.total - r.commission }))
-        .sort((a, b) => b.venueEarnings - a.venueEarnings);
-
-    const grandTotal = rows.reduce((s, r) => s + r.total, 0);
+    const rows = Array.from(byVenue.values()).sort((a, b) => b.earnings - a.earnings);
+    const grandEarnings = rows.reduce((s, r) => s + r.earnings, 0);
     const grandCommission = rows.reduce((s, r) => s + r.commission, 0);
-    const grandVenueEarnings = rows.reduce((s, r) => s + r.venueEarnings, 0);
+
+    const isToday = selectedDay === argentinaToday();
+    const prettyDay = (() => {
+        const [y, m, d] = selectedDay.split("-").map(Number);
+        return new Date(y, m - 1, d).toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+    })();
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>
                     <h2 className="text-lg font-bold">
-                        {isVenueAdmin ? "Ganancias de tu complejo" : "Ganancias por complejo"}
+                        {isVenueAdmin ? "Ganancia de tu complejo" : "Ganancia por complejo"}
                     </h2>
                     <p className="text-xs text-default-500">
-                        {isVenueAdmin
-                            ? "Plata cobrada en reservas pagadas"
-                            : "Plata repartida entre los complejos (reservas pagadas)"}
+                        Lo que se le entrega al complejo según reservas pagadas {isToday ? "hoy" : "ese día"} ({prettyDay})
                     </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <input
+                        type="date"
+                        value={selectedDay}
+                        max={argentinaToday()}
+                        onChange={(e) => setSelectedDay(e.target.value || argentinaToday())}
+                        className="rounded-lg border border-divider bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
+                    />
+                    {!isToday && (
+                        <button
+                            onClick={() => setSelectedDay(argentinaToday())}
+                            className="rounded-lg bg-default-100 px-3 py-1.5 text-xs font-medium hover:bg-default-200 transition-colors"
+                        >
+                            Hoy
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -467,22 +499,20 @@ function RevenueByVenue() {
                 <Card className="border border-divider">
                     <CardBody className="flex flex-col items-center py-8">
                         <DollarSign className="h-10 w-10 text-default-200" />
-                        <p className="mt-3 text-sm text-default-500">Todavía no hay ganancias registradas</p>
+                            <p className="mt-3 text-sm text-default-500">
+                                {isToday ? "No hay pagos registrados hoy" : "No hay pagos registrados ese día"}
+                            </p>
                     </CardBody>
                 </Card>
             ) : (
                 <>
-                    {/* Total general: solo para el admin general */}
+                            {/* Total del día: solo para el admin general */}
                     {!isVenueAdmin && (
                         <Card className="mb-3 border-none bg-gradient-to-r from-emerald-500 to-emerald-700 shadow-lg">
                             <CardBody className="flex-row flex-wrap items-center justify-between gap-4 p-5">
-                                <div>
-                                    <p className="text-xs font-medium uppercase tracking-wider text-white/70">Total cobrado</p>
-                                    <p className="text-2xl font-bold text-white">${formatPrice(grandTotal)}</p>
-                                </div>
-                                <div className="text-right">
+                                        <div>
                                     <p className="text-xs font-medium uppercase tracking-wider text-white/70">Para los complejos</p>
-                                    <p className="text-lg font-bold text-white">${formatPrice(grandVenueEarnings)}</p>
+                                            <p className="text-2xl font-bold text-white">${formatPrice(grandEarnings)}</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs font-medium uppercase tracking-wider text-white/70">Comisión empresa</p>
@@ -510,7 +540,7 @@ function RevenueByVenue() {
                                     <div className="flex items-center gap-4 flex-shrink-0 text-right">
                                         {!isVenueAdmin && (
                                             <div className="hidden sm:block">
-                                                <p className="text-[11px] text-default-400">Comisión</p>
+                                                <p className="text-[11px] text-default-400">Comisión empresa</p>
                                                 <p className="text-sm font-medium text-emerald-600">${formatPrice(r.commission)}</p>
                                             </div>
                                         )}
@@ -518,7 +548,7 @@ function RevenueByVenue() {
                                             <p className="text-[11px] text-default-400">
                                                 {isVenueAdmin ? "Tu ganancia" : "Para el complejo"}
                                             </p>
-                                            <p className="text-base font-bold text-success">${formatPrice(r.venueEarnings)}</p>
+                                            <p className="text-base font-bold text-success">${formatPrice(r.earnings)}</p>
                                         </div>
                                     </div>
                                 </CardBody>

@@ -121,6 +121,7 @@ export interface Booking {
     endDatetime: string;
     status: BookingStatus;
     paymentStatus?: PaymentStatus;
+    paidAt?: string | null;
     recurringBookingId?: string | null;
     totalPrice: number;
     basePrice?: number;

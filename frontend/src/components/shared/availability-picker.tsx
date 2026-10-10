@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import type { Facility } from "@/types";
+import { finalPriceForDuration } from "@/lib/pricing";
 
 interface AvailabilityResponse {
     available: boolean;
@@ -236,10 +237,8 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
             return slotMin >= start && slotMin < end;
         });
         if (!pricing) return 0;
-        // Precio base (neto) + comisión de servicio (profitPercent), igual que el backend
-        const base = Number(pricing.pricePerHour) * (duration / 60);
-        const commission = base * (Number(pricing.profitPercent) || 0) / 100;
-        return base + commission;
+        // Precio final que paga el cliente (base + comisión de servicio)
+        return finalPriceForDuration(pricing, duration);
     }, [facility, selectedSlot, duration, dayOfWeek]);
 
     // Si el día seleccionado no tiene horarios disponibles, saltar al primer

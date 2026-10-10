@@ -3,6 +3,7 @@
 import { Card, CardBody, CardFooter, Chip, Button, Link } from "@heroui/react";
 import { MapPin, Users, Clock } from "lucide-react";
 import type { Facility } from "@/types";
+import { finalPricePerHour, formatPrice } from "@/lib/pricing";
 
 const SPORT_IMAGES: Record<string, string> = {
     futbol: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=600&h=300&fit=crop",
@@ -24,8 +25,9 @@ interface FacilityCardProps {
 }
 
 export function FacilityCard({ facility }: FacilityCardProps) {
+    // Precio FINAL más bajo (base + comisión), igual que lo que paga el cliente
     const lowestPrice = facility.pricing && facility.pricing.length > 0
-        ? Math.min(...facility.pricing.map((p) => Number(p.pricePerHour)))
+        ? Math.min(...facility.pricing.map((p) => finalPricePerHour(p)))
         : null;
 
     const imageUrl = facility.imageUrl || getSportImage(facility.sport.name);
@@ -48,7 +50,7 @@ export function FacilityCard({ facility }: FacilityCardProps) {
               {lowestPrice !== null && (
                   <div className="absolute bottom-2 left-2">
                       <span className="rounded-md bg-black/60 px-2 py-1 text-xs font-bold text-white">
-                            Desde ${lowestPrice} ARS/hr
+                            Desde ${formatPrice(lowestPrice)} ARS/hr
                       </span>
                   </div>
               )}

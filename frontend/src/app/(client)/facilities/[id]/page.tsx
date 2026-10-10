@@ -14,6 +14,7 @@ import {
 import { useFacility } from "@/hooks/use-facilities";
 import { useCreateBooking, useCreateRecurringBooking } from "@/hooks/use-bookings";
 import { durationOptionsForSport } from "@/components/shared/availability-picker";
+import { finalPricePerHour, finalPriceForDuration } from "@/lib/pricing";
 import { useQueries } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
@@ -240,9 +241,7 @@ export default function FacilityDetailPage({
             return slotMin >= start && slotMin < end;
         });
         if (!pricing) return 0;
-        const base = Number(pricing.pricePerHour) * (duration / 60);
-        const commission = base * (Number(pricing.profitPercent) || 0) / 100;
-        return base + commission;
+        return finalPriceForDuration(pricing, duration);
     }, [facility, selectedSlot, duration, dayOfWeek]);
 
     /**
@@ -659,7 +658,7 @@ export default function FacilityDetailPage({
                                             <Clock className="h-3.5 w-3.5 text-default-500" />
                                             <span className="text-sm">{formatTime12h(price.startTime)} - {formatTime12h(price.endTime)}</span>
                                             <Chip size="sm" color="success" variant="flat">
-                                                ${formatPrice(Number(price.pricePerHour))}/hr
+                                                ${formatPrice(finalPricePerHour(price))}/hr
                                             </Chip>
                                         </div>
                                     ))}

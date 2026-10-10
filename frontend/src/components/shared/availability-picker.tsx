@@ -18,6 +18,17 @@ const MONTHS_ES = [
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
 
+/**
+ * Fecha "YYYY-MM-DD" con los componentes LOCALES del Date (no UTC).
+ * Evita el desfase de día de toISOString() cuando la hora local y UTC caen en días distintos.
+ */
+export function toLocalDateStr(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
 /** Minutos desde medianoche en hora local de Argentina (UTC-3) */
 export function argentinaNowMinutes(): number {
     const now = new Date();
@@ -135,7 +146,7 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
             days.map((day) => {
                 const dow = (day.getDay() + 6) % 7;
                 const hasSchedule = !!facility.schedules?.find((s) => s.dayOfWeek === dow && s.isActive);
-                return { day, dateStr: day.toISOString().split("T")[0], hasSchedule };
+                return { day, dateStr: toLocalDateStr(day), hasSchedule };
             }),
         [days, facility.schedules],
     );
@@ -171,7 +182,7 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
         const dow = (day.getDay() + 6) % 7;
         const daySchedule = facility.schedules?.find((s) => s.dayOfWeek === dow && s.isActive);
         if (!daySchedule) return false;
-        const ds = day.toISOString().split("T")[0];
+        const ds = toLocalDateStr(day);
         const resp = availabilityByDate[ds];
         // Si aún carga, lo dejamos habilitado provisionalmente (se recalcula al llegar)
         if (loadingByDate[ds] || !resp) {
@@ -181,7 +192,7 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
         return resp.slots.some((s) => s.available);
     };
 
-    const dateStr = selectedDate.toISOString().split("T")[0];
+    const dateStr = toLocalDateStr(selectedDate);
     const availability = availabilityByDate[dateStr];
 
     const isToday = selectedDate.toDateString() === new Date().toDateString();

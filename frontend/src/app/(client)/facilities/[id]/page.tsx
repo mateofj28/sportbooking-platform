@@ -87,6 +87,18 @@ function formatPrice(value: number): string {
     return Math.round(value).toLocaleString("en-US");
 }
 
+/**
+ * Fecha "YYYY-MM-DD" usando los componentes LOCALES del Date (no UTC).
+ * Evita el desfase de día que produce toISOString() cuando la hora local y UTC
+ * caen en días distintos (p. ej. de noche en Argentina, UTC ya es el día siguiente).
+ */
+function toLocalDateStr(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
 function getRemainingDaysOfMonth(): Date[] {
     const days: Date[] = [];
     const today = new Date();
@@ -141,7 +153,7 @@ export default function FacilityDetailPage({
             days.map((day) => {
                 const dow = (day.getDay() + 6) % 7;
                 const hasSchedule = !!facility?.schedules?.find((s) => s.dayOfWeek === dow && s.isActive);
-                return { dateStr: day.toISOString().split("T")[0], hasSchedule };
+                return { dateStr: toLocalDateStr(day), hasSchedule };
             }),
         [days, facility?.schedules],
     );
@@ -174,7 +186,7 @@ export default function FacilityDetailPage({
         const dow = (day.getDay() + 6) % 7;
         const daySchedule = facility?.schedules?.find((s) => s.dayOfWeek === dow && s.isActive);
         if (!daySchedule || !facility) return false;
-        const ds = day.toISOString().split("T")[0];
+        const ds = toLocalDateStr(day);
         const resp = availabilityByDate[ds];
         if (loadingByDate[ds] || !resp) {
             const isDayToday = day.toDateString() === new Date().toDateString();
@@ -183,7 +195,7 @@ export default function FacilityDetailPage({
         return resp.slots.some((s) => s.available);
     };
 
-    const dateStr = selectedDate.toISOString().split("T")[0];
+    const dateStr = toLocalDateStr(selectedDate);
     const availability = availabilityByDate[dateStr];
 
     const isToday = selectedDate.toDateString() === new Date().toDateString();

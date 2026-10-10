@@ -256,6 +256,23 @@ export default function FacilityDetailPage({
         return finalPriceForDuration(pricing, duration);
     }, [facility, selectedSlot, duration, dayOfWeek]);
 
+    // Precio final POR HORA de la tarifa aplicable (para mostrar el desglose)
+    const pricePerHour = useMemo(() => {
+        if (!facility?.pricing || !selectedSlot) return 0;
+        const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+        const slotMin = toMin(selectedSlot);
+        const pricing = facility.pricing.find((p) => {
+            if (!p.isActive) return false;
+            const matchDay = p.dayOfWeek === null || p.dayOfWeek === undefined || p.dayOfWeek === dayOfWeek;
+            if (!matchDay) return false;
+            const start = toMin(p.startTime);
+            const end = toMin(p.endTime);
+            if (end <= start) return slotMin >= start || slotMin < end;
+            return slotMin >= start && slotMin < end;
+        });
+        return pricing ? finalPricePerHour(pricing) : 0;
+    }, [facility, selectedSlot, dayOfWeek]);
+
     /**
      * Construye el instante UTC real (ISO) para una hora "HH:mm" del día
      * seleccionado, interpretada como HORA LOCAL DE ARGENTINA (UTC-3).
@@ -561,6 +578,11 @@ export default function FacilityDetailPage({
                                         <p className="text-xl font-bold text-success">
                                             ${formatPrice(price)} ARS {mode === "recurring" && <span className="text-xs font-normal text-default-400">por fecha</span>}
                                         </p>
+                                                    {duration !== 60 && pricePerHour > 0 && (
+                                                        <p className="text-xs text-default-400">
+                                                            ${formatPrice(pricePerHour)}/hr × {duration} min ({(duration / 60).toLocaleString("es-AR")} h)
+                                                        </p>
+                                                    )}
                                     </div>
 
                                     <div className="flex flex-col gap-2">

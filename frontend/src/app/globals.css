@@ -31,3 +31,17 @@ h6,
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }
+
+/*
+ * Evita el "auto-zoom" de Safari en iOS al enfocar inputs/selects/textarea.
+ * iOS hace zoom cuando el campo tiene font-size < 16px. Forzamos 16px en
+ * pantallas chicas (no bloquea el zoom manual del usuario, solo el automático).
+ */
+@media (max-width: 640px) {
+    input,
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+}
+

@@ -302,11 +302,11 @@ export default function AdminPricingPage() {
             ) : pricing && pricing.length > 0 ? (
               <div className="space-y-2">
                 {pricing.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between rounded-lg bg-default-50 px-4 py-3">
-                    <div className="flex items-center gap-3">
+                  <div key={p.id} className="flex flex-col gap-2 rounded-lg bg-default-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+                    <div className="flex flex-wrap items-center gap-2">
                       {p.dayOfWeek != null && <Chip size="sm" variant="flat">{DAYS[p.dayOfWeek]}</Chip>}
                       {p.dayOfWeek == null && <Chip size="sm" variant="flat" color="secondary">Todos los días</Chip>}
-                      <span className="text-sm">{formatTime12h(p.startTime)} - {formatTime12h(p.endTime)}</span>
+                      <span className="text-sm whitespace-nowrap">{formatTime12h(p.startTime)} - {formatTime12h(p.endTime)}</span>
                       <Chip size="sm" color="success" variant="flat">
                         ${Number(p.pricePerHour).toLocaleString("es-AR")}/hr
                       </Chip>
@@ -316,7 +316,7 @@ export default function AdminPricingPage() {
                         </Chip>
                       )}
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 self-end sm:self-auto">
                       <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(p)}>
                         <Pencil className="h-4 w-4" />
                       </Button>

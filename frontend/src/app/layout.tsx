@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Providers } from "@/providers";
 import { ToastContainer } from "@/components/shared/toast-container";
 import "./globals.css";
@@ -7,6 +7,11 @@ export const metadata: Metadata = {
     title: "SportBooking - Reserva instalaciones deportivas",
     description:
         "Plataforma para la gestión y reserva de instalaciones deportivas",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 // Script inyectado inline para evitar flash de tema incorrecto

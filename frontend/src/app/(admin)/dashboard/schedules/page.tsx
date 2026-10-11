@@ -142,12 +142,12 @@ export default function AdminSchedulesPage() {
             ) : schedules && schedules.length > 0 ? (
               <div className="space-y-2">
                 {schedules.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between rounded-lg bg-default-50 px-4 py-3">
+                  <div key={s.id} className="flex flex-col gap-2 rounded-lg bg-default-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
                     <div className="flex items-center gap-3">
                       <Chip size="sm" variant="flat" color="primary">{DAYS[s.dayOfWeek]}</Chip>
-                      <span className="text-sm font-medium">{formatTime12h(s.openTime)} - {formatTime12h(s.closeTime)}</span>
+                      <span className="text-sm font-medium whitespace-nowrap">{formatTime12h(s.openTime)} - {formatTime12h(s.closeTime)}</span>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 self-end sm:self-auto">
                       <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(s)}>
                         <Pencil className="h-4 w-4" />
                       </Button>

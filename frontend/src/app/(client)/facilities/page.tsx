@@ -10,6 +10,7 @@ import { useFacilities } from "@/hooks/use-facilities";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { FacilityCard } from "@/components/cards/facility-card";
+import { useAvailabilitySummary, localDateStr } from "@/hooks/use-availability";
 import { Search, MapPin, ArrowLeft, Building2 } from "lucide-react";
 import type { Sport, Venue } from "@/types";
 
@@ -57,6 +58,13 @@ function FacilitiesContent() {
         sportId: sportId || undefined,
         bookableOnly: "true",
     });
+
+    // Disponibilidad de HOY de todas las canchas del complejo, en UNA sola llamada
+    const { byFacility: availToday, isLoading: availLoading } = useAvailabilitySummary(
+        localDateStr(),
+        { venueId: venueId || undefined, sportId: sportId || undefined },
+        !!venueId,
+    );
 
     const handleSelectVenue = (id: string) => {
         setVenueId(id);
@@ -202,9 +210,21 @@ function FacilitiesContent() {
                                     </div>
                                 ) : facilities && facilities.length > 0 ? (
                                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                        {facilities.map((facility) => (
-                                            <FacilityCard key={facility.id} facility={facility} />
-                                        ))}
+                                            {facilities.map((facility) => {
+                                                const avail = availToday.get(facility.id);
+                                                const state = availLoading
+                                                    ? "loading"
+                                                    : avail?.hasFreeSlots
+                                                        ? "available"
+                                                        : "unavailable";
+                                                return (
+                                                    <FacilityCard
+                                                        key={facility.id}
+                                                        facility={facility}
+                                                        availabilityToday={state}
+                                                    />
+                                                );
+                                            })}
                                     </div>
                                 ) : (
                                     <div className="py-12 text-center">

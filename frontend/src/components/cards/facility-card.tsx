@@ -4,7 +4,6 @@ import { Card, CardBody, CardFooter, Chip, Button, Link } from "@heroui/react";
 import { MapPin, Users, Clock } from "lucide-react";
 import type { Facility } from "@/types";
 import { finalPricePerTurn, formatPrice } from "@/lib/pricing";
-import { useFacilityAvailability, localDateStr } from "@/hooks/use-availability";
 
 const SPORT_IMAGES: Record<string, string> = {
     futbol: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=600&h=300&fit=crop",
@@ -23,18 +22,18 @@ function getSportImage(sportSlug: string): string {
 
 interface FacilityCardProps {
     facility: Facility;
+    /** Estado de disponibilidad de hoy (lo provee el padre con una sola consulta batch). */
+    availabilityToday?: "available" | "unavailable" | "loading";
 }
 
-export function FacilityCard({ facility }: FacilityCardProps) {
+export function FacilityCard({ facility, availabilityToday }: FacilityCardProps) {
     // Precio FINAL más bajo (base + comisión), igual que lo que paga el cliente
     const lowestPrice = facility.pricing && facility.pricing.length > 0
         ? Math.min(...facility.pricing.map((p) => finalPricePerTurn(p)))
         : null;
 
-    // Disponibilidad para hoy (badge informativo)
-    const today = localDateStr();
-    const { isLoading: availLoading, hasFreeSlots } =
-        useFacilityAvailability(facility.id, today);
+    const showBadge = availabilityToday === "available" || availabilityToday === "unavailable";
+    const hasFreeSlots = availabilityToday === "available";
 
     const imageUrl = facility.imageUrl || getSportImage(facility.sport.name);
 
@@ -53,7 +52,7 @@ export function FacilityCard({ facility }: FacilityCardProps) {
                       {facility.sport.name}
                   </Chip>
               </div>
-                {!availLoading && (
+                {showBadge && (
                     <div className="absolute top-2 left-2">
                         <Chip
                             color={hasFreeSlots ? "success" : "default"}

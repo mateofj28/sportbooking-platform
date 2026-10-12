@@ -16,6 +16,7 @@ import { useCreateBooking, useCreateRecurringBooking } from "@/hooks/use-booking
 import { durationOptionsForSport } from "@/components/shared/availability-picker";
 import { finalPricePerTurn } from "@/lib/pricing";
 import { useFacilities } from "@/hooks/use-facilities";
+import { useAvailabilitySummary } from "@/hooks/use-availability";
 import { useQueries } from "@tanstack/react-query";
 import type { Facility } from "@/types";
 import { apiClient } from "@/lib/api-client";
@@ -728,24 +729,10 @@ function OtherAvailableFacilities({
         [siblings, excludeId],
     );
 
-    const availabilityQueries = useQueries({
-        queries: others.map((f) => ({
-            queryKey: ["availability", f.id, date],
-            queryFn: () =>
-                apiClient.get<{ available: boolean; slots: { time: string; available: boolean }[] }>(
-                    `/facilities/${f.id}/availability`,
-                    { date },
-                ),
-            staleTime: 60_000,
-        })),
-    });
+    // Disponibilidad de todas las canchas del complejo en UNA sola llamada
+    const { byFacility, isLoading: stillLoading } = useAvailabilitySummary(date, { venueId });
 
-    const availableOnes = others.filter((_, i) => {
-        const resp = availabilityQueries[i]?.data as any;
-        return resp?.slots?.some((s: { available: boolean }) => s.available);
-    });
-
-    const stillLoading = availabilityQueries.some((q) => q.isLoading);
+    const availableOnes = others.filter((f) => byFacility.get(f.id)?.hasFreeSlots);
 
     if (stillLoading) {
         return (

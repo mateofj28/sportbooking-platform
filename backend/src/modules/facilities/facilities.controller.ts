@@ -60,6 +60,25 @@ export class FacilitiesController {
         });
     }
 
+    @Get('availability-summary')
+    @UseGuards(OptionalJwtAuthGuard)
+    @ApiOperation({ summary: 'Availability summary of many facilities for a date' })
+    getAvailabilitySummary(
+        @CurrentUser() user: AuthUser | undefined,
+        @Query('date') date: string,
+        @Query('venueId') venueId?: string,
+        @Query('sportId') sportId?: string,
+    ) {
+        // El admin de sede solo ve resumen de su propia sede
+        const effectiveVenueId =
+            user?.role === Role.VENUE_ADMIN && user.venueId ? user.venueId : venueId;
+        return this.facilitiesService.getAvailabilitySummary({
+            venueId: effectiveVenueId,
+            sportId,
+            date,
+        });
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Get facility detail' })
     findById(@Param('id') id: string) {

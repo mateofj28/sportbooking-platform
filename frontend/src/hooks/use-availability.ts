@@ -34,3 +34,38 @@ export function useFacilityAvailability(facilityId: string, date: string, enable
 
     return { ...query, hasFreeSlots };
 }
+
+export interface AvailabilitySummaryItem {
+    facilityId: string;
+    available: boolean;
+    hasFreeSlots: boolean;
+    freeCount: number;
+    message?: string;
+}
+
+/**
+ * Resumen de disponibilidad de MUCHAS canchas en una sola llamada (escalable).
+ * Devuelve un Map facilityId -> resumen para consultarlo por cancha.
+ */
+export function useAvailabilitySummary(
+    date: string,
+    filters: { venueId?: string; sportId?: string } = {},
+    enabled = true,
+) {
+    const query = useQuery({
+        queryKey: ["availability-summary", date, filters.venueId ?? "", filters.sportId ?? ""],
+        queryFn: () => {
+            const params: Record<string, string> = { date };
+            if (filters.venueId) params.venueId = filters.venueId;
+            if (filters.sportId) params.sportId = filters.sportId;
+            return apiClient.get<AvailabilitySummaryItem[]>("/facilities/availability-summary", params);
+        },
+        enabled: enabled && !!date,
+        staleTime: 60_000,
+    });
+
+    const byFacility = new Map<string, AvailabilitySummaryItem>();
+    for (const item of query.data || []) byFacility.set(item.facilityId, item);
+
+    return { ...query, byFacility };
+}

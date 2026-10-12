@@ -308,7 +308,7 @@ export default function AdminPricingPage() {
                       {p.dayOfWeek == null && <Chip size="sm" variant="flat" color="secondary">Todos los días</Chip>}
                       <span className="text-sm whitespace-nowrap">{formatTime12h(p.startTime)} - {formatTime12h(p.endTime)}</span>
                       <Chip size="sm" color="success" variant="flat">
-                        ${Number(p.pricePerHour).toLocaleString("es-AR")}/hr
+                        ${Number(p.pricePerHour).toLocaleString("es-AR")} por turno
                       </Chip>
                       {p.profitPercent != null && (
                         <Chip size="sm" color="warning" variant="flat">
@@ -392,7 +392,7 @@ export default function AdminPricingPage() {
                 </div>
 
                 <Input
-                  label="Precio por hora (ARS)"
+                  label="Precio del turno (ARS)"
                   variant="bordered"
                   value={form.pricePerHour}
                   onValueChange={handlePriceChange}
@@ -425,7 +425,7 @@ export default function AdminPricingPage() {
                 </div>
                 <Divider className="my-3" />
                 <div className="flex items-center justify-between font-semibold text-base">
-                  <span>Precio final / hora</span>
+                  <span>Precio final del turno</span>
                   <span className="text-success">${formatThousands(String(Math.round(finalPrice)))}</span>
                 </div>
                 {form.allDays && (
@@ -509,7 +509,7 @@ export default function AdminPricingPage() {
                 </div>
 
                 <Input
-                  label="Precio por hora (ARS)"
+                  label="Precio del turno (ARS)"
                   variant="bordered"
                   value={editForm.pricePerHour}
                   onValueChange={(v) => setEditForm({ ...editForm, pricePerHour: formatThousands(v) })}
@@ -541,7 +541,7 @@ export default function AdminPricingPage() {
                 </div>
                 <Divider className="my-3" />
                 <div className="flex items-center justify-between font-semibold text-base">
-                  <span>Precio final / hora</span>
+                  <span>Precio final del turno</span>
                   <span className="text-success">${formatThousands(String(Math.round(editFinalPrice)))}</span>
                 </div>
               </div>

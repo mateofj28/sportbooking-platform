@@ -14,7 +14,7 @@ import {
 import { useFacility } from "@/hooks/use-facilities";
 import { useCreateBooking, useCreateRecurringBooking } from "@/hooks/use-bookings";
 import { durationOptionsForSport } from "@/components/shared/availability-picker";
-import { finalPricePerHour, finalPriceForDuration } from "@/lib/pricing";
+import { finalPricePerTurn } from "@/lib/pricing";
 import { useQueries } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
@@ -253,24 +253,8 @@ export default function FacilityDetailPage({
             return slotMin >= start && slotMin < end;
         });
         if (!pricing) return 0;
-        return finalPriceForDuration(pricing, duration);
-    }, [facility, selectedSlot, duration, dayOfWeek]);
-
-    // Precio final POR HORA de la tarifa aplicable (para mostrar el desglose)
-    const pricePerHour = useMemo(() => {
-        if (!facility?.pricing || !selectedSlot) return 0;
-        const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
-        const slotMin = toMin(selectedSlot);
-        const pricing = facility.pricing.find((p) => {
-            if (!p.isActive) return false;
-            const matchDay = p.dayOfWeek === null || p.dayOfWeek === undefined || p.dayOfWeek === dayOfWeek;
-            if (!matchDay) return false;
-            const start = toMin(p.startTime);
-            const end = toMin(p.endTime);
-            if (end <= start) return slotMin >= start || slotMin < end;
-            return slotMin >= start && slotMin < end;
-        });
-        return pricing ? finalPricePerHour(pricing) : 0;
+        // La tarifa es el precio del turno (fijo, sin importar la duración)
+        return finalPricePerTurn(pricing);
     }, [facility, selectedSlot, dayOfWeek]);
 
     /**
@@ -578,11 +562,7 @@ export default function FacilityDetailPage({
                                         <p className="text-xl font-bold text-success">
                                             ${formatPrice(price)} ARS {mode === "recurring" && <span className="text-xs font-normal text-default-400">por fecha</span>}
                                         </p>
-                                                    {duration !== 60 && pricePerHour > 0 && (
-                                                        <p className="text-xs text-default-400">
-                                                            ${formatPrice(pricePerHour)}/hr × {duration} min ({(duration / 60).toLocaleString("es-AR")} h)
-                                                        </p>
-                                                    )}
+                                                    <p className="text-xs text-default-400">Precio del turno</p>
                                     </div>
 
                                     <div className="flex flex-col gap-2">
@@ -692,7 +672,7 @@ export default function FacilityDetailPage({
                                             <Clock className="h-3.5 w-3.5 text-default-500" />
                                             <span className="text-sm">{formatTime12h(price.startTime)} - {formatTime12h(price.endTime)}</span>
                                             <Chip size="sm" color="success" variant="flat">
-                                                ${formatPrice(finalPricePerHour(price))}/hr
+                                                ${formatPrice(finalPricePerTurn(price))} por turno
                                             </Chip>
                                         </div>
                                     ))}

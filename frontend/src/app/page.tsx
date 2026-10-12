@@ -141,7 +141,7 @@ export default function HomePage() {
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-sm font-bold text-success">{item.price}</p>
-                                                    <p className="text-[10px] text-default-400">por hora</p>
+                                                    <p className="text-[10px] text-default-400">por turno</p>
                                                 </div>
                                             </div>
                                         ))}

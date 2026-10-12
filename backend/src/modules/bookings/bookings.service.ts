@@ -534,8 +534,6 @@ export class BookingsService {
         const startAr = new Date(startDatetime.getTime() - AR_OFFSET_MIN * 60000);
         const dayOfWeek = (startAr.getUTCDay() + 6) % 7;
         const slotMin = startAr.getUTCHours() * 60 + startAr.getUTCMinutes();
-        const durationHours =
-            (endDatetime.getTime() - startDatetime.getTime()) / 3600000;
 
         // Traer todas las tarifas activas que apliquen al día y elegir la que
         // cubre la franja horaria del inicio (soporta rangos que cruzan medianoche).
@@ -564,9 +562,10 @@ export class BookingsService {
             return { base: 0, commission: 0, total: 0 };
         }
 
-        // Precio base (neto de la cancha)
-        const base = Number(pricing.pricePerHour) * durationHours;
-        // Comisión de servicio de la empresa (profitPercent)
+        // Precio del TURNO (fijo, sin importar la duración): se cobra el valor
+        // definido en la tarifa tal cual, no se multiplica por horas.
+        const base = Number(pricing.pricePerHour);
+        // Comisión de servicio de la empresa (profitPercent) sobre el precio del turno
         const commission = base * (Number(pricing.profitPercent) || 0) / 100;
         // El total pagado por el cliente incluye la comisión
         return { base, commission, total: base + commission };

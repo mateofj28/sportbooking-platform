@@ -3,9 +3,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 
+export type SlotReason = "past" | "booked" | "blocked";
+
+export interface AvailabilitySlot {
+    time: string;
+    available: boolean;
+    reason?: SlotReason;
+}
+
 export interface AvailabilityResponse {
     available: boolean;
-    slots: { time: string; available: boolean }[];
+    slots: AvailabilitySlot[];
     message?: string;
 }
 
@@ -40,6 +48,7 @@ export interface AvailabilitySummaryItem {
     available: boolean;
     hasFreeSlots: boolean;
     freeCount: number;
+    freeSlots: string[];
     message?: string;
 }
 

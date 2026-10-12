@@ -685,18 +685,18 @@ export default function FacilityDetailPage({
                     );
                 })()}
 
-                            {/* Si la cancha no tiene turnos ese día, sugerir otras del mismo complejo */}
-                            {!dayHasAvailableSlots(selectedDate) && (
-                                <OtherAvailableFacilities
-                                    venueId={facility.venue.id}
-                                    excludeId={facility.id}
-                                    date={dateStr}
-                                    dayLabel={selectedDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
-                                    onPick={(fid) => {
-                                        router.push(`/facilities/${fid}`);
-                                    }}
-                                />
-                            )}
+                            {/* Alternativas en otras canchas: día entero sin turnos u horas ocupadas por reserva */}
+                            <OtherAvailableFacilities
+                                venueId={facility.venue.id}
+                                excludeId={facility.id}
+                                date={dateStr}
+                                dayLabel={selectedDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
+                                daySlots={timeSlots}
+                                dayHasAvailability={dayHasAvailableSlots(selectedDate)}
+                                onPick={(fid) => {
+                                    router.push(`/facilities/${fid}`);
+                                }}
+                            />
                     </>
                 )}
             </main>
@@ -714,12 +714,16 @@ function OtherAvailableFacilities({
     excludeId,
     date,
     dayLabel,
+    daySlots,
+    dayHasAvailability,
     onPick,
 }: {
     venueId: string;
     excludeId: string;
     date: string;
     dayLabel: string;
+        daySlots: { time: string; available: boolean; reason?: "past" | "booked" | "blocked" }[];
+        dayHasAvailability: boolean;
     onPick: (facilityId: string) => void;
 }) {
     const { data: siblings } = useFacilities({ venueId, bookableOnly: "true" });
@@ -728,10 +732,32 @@ function OtherAvailableFacilities({
         () => (siblings || []).filter((f) => f.id !== excludeId),
         [siblings, excludeId],
     );
+    const othersById = useMemo(() => {
+        const m = new Map<string, Facility>();
+        others.forEach((f) => m.set(f.id, f));
+        return m;
+    }, [others]);
 
     // Disponibilidad de todas las canchas del complejo en UNA sola llamada
     const { byFacility, isLoading: stillLoading } = useAvailabilitySummary(date, { venueId });
 
+    // Horas de ESTA cancha ocupadas por reserva/bloqueo (futuras, no las que ya pasaron)
+    const occupiedTimes = useMemo(
+        () => daySlots.filter((s) => s.reason === "booked" || s.reason === "blocked").map((s) => s.time),
+        [daySlots],
+    );
+
+    // Para cada hora ocupada, qué otras canchas la tienen libre
+    const alternativesByTime = useMemo(() => {
+        return occupiedTimes
+            .map((time) => {
+                const facilities = others.filter((f) => byFacility.get(f.id)?.freeSlots?.includes(time));
+                return { time, facilities };
+            })
+            .filter((x) => x.facilities.length > 0);
+    }, [occupiedTimes, others, byFacility]);
+
+    // Caso día entero sin turnos: canchas con cualquier disponibilidad
     const availableOnes = others.filter((f) => byFacility.get(f.id)?.hasFreeSlots);
 
     if (stillLoading) {
@@ -744,30 +770,65 @@ function OtherAvailableFacilities({
         );
     }
 
-    if (availableOnes.length === 0) return null;
+    // CASO 1: la cancha no tiene ningún turno ese día -> sugerir canchas con disponibilidad
+    if (!dayHasAvailability) {
+        if (availableOnes.length === 0) return null;
+        return (
+            <Card className="mt-4 border border-success/30 shadow-sm">
+                <CardBody className="gap-3">
+                    <div>
+                        <p className="text-sm font-bold">Otras canchas disponibles</p>
+                        <p className="text-xs text-default-500">En este complejo, para el {dayLabel}</p>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        {availableOnes.map((f: Facility) => (
+                            <button
+                                key={f.id}
+                                onClick={() => onPick(f.id)}
+                                className="flex items-center justify-between gap-3 rounded-lg border border-divider bg-background px-3 py-2.5 text-left transition-colors hover:border-success hover:bg-success/5"
+                            >
+                                <div className="min-w-0">
+                                    <p className="truncate text-sm font-medium">{f.name}</p>
+                                    <p className="text-xs text-default-500">{f.sport?.name}</p>
+                                </div>
+                                <Chip size="sm" color="success" variant="flat">Disponible</Chip>
+                            </button>
+                        ))}
+                    </div>
+                </CardBody>
+            </Card>
+        );
+    }
+
+    // CASO 2: hay horas ocupadas por reserva -> mostrar alternativas por hora
+    if (alternativesByTime.length === 0) return null;
 
     return (
-        <Card className="mt-4 border border-success/30 shadow-sm">
+        <Card className="mt-4 border border-warning/40 shadow-sm">
             <CardBody className="gap-3">
                 <div>
-                    <p className="text-sm font-bold">Otras canchas disponibles</p>
+                    <p className="text-sm font-bold">¿Buscás un horario ocupado?</p>
                     <p className="text-xs text-default-500">
-                        En este complejo, para el {dayLabel}
+                        Estos horarios ya están reservados en esta cancha, pero hay otras libres a esa hora
                     </p>
                 </div>
-                <div className="flex flex-col gap-2">
-                    {availableOnes.map((f: Facility) => (
-                        <button
-                            key={f.id}
-                            onClick={() => onPick(f.id)}
-                            className="flex items-center justify-between gap-3 rounded-lg border border-divider bg-background px-3 py-2.5 text-left transition-colors hover:border-success hover:bg-success/5"
-                        >
-                            <div className="min-w-0">
-                                <p className="truncate text-sm font-medium">{f.name}</p>
-                                <p className="text-xs text-default-500">{f.sport?.name}</p>
+                <div className="flex flex-col gap-3">
+                    {alternativesByTime.map(({ time, facilities }) => (
+                        <div key={time} className="rounded-lg bg-default-50 p-3">
+                            <p className="mb-2 text-sm font-semibold">{formatTime12h(time)}</p>
+                            <div className="flex flex-wrap gap-2">
+                                {facilities.map((f) => (
+                                    <button
+                                        key={f.id}
+                                        onClick={() => onPick(f.id)}
+                                        className="flex items-center gap-2 rounded-lg border border-divider bg-background px-3 py-1.5 text-left transition-colors hover:border-success hover:bg-success/5"
+                                    >
+                                        <span className="text-sm font-medium">{othersById.get(f.id)?.name}</span>
+                                        <Chip size="sm" color="success" variant="flat">Libre</Chip>
+                                    </button>
+                                ))}
                             </div>
-                            <Chip size="sm" color="success" variant="flat">Disponible</Chip>
-                        </button>
+                        </div>
                     ))}
                 </div>
             </CardBody>

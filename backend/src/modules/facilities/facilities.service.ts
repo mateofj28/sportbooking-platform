@@ -137,12 +137,13 @@ export class FacilitiesService {
                 bookingsByFacility.get(facility.id) || [],
                 blockedByFacility.get(facility.id) || [],
             );
-            const freeCount = result.slots.filter((s) => s.available).length;
+            const freeSlots = result.slots.filter((s) => s.available).map((s) => s.time);
             return {
                 facilityId: facility.id,
                 available: result.available,
-                hasFreeSlots: freeCount > 0,
-                freeCount,
+                hasFreeSlots: freeSlots.length > 0,
+                freeCount: freeSlots.length,
+                freeSlots, // horas (HH:mm) libres, para cruzar alternativas por hora
                 message: result.message,
             };
         });
@@ -170,7 +171,11 @@ export class FacilitiesService {
         dateStr: string,
         bookings: { startDatetime: Date; endDatetime: Date }[],
         blockedSlots: { startDatetime: Date; endDatetime: Date }[],
-    ): { available: boolean; slots: { time: string; available: boolean }[]; message?: string } {
+    ): {
+        available: boolean;
+        slots: { time: string; available: boolean; reason?: 'past' | 'booked' | 'blocked' }[];
+        message?: string;
+    } {
         const { arLocalToUtc } = this.dayWindowUtc(dateStr);
 
         // Día de la semana en hora local AR (0=Lunes ... 6=Domingo)
@@ -213,7 +218,7 @@ export class FacilitiesService {
                 return mInDay >= start && mInDay < end;
             });
 
-        const slots: { time: string; available: boolean }[] = [];
+        const slots: { time: string; available: boolean; reason?: 'past' | 'booked' | 'blocked' }[] = [];
         const now = new Date();
 
         for (let m = startMin; m + duration <= endMin; m += duration) {
@@ -228,7 +233,7 @@ export class FacilitiesService {
             const slotEnd = new Date(slotStart.getTime() + duration * 60000);
 
             if (slotStart <= now) {
-                slots.push({ time: timeStr, available: false });
+                slots.push({ time: timeStr, available: false, reason: 'past' });
                 continue;
             }
 
@@ -239,7 +244,13 @@ export class FacilitiesService {
                 (b) => new Date(b.startDatetime) < slotEnd && new Date(b.endDatetime) > slotStart,
             );
 
-            slots.push({ time: timeStr, available: !hasConflict && !isBlocked });
+            if (hasConflict) {
+                slots.push({ time: timeStr, available: false, reason: 'booked' });
+            } else if (isBlocked) {
+                slots.push({ time: timeStr, available: false, reason: 'blocked' });
+            } else {
+                slots.push({ time: timeStr, available: true });
+            }
         }
 
         return { available: true, slots };

@@ -15,7 +15,9 @@ import { useFacility } from "@/hooks/use-facilities";
 import { useCreateBooking, useCreateRecurringBooking } from "@/hooks/use-bookings";
 import { durationOptionsForSport } from "@/components/shared/availability-picker";
 import { finalPricePerTurn } from "@/lib/pricing";
+import { useFacilities } from "@/hooks/use-facilities";
 import { useQueries } from "@tanstack/react-query";
+import type { Facility } from "@/types";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
@@ -681,10 +683,107 @@ export default function FacilityDetailPage({
                         </Card>
                     );
                 })()}
+
+                            {/* Si la cancha no tiene turnos ese día, sugerir otras del mismo complejo */}
+                            {!dayHasAvailableSlots(selectedDate) && (
+                                <OtherAvailableFacilities
+                                    venueId={facility.venue.id}
+                                    excludeId={facility.id}
+                                    date={dateStr}
+                                    dayLabel={selectedDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
+                                    onPick={(fid) => {
+                                        router.push(`/facilities/${fid}`);
+                                    }}
+                                />
+                            )}
                     </>
                 )}
             </main>
             <Footer />
         </div>
+    );
+}
+
+/**
+ * Muestra las OTRAS canchas del mismo complejo que SÍ tienen turnos libres en
+ * la fecha dada. Evita tener que volver al listado para probar cancha por cancha.
+ */
+function OtherAvailableFacilities({
+    venueId,
+    excludeId,
+    date,
+    dayLabel,
+    onPick,
+}: {
+    venueId: string;
+    excludeId: string;
+    date: string;
+    dayLabel: string;
+    onPick: (facilityId: string) => void;
+}) {
+    const { data: siblings } = useFacilities({ venueId, bookableOnly: "true" });
+
+    const others = useMemo(
+        () => (siblings || []).filter((f) => f.id !== excludeId),
+        [siblings, excludeId],
+    );
+
+    const availabilityQueries = useQueries({
+        queries: others.map((f) => ({
+            queryKey: ["availability", f.id, date],
+            queryFn: () =>
+                apiClient.get<{ available: boolean; slots: { time: string; available: boolean }[] }>(
+                    `/facilities/${f.id}/availability`,
+                    { date },
+                ),
+            staleTime: 60_000,
+        })),
+    });
+
+    const availableOnes = others.filter((_, i) => {
+        const resp = availabilityQueries[i]?.data as any;
+        return resp?.slots?.some((s: { available: boolean }) => s.available);
+    });
+
+    const stillLoading = availabilityQueries.some((q) => q.isLoading);
+
+    if (stillLoading) {
+        return (
+            <Card className="mt-4 shadow-sm">
+                <CardBody className="flex items-center justify-center py-6">
+                    <Spinner size="sm" />
+                </CardBody>
+            </Card>
+        );
+    }
+
+    if (availableOnes.length === 0) return null;
+
+    return (
+        <Card className="mt-4 border border-success/30 shadow-sm">
+            <CardBody className="gap-3">
+                <div>
+                    <p className="text-sm font-bold">Otras canchas disponibles</p>
+                    <p className="text-xs text-default-500">
+                        En este complejo, para el {dayLabel}
+                    </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                    {availableOnes.map((f: Facility) => (
+                        <button
+                            key={f.id}
+                            onClick={() => onPick(f.id)}
+                            className="flex items-center justify-between gap-3 rounded-lg border border-divider bg-background px-3 py-2.5 text-left transition-colors hover:border-success hover:bg-success/5"
+                        >
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-medium">{f.name}</p>
+                                <p className="text-xs text-default-500">{f.sport?.name}</p>
+                            </div>
+                            <Chip size="sm" color="success" variant="flat">Disponible</Chip>
+                        </button>
+                    ))}
+                </div>
+            </CardBody>
+        </Card>
     );
 }

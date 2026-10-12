@@ -17,6 +17,9 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
+/** Comisión de servicio por defecto (%) para tarifas creadas por un admin de sede. */
+const DEFAULT_COMMISSION_PERCENT = 10;
+
 @ApiTags('Pricing')
 @Controller()
 export class PricingController {
@@ -38,9 +41,9 @@ export class PricingController {
         @Body() dto: CreatePricingDto,
         @CurrentUser() user: { role: Role },
     ) {
-        // El admin de sede no puede definir el % de comisión de la empresa
+        // El admin de sede no define el % de comisión: se fuerza el valor por defecto.
         if (user.role === Role.VENUE_ADMIN) {
-            delete dto.profitPercent;
+            dto.profitPercent = DEFAULT_COMMISSION_PERCENT;
         }
         return this.pricingService.create(facilityId, dto);
     }
@@ -55,7 +58,8 @@ export class PricingController {
         @Body() dto: UpdatePricingDto,
         @CurrentUser() user: { role: Role },
     ) {
-        // El admin de sede no puede modificar el % de comisión de la empresa
+        // El admin de sede no puede modificar el % de comisión: se descarta del
+        // cambio para conservar el valor que ya tenía la tarifa.
         if (user.role === Role.VENUE_ADMIN) {
             delete dto.profitPercent;
         }

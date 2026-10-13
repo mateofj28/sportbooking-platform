@@ -5,6 +5,7 @@ import { Button, Card, CardBody, Chip, Divider, Spinner } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { useBooking, useMarkBookingPaid, useCancelBooking } from "@/hooks/use-bookings";
 import { getBookingStatusChip } from "@/lib/booking-status";
+import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
@@ -24,16 +25,9 @@ function sportImage(name?: string) {
 }
 
 function formatDateLong(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    return formatDateAr(dateStr);
 }
-function formatTime(dateStr: string): string {
-    const d = new Date(dateStr);
-    let h = d.getHours();
-    const m = d.getMinutes();
-    const ampm = h < 12 ? "a. m." : "p. m.";
-    h = h % 12; if (h === 0) h = 12;
-    return `${h}:${String(m).padStart(2, "0")} ${ampm}`;
-}
+const formatTime = formatTimeAr;
 function formatPrice(v: number): string {
     return Math.round(Number(v)).toLocaleString("en-US");
 }

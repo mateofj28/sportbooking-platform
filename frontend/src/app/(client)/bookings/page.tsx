@@ -94,14 +94,17 @@ export default function BookingsPage() {
         );
     };
 
+    // Siempre en hora de Argentina (UTC-3), sin importar la zona del navegador
+    const AR_TZ = "America/Argentina/Buenos_Aires";
+
     const formatDate = (dateStr: string) =>
         new Date(dateStr).toLocaleDateString("es-AR", {
-            weekday: "long", year: "numeric", month: "long", day: "numeric",
+            weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: AR_TZ,
         });
 
     const formatTime = (dateStr: string) =>
         new Date(dateStr).toLocaleTimeString("es-AR", {
-            hour: "2-digit", minute: "2-digit",
+            hour: "2-digit", minute: "2-digit", timeZone: AR_TZ,
         });
 
     return (

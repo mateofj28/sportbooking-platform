@@ -5,6 +5,7 @@ import { Button, Card, CardBody, CardHeader, Chip, Divider, Spinner } from "@her
 import { useRouter } from "next/navigation";
 import { useRecurringBookings, useMarkBookingPaid } from "@/hooks/use-bookings";
 import { getBookingStatusChip } from "@/lib/booking-status";
+import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ArrowLeft, MapPin, Clock, Repeat, Calendar, DollarSign } from "lucide-react";
@@ -20,16 +21,9 @@ function formatTime12h(time: string): string {
     return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 function formatDateLong(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    return formatDateAr(dateStr);
 }
-function formatHour(dateStr: string): string {
-    const d = new Date(dateStr);
-    let h = d.getHours();
-    const m = d.getMinutes();
-    const ampm = h < 12 ? "a. m." : "p. m.";
-    h = h % 12; if (h === 0) h = 12;
-    return `${h}:${String(m).padStart(2, "0")} ${ampm}`;
-}
+const formatHour = formatTimeAr;
 
 export default function RecurringDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);

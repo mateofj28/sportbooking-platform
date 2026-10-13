@@ -4,20 +4,13 @@ import { Card, CardBody, Chip, Spinner } from "@heroui/react";
 import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { formatTimeAr } from "@/lib/datetime";
 import { useState, useEffect, useCallback } from "react";
 import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp } from "lucide-react";
 import type { Booking, Facility, PaginatedResult, User as UserType, Venue } from "@/types";
 
 /** Hora 12h en español sin cero adelante: "9:00 a. m." */
-function formatTime12h(dateStr: string): string {
-    const d = new Date(dateStr);
-    let h = d.getHours();
-    const m = d.getMinutes();
-    const ampm = h < 12 ? "a. m." : "p. m.";
-    h = h % 12;
-    if (h === 0) h = 12;
-    return `${h}:${String(m).padStart(2, "0")} ${ampm}`;
-}
+const formatTime12h = formatTimeAr;
 
 /** Precio con separador de miles con coma: 25000 -> "25,000" */
 function formatPrice(value: number): string {

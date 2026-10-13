@@ -4,6 +4,7 @@ import { Button, Chip, Spinner, Card, CardBody, Input } from "@heroui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCancelBooking } from "@/hooks/use-bookings";
 import { apiClient } from "@/lib/api-client";
+import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { XCircle, Plus, Calendar, Clock, MapPin, User, DollarSign, Search } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -87,15 +88,8 @@ export default function AdminBookingsPage() {
         );
     };
 
-    const formatDate = (d: string) => new Date(d).toLocaleDateString("es-AR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
-    const formatTime = (dateStr: string) => {
-        const d = new Date(dateStr);
-        let h = d.getHours();
-        const m = d.getMinutes();
-        const ampm = h < 12 ? "a. m." : "p. m.";
-        h = h % 12; if (h === 0) h = 12;
-        return `${h}:${String(m).padStart(2, "0")} ${ampm}`;
-    };
+    const formatDate = (d: string) => formatDateAr(d, { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
+    const formatTime = formatTimeAr;
 
     if (isLoading) {
         return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;

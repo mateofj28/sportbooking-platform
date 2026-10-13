@@ -5,6 +5,7 @@ import { Card, CardBody, Chip, Button, Spinner, Input } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { getBookingStatusChip } from "@/lib/booking-status";
+import { formatTimeAr } from "@/lib/datetime";
 import { useAuthStore } from "@/stores/auth-store";
 import { useBookings, useMarkBookingPaid } from "@/hooks/use-bookings";
 import { Navbar } from "@/components/layout/navbar";
@@ -28,14 +29,7 @@ function formatDate(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
 }
 
-function formatTime12h(dateStr: string): string {
-    const d = new Date(dateStr);
-    let h = d.getHours();
-    const m = d.getMinutes();
-    const ampm = h < 12 ? "a. m." : "p. m.";
-    h = h % 12; if (h === 0) h = 12;
-    return `${h}:${String(m).padStart(2, "0")} ${ampm}`;
-}
+const formatTime12h = formatTimeAr;
 
 function formatPrice(value: number): string {
     return Math.round(Number(value)).toLocaleString("en-US");

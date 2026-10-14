@@ -685,9 +685,10 @@ export default function FacilityDetailPage({
                     );
                 })()}
 
-                            {/* Alternativas en otras canchas: día entero sin turnos u horas ocupadas por reserva */}
+                            {/* Alternativas en otras canchas DEL MISMO DEPORTE: día entero sin turnos u horas ocupadas */}
                             <OtherAvailableFacilities
                                 venueId={facility.venue.id}
+                                sportId={facility.sport.id}
                                 excludeId={facility.id}
                                 date={dateStr}
                                 dayLabel={selectedDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
@@ -711,6 +712,7 @@ export default function FacilityDetailPage({
  */
 function OtherAvailableFacilities({
     venueId,
+    sportId,
     excludeId,
     date,
     dayLabel,
@@ -719,6 +721,7 @@ function OtherAvailableFacilities({
     onPick,
 }: {
     venueId: string;
+        sportId: string;
     excludeId: string;
     date: string;
     dayLabel: string;
@@ -726,7 +729,8 @@ function OtherAvailableFacilities({
         dayHasAvailability: boolean;
     onPick: (facilityId: string) => void;
 }) {
-    const { data: siblings } = useFacilities({ venueId, bookableOnly: "true" });
+    // Solo canchas del MISMO deporte (no tiene sentido sugerir pádel si buscás fútbol)
+    const { data: siblings } = useFacilities({ venueId, sportId, bookableOnly: "true" });
 
     const others = useMemo(
         () => (siblings || []).filter((f) => f.id !== excludeId),
@@ -738,8 +742,8 @@ function OtherAvailableFacilities({
         return m;
     }, [others]);
 
-    // Disponibilidad de todas las canchas del complejo en UNA sola llamada
-    const { byFacility, isLoading: stillLoading } = useAvailabilitySummary(date, { venueId });
+    // Disponibilidad de las canchas del mismo deporte en UNA sola llamada
+    const { byFacility, isLoading: stillLoading } = useAvailabilitySummary(date, { venueId, sportId });
 
     // Horas de ESTA cancha ocupadas por reserva/bloqueo (futuras, no las que ya pasaron)
     const occupiedTimes = useMemo(

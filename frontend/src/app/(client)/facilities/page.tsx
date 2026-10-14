@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
-import { Card, CardBody, CardFooter, Input, Spinner, Button } from "@heroui/react";
+import { Card, CardBody, CardFooter, Input, Spinner, Button, Chip } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
@@ -136,10 +136,24 @@ function FacilitiesContent() {
                                                         {venue.description}
                                                     </p>
                                                 )}
+                                                {venue.amenities && venue.amenities.length > 0 && (
+                                                    <div className="mt-3 flex flex-wrap gap-1.5">
+                                                        {venue.amenities.slice(0, 5).map((a) => (
+                                                            <Chip key={a} size="sm" variant="flat" className="text-[11px]">
+                                                                {a}
+                                                            </Chip>
+                                                        ))}
+                                                        {venue.amenities.length > 5 && (
+                                                            <Chip size="sm" variant="flat" color="default" className="text-[11px]">
+                                                                +{venue.amenities.length - 5}
+                                                            </Chip>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </CardBody>
                                             <CardFooter className="justify-between border-t border-divider px-4 py-2.5">
                                                 <span className="text-xs text-default-400">{venue.city}</span>
-                                                <Button size="sm" color="primary" variant="flat">
+                                                <Button size="sm" color="primary" variant="flat" onPress={() => handleSelectVenue(venue.id)}>
                                                     Ver canchas
                                                 </Button>
                                             </CardFooter>

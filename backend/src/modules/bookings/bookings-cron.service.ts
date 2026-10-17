@@ -85,6 +85,52 @@ export class BookingsCronService {
     }
 
     /**
+     * Envía un recordatorio por email ~2 horas antes del inicio del turno.
+     * Corre cada 15 min; usa reminderSentAt para no duplicar el envío.
+     */
+    @Cron('0 */10 * * * *') // cada 10 minutos
+    async sendUpcomingReminders() {
+        const now = new Date();
+        const in2h = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+
+        const upcoming = await this.prisma.booking.findMany({
+            where: {
+                status: BookingStatus.CONFIRMED,
+                paymentStatus: 'PAID',
+                reminderSentAt: null,
+                startDatetime: { gt: now, lte: in2h },
+            },
+            include: {
+                facility: { include: { venue: { select: { name: true } } } },
+                user: { select: { email: true, firstName: true } },
+            },
+        });
+
+        if (upcoming.length === 0) return;
+
+        for (const b of upcoming) {
+            if (b.user?.email) {
+                void this.mailService.sendBookingReminder({
+                    email: b.user.email,
+                    firstName: b.user.firstName || '',
+                    venueName: b.facility?.venue?.name || '',
+                    facilityName: b.facility?.name || '',
+                    dateLabel: this.arDateLabel(b.startDatetime),
+                    timeLabel: `${this.arTime(b.startDatetime)} - ${this.arTime(b.endDatetime)}`,
+                });
+            }
+        }
+
+        // Marcar como enviados (aunque falle el mail, no reintentamos para no spamear)
+        await this.prisma.booking.updateMany({
+            where: { id: { in: upcoming.map((b) => b.id) } },
+            data: { reminderSentAt: now },
+        });
+
+        this.logger.log(`Recordatorios enviados: ${upcoming.length} turno(s) próximos (< 2h)`);
+    }
+
+    /**
      * Marca como COMPLETED las reservas pagadas cuya hora de fin ya pasó.
      * Regla de negocio: si estaba pagada y no se canceló, se asume que se usó.
      */

@@ -419,11 +419,16 @@ function RevenueByVenue() {
     });
 
     const allBookings = bookingsData?.data || [];
+    const now = Date.now();
 
-    // Solo reservas COMPLETADAS (pagadas y ya usadas), por la fecha del turno del día elegido.
-    // La ganancia se reconoce cuando el turno ya pasó, no cuando se paga.
+    // Ganancia = turno pagado y YA USADO (su horario de fin ya pasó), por fecha del turno.
+    // Incluye las COMPLETED (cron) y las pagadas cuyo fin ya pasó aunque el cron no corrió aún.
     const completedBookings = allBookings.filter((b) => {
-        if (b.status !== "COMPLETED") return false;
+        if (b.status === "CANCELLED") return false;
+        const alreadyUsed = new Date(b.endDatetime).getTime() <= now;
+        const isCompleted = b.status === "COMPLETED";
+        const paidAndUsed = b.paymentStatus === "PAID" && alreadyUsed;
+        if (!isCompleted && !paidAndUsed) return false;
         return argentinaDay(b.startDatetime) === selectedDay;
     });
 

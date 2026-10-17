@@ -88,6 +88,20 @@ class ApiClient {
 
         return this.handleResponse<T>(response);
     }
+
+    /** Sube un archivo vía multipart/form-data. No fijar Content-Type: lo pone el navegador. */
+    async upload<T>(endpoint: string, file: File, field = "file"): Promise<T> {
+        const formData = new FormData();
+        formData.append(field, file);
+        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${this.getToken()}`,
+            },
+            body: formData,
+        });
+        return this.handleResponse<T>(response);
+    }
 }
 
 export const apiClient = new ApiClient(API_URL);

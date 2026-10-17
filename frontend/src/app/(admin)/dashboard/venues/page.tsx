@@ -13,6 +13,7 @@ import { Plus, Trash2, Pencil, Search } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useFacilities } from "@/hooks/use-facilities";
 import { fetchProvinces, fetchLocalities } from "@/lib/argentina-locations";
+import { ImageUpload } from "@/components/shared/image-upload";
 import type { Venue } from "@/types";
 
 const COUNTRY = "Argentina";
@@ -42,8 +43,8 @@ export default function AdminVenuesPage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   // province = id de Georef (para buscar localidades); provinceName = nombre (para guardar)
-  const [form, setForm] = useState({ name: "", slug: "", address: "", province: "", provinceName: "", city: "", description: "", amenities: [] as string[] });
-  const [editForm, setEditForm] = useState({ id: "", name: "", address: "", province: "", provinceName: "", city: "", description: "", amenities: [] as string[] });
+  const [form, setForm] = useState({ name: "", slug: "", address: "", province: "", provinceName: "", city: "", description: "", amenities: [] as string[], imageUrl: "" });
+  const [editForm, setEditForm] = useState({ id: "", name: "", address: "", province: "", provinceName: "", city: "", description: "", amenities: [] as string[], imageUrl: "" });
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const toggleCreateAmenity = (a: string) =>
@@ -104,6 +105,7 @@ export default function AdminVenuesPage() {
       country: COUNTRY,
       description: data.description || undefined,
       amenities: data.amenities,
+      imageUrl: data.imageUrl || undefined,
     }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onClose(); addToast("Complejo creado correctamente"); },
   });
@@ -116,6 +118,7 @@ export default function AdminVenuesPage() {
       country: COUNTRY,
       description: data.description || undefined,
       amenities: data.amenities,
+      imageUrl: data.imageUrl || undefined,
     }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onEditClose(); addToast("Complejo actualizado"); },
   });
@@ -135,6 +138,7 @@ export default function AdminVenuesPage() {
       city: venue.city,
       description: venue.description || "",
       amenities: venue.amenities || [],
+      imageUrl: venue.imageUrl || "",
     });
     onEditOpen();
   };
@@ -145,7 +149,7 @@ export default function AdminVenuesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold">Complejos</h1><p className="text-sm text-default-500 mt-1">Gestiona los complejos deportivos</p></div>
-        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", province: "", provinceName: "", city: "", description: "", amenities: [] }); onOpen(); }}>Nuevo Complejo</Button>
+        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", province: "", provinceName: "", city: "", description: "", amenities: [], imageUrl: "" }); onOpen(); }}>Nuevo Complejo</Button>
       </div>
 
       {/* Filter */}
@@ -232,6 +236,7 @@ export default function AdminVenuesPage() {
               </Autocomplete>
             </div>
             <Textarea label="Descripción" variant="bordered" value={form.description} onValueChange={(v) => setForm({ ...form, description: v })} />
+            <ImageUpload value={form.imageUrl} onChange={(url) => setForm({ ...form, imageUrl: url })} />
             <div>
               <p className="text-xs text-default-500 mb-2">Servicios disponibles</p>
               <div className="flex flex-wrap gap-2">
@@ -292,6 +297,7 @@ export default function AdminVenuesPage() {
               </Autocomplete>
             </div>
             <Textarea label="Descripción" variant="bordered" value={editForm.description} onValueChange={(v) => setEditForm({ ...editForm, description: v })} />
+            <ImageUpload value={editForm.imageUrl} onChange={(url) => setEditForm({ ...editForm, imageUrl: url })} />
             <div>
               <p className="text-xs text-default-500 mb-2">Servicios disponibles</p>
               <div className="flex flex-wrap gap-2">

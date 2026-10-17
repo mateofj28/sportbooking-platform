@@ -401,7 +401,8 @@ function argentinaDay(iso: string): string {
 /**
  * Widget de ganancia por complejo en un día.
  * - La ganancia que ve el complejo es el PRECIO BASE (sin la comisión de la empresa).
- * - Cuenta solo reservas PAGADAS y no canceladas, por FECHA DE PAGO (paidAt) del día elegido.
+ * - Cuenta solo reservas COMPLETADAS (pagadas y cuyo turno ya pasó: se asume usada),
+ *   agrupadas por la FECHA DEL TURNO del día elegido.
  * - ADMIN general: una fila por complejo + total del día. VENUE_ADMIN: solo su complejo.
  */
 function RevenueByVenue() {
@@ -419,11 +420,11 @@ function RevenueByVenue() {
 
     const allBookings = bookingsData?.data || [];
 
-    // Solo reservas pagadas, no canceladas, cuya fecha de pago sea el día elegido
-    const paidBookings = allBookings.filter((b) => {
-        if (b.status === "CANCELLED" || b.paymentStatus !== "PAID") return false;
-        if (!b.paidAt) return false;
-        return argentinaDay(b.paidAt) === selectedDay;
+    // Solo reservas COMPLETADAS (pagadas y ya usadas), por la fecha del turno del día elegido.
+    // La ganancia se reconoce cuando el turno ya pasó, no cuando se paga.
+    const completedBookings = allBookings.filter((b) => {
+        if (b.status !== "COMPLETED") return false;
+        return argentinaDay(b.startDatetime) === selectedDay;
     });
 
     // Agrupar por complejo. "earnings" = precio base (lo que se entrega al complejo)
@@ -432,7 +433,7 @@ function RevenueByVenue() {
         { venueId: string; venueName: string; earnings: number; commission: number; count: number }
     >();
 
-    for (const b of paidBookings) {
+    for (const b of completedBookings) {
         const venue = b.facility?.venue;
         if (!venue) continue;
         const base = Number(b.basePrice) || 0;
@@ -471,7 +472,7 @@ function RevenueByVenue() {
                         {isVenueAdmin ? "Ganancia de tu complejo" : "Ganancia por complejo"}
                     </h2>
                     <p className="text-xs text-default-500">
-                        Lo que se le entrega al complejo según reservas pagadas {isToday ? "hoy" : "ese día"} ({prettyDay})
+                        Lo que se le entrega al complejo según turnos usados (completados) {isToday ? "hoy" : "ese día"} ({prettyDay})
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -500,7 +501,7 @@ function RevenueByVenue() {
                     <CardBody className="flex flex-col items-center py-8">
                         <DollarSign className="h-10 w-10 text-default-200" />
                             <p className="mt-3 text-sm text-default-500">
-                                {isToday ? "No hay pagos registrados hoy" : "No hay pagos registrados ese día"}
+                                {isToday ? "Todavía no hay turnos completados hoy" : "No hubo turnos completados ese día"}
                             </p>
                     </CardBody>
                 </Card>
@@ -533,7 +534,7 @@ function RevenueByVenue() {
                                         <div className="min-w-0">
                                             <p className="font-semibold text-sm truncate">{r.venueName}</p>
                                             <p className="text-xs text-default-500">
-                                                {r.count} reserva{r.count !== 1 ? "s" : ""} pagada{r.count !== 1 ? "s" : ""}
+                                                {r.count} turno{r.count !== 1 ? "s" : ""} completado{r.count !== 1 ? "s" : ""}
                                             </p>
                                         </div>
                                     </div>

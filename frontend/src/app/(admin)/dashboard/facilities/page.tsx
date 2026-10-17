@@ -136,6 +136,7 @@ export default function AdminFacilitiesPage() {
         isIndoor: false,
         minBookingDuration: "60",
         maxBookingDuration: "120",
+        imageUrl: "",
     });
     const [editForm, setEditForm] = useState({
         id: "",
@@ -146,6 +147,7 @@ export default function AdminFacilitiesPage() {
         sportName: "",
         minBookingDuration: "60",
         maxBookingDuration: "120",
+        imageUrl: "",
     });
 
     const createMutation = useMutation({
@@ -184,7 +186,7 @@ export default function AdminFacilitiesPage() {
     });
 
     const editMutation = useMutation({
-        mutationFn: ({ id, ...data }: { id: string; name: string; description: string; surfaceType: string; isIndoor: boolean; minBookingDuration: number; maxBookingDuration: number }) =>
+        mutationFn: ({ id, ...data }: { id: string; name: string; description: string; surfaceType: string; isIndoor: boolean; minBookingDuration: number; maxBookingDuration: number; imageUrl?: string }) =>
             apiClient.patch(`/facilities/${id}`, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["facilities"] });
@@ -242,6 +244,7 @@ export default function AdminFacilitiesPage() {
             sportName: facility.sport?.name || "",
             minBookingDuration: String(facility.minBookingDuration),
             maxBookingDuration: String(facility.maxBookingDuration),
+            imageUrl: facility.imageUrl || "",
         });
         onEditOpen();
     };
@@ -255,6 +258,7 @@ export default function AdminFacilitiesPage() {
             isIndoor: editForm.isIndoor,
             minBookingDuration: parseInt(editForm.minBookingDuration),
             maxBookingDuration: parseInt(editForm.maxBookingDuration),
+            imageUrl: editForm.imageUrl || undefined,
         });
     };
 
@@ -272,6 +276,7 @@ export default function AdminFacilitiesPage() {
             isIndoor: false,
             minBookingDuration: String(opts[0]),
             maxBookingDuration: String(opts[opts.length - 1]),
+            imageUrl: "",
         });
         onOpen();
     };
@@ -511,6 +516,7 @@ export default function AdminFacilitiesPage() {
                             );
                         })()}
                         <Textarea label="Descripción" placeholder="Descripción breve de la instalación" variant="bordered" value={form.description} onValueChange={(v) => setForm({ ...form, description: v })} />
+                        <ImageUpload label="Foto de la instalación" value={form.imageUrl} onChange={(url) => setForm({ ...form, imageUrl: url })} />
                         <Select
                             label="Tipo de superficie"
                             placeholder="Seleccionar superficie"
@@ -584,6 +590,7 @@ export default function AdminFacilitiesPage() {
                     <ModalBody className="gap-4">
                         <Input label="Nombre" variant="bordered" value={editForm.name} onValueChange={(v) => setEditForm({ ...editForm, name: v })} />
                         <Textarea label="Descripción" variant="bordered" value={editForm.description} onValueChange={(v) => setEditForm({ ...editForm, description: v })} />
+                        <ImageUpload label="Foto de la instalación" value={editForm.imageUrl} onChange={(url) => setEditForm({ ...editForm, imageUrl: url })} />
                         <Select
                             label="Tipo de superficie"
                             placeholder="Seleccionar superficie"

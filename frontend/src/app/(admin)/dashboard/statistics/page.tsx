@@ -195,6 +195,22 @@ export default function StatisticsPage() {
         return ids.size;
     }, [filteredBookings]);
 
+    // VENUE_ADMIN: últimos clientes que reservaron en su complejo (únicos, más recientes primero).
+    const recentClients = useMemo(() => {
+        const seen = new Set<string>();
+        const result: { id: string; firstName?: string; lastName?: string }[] = [];
+        const sorted = [...filteredBookings]
+            .filter((b) => b.status !== "CANCELLED" && b.user?.id)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        for (const b of sorted) {
+            if (seen.has(b.user.id)) continue;
+            seen.add(b.user.id);
+            result.push({ id: b.user.id, firstName: b.user.firstName, lastName: b.user.lastName });
+            if (result.length >= 5) break;
+        }
+        return result;
+    }, [filteredBookings]);
+
     if (isLoading) {
         return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;
     }
@@ -414,37 +430,63 @@ export default function StatisticsPage() {
                   </CardBody>
               </Card>
 
-              {/* Last Users */}
-              <Card>
-                  <CardHeader className="pb-2 flex-row items-center justify-between">
-                      <div>
-                          <h2 className="text-base font-semibold">Últimos usuarios</h2>
-                          <p className="text-xs text-default-400">Registros recientes</p>
-                      </div>
-                      <Link href="/dashboard/users">
-                          <Chip size="sm" variant="flat" color="primary" className="cursor-pointer">Ver todos →</Chip>
-                      </Link>
-                  </CardHeader>
-                  <Divider />
-                  <CardBody className="gap-2">
-                      {usersData?.data && usersData.data.length > 0 ? (
-                          usersData.data.slice(0, 5).map((u) => (
-                              <div key={u.id} className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-default-50 transition-colors">
-                                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-50 text-xs font-bold text-primary">
-                                      {u.firstName?.[0]}{u.lastName?.[0]}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium truncate">{u.firstName} {u.lastName}</p>
-                                      <p className="text-xs text-default-400 truncate">{u.email}</p>
-                                  </div>
-                      <Chip size="sm" variant="flat" color={u.role === "ADMIN" ? "secondary" : "default"}>{u.role}</Chip>
-                  </div>
-              ))
-                      ) : (
-                          <p className="text-sm text-default-400 text-center py-2">Sin usuarios</p>
-                      )}
-                  </CardBody>
-              </Card>
+                {/* Últimos: clientes que reservaron (venue admin) o usuarios del sistema (admin general) */}
+                {isVenueAdmin ? (
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <div>
+                                <h2 className="text-base font-semibold">Últimos clientes</h2>
+                                <p className="text-xs text-default-400">Quienes reservaron en tu complejo</p>
+                            </div>
+                        </CardHeader>
+                        <Divider />
+                        <CardBody className="gap-2">
+                            {recentClients.length > 0 ? (
+                                recentClients.map((c) => (
+                                    <div key={c.id} className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-default-50 transition-colors">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-50 text-xs font-bold text-primary">
+                                            {c.firstName?.[0]}{c.lastName?.[0]}
+                                        </div>
+                                        <p className="text-sm font-medium truncate">{c.firstName} {c.lastName}</p>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-default-400 text-center py-2">Todavía no hay clientes</p>
+                            )}
+                        </CardBody>
+                    </Card>
+                ) : (
+                    <Card>
+                        <CardHeader className="pb-2 flex-row items-center justify-between">
+                            <div>
+                                <h2 className="text-base font-semibold">Últimos usuarios</h2>
+                                <p className="text-xs text-default-400">Registros recientes</p>
+                            </div>
+                            <Link href="/dashboard/users">
+                                <Chip size="sm" variant="flat" color="primary" className="cursor-pointer">Ver todos →</Chip>
+                            </Link>
+                        </CardHeader>
+                        <Divider />
+                        <CardBody className="gap-2">
+                            {usersData?.data && usersData.data.length > 0 ? (
+                                usersData.data.slice(0, 5).map((u) => (
+                                    <div key={u.id} className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-default-50 transition-colors">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-50 text-xs font-bold text-primary">
+                                            {u.firstName?.[0]}{u.lastName?.[0]}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium truncate">{u.firstName} {u.lastName}</p>
+                                            <p className="text-xs text-default-400 truncate">{u.email}</p>
+                                        </div>
+                                        <Chip size="sm" variant="flat" color={u.role === "ADMIN" ? "secondary" : "default"}>{u.role}</Chip>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-default-400 text-center py-2">Sin usuarios</p>
+                            )}
+                        </CardBody>
+                    </Card>
+                )}
           </div>
       </div>
   );

@@ -43,6 +43,20 @@ export class BookingsController {
         return this.bookingsService.findRecurring(user);
     }
 
+    @Get('stats')
+    @UseGuards(RolesGuard)
+    @Roles(Role.ADMIN)
+    @ApiOperation({ summary: 'Estadísticas agregadas (Admin general / Venue admin su sede)' })
+    getStats(
+        @CurrentUser() user: { id: string; role: Role; venueId?: string | null },
+        @Query('range') range?: string,
+        @Query('sportId') sportId?: string,
+        @Query('venueId') venueId?: string,
+        @Query('status') status?: string,
+    ) {
+        return this.bookingsService.getStats(user, { range, sportId, venueId, status });
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Get booking by ID' })
     findById(@Param('id') id: string) {

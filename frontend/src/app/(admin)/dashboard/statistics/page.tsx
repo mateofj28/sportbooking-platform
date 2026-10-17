@@ -6,12 +6,15 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 import {
-    Calendar, MapPin, TrendingUp, Clock, Activity, ArrowUpRight, ArrowDownRight, Users, Filter,
+    Calendar, MapPin, TrendingUp, Activity, ArrowUpRight, ArrowDownRight, Users, Filter,
 } from "lucide-react";
 import Link from "next/link";
-import { useState, useMemo } from "react";
-import { BookingStatusDonut, BookingsByDayBar, RevenueAreaChart, SportRevenueBar } from "@/components/charts/dashboard-charts";
-import type { Booking, Facility, Sport, User, PaginatedResult } from "@/types";
+import { useState } from "react";
+import {
+    BookingStatusDonut, BookingsByDayBar, RevenueAreaChart, SportRevenueBar,
+    type StatsByStatus, type StatsBySport, type StatsByDay,
+} from "@/components/charts/dashboard-charts";
+import type { Facility, Sport, User, PaginatedResult } from "@/types";
 
 type DateRange = "today" | "yesterday" | "week" | "month" | "quarter" | "all";
 type StatusFilter = "ALL" | "CONFIRMED" | "COMPLETED";
@@ -31,23 +34,29 @@ const STATUS_OPTIONS: { key: StatusFilter; label: string }[] = [
     { key: "COMPLETED", label: "Completadas" },
 ];
 
-/** Devuelve el rango [start, end] para el filtro. end es null = hasta ahora. */
-function getDateRange(range: DateRange): { start: Date | null; end: Date | null } {
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    switch (range) {
-        case "today": return { start: startOfToday, end: null };
-        case "yesterday": {
-            const start = new Date(startOfToday);
-            start.setDate(start.getDate() - 1);
-            return { start, end: startOfToday }; // [ayer 00:00, hoy 00:00)
-        }
-        case "week": { const d = new Date(now); d.setDate(now.getDate() - 7); return { start: d, end: null }; }
-        case "month": { const d = new Date(now); d.setMonth(now.getMonth() - 1); return { start: d, end: null }; }
-        case "quarter": { const d = new Date(now); d.setMonth(now.getMonth() - 3); return { start: d, end: null }; }
-        case "all": return { start: null, end: null };
-    }
+interface StatsResponse {
+    totals: {
+        total: number;
+        confirmed: number;
+        cancelled: number;
+        completed: number;
+        pending: number;
+        totalRevenue: number;
+        totalCommission: number;
+        totalBase: number;
+        occupancyRate: number;
+        avgPrice: number;
+        uniqueClients: number;
+    };
+    byStatus: StatsByStatus;
+    byWeekday: number[];
+    byDay: StatsByDay[];
+    bySport: StatsBySport[];
+    byVenue: { venueId: string; venueName: string; total: number; base: number; commission: number; count: number }[];
+    recentClients: { id: string; firstName?: string; lastName?: string }[];
 }
+
+const fmt = (n: number) => Math.round(n).toLocaleString("en-US");
 
 export default function StatisticsPage() {
     const { user } = useAuthStore();
@@ -57,290 +66,158 @@ export default function StatisticsPage() {
     const [venueFilter, setVenueFilter] = useState("");
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
 
-    const { data: bookingsResponse, isLoading } = useQuery({
-        queryKey: ["stats-bookings"],
-        queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=500"),
+    // Estadísticas agregadas en el backend (escalable, respeta scope por rol)
+    const { data: stats, isLoading } = useQuery({
+        queryKey: ["stats", dateRange, sportFilter, venueFilter, statusFilter],
+        queryFn: () =>
+            apiClient.get<StatsResponse>("/bookings/stats", {
+                range: dateRange,
+                ...(sportFilter ? { sportId: sportFilter } : {}),
+                ...(venueFilter ? { venueId: venueFilter } : {}),
+                ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
+            }),
     });
-    // El backend ya limita las reservas a la sede del admin de sede.
-    // Filtramos también en el cliente como salvaguarda de consistencia.
-    const allBookings = useMemo(() => {
-        const raw = bookingsResponse?.data || [];
-        if (isVenueAdmin && user?.venueId) {
-            return raw.filter((b) => b.facility?.venue?.id === user.venueId);
-        }
-        return raw;
-    }, [bookingsResponse, isVenueAdmin, user?.venueId]);
 
+    // Catálogos para los filtros
     const { data: facilities } = useQuery({
         queryKey: ["admin-facilities"],
         queryFn: () => apiClient.get<Facility[]>("/facilities"),
     });
-
     const { data: sports } = useQuery({
         queryKey: ["sports"],
         queryFn: () => apiClient.get<Sport[]>("/sports"),
     });
-
     const { data: usersData } = useQuery({
         queryKey: ["admin-users"],
         queryFn: () => apiClient.get<PaginatedResult<User>>("/users?limit=100"),
+        enabled: !isVenueAdmin,
     });
 
-    // Get unique venues from facilities
-    const venues = useMemo(() => {
-        if (!facilities) return [];
+    const venues = (() => {
+        if (!facilities) return [] as { id: string; name: string }[];
         const map = new Map<string, { id: string; name: string }>();
         facilities.forEach((f) => {
             if (!map.has(f.venue.id)) map.set(f.venue.id, { id: f.venue.id, name: f.venue.name });
         });
         return Array.from(map.values());
-    }, [facilities]);
+    })();
 
-    // Apply all filters
-    const filteredBookings = useMemo(() => {
-        let result = allBookings;
-
-      // Date filter
-        const { start: dateStart, end: dateEnd } = getDateRange(dateRange);
-      if (dateStart) {
-          result = result.filter((b) => new Date(b.startDatetime) >= dateStart);
-      }
-        if (dateEnd) {
-            result = result.filter((b) => new Date(b.startDatetime) < dateEnd);
-        }
-
-      // Sport filter
-      if (sportFilter) {
-          result = result.filter((b) => b.facility?.sport?.id === sportFilter);
-      }
-
-      // Venue filter
-      if (venueFilter) {
-          result = result.filter((b) => b.facility?.venue?.id === venueFilter);
-      }
-
-      // Status filter
-      if (statusFilter !== "ALL") {
-          result = result.filter((b) => b.status === statusFilter);
-      }
-
-      return result;
-  }, [allBookings, dateRange, sportFilter, venueFilter, statusFilter]);
-
-    // Computed stats from filtered data
-    const confirmedBookings = filteredBookings.filter((b) => b.status === "CONFIRMED");
-    const cancelledBookings = filteredBookings.filter((b) => b.status === "CANCELLED");
-    const completedBookings = filteredBookings.filter((b) => b.status === "COMPLETED");
-    const totalRevenue = filteredBookings
-        .filter((b) => b.status !== "CANCELLED")
-        .reduce((sum, b) => sum + Number(b.totalPrice), 0);
-
-    // Comisión de la empresa: monto real guardado en cada reserva
-    const totalCommission = filteredBookings
-        .filter((b) => b.status !== "CANCELLED")
-        .reduce((sum, b) => sum + (Number(b.commissionAmount) || 0), 0);
-
-    // Reparto por complejo (según filtros): cuánto le corresponde a cada complejo
-    // (precio base) y cuánta comisión generó para la empresa.
-    const revenueByVenue = useMemo(() => {
-        const map = new Map<
-            string,
-            { venueId: string; venueName: string; total: number; base: number; commission: number; count: number }
-        >();
-        for (const b of filteredBookings) {
-            if (b.status === "CANCELLED") continue;
-            const venue = b.facility?.venue;
-            if (!venue) continue;
-            const total = Number(b.totalPrice) || 0;
-            const commission = Number(b.commissionAmount) || 0;
-            const base = Number(b.basePrice) || total - commission;
-            const e = map.get(venue.id) || {
-                venueId: venue.id, venueName: venue.name, total: 0, base: 0, commission: 0, count: 0,
-            };
-            e.total += total;
-            e.base += base;
-            e.commission += commission;
-            e.count += 1;
-            map.set(venue.id, e);
-        }
-        return Array.from(map.values()).sort((a, b) => b.base - a.base);
-    }, [filteredBookings]);
-
-    const totalBase = revenueByVenue.reduce((s, r) => s + r.base, 0);
-
-    const totalActive = filteredBookings.length - cancelledBookings.length;
-    const occupancyRate = totalActive > 0 ? Math.round((confirmedBookings.length / totalActive) * 100) : 0;
-
-    // ADMIN general: usuarios nuevos del sistema en el período.
-    const newUsers = useMemo(() => {
-        if (!usersData?.data) return 0;
-        const { start: dateStart, end: dateEnd } = getDateRange(dateRange);
-        if (!dateStart) return usersData.data.length;
-        return usersData.data.filter((u) => {
-            if (!u.createdAt) return false;
-            const created = new Date(u.createdAt);
-            if (created < dateStart) return false;
-            if (dateEnd && created >= dateEnd) return false;
-            return true;
-        }).length;
-    }, [usersData, dateRange]);
-
-    // VENUE_ADMIN: clientes DISTINTOS que reservaron en su complejo (según filtros).
-    const uniqueClients = useMemo(() => {
-        const ids = new Set<string>();
-        for (const b of filteredBookings) {
-            if (b.status === "CANCELLED") continue;
-            if (b.user?.id) ids.add(b.user.id);
-        }
-        return ids.size;
-    }, [filteredBookings]);
-
-    // VENUE_ADMIN: últimos clientes que reservaron en su complejo (únicos, más recientes primero).
-    const recentClients = useMemo(() => {
-        const seen = new Set<string>();
-        const result: { id: string; firstName?: string; lastName?: string }[] = [];
-        const sorted = [...filteredBookings]
-            .filter((b) => b.status !== "CANCELLED" && b.user?.id)
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        for (const b of sorted) {
-            if (seen.has(b.user.id)) continue;
-            seen.add(b.user.id);
-            result.push({ id: b.user.id, firstName: b.user.firstName, lastName: b.user.lastName });
-            if (result.length >= 5) break;
-        }
-        return result;
-    }, [filteredBookings]);
-
-    if (isLoading) {
+    if (isLoading || !stats) {
         return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;
     }
 
-    return (
-      <div className="space-y-6 animate-fade-in">
-          {/* Header */}
-          <div>
-              <h1 className="text-2xl font-bold">Estadísticas</h1>
-              <p className="text-sm text-default-500 mt-1">
-                  Métricas y análisis de rendimiento de tu plataforma
-              </p>
-          </div>
+    const t = stats.totals;
+    const activeCount = t.total - t.cancelled;
 
-          {/* Filters Bar */}
-          <Card className="border border-divider">
-              <CardBody className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                      <Filter className="h-4 w-4 text-default-500" />
-                      <span className="text-sm font-semibold">Filtros</span>
-                  </div>
+    return (
+        <div className="space-y-6 animate-fade-in">
+            {/* Header */}
+            <div>
+                <h1 className="text-2xl font-bold">Estadísticas</h1>
+                <p className="text-sm text-default-500 mt-1">
+                    Métricas y análisis de rendimiento de tu plataforma
+                </p>
+            </div>
+
+            {/* Filters Bar */}
+            <Card className="border border-divider">
+                <CardBody className="p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                        <Filter className="h-4 w-4 text-default-500" />
+                        <span className="text-sm font-semibold">Filtros</span>
+                    </div>
                     <div className={`grid gap-3 sm:grid-cols-2 ${isVenueAdmin ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
-                      <Select
-                          label="Período"
-                          size="sm"
-                          variant="bordered"
-                          selectedKeys={[dateRange]}
-                          onSelectionChange={(keys: any) => setDateRange(Array.from(keys)[0] as DateRange || "month")}
-                      >
-                          {DATE_OPTIONS.map((opt) => (
-                              <SelectItem key={opt.key}>{opt.label}</SelectItem>
-                          ))}
-                      </Select>
-                      <Select
-                          label="Deporte"
-                          size="sm"
-                          variant="bordered"
-                          selectedKeys={sportFilter ? [sportFilter] : []}
-                          onSelectionChange={(keys: any) => setSportFilter(Array.from(keys)[0] as string || "")}
-                      >
-                          {(sports || []).map((s) => (
-                              <SelectItem key={s.id}>{s.name}</SelectItem>
-                          ))}
-                      </Select>
+                        <Select
+                            label="Período" size="sm" variant="bordered"
+                            selectedKeys={[dateRange]}
+                            onSelectionChange={(keys: any) => setDateRange(Array.from(keys)[0] as DateRange || "month")}
+                        >
+                            {DATE_OPTIONS.map((opt) => <SelectItem key={opt.key}>{opt.label}</SelectItem>)}
+                        </Select>
+                        <Select
+                            label="Deporte" size="sm" variant="bordered"
+                            selectedKeys={sportFilter ? [sportFilter] : []}
+                            onSelectionChange={(keys: any) => setSportFilter(Array.from(keys)[0] as string || "")}
+                        >
+                            {(sports || []).map((s) => <SelectItem key={s.id}>{s.name}</SelectItem>)}
+                        </Select>
                         {!isVenueAdmin && (
                             <Select
-                                label="Complejo"
-                                size="sm"
-                                variant="bordered"
+                                label="Complejo" size="sm" variant="bordered"
                                 selectedKeys={venueFilter ? [venueFilter] : []}
                                 onSelectionChange={(keys: any) => setVenueFilter(Array.from(keys)[0] as string || "")}
                             >
-                                {venues.map((v) => (
-                                    <SelectItem key={v.id}>{v.name}</SelectItem>
-                                ))}
+                                {venues.map((v) => <SelectItem key={v.id}>{v.name}</SelectItem>)}
                             </Select>
                         )}
-                      <Select
-                          label="Estado"
-                          size="sm"
-                          variant="bordered"
-                          selectedKeys={[statusFilter]}
-                          onSelectionChange={(keys: any) => setStatusFilter(Array.from(keys)[0] as StatusFilter || "ALL")}
-                      >
-                          {STATUS_OPTIONS.map((opt) => (
-                              <SelectItem key={opt.key}>{opt.label}</SelectItem>
-                          ))}
-                      </Select>
-                  </div>
-                  {(sportFilter || venueFilter || statusFilter !== "ALL" || dateRange !== "all") && (
-                      <div className="mt-3 flex items-center gap-2">
-                          <span className="text-xs text-default-400">Mostrando {filteredBookings.length} de {allBookings.length} reservas</span>
-                          <button
-                              onClick={() => { setDateRange("all"); setSportFilter(""); setVenueFilter(""); setStatusFilter("ALL"); }}
-                              className="text-xs text-primary hover:underline"
-                          >
-                              Limpiar filtros
-                          </button>
-                      </div>
-                  )}
-              </CardBody>
-          </Card>
+                        <Select
+                            label="Estado" size="sm" variant="bordered"
+                            selectedKeys={[statusFilter]}
+                            onSelectionChange={(keys: any) => setStatusFilter(Array.from(keys)[0] as StatusFilter || "ALL")}
+                        >
+                            {STATUS_OPTIONS.map((opt) => <SelectItem key={opt.key}>{opt.label}</SelectItem>)}
+                        </Select>
+                    </div>
+                    {(sportFilter || venueFilter || statusFilter !== "ALL" || dateRange !== "all") && (
+                        <div className="mt-3 flex items-center gap-2">
+                            <span className="text-xs text-default-400">{t.total} reserva{t.total !== 1 ? "s" : ""} en el período</span>
+                            <button
+                                onClick={() => { setDateRange("all"); setSportFilter(""); setVenueFilter(""); setStatusFilter("ALL"); }}
+                                className="text-xs text-primary hover:underline"
+                            >
+                                Limpiar filtros
+                            </button>
+                        </div>
+                    )}
+                </CardBody>
+            </Card>
 
-          {/* Stats Cards */}
+            {/* Stats Cards */}
             <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${isVenueAdmin ? "xl:grid-cols-5" : "xl:grid-cols-6"}`}>
-                <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Ingresos" value={`$${Math.round(totalRevenue).toLocaleString("en-US")}`} color="bg-success-50 text-success-600" />
+                <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Ingresos" value={`$${fmt(t.totalRevenue)}`} color="bg-success-50 text-success-600" />
                 {!isVenueAdmin && (
-                    <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Comisión empresa" value={`$${Math.round(totalCommission).toLocaleString("en-US")}`} color="bg-emerald-100 text-emerald-600" />
+                    <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Comisión empresa" value={`$${fmt(t.totalCommission)}`} color="bg-emerald-100 text-emerald-600" />
                 )}
-                <StatCard icon={<Calendar className="h-5 w-5" />} label="Reservas" value={filteredBookings.length} color="bg-primary-50 text-primary-600" trend={`${confirmedBookings.length} confirmadas`} />
-              <StatCard icon={<Activity className="h-5 w-5" />} label="Confirmación" value={`${occupancyRate}%`} color="bg-secondary-50 text-secondary-600" trend={`${cancelledBookings.length} canceladas`} trendUp={false} />
-              <StatCard icon={<MapPin className="h-5 w-5" />} label="Instalaciones" value={facilities?.filter((f) => f.isActive).length || 0} color="bg-warning-50 text-warning-600" trend={`${sports?.length || 0} deportes`} />
+                <StatCard icon={<Calendar className="h-5 w-5" />} label="Reservas" value={t.total} color="bg-primary-50 text-primary-600" trend={`${t.confirmed} confirmadas`} />
+                <StatCard icon={<Activity className="h-5 w-5" />} label="Confirmación" value={`${t.occupancyRate}%`} color="bg-secondary-50 text-secondary-600" trend={`${t.cancelled} canceladas`} trendUp={false} />
+                <StatCard icon={<MapPin className="h-5 w-5" />} label="Instalaciones" value={facilities?.filter((f) => f.isActive).length || 0} color="bg-warning-50 text-warning-600" trend={`${sports?.length || 0} deportes`} />
                 {isVenueAdmin ? (
-                    <StatCard icon={<Users className="h-5 w-5" />} label="Clientes" value={uniqueClients} color="bg-primary-50 text-primary-600" trend="reservaron aquí" trendUp={uniqueClients > 0 ? true : undefined} />
+                    <StatCard icon={<Users className="h-5 w-5" />} label="Clientes" value={t.uniqueClients} color="bg-primary-50 text-primary-600" trend="reservaron aquí" trendUp={t.uniqueClients > 0 ? true : undefined} />
                 ) : (
-                        <StatCard icon={<Users className="h-5 w-5" />} label="Usuarios nuevos" value={newUsers} color="bg-primary-50 text-primary-600" trend={`de ${usersData?.data?.length || 0} totales`} trendUp={newUsers > 0 ? true : undefined} />
+                        <StatCard icon={<Users className="h-5 w-5" />} label="Usuarios" value={usersData?.meta?.total || usersData?.data?.length || 0} color="bg-primary-50 text-primary-600" trend="registrados" />
                 )}
-          </div>
+            </div>
 
-            {/* Reparto por complejo según filtros */}
+            {/* Reparto por complejo */}
             <Card className="border border-divider">
                 <CardHeader className="flex-col items-start gap-1 pb-2">
                     <h2 className="text-base font-semibold">
                         {isVenueAdmin ? "Lo que le corresponde a tu complejo" : "Reparto por complejo"}
                     </h2>
                     <p className="text-xs text-default-400">
-                        Según los filtros aplicados ({filteredBookings.filter((b) => b.status !== "CANCELLED").length} reservas)
+                        Según los filtros aplicados ({activeCount} reserva{activeCount !== 1 ? "s" : ""})
                     </p>
                 </CardHeader>
                 <Divider />
                 <CardBody className="gap-3">
-                    {/* Totales: solo para el admin general */}
-                    {!isVenueAdmin && revenueByVenue.length > 0 && (
+                    {!isVenueAdmin && stats.byVenue.length > 0 && (
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                             <div className="rounded-xl bg-success-50 p-3">
                                 <p className="text-[11px] font-medium uppercase tracking-wide text-success-600">Para los complejos</p>
-                                <p className="text-xl font-bold text-success-700">${Math.round(totalBase).toLocaleString("en-US")}</p>
+                                <p className="text-xl font-bold text-success-700">${fmt(t.totalBase)}</p>
                             </div>
                             <div className="rounded-xl bg-emerald-100 p-3">
                                 <p className="text-[11px] font-medium uppercase tracking-wide text-emerald-600">Para la empresa (comisión)</p>
-                                <p className="text-xl font-bold text-emerald-700">${Math.round(totalCommission).toLocaleString("en-US")}</p>
+                                <p className="text-xl font-bold text-emerald-700">${fmt(t.totalCommission)}</p>
                             </div>
                             <div className="rounded-xl bg-default-100 p-3">
                                 <p className="text-[11px] font-medium uppercase tracking-wide text-default-500">Total cobrado</p>
-                                <p className="text-xl font-bold">${Math.round(totalRevenue).toLocaleString("en-US")}</p>
+                                <p className="text-xl font-bold">${fmt(t.totalRevenue)}</p>
                             </div>
                         </div>
                     )}
 
-                    {revenueByVenue.length === 0 ? (
+                    {stats.byVenue.length === 0 ? (
                         <p className="py-4 text-center text-sm text-default-400">Sin datos para los filtros aplicados</p>
                     ) : (
                         <div className="overflow-x-auto">
@@ -355,13 +232,13 @@ export default function StatisticsPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {revenueByVenue.map((r) => (
+                                        {stats.byVenue.map((r) => (
                                         <tr key={r.venueId} className="border-b border-divider/60 last:border-0">
                                             <td className="py-2.5 pr-3 font-medium">{r.venueName}</td>
                                             <td className="py-2.5 px-3 text-right text-default-500">{r.count}</td>
-                                            <td className="py-2.5 px-3 text-right font-semibold text-success-600">${Math.round(r.base).toLocaleString("en-US")}</td>
-                                            {!isVenueAdmin && <td className="py-2.5 px-3 text-right text-emerald-600">${Math.round(r.commission).toLocaleString("en-US")}</td>}
-                                            <td className="py-2.5 pl-3 text-right text-default-600">${Math.round(r.total).toLocaleString("en-US")}</td>
+                                            <td className="py-2.5 px-3 text-right font-semibold text-success-600">${fmt(r.base)}</td>
+                                            {!isVenueAdmin && <td className="py-2.5 px-3 text-right text-emerald-600">${fmt(r.commission)}</td>}
+                                            <td className="py-2.5 pl-3 text-right text-default-600">${fmt(r.total)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -371,66 +248,63 @@ export default function StatisticsPage() {
                 </CardBody>
             </Card>
 
-          {/* Charts */}
-          <div className="grid gap-6 md:grid-cols-2">
-              <BookingStatusDonut bookings={filteredBookings} />
-              <BookingsByDayBar bookings={filteredBookings} />
-          </div>
-          <div className="grid gap-6 md:grid-cols-2">
-              <RevenueAreaChart bookings={filteredBookings} />
-              <SportRevenueBar bookings={filteredBookings} />
-          </div>
+            {/* Charts */}
+            <div className="grid gap-6 md:grid-cols-2">
+                <BookingStatusDonut byStatus={stats.byStatus} />
+                <BookingsByDayBar byWeekday={stats.byWeekday} />
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+                <RevenueAreaChart byDay={stats.byDay} />
+                <SportRevenueBar bySport={stats.bySport} />
+            </div>
 
-          {/* Detailed Breakdown */}
-          <div className="grid gap-6 lg:grid-cols-3">
-              {/* Bookings by Sport */}
-              <Card>
-                  <CardHeader className="pb-2">
-                      <div>
-                          <h2 className="text-base font-semibold">Por deporte</h2>
-                          <p className="text-xs text-default-400">Distribución</p>
-                      </div>
-                  </CardHeader>
-                  <Divider />
-                  <CardBody className="gap-3">
-                      {(() => {
-                          const bySport = filteredBookings.reduce((acc, b) => {
-                              const name = b.facility?.sport?.name || "Otro";
-                              acc[name] = (acc[name] || 0) + 1;
-                              return acc;
-                          }, {} as Record<string, number>);
-                          const entries = Object.entries(bySport).sort((a, b) => b[1] - a[1]);
-                          return entries.length > 0 ? entries.map(([sport, count]) => (
-                              <div key={sport} className="space-y-1">
-                                  <div className="flex justify-between text-sm">
-                                      <span className="font-medium">{sport}</span>
-                                      <span className="text-default-500">{count} ({Math.round((count / filteredBookings.length) * 100)}%)</span>
-                                  </div>
-                      <Progress value={(count / filteredBookings.length) * 100} color="primary" size="sm" />
-                  </div>
-              )) : <p className="text-sm text-default-400 text-center py-2">Sin datos</p>;
-                      })()}
-                  </CardBody>
-              </Card>
+            {/* Detailed Breakdown */}
+            <div className="grid gap-6 lg:grid-cols-3">
+                {/* Por deporte (distribución por cantidad) */}
+                <Card>
+                    <CardHeader className="pb-2">
+                        <div>
+                            <h2 className="text-base font-semibold">Por deporte</h2>
+                            <p className="text-xs text-default-400">Distribución</p>
+                        </div>
+                    </CardHeader>
+                    <Divider />
+                    <CardBody className="gap-3">
+                        {(() => {
+                            const totalCount = stats.bySport.reduce((s, x) => s + x.count, 0);
+                            return stats.bySport.length > 0 ? stats.bySport.map((s) => (
+                                <div key={s.sportId} className="space-y-1">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="font-medium">{s.name}</span>
+                                        <span className="text-default-500">{s.count} ({totalCount > 0 ? Math.round((s.count / totalCount) * 100) : 0}%)</span>
+                                    </div>
+                                    <Progress value={totalCount > 0 ? (s.count / totalCount) * 100 : 0} color="primary" size="sm" />
+                                </div>
+                            )) : <p className="text-sm text-default-400 text-center py-2">Sin datos</p>;
+                        })()}
+                    </CardBody>
+                </Card>
 
-              {/* Quick Stats */}
-              <Card>
-                  <CardHeader className="pb-2">
-                      <div>
-                          <h2 className="text-base font-semibold">Indicadores</h2>
-                          <p className="text-xs text-default-400">Métricas clave</p>
-                      </div>
-                  </CardHeader>
-                  <Divider />
-                  <CardBody className="gap-4">
-                        <QuickStat label="Precio promedio" value={totalActive > 0 ? `$${Math.round(totalRevenue / totalActive).toLocaleString("en-US")}` : "$0"} sub="por reserva" />
-                      <QuickStat label="Completadas" value={completedBookings.length.toString()} sub="reservas finalizadas" />
-                      <QuickStat label="Canceladas" value={cancelledBookings.length.toString()} sub="reservas canceladas" />
-                      <QuickStat label="Total usuarios" value={(usersData?.meta?.total || usersData?.data?.length || 0).toString()} sub="registrados" />
-                  </CardBody>
-              </Card>
+                {/* Indicadores */}
+                <Card>
+                    <CardHeader className="pb-2">
+                        <div>
+                            <h2 className="text-base font-semibold">Indicadores</h2>
+                            <p className="text-xs text-default-400">Métricas clave</p>
+                        </div>
+                    </CardHeader>
+                    <Divider />
+                    <CardBody className="gap-4">
+                        <QuickStat label="Precio promedio" value={`$${fmt(t.avgPrice)}`} sub="por reserva" />
+                        <QuickStat label="Completadas" value={String(t.completed)} sub="reservas finalizadas" />
+                        <QuickStat label="Canceladas" value={String(t.cancelled)} sub="reservas canceladas" />
+                        {isVenueAdmin
+                            ? <QuickStat label="Clientes" value={String(t.uniqueClients)} sub="distintos" />
+                            : <QuickStat label="Total usuarios" value={String(usersData?.meta?.total || usersData?.data?.length || 0)} sub="registrados" />}
+                    </CardBody>
+                </Card>
 
-                {/* Últimos: clientes que reservaron (venue admin) o usuarios del sistema (admin general) */}
+                {/* Últimos: clientes (venue admin) o usuarios del sistema (admin general) */}
                 {isVenueAdmin ? (
                     <Card>
                         <CardHeader className="pb-2">
@@ -441,8 +315,8 @@ export default function StatisticsPage() {
                         </CardHeader>
                         <Divider />
                         <CardBody className="gap-2">
-                            {recentClients.length > 0 ? (
-                                recentClients.map((c) => (
+                            {stats.recentClients.length > 0 ? (
+                                stats.recentClients.map((c) => (
                                     <div key={c.id} className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-default-50 transition-colors">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-50 text-xs font-bold text-primary">
                                             {c.firstName?.[0]}{c.lastName?.[0]}
@@ -487,34 +361,34 @@ export default function StatisticsPage() {
                         </CardBody>
                     </Card>
                 )}
-          </div>
-      </div>
-  );
+            </div>
+        </div>
+    );
 }
 
 function StatCard({ icon, label, value, color, trend, trendUp }: {
     icon: React.ReactNode; label: string; value: number | string; color: string; trend?: string; trendUp?: boolean;
 }) {
     return (
-      <Card className="hover:shadow-md transition-shadow">
-          <CardBody className="gap-3">
-              <div className="flex items-center justify-between">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>{icon}</div>
-                  {trend && (
-                      <span className={`flex items-center gap-1 text-xs ${trendUp === true ? "text-success" : trendUp === false ? "text-danger" : "text-default-400"}`}>
-                          {trendUp === true && <ArrowUpRight className="h-3 w-3" />}
-                          {trendUp === false && <ArrowDownRight className="h-3 w-3" />}
-                          {trend}
-                      </span>
-                  )}
-              </div>
-              <div>
-                  <p className="text-2xl font-bold tracking-tight">{value}</p>
-                  <p className="text-xs text-default-500">{label}</p>
-              </div>
-          </CardBody>
-      </Card>
-  );
+        <Card className="hover:shadow-md transition-shadow">
+            <CardBody className="gap-3">
+                <div className="flex items-center justify-between">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>{icon}</div>
+                    {trend && (
+                        <span className={`flex items-center gap-1 text-xs ${trendUp === true ? "text-success" : trendUp === false ? "text-danger" : "text-default-400"}`}>
+                            {trendUp === true && <ArrowUpRight className="h-3 w-3" />}
+                            {trendUp === false && <ArrowDownRight className="h-3 w-3" />}
+                            {trend}
+                        </span>
+                    )}
+                </div>
+                <div>
+                    <p className="text-2xl font-bold tracking-tight">{value}</p>
+                    <p className="text-xs text-default-500">{label}</p>
+                </div>
+            </CardBody>
+        </Card>
+    );
 }
 
 function QuickStat({ label, value, sub }: { label: string; value: string; sub: string }) {

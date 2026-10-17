@@ -389,6 +389,158 @@ export class BookingsService {
     }
 
     /**
+     * Estadísticas agregadas por rango/filtros, calculadas en el servidor.
+     * Respeta el scope: VENUE_ADMIN solo ve su sede.
+     * El filtro de fecha usa startDatetime (fecha del turno).
+     */
+    async getStats(
+        user: { id: string; role: Role; venueId?: string | null },
+        filters: { range?: string; sportId?: string; venueId?: string; status?: string },
+    ) {
+        // Rango de fechas (según "range": today|yesterday|week|month|quarter|all)
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        let start: Date | null = null;
+        let end: Date | null = null;
+        switch (filters.range) {
+            case 'today': start = startOfToday; break;
+            case 'yesterday':
+                start = new Date(startOfToday); start.setDate(start.getDate() - 1);
+                end = startOfToday; break;
+            case 'week': start = new Date(now); start.setDate(now.getDate() - 7); break;
+            case 'month': start = new Date(now); start.setMonth(now.getMonth() - 1); break;
+            case 'quarter': start = new Date(now); start.setMonth(now.getMonth() - 3); break;
+            case 'all': default: start = null; break;
+        }
+
+        // Scope por rol: el venue admin solo ve su sede
+        const effectiveVenueId =
+            user.role === Role.VENUE_ADMIN && user.venueId ? user.venueId : filters.venueId;
+
+        const where: any = {};
+        if (effectiveVenueId) where.facility = { venueId: effectiveVenueId };
+        if (filters.sportId) {
+            where.facility = { ...(where.facility || {}), sportId: filters.sportId };
+        }
+        if (filters.status && filters.status !== 'ALL') where.status = filters.status as BookingStatus;
+        if (start || end) {
+            where.startDatetime = {};
+            if (start) where.startDatetime.gte = start;
+            if (end) where.startDatetime.lt = end;
+        }
+
+        const bookings = await this.prisma.booking.findMany({
+            where,
+            select: {
+                id: true,
+                status: true,
+                startDatetime: true,
+                totalPrice: true,
+                basePrice: true,
+                commissionAmount: true,
+                userId: true,
+                createdAt: true,
+                facility: {
+                    select: {
+                        sport: { select: { id: true, name: true } },
+                        venue: { select: { id: true, name: true } },
+                    },
+                },
+                user: { select: { id: true, firstName: true, lastName: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        const AR_OFFSET_MIN = 3 * 60;
+        const arDayKey = (d: Date) =>
+            new Date(new Date(d).getTime() - AR_OFFSET_MIN * 60000).toISOString().split('T')[0];
+
+        let total = 0, confirmed = 0, cancelled = 0, completed = 0, pending = 0;
+        let totalRevenue = 0, totalCommission = 0, totalBase = 0;
+        const byStatus: Record<string, number> = { PENDING: 0, CONFIRMED: 0, CANCELLED: 0, COMPLETED: 0 };
+        const byDay: Record<string, number> = {};
+        const byWeekday = [0, 0, 0, 0, 0, 0, 0]; // 0=Lunes..6=Domingo (reservas no canceladas)
+        const bySport = new Map<string, { sportId: string; name: string; count: number; revenue: number }>();
+        const byVenue = new Map<string, { venueId: string; venueName: string; total: number; base: number; commission: number; count: number }>();
+        const clientIds = new Set<string>();
+        const recentClientsSeen = new Set<string>();
+        const recentClients: { id: string; firstName?: string; lastName?: string }[] = [];
+
+        for (const b of bookings) {
+            total += 1;
+            byStatus[b.status] = (byStatus[b.status] || 0) + 1;
+            if (b.status === 'CONFIRMED') confirmed += 1;
+            else if (b.status === 'CANCELLED') cancelled += 1;
+            else if (b.status === 'COMPLETED') completed += 1;
+            else if (b.status === 'PENDING') pending += 1;
+
+            const notCancelled = b.status !== 'CANCELLED';
+            const totalP = Number(b.totalPrice) || 0;
+            const commission = Number(b.commissionAmount) || 0;
+            const base = Number(b.basePrice) || totalP - commission;
+
+            if (notCancelled) {
+                totalRevenue += totalP;
+                totalCommission += commission;
+                totalBase += base;
+
+                // por día (fecha del turno en AR)
+                const day = arDayKey(b.startDatetime);
+                byDay[day] = (byDay[day] || 0) + totalP;
+
+                // por día de semana (0=Lunes..6=Domingo, en AR)
+                const arDate = new Date(new Date(b.startDatetime).getTime() - AR_OFFSET_MIN * 60000);
+                const weekday = (arDate.getUTCDay() + 6) % 7;
+                byWeekday[weekday] += 1;
+
+                // por deporte
+                const sp = b.facility?.sport;
+                if (sp) {
+                    const e = bySport.get(sp.id) || { sportId: sp.id, name: sp.name, count: 0, revenue: 0 };
+                    e.count += 1; e.revenue += totalP;
+                    bySport.set(sp.id, e);
+                }
+
+                // por complejo
+                const v = b.facility?.venue;
+                if (v) {
+                    const e = byVenue.get(v.id) || { venueId: v.id, venueName: v.name, total: 0, base: 0, commission: 0, count: 0 };
+                    e.total += totalP; e.base += base; e.commission += commission; e.count += 1;
+                    byVenue.set(v.id, e);
+                }
+
+                // clientes únicos + recientes
+                if (b.userId) {
+                    clientIds.add(b.userId);
+                    if (!recentClientsSeen.has(b.userId) && recentClients.length < 5) {
+                        recentClientsSeen.add(b.userId);
+                        recentClients.push({ id: b.userId, firstName: b.user?.firstName, lastName: b.user?.lastName });
+                    }
+                }
+            }
+        }
+
+        const totalActive = total - cancelled;
+        const occupancyRate = totalActive > 0 ? Math.round((confirmed / totalActive) * 100) : 0;
+        const avgPrice = totalActive > 0 ? Math.round(totalRevenue / totalActive) : 0;
+
+        return {
+            totals: {
+                total, confirmed, cancelled, completed, pending,
+                totalRevenue, totalCommission, totalBase,
+                occupancyRate, avgPrice,
+                uniqueClients: clientIds.size,
+            },
+            byStatus,
+            byWeekday,
+            byDay: Object.entries(byDay).map(([date, revenue]) => ({ date, revenue })).sort((a, b) => a.date.localeCompare(b.date)),
+            bySport: Array.from(bySport.values()).sort((a, b) => b.count - a.count),
+            byVenue: Array.from(byVenue.values()).sort((a, b) => b.base - a.base),
+            recentClients,
+        };
+    }
+
+    /**
      * Lista los turnos fijos (recurrencias) según el rol:
      * - ADMIN: todos
      * - VENUE_ADMIN: los de las instalaciones de su sede

@@ -7,7 +7,6 @@ import {
     AreaChart, Area,
 } from "recharts";
 import { useTheme } from "@/hooks/use-theme";
-import type { Booking } from "@/types";
 
 const COLORS = {
     PENDING: "#F59E0B",
@@ -18,8 +17,21 @@ const COLORS = {
 
 const DAY_NAMES = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
-interface DashboardChartsProps {
-    bookings: Booking[];
+export interface StatsByStatus {
+    PENDING: number;
+    CONFIRMED: number;
+    CANCELLED: number;
+    COMPLETED: number;
+}
+export interface StatsBySport {
+    sportId: string;
+    name: string;
+    count: number;
+    revenue: number;
+}
+export interface StatsByDay {
+    date: string; // YYYY-MM-DD
+    revenue: number;
 }
 
 function useChartColors() {
@@ -33,12 +45,12 @@ function useChartColors() {
     };
 }
 
-export function BookingStatusDonut({ bookings }: DashboardChartsProps) {
+export function BookingStatusDonut({ byStatus }: { byStatus: StatsByStatus }) {
     const colors = useChartColors();
     const data = [
-        { name: "Confirmadas", value: bookings.filter((b) => b.status === "CONFIRMED").length, color: COLORS.CONFIRMED },
-        { name: "Canceladas", value: bookings.filter((b) => b.status === "CANCELLED").length, color: COLORS.CANCELLED },
-        { name: "Completadas", value: bookings.filter((b) => b.status === "COMPLETED").length, color: COLORS.COMPLETED },
+        { name: "Confirmadas", value: byStatus.CONFIRMED, color: COLORS.CONFIRMED },
+        { name: "Canceladas", value: byStatus.CANCELLED, color: COLORS.CANCELLED },
+        { name: "Completadas", value: byStatus.COMPLETED, color: COLORS.COMPLETED },
     ].filter((d) => d.value > 0);
 
     if (data.length === 0) {
@@ -113,17 +125,9 @@ export function BookingStatusDonut({ bookings }: DashboardChartsProps) {
   );
 }
 
-export function BookingsByDayBar({ bookings }: DashboardChartsProps) {
+export function BookingsByDayBar({ byWeekday }: { byWeekday: number[] }) {
     const colors = useChartColors();
-    const dayCounts = [0, 0, 0, 0, 0, 0, 0];
-    bookings.forEach((b) => {
-        if (b.status !== "CANCELLED") {
-          const day = (new Date(b.startDatetime).getDay() + 6) % 7;
-          dayCounts[day]++;
-      }
-  });
-
-    const data = DAY_NAMES.map((name, i) => ({ name, reservas: dayCounts[i] }));
+    const data = DAY_NAMES.map((name, i) => ({ name, reservas: byWeekday[i] ?? 0 }));
 
     return (
         <Card>
@@ -157,24 +161,23 @@ export function BookingsByDayBar({ bookings }: DashboardChartsProps) {
   );
 }
 
-export function RevenueAreaChart({ bookings }: DashboardChartsProps) {
+export function RevenueAreaChart({ byDay }: { byDay: StatsByDay[] }) {
     const colors = useChartColors();
+    // Últimos 7 días (en hora local), tomando el revenue de byDay si existe.
+    const revenueByDate = new Map(byDay.map((d) => [d.date, d.revenue]));
     const today = new Date();
     const last7 = Array.from({ length: 7 }, (_, i) => {
         const d = new Date(today);
         d.setDate(today.getDate() - (6 - i));
         return d;
     });
-
     const data = last7.map((date) => {
-        const dayStr = date.toLocaleDateString("es-AR", { day: "2-digit", month: "short" });
-        const dayRevenue = bookings
-            .filter((b) => {
-                const bDate = new Date(b.startDatetime);
-                return bDate.toDateString() === date.toDateString() && b.status !== "CANCELLED";
-            })
-            .reduce((sum, b) => sum + Number(b.totalPrice), 0);
-        return { name: dayStr, ingresos: dayRevenue };
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const key = `${y}-${m}-${day}`;
+        const name = date.toLocaleDateString("es-AR", { day: "2-digit", month: "short" });
+        return { name, ingresos: revenueByDate.get(key) || 0 };
     });
 
     return (
@@ -222,18 +225,10 @@ export function RevenueAreaChart({ bookings }: DashboardChartsProps) {
   );
 }
 
-export function SportRevenueBar({ bookings }: DashboardChartsProps) {
+export function SportRevenueBar({ bySport }: { bySport: StatsBySport[] }) {
     const colors = useChartColors();
-    const sportRevenue: Record<string, number> = {};
-    bookings.forEach((b) => {
-        if (b.status !== "CANCELLED") {
-            const sport = b.facility?.sport?.name || "Otro";
-            sportRevenue[sport] = (sportRevenue[sport] || 0) + Number(b.totalPrice);
-        }
-    });
-
-    const data = Object.entries(sportRevenue)
-        .map(([name, ingresos]) => ({ name, ingresos }))
+    const data = bySport
+        .map((s) => ({ name: s.name, ingresos: s.revenue }))
         .sort((a, b) => b.ingresos - a.ingresos);
 
     if (data.length === 0) return null;

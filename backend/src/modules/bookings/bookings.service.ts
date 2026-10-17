@@ -7,6 +7,7 @@ import {
 import { BookingStatus, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BookingsRepository } from './bookings.repository';
+import { MailService, BookingEmailData } from '../mail/mail.service';
 import { CreateBookingDto, ManualBookingDto, CancelBookingDto, CreateRecurringBookingDto } from './dto/create-booking.dto';
 
 /** "19:00" -> "7:00 p. m." (formato español sin cero adelante) */
@@ -24,7 +25,37 @@ export class BookingsService {
     constructor(
         private readonly bookingsRepository: BookingsRepository,
         private readonly prisma: PrismaService,
+        private readonly mailService: MailService,
     ) { }
+
+    /** Arma los datos del correo a partir de una reserva con facility+venue+user. */
+    private toEmailData(booking: any): BookingEmailData | null {
+        const email = booking.user?.email;
+        if (!email) return null;
+        const AR_OFFSET_MIN = 3 * 60;
+        const startAr = new Date(new Date(booking.startDatetime).getTime() - AR_OFFSET_MIN * 60000);
+        const endAr = new Date(new Date(booking.endDatetime).getTime() - AR_OFFSET_MIN * 60000);
+        const fmtTime = (d: Date) => {
+            let h = d.getUTCHours();
+            const m = d.getUTCMinutes();
+            const ampm = h < 12 ? 'a. m.' : 'p. m.';
+            h = h % 12; if (h === 0) h = 12;
+            return `${h}:${String(m).padStart(2, '0')} ${ampm}`;
+        };
+        const dateLabel = startAr.toLocaleDateString('es-AR', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+        });
+        return {
+            email,
+            firstName: booking.user.firstName || '',
+            venueName: booking.facility?.venue?.name || '',
+            facilityName: booking.facility?.name || '',
+            dateLabel,
+            timeLabel: `${fmtTime(startAr)} - ${fmtTime(endAr)}`,
+            priceLabel: booking.totalPrice != null ? `$${Math.round(Number(booking.totalPrice)).toLocaleString('es-AR')} ${booking.currency || 'ARS'}` : undefined,
+            paymentPending: booking.paymentStatus === 'PENDING',
+        };
+    }
 
     async findAll(
         user: { id: string; role: Role; venueId?: string | null },
@@ -66,7 +97,7 @@ export class BookingsService {
 
         const price = await this.calculatePrice(dto.facilityId, startDatetime, endDatetime);
 
-        return this.bookingsRepository.create({
+        const booking = await this.bookingsRepository.create({
             facilityId: dto.facilityId,
             userId,
             startDatetime,
@@ -81,6 +112,12 @@ export class BookingsService {
             paymentStatus: 'PAID', // reserva única: se considera pagada al crear
             paidAt: new Date(),
         });
+
+        // Correo de confirmación (best-effort, no bloquea la reserva)
+        const emailData = this.toEmailData(booking);
+        if (emailData) void this.mailService.sendBookingConfirmation(emailData);
+
+        return booking;
     }
 
     async createManual(
@@ -108,7 +145,7 @@ export class BookingsService {
 
         const price = await this.calculatePrice(dto.facilityId, startDatetime, endDatetime);
 
-        return this.bookingsRepository.create({
+        const booking = await this.bookingsRepository.create({
             facilityId: dto.facilityId,
             userId: dto.userId,
             startDatetime,
@@ -123,6 +160,11 @@ export class BookingsService {
             paymentStatus: 'PAID', // reserva manual única: pagada al crear
             paidAt: new Date(),
         });
+
+        const emailData = this.toEmailData(booking);
+        if (emailData) void this.mailService.sendBookingConfirmation(emailData);
+
+        return booking;
     }
 
     /**
@@ -172,7 +214,13 @@ export class BookingsService {
             }
         }
 
-        return this.bookingsRepository.cancel(id, user.id, dto.reason);
+        const cancelled = await this.bookingsRepository.cancel(id, user.id, dto.reason);
+
+        // Correo de cancelación (best-effort). booking trae facility/venue/user de findById.
+        const emailData = this.toEmailData(booking);
+        if (emailData) void this.mailService.sendBookingCancellation({ ...emailData, reason: dto.reason });
+
+        return cancelled;
     }
 
     /**
@@ -299,6 +347,9 @@ export class BookingsService {
             );
         }
 
+        // Correo resumen del turno fijo (uno solo, no por cada ocurrencia).
+        void this.sendRecurringConfirmation(targetUserId, facility, dto, created.length);
+
         return {
             recurringBookingId: recurring.id,
             totalDates: created.length + skipped.length,
@@ -307,6 +358,34 @@ export class BookingsService {
             created,
             skipped,
         };
+    }
+
+    /** Correo resumen al crear un turno fijo (best-effort). */
+    private async sendRecurringConfirmation(
+        userId: string,
+        facility: any,
+        dto: CreateRecurringBookingDto,
+        createdCount: number,
+    ) {
+        try {
+            const user = await this.prisma.user.findUnique({
+                where: { id: userId },
+                select: { email: true, firstName: true },
+            });
+            if (!user?.email) return;
+            const DAYS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+            await this.mailService.sendBookingConfirmation({
+                email: user.email,
+                firstName: user.firstName || '',
+                venueName: facility.venue?.name || '',
+                facilityName: facility.name || '',
+                dateLabel: `Todos los ${DAYS[dto.dayOfWeek] || ''} (${createdCount} fechas)`,
+                timeLabel: `${formatTime12h(dto.startTime)} - ${formatTime12h(dto.endTime)}`,
+                paymentPending: true,
+            });
+        } catch (err) {
+            console.error('Error enviando confirmación de turno fijo:', err);
+        }
     }
 
     /**

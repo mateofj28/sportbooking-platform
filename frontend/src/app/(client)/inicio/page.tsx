@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card, CardBody, Chip, Button, Spinner, Input } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { getBookingStatusChip } from "@/lib/booking-status";
 import { formatTimeAr } from "@/lib/datetime";
+import { PromoCarousel } from "@/components/shared/promo-carousel";
 import { useAuthStore } from "@/stores/auth-store";
 import { useBookings, useMarkBookingPaid } from "@/hooks/use-bookings";
 import { Navbar } from "@/components/layout/navbar";
@@ -84,14 +85,6 @@ export default function ClientHomePage() {
         return result;
     }, [bookings]);
 
-    // Carrusel
-    const [activeAd, setActiveAd] = useState(0);
-    const nextAd = useCallback(() => setActiveAd((p) => (p + 1) % ADS.length), []);
-    useEffect(() => {
-        const interval = setInterval(nextAd, 4000);
-        return () => clearInterval(interval);
-    }, [nextAd]);
-
     const handleSearch = () => {
         router.push(`/facilities${searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : ""}`);
     };
@@ -124,25 +117,7 @@ export default function ClientHomePage() {
 
                 {/* Promociones (justo después del buscador) */}
                 <section>
-                    <div className="relative overflow-hidden rounded-2xl">
-                        <Card className={`bg-gradient-to-r ${ADS[activeAd].bg} border-none shadow-lg`}>
-                            <CardBody className="p-6">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-white/70">{ADS[activeAd].subtitle}</p>
-                                <h3 className="mt-1 text-lg font-bold text-white">{ADS[activeAd].title}</h3>
-                                <p className="mt-2 text-sm text-white/80">{ADS[activeAd].description}</p>
-                            </CardBody>
-                        </Card>
-                    </div>
-                    <div className="mt-3 flex justify-center gap-2">
-                        {ADS.map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={() => setActiveAd(i)}
-                                className={`h-2 rounded-full transition-all ${i === activeAd ? "w-6 bg-primary" : "w-2 bg-default-300 hover:bg-default-400"}`}
-                                aria-label={`Promoción ${i + 1}`}
-                            />
-                        ))}
-                    </div>
+                    <PromoCarousel slides={ADS} autoPlayMs={4000} />
                 </section>
 
                 {/* 2. Próximas reservas */}

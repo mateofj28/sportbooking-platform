@@ -198,7 +198,13 @@ export class AuthService {
     async refreshToken(token: string) {
         try {
             const payload = this.jwtService.verify(token);
-            const tokens = await this.generateTokens(payload.sub, payload.email, payload.role);
+            // Incluir venueId para no perder el scope de sede del admin al refrescar
+            const tokens = await this.generateTokens(
+                payload.sub,
+                payload.email,
+                payload.role,
+                payload.venueId ?? null,
+            );
             return tokens;
         } catch {
             throw new UnauthorizedException('Token de refresco inválido');

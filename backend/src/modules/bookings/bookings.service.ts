@@ -576,7 +576,10 @@ export class BookingsService {
             }) || candidates[0];
 
         if (!pricing) {
-            return { base: 0, commission: 0, total: 0 };
+            // Sin tarifa configurada para esta franja: no se puede reservar (evita reservas gratis)
+            throw new BadRequestException(
+                'Esta instalación no tiene una tarifa configurada para ese horario. Contactá al complejo.',
+            );
         }
 
         // Precio del TURNO (fijo, sin importar la duración): se cobra el valor

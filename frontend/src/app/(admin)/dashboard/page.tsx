@@ -316,12 +316,15 @@ function TodaySummary() {
         0,
     );
 
-    // Users created today (approximate - check createdAt)
+    // Usuarios nuevos del sistema hoy (solo relevante para el admin general)
     const allUsers = usersData?.data || [];
     const newUsersToday = allUsers.filter((u) => {
         if (!u.createdAt) return false;
         return new Date(u.createdAt).toISOString().split("T")[0] === today;
     });
+
+    // Clientes distintos que reservaron hoy (relevante para el admin de sede)
+    const clientsToday = new Set(todayBookings.map((b) => b.userId)).size;
 
     // Unique facilities booked today
     const occupiedFacilities = new Set(todayBookings.map((b) => b.facilityId)).size;
@@ -333,12 +336,20 @@ function TodaySummary() {
             value: todayBookings.length,
             bg: "bg-primary/10",
         },
-        {
-            icon: <Users className="h-5 w-5 text-secondary" />,
-            label: "Usuarios nuevos",
-            value: newUsersToday.length,
-            bg: "bg-secondary/10",
-        },
+        // Admin de sede ve "clientes que reservaron"; admin general ve "usuarios nuevos" del sistema
+        isVenueAdmin
+            ? {
+                icon: <Users className="h-5 w-5 text-secondary" />,
+                label: "Clientes hoy",
+                value: clientsToday,
+                bg: "bg-secondary/10",
+            }
+            : {
+                icon: <Users className="h-5 w-5 text-secondary" />,
+                label: "Usuarios nuevos",
+                value: newUsersToday.length,
+                bg: "bg-secondary/10",
+            },
         {
             icon: <DollarSign className="h-5 w-5 text-success" />,
             label: "Ingresos hoy",

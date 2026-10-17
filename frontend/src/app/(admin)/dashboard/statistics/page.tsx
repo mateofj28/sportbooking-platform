@@ -171,7 +171,7 @@ export default function StatisticsPage() {
     const totalActive = filteredBookings.length - cancelledBookings.length;
     const occupancyRate = totalActive > 0 ? Math.round((confirmedBookings.length / totalActive) * 100) : 0;
 
-    // New users in the selected date range
+    // ADMIN general: usuarios nuevos del sistema en el período.
     const newUsers = useMemo(() => {
         if (!usersData?.data) return 0;
         const { start: dateStart, end: dateEnd } = getDateRange(dateRange);
@@ -184,6 +184,16 @@ export default function StatisticsPage() {
             return true;
         }).length;
     }, [usersData, dateRange]);
+
+    // VENUE_ADMIN: clientes DISTINTOS que reservaron en su complejo (según filtros).
+    const uniqueClients = useMemo(() => {
+        const ids = new Set<string>();
+        for (const b of filteredBookings) {
+            if (b.status === "CANCELLED") continue;
+            if (b.user?.id) ids.add(b.user.id);
+        }
+        return ids.size;
+    }, [filteredBookings]);
 
     if (isLoading) {
         return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;
@@ -277,7 +287,11 @@ export default function StatisticsPage() {
                 <StatCard icon={<Calendar className="h-5 w-5" />} label="Reservas" value={filteredBookings.length} color="bg-primary-50 text-primary-600" trend={`${confirmedBookings.length} confirmadas`} />
               <StatCard icon={<Activity className="h-5 w-5" />} label="Confirmación" value={`${occupancyRate}%`} color="bg-secondary-50 text-secondary-600" trend={`${cancelledBookings.length} canceladas`} trendUp={false} />
               <StatCard icon={<MapPin className="h-5 w-5" />} label="Instalaciones" value={facilities?.filter((f) => f.isActive).length || 0} color="bg-warning-50 text-warning-600" trend={`${sports?.length || 0} deportes`} />
-                <StatCard icon={<Users className="h-5 w-5" />} label="Usuarios nuevos" value={newUsers} color="bg-primary-50 text-primary-600" trend={`de ${usersData?.data?.length || 0} totales`} trendUp={newUsers > 0 ? true : undefined} />
+                {isVenueAdmin ? (
+                    <StatCard icon={<Users className="h-5 w-5" />} label="Clientes" value={uniqueClients} color="bg-primary-50 text-primary-600" trend="reservaron aquí" trendUp={uniqueClients > 0 ? true : undefined} />
+                ) : (
+                        <StatCard icon={<Users className="h-5 w-5" />} label="Usuarios nuevos" value={newUsers} color="bg-primary-50 text-primary-600" trend={`de ${usersData?.data?.length || 0} totales`} trendUp={newUsers > 0 ? true : undefined} />
+                )}
           </div>
 
             {/* Reparto por complejo según filtros */}

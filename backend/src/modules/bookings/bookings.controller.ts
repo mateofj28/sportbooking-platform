@@ -89,10 +89,10 @@ export class BookingsController {
     @ApiOperation({ summary: 'Cancel booking' })
     cancel(
         @Param('id') id: string,
-        @CurrentUser('id') userId: string,
+        @CurrentUser() user: { id: string; role: Role; venueId?: string | null },
         @Body() dto: CancelBookingDto,
     ) {
-        return this.bookingsService.cancel(id, userId, dto);
+        return this.bookingsService.cancel(id, user, dto);
     }
 
     @Patch(':id/pay')

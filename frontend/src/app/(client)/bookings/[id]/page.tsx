@@ -62,7 +62,13 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     const isRecurring = !!booking.recurringBookingId;
     const isPast = new Date(booking.startDatetime) < new Date();
     const canPay = booking.status === "CONFIRMED" && booking.paymentStatus !== "PAID";
-    const canCancel = booking.status === "CONFIRMED" && !isPast;
+    // El cliente solo puede cancelar hasta 3 horas antes del inicio del turno
+    const CANCEL_LIMIT_MS = 3 * 60 * 60 * 1000;
+    const msToStart = new Date(booking.startDatetime).getTime() - Date.now();
+    const withinCancelWindow = msToStart >= CANCEL_LIMIT_MS;
+    const canCancel = booking.status === "CONFIRMED" && !isPast && withinCancelWindow;
+    // Mostrar aviso cuando ya no se puede cancelar por el límite (reserva aún futura y activa)
+    const cancelBlockedByTime = booking.status === "CONFIRMED" && !isPast && !withinCancelWindow;
     const mins = durationMin(booking.startDatetime, booking.endDatetime);
 
     return (
@@ -166,7 +172,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                                 </div>
                                 <p className="-mt-2 text-xs text-default-400">{booking.currency} · comisión de servicio incluida</p>
 
-                                {(canPay || canCancel) && <Divider />}
+                                {(canPay || canCancel || cancelBlockedByTime) && <Divider />}
 
                                 {canPay && (
                                     <Button
@@ -196,6 +202,16 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                                     >
                                         Cancelar reserva
                                     </Button>
+                                )}
+
+                                {cancelBlockedByTime && (
+                                    <div className="flex items-start gap-2 rounded-lg bg-default-100 p-3 text-xs text-default-500">
+                                        <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
+                                        <span>
+                                            Ya no es posible cancelar: solo se puede cancelar hasta
+                                            <strong> 3 horas antes</strong> del inicio del turno.
+                                        </span>
+                                    </div>
                                 )}
                             </CardBody>
                         </Card>

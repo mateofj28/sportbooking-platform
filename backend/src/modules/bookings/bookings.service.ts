@@ -147,7 +147,11 @@ export class BookingsService {
         });
     }
 
-    async cancel(id: string, userId: string, dto: CancelBookingDto) {
+    async cancel(
+        id: string,
+        user: { id: string; role: Role; venueId?: string | null },
+        dto: CancelBookingDto,
+    ) {
         const booking = await this.findById(id);
         if (booking.status === BookingStatus.CANCELLED) {
             throw new BadRequestException('La reserva ya está cancelada');
@@ -155,7 +159,20 @@ export class BookingsService {
         if (booking.status === BookingStatus.COMPLETED) {
             throw new BadRequestException('No se puede cancelar una reserva completada');
         }
-        return this.bookingsRepository.cancel(id, userId, dto.reason);
+
+        // El CLIENTE solo puede cancelar hasta 3 horas antes del inicio del turno.
+        // Los administradores (general / de sede) no tienen ese límite.
+        if (user.role === Role.CLIENT) {
+            const CANCEL_LIMIT_MS = 3 * 60 * 60 * 1000; // 3 horas
+            const start = new Date(booking.startDatetime).getTime();
+            if (start - Date.now() < CANCEL_LIMIT_MS) {
+                throw new BadRequestException(
+                    'Solo puedes cancelar hasta 3 horas antes del inicio del turno',
+                );
+            }
+        }
+
+        return this.bookingsRepository.cancel(id, user.id, dto.reason);
     }
 
     /**

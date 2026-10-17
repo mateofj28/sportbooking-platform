@@ -8,6 +8,7 @@ import {
     Body,
     UseGuards,
 } from '@nestjs/common';
+import { ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { VenuesService } from './venues.service';
@@ -15,6 +16,13 @@ import { CreateVenueDto, UpdateVenueDto } from './dto/create-venue.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+
+interface AuthUser {
+    id: string;
+    role: Role;
+    venueId?: string | null;
+}
 
 @ApiTags('Venues')
 @Controller('venues')
@@ -46,8 +54,16 @@ export class VenuesController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Update venue (Admin)' })
-    update(@Param('id') id: string, @Body() dto: UpdateVenueDto) {
+    @ApiOperation({ summary: 'Update venue (Admin / Venue Admin de su propia sede)' })
+    update(
+        @CurrentUser() user: AuthUser,
+        @Param('id') id: string,
+        @Body() dto: UpdateVenueDto,
+    ) {
+        // El admin de sede solo puede editar SU propio complejo
+        if (user.role === Role.VENUE_ADMIN && user.venueId !== id) {
+            throw new ForbiddenException('Solo puedes editar tu propio complejo');
+        }
         return this.venuesService.update(id, dto);
     }
 

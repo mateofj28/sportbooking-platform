@@ -21,14 +21,22 @@ import {
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { Plus, Trash2, Pencil, Search } from "lucide-react";
+import { Plus, Trash2, Pencil, Search, Building2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Select, SelectItem } from "@heroui/select";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ImageUpload } from "@/components/shared/image-upload";
 import { useToastStore } from "@/stores/toast-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { durationOptionsForSport } from "@/components/shared/availability-picker";
 import type { Sport, Venue, Facility } from "@/types";
+
+// Servicios/amenidades que puede ofrecer un complejo
+const AMENITIES = [
+    "Vestuarios", "Duchas", "Baños", "WiFi", "Estacionamiento", "Parrilla",
+    "Buffet", "Iluminación nocturna", "Alquiler de equipos", "Cafetería",
+    "Tribunas", "Aire acondicionado", "Kiosco", "Seguridad", "Accesible",
+];
 
 const SURFACE_TYPES = [
     "Césped sintético",
@@ -110,6 +118,15 @@ export default function AdminFacilitiesPage() {
 
     const { isOpen, onOpen, onClose } = useDisclosure();
     const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
+    // Modal para editar la información del complejo (nombre, dirección, foto, servicios)
+    const { isOpen: isVenueOpen, onOpen: onVenueOpen, onClose: onVenueClose } = useDisclosure();
+    const [venueForm, setVenueForm] = useState({
+        id: "", name: "", address: "", description: "", amenities: [] as string[], imageUrl: "",
+    });
+    const myVenue = useMemo(
+        () => venues?.find((v) => v.id === user?.venueId),
+        [venues, user?.venueId],
+    );
     const [form, setForm] = useState({
         name: "",
         description: "",
@@ -175,6 +192,45 @@ export default function AdminFacilitiesPage() {
             addToast("Item actualizado correctamente");
         },
     });
+
+    const venueMutation = useMutation({
+        mutationFn: ({ id, ...data }: typeof venueForm) =>
+            apiClient.patch(`/venues/${id}`, {
+                name: data.name,
+                address: data.address,
+                description: data.description || undefined,
+                amenities: data.amenities,
+                imageUrl: data.imageUrl || undefined,
+            }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["venues"] });
+            onVenueClose();
+            addToast("Complejo actualizado correctamente");
+        },
+        onError: (error: any) => {
+            const msg = error?.message || "No se pudo actualizar el complejo";
+            addToast(Array.isArray(msg) ? msg[0] : msg);
+        },
+    });
+
+    const handleEditVenue = () => {
+        if (!myVenue) return;
+        setVenueForm({
+            id: myVenue.id,
+            name: myVenue.name,
+            address: myVenue.address,
+            description: myVenue.description || "",
+            amenities: myVenue.amenities || [],
+            imageUrl: myVenue.imageUrl || "",
+        });
+        onVenueOpen();
+    };
+
+    const toggleVenueAmenity = (a: string) =>
+        setVenueForm((f) => ({
+            ...f,
+            amenities: f.amenities.includes(a) ? f.amenities.filter((x) => x !== a) : [...f.amenities, a],
+        }));
 
     const handleEdit = (facility: any) => {
         setEditForm({
@@ -258,9 +314,16 @@ export default function AdminFacilitiesPage() {
                     </h1>
                     <p className="text-sm text-default-500 mt-1">Gestiona las canchas y campos</p>
                 </div>
-                <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={handleCreate}>
-                    Nueva Instalación
-                </Button>
+                <div className="flex gap-2">
+                    {isVenueAdmin && myVenue && (
+                        <Button variant="bordered" startContent={<Building2 className="h-4 w-4" />} onPress={handleEditVenue}>
+                            Editar complejo
+                        </Button>
+                    )}
+                    <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={handleCreate}>
+                        Nueva Instalación
+                    </Button>
+                </div>
             </div>
 
             {/* Filters */}
@@ -580,6 +643,41 @@ export default function AdminFacilitiesPage() {
                     <ModalFooter>
                         <Button variant="light" onPress={onEditClose}>Cancelar</Button>
                         <Button color="primary" onPress={handleEditSubmit} isLoading={editMutation.isPending}>Guardar</Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            {/* Modal: editar información del complejo (venue admin) */}
+            <Modal isOpen={isVenueOpen} onClose={onVenueClose} size="2xl">
+                <ModalContent>
+                    <ModalHeader>Editar complejo</ModalHeader>
+                    <ModalBody className="gap-4">
+                        <Input label="Nombre" variant="bordered" value={venueForm.name} onValueChange={(v) => setVenueForm({ ...venueForm, name: v })} />
+                        <Input label="Dirección" variant="bordered" value={venueForm.address} onValueChange={(v) => setVenueForm({ ...venueForm, address: v })} />
+                        <Textarea label="Descripción" variant="bordered" value={venueForm.description} onValueChange={(v) => setVenueForm({ ...venueForm, description: v })} />
+                        <ImageUpload value={venueForm.imageUrl} onChange={(url) => setVenueForm({ ...venueForm, imageUrl: url })} />
+                        <div>
+                            <p className="text-xs text-default-500 mb-2">Servicios disponibles</p>
+                            <div className="flex flex-wrap gap-2">
+                                {AMENITIES.map((a) => {
+                                    const active = venueForm.amenities.includes(a);
+                                    return (
+                                        <button
+                                            key={a}
+                                            type="button"
+                                            onClick={() => toggleVenueAmenity(a)}
+                                            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${active ? "border-primary bg-primary/10 text-primary" : "border-divider text-default-600 hover:border-primary"}`}
+                                        >
+                                            {a}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="light" onPress={onVenueClose}>Cancelar</Button>
+                        <Button color="primary" onPress={() => venueMutation.mutate(venueForm)} isLoading={venueMutation.isPending} isDisabled={!venueForm.name}>Guardar</Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>

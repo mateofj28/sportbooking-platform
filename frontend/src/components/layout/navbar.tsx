@@ -19,9 +19,10 @@ import {
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
+import { useSidebarStore } from "@/stores/sidebar-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
-import { Trophy, LogOut, User, Calendar, LayoutDashboard, Sun, Moon } from "lucide-react";
+import { Trophy, LogOut, User, Calendar, LayoutDashboard, Sun, Moon, Menu } from "lucide-react";
 
 export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -29,9 +30,10 @@ export function Navbar() {
     const { logout } = useAuth();
     const { isDark, toggleTheme, mounted } = useTheme();
     const pathname = usePathname();
+    const openSidebar = useSidebarStore((s) => s.open);
 
-    // Dentro del panel admin el menú móvil lo maneja el drawer del sidebar,
-    // así que ocultamos el menú hamburguesa del navbar para no duplicar.
+    // Dentro del panel admin, en móvil el menú lo abre un botón en el navbar
+    // (arriba a la izquierda) que despliega el drawer del sidebar.
     const inDashboard = pathname?.startsWith("/dashboard");
 
     return (
@@ -44,7 +46,15 @@ export function Navbar() {
             }}
         >
             <NavbarContent>
-                {!inDashboard && (
+                {inDashboard ? (
+                    <button
+                        onClick={openSidebar}
+                        aria-label="Abrir menú"
+                        className="flex items-center justify-center rounded-lg p-1 text-white hover:bg-white/10 lg:hidden"
+                    >
+                        <Menu className="h-6 w-6" />
+                    </button>
+                ) : (
                     <NavbarMenuToggle
                         aria-label={isMenuOpen ? "Cerrar menú" : "Abrir menú"}
                         className="sm:hidden"

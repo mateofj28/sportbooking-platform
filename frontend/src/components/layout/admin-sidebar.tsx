@@ -15,13 +15,13 @@ import {
     Clock,
     DollarSign,
     Ban,
-    Menu,
     X,
     Bell,
     HelpCircle,
     BarChart3,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useSidebarStore } from "@/stores/sidebar-store";
 
 const menuItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -105,36 +105,27 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 }
 
 export function AdminSidebar() {
-    const [mobileOpen, setMobileOpen] = useState(false);
     const pathname = usePathname();
+    const { mobileOpen, close } = useSidebarStore();
 
-    // Close mobile sidebar on route change
+    // Cerrar el drawer al cambiar de ruta
     useEffect(() => {
-        setMobileOpen(false);
-    }, [pathname]);
+        close();
+    }, [pathname, close]);
 
     return (
         <>
-            {/* Mobile toggle button */}
-            <button
-                onClick={() => setMobileOpen(true)}
-                className="fixed bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 lg:hidden"
-                aria-label="Abrir menú"
-            >
-                <Menu className="h-5 w-5" />
-            </button>
-
-            {/* Mobile overlay + drawer */}
+            {/* Mobile overlay + drawer (el botón de abrir vive en el navbar) */}
             {mobileOpen && (
                 <div className="fixed inset-0 z-50 lg:hidden">
                     {/* Backdrop */}
                     <div
                         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                        onClick={() => setMobileOpen(false)}
+                        onClick={close}
                     />
                     {/* Drawer */}
                     <aside className="absolute left-0 top-0 h-full w-72 bg-content1 p-4 shadow-xl animate-slide-in-right overflow-y-auto scrollbar-hide">
-                        <SidebarContent onClose={() => setMobileOpen(false)} />
+                        <SidebarContent onClose={close} />
                     </aside>
                 </div>
             )}

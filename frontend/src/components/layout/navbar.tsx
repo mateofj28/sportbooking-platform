@@ -17,6 +17,7 @@ import {
     Avatar,
 } from "@heroui/react";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
@@ -27,6 +28,11 @@ export function Navbar() {
     const { user, isAuthenticated, isHydrated } = useAuthStore();
     const { logout } = useAuth();
     const { isDark, toggleTheme, mounted } = useTheme();
+    const pathname = usePathname();
+
+    // Dentro del panel admin el menú móvil lo maneja el drawer del sidebar,
+    // así que ocultamos el menú hamburguesa del navbar para no duplicar.
+    const inDashboard = pathname?.startsWith("/dashboard");
 
     return (
         <HeroNavbar
@@ -38,10 +44,12 @@ export function Navbar() {
             }}
         >
             <NavbarContent>
-                <NavbarMenuToggle
-                    aria-label={isMenuOpen ? "Cerrar menú" : "Abrir menú"}
-                    className="sm:hidden"
-                />
+                {!inDashboard && (
+                    <NavbarMenuToggle
+                        aria-label={isMenuOpen ? "Cerrar menú" : "Abrir menú"}
+                        className="sm:hidden"
+                    />
+                )}
                 <NavbarBrand>
                     <Link href="/" className="flex items-center gap-2 text-white">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20">
@@ -187,6 +195,7 @@ export function Navbar() {
             </NavbarContent>
 
             <NavbarMenu>
+                {inDashboard ? null : <>
                 {isAuthenticated && user?.role === "CLIENT" && (
                     <NavbarMenuItem>
                         <Link className="w-full" href="/inicio" size="lg">
@@ -236,6 +245,7 @@ export function Navbar() {
                         </NavbarMenuItem>
                     </>
                 )}
+                </>}
             </NavbarMenu>
         </HeroNavbar>
     );

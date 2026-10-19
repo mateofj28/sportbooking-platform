@@ -62,8 +62,8 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     const isRecurring = !!booking.recurringBookingId;
     const isPast = new Date(booking.startDatetime) < new Date();
     const canPay = booking.status === "CONFIRMED" && booking.paymentStatus !== "PAID";
-    // El cliente solo puede cancelar hasta 3 horas antes del inicio del turno
-    const CANCEL_LIMIT_MS = 3 * 60 * 60 * 1000;
+    // El cliente solo puede cancelar hasta 24 horas antes del inicio del turno
+    const CANCEL_LIMIT_MS = 24 * 60 * 60 * 1000;
     const msToStart = new Date(booking.startDatetime).getTime() - Date.now();
     const withinCancelWindow = msToStart >= CANCEL_LIMIT_MS;
     const canCancel = booking.status === "CONFIRMED" && !isPast && withinCancelWindow;
@@ -209,7 +209,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                                         <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
                                         <span>
                                             Ya no es posible cancelar: solo se puede cancelar hasta
-                                            <strong> 3 horas antes</strong> del inicio del turno.
+                                            <strong> 24 horas antes</strong> del inicio del turno.
                                         </span>
                                     </div>
                                 )}

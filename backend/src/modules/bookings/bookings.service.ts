@@ -202,14 +202,14 @@ export class BookingsService {
             throw new BadRequestException('No se puede cancelar una reserva completada');
         }
 
-        // El CLIENTE solo puede cancelar hasta 3 horas antes del inicio del turno.
+        // El CLIENTE solo puede cancelar hasta 24 horas antes del inicio del turno.
         // Los administradores (general / de sede) no tienen ese límite.
         if (user.role === Role.CLIENT) {
-            const CANCEL_LIMIT_MS = 3 * 60 * 60 * 1000; // 3 horas
+            const CANCEL_LIMIT_MS = 24 * 60 * 60 * 1000; // 24 horas
             const start = new Date(booking.startDatetime).getTime();
             if (start - Date.now() < CANCEL_LIMIT_MS) {
                 throw new BadRequestException(
-                    'Solo puedes cancelar hasta 3 horas antes del inicio del turno',
+                    'Solo puedes cancelar hasta 24 horas antes del inicio del turno',
                 );
             }
         }

@@ -8,7 +8,6 @@ import { useSearchParams } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
 import { useFacilities } from "@/hooks/use-facilities";
 import { Navbar } from "@/components/layout/navbar";
-import { Footer } from "@/components/layout/footer";
 import { FacilityCard } from "@/components/cards/facility-card";
 import { useAvailabilitySummary, localDateStr } from "@/hooks/use-availability";
 import { amenityIcon } from "@/lib/amenities";
@@ -264,7 +263,6 @@ function FacilitiesContent() {
                     </>
                 )}
             </main>
-            <Footer />
         </div>
     );
 }

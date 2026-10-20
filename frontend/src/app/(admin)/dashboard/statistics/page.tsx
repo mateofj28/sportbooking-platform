@@ -1,7 +1,8 @@
 "use client";
 
-import { Card, CardBody, CardHeader, Chip, Spinner, Divider, Progress } from "@heroui/react";
+import { Card, CardBody, CardHeader, Chip, Spinner, Divider, Progress, DatePicker } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
+import { today, getLocalTimeZone, type CalendarDate } from "@internationalized/date";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
@@ -62,22 +63,28 @@ export default function StatisticsPage() {
     const { user } = useAuthStore();
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
     const [dateRange, setDateRange] = useState<DateRange>("month");
-    const [customFrom, setCustomFrom] = useState("");
-    const [customTo, setCustomTo] = useState("");
+    const [customFrom, setCustomFrom] = useState<CalendarDate | null>(null);
+    const [customTo, setCustomTo] = useState<CalendarDate | null>(null);
     const [sportFilter, setSportFilter] = useState("");
     const [venueFilter, setVenueFilter] = useState("");
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+
+    // CalendarDate -> "YYYY-MM-DD"
+    const toISO = (d: CalendarDate | null) =>
+        d ? `${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}` : "";
+
+    const maxDate = today(getLocalTimeZone()); // no permitir fechas futuras
 
     // En modo personalizado, solo consultar cuando ambas fechas estén elegidas
     const customReady = dateRange !== "custom" || (!!customFrom && !!customTo);
 
     // Estadísticas agregadas en el backend (escalable, respeta scope por rol)
     const { data: stats, isLoading } = useQuery({
-        queryKey: ["stats", dateRange, customFrom, customTo, sportFilter, venueFilter, statusFilter],
+        queryKey: ["stats", dateRange, toISO(customFrom), toISO(customTo), sportFilter, venueFilter, statusFilter],
         queryFn: () =>
             apiClient.get<StatsResponse>("/bookings/stats", {
                 range: dateRange,
-                ...(dateRange === "custom" ? { from: customFrom, to: customTo } : {}),
+                ...(dateRange === "custom" ? { from: toISO(customFrom), to: toISO(customTo) } : {}),
                 ...(sportFilter ? { sportId: sportFilter } : {}),
                 ...(venueFilter ? { venueId: venueFilter } : {}),
                 ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
@@ -141,26 +148,25 @@ export default function StatisticsPage() {
                         </Select>
                         {dateRange === "custom" && (
                             <>
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs text-default-500">Desde</label>
-                                    <input
-                                        type="date"
-                                        value={customFrom}
-                                        max={customTo || undefined}
-                                        onChange={(e) => setCustomFrom(e.target.value)}
-                                        className="rounded-lg border border-divider bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
-                                    />
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs text-default-500">Hasta</label>
-                                    <input
-                                        type="date"
-                                        value={customTo}
-                                        min={customFrom || undefined}
-                                        onChange={(e) => setCustomTo(e.target.value)}
-                                        className="rounded-lg border border-divider bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
-                                    />
-                                </div>
+                                <DatePicker
+                                    label="Desde"
+                                    size="sm"
+                                    variant="bordered"
+                                    value={customFrom as any}
+                                    onChange={(v: any) => setCustomFrom(v)}
+                                    maxValue={(customTo || maxDate) as any}
+                                    showMonthAndYearPickers
+                                />
+                                <DatePicker
+                                    label="Hasta"
+                                    size="sm"
+                                    variant="bordered"
+                                    value={customTo as any}
+                                    onChange={(v: any) => setCustomTo(v)}
+                                    minValue={(customFrom || undefined) as any}
+                                    maxValue={maxDate as any}
+                                    showMonthAndYearPickers
+                                />
                             </>
                         )}
                         <Select
@@ -191,7 +197,7 @@ export default function StatisticsPage() {
                         <div className="mt-3 flex items-center gap-2">
                             {t && <span className="text-xs text-default-400">{t.total} reserva{t.total !== 1 ? "s" : ""} en el período</span>}
                             <button
-                                onClick={() => { setDateRange("all"); setCustomFrom(""); setCustomTo(""); setSportFilter(""); setVenueFilter(""); setStatusFilter("ALL"); }}
+                                onClick={() => { setDateRange("all"); setCustomFrom(null); setCustomTo(null); setSportFilter(""); setVenueFilter(""); setStatusFilter("ALL"); }}
                                 className="text-xs text-primary hover:underline"
                             >
                                 Limpiar filtros

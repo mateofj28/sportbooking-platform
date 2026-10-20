@@ -174,7 +174,7 @@ export default function StatisticsPage() {
 
             {/* Stats Cards */}
             <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${isVenueAdmin ? "xl:grid-cols-5" : "xl:grid-cols-6"}`}>
-                <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Ingresos" value={`$${fmt(t.totalRevenue)}`} color="bg-success-50 text-success-600" />
+                <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Ingresos" value={`$${fmt(t.totalBase)}`} color="bg-success-50 text-success-600" />
                 {!isVenueAdmin && (
                     <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Comisión empresa" value={`$${fmt(t.totalCommission)}`} color="bg-emerald-100 text-emerald-600" />
                 )}
@@ -225,20 +225,18 @@ export default function StatisticsPage() {
                                 <thead>
                                     <tr className="border-b border-divider text-left text-xs text-default-400">
                                         <th className="py-2 pr-3 font-medium">Complejo</th>
-                                        <th className="py-2 px-3 text-right font-medium">Reservas</th>
-                                        <th className="py-2 px-3 text-right font-medium">Le corresponde</th>
+                                            <th className="py-2 px-3 text-right font-medium">Reservas</th>
                                         {!isVenueAdmin && <th className="py-2 px-3 text-right font-medium">Comisión empresa</th>}
-                                        <th className="py-2 pl-3 text-right font-medium">Total cobrado</th>
+                                            <th className="py-2 pl-3 text-right font-medium">Le corresponde</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                         {stats.byVenue.map((r) => (
                                         <tr key={r.venueId} className="border-b border-divider/60 last:border-0">
                                             <td className="py-2.5 pr-3 font-medium">{r.venueName}</td>
-                                            <td className="py-2.5 px-3 text-right text-default-500">{r.count}</td>
-                                            <td className="py-2.5 px-3 text-right font-semibold text-success-600">${fmt(r.base)}</td>
+                                                <td className="py-2.5 px-3 text-right text-default-500">{r.count}</td>
                                             {!isVenueAdmin && <td className="py-2.5 px-3 text-right text-emerald-600">${fmt(r.commission)}</td>}
-                                            <td className="py-2.5 pl-3 text-right text-default-600">${fmt(r.total)}</td>
+                                                <td className="py-2.5 pl-3 text-right font-semibold text-success-600">${fmt(r.base)}</td>
                                         </tr>
                                     ))}
                                 </tbody>

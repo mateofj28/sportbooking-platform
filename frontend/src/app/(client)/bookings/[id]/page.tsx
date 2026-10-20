@@ -8,7 +8,6 @@ import { getBookingStatusChip } from "@/lib/booking-status";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { Navbar } from "@/components/layout/navbar";
-import { Footer } from "@/components/layout/footer";
 import { ArrowLeft, MapPin, Calendar, Clock, User, Check, X, Repeat, ShieldCheck, AlertTriangle } from "lucide-react";
 
 const SPORT_IMAGES: Record<string, string> = {
@@ -53,7 +52,6 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                 <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-8">
                     <p className="text-center text-default-500">Reserva no encontrada</p>
                 </main>
-                <Footer />
             </div>
         );
     }
@@ -218,7 +216,6 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                 </div>
             </main>
-            <Footer />
 
             <ConfirmModal
                 isOpen={confirmCancel}

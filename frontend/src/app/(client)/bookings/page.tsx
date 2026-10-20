@@ -17,7 +17,6 @@ import {
 import { useBookings, useCancelBooking, useRecurringBookings, useCancelRecurringBooking, useMarkBookingPaid, type RecurringBooking } from "@/hooks/use-bookings";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
-import { Footer } from "@/components/layout/footer";
 import { Calendar, MapPin, Clock, X, Repeat, DollarSign } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -303,8 +302,7 @@ export default function BookingsPage() {
               </div>
                     </>
                 )}
-          </main>
-          <Footer />
+            </main>
 
           <Modal isOpen={isOpen} onClose={onClose}>
               <ModalContent>

@@ -10,7 +10,6 @@ import { PromoCarousel } from "@/components/shared/promo-carousel";
 import { useAuthStore } from "@/stores/auth-store";
 import { useBookings, useMarkBookingPaid } from "@/hooks/use-bookings";
 import { Navbar } from "@/components/layout/navbar";
-import { Footer } from "@/components/layout/footer";
 import { useRouter } from "next/navigation";
 import { Search, Calendar, Clock, MapPin, ArrowRight, RotateCcw } from "lucide-react";
 import type { Booking, Sport } from "@/types";
@@ -227,7 +226,6 @@ export default function ClientHomePage() {
                 )}
 
             </main>
-            <Footer />
         </div>
     );
 }

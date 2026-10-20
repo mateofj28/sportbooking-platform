@@ -22,7 +22,6 @@ import type { Facility } from "@/types";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
-import { Footer } from "@/components/layout/footer";
 import {
     MapPin,
     Clock,
@@ -701,7 +700,6 @@ export default function FacilityDetailPage({
                     </>
                 )}
             </main>
-            <Footer />
         </div>
     );
 }

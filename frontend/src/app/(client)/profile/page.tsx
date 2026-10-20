@@ -7,7 +7,6 @@ import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { Navbar } from "@/components/layout/navbar";
-import { Footer } from "@/components/layout/footer";
 import { User, Mail, Phone, Save, Lock, Eye, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -119,7 +118,6 @@ export default function ProfilePage() {
                     </CardBody>
                 </Card>
             </main>
-            <Footer />
         </div>
     );
 }

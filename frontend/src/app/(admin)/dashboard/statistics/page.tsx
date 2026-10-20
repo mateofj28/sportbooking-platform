@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 import {
-    Calendar, MapPin, TrendingUp, Activity, ArrowUpRight, ArrowDownRight, Users, Filter,
+    Calendar, MapPin, TrendingUp, Activity, ArrowUpRight, ArrowDownRight, Users, Filter, CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -173,12 +173,13 @@ export default function StatisticsPage() {
             </Card>
 
             {/* Stats Cards */}
-            <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${isVenueAdmin ? "xl:grid-cols-5" : "xl:grid-cols-6"}`}>
+            <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${isVenueAdmin ? "xl:grid-cols-6" : "xl:grid-cols-7"}`}>
                 <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Ingresos" value={`$${fmt(t.totalBase)}`} color="bg-success-50 text-success-600" />
                 {!isVenueAdmin && (
                     <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Comisión empresa" value={`$${fmt(t.totalCommission)}`} color="bg-emerald-100 text-emerald-600" />
                 )}
                 <StatCard icon={<Calendar className="h-5 w-5" />} label="Reservas" value={t.total} color="bg-primary-50 text-primary-600" trend={`${t.confirmed} confirmadas`} />
+                <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="Completadas" value={t.completed} color="bg-success-50 text-success-600" trend="turnos asistidos" trendUp={t.completed > 0 ? true : undefined} />
                 <StatCard icon={<Activity className="h-5 w-5" />} label="Confirmación" value={`${t.occupancyRate}%`} color="bg-secondary-50 text-secondary-600" trend={`${t.cancelled} canceladas`} trendUp={false} />
                 <StatCard icon={<MapPin className="h-5 w-5" />} label="Instalaciones" value={facilities?.filter((f) => f.isActive).length || 0} color="bg-warning-50 text-warning-600" trend={`${sports?.length || 0} deportes`} />
                 {isVenueAdmin ? (

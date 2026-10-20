@@ -34,7 +34,7 @@ import type { Sport, Venue, Facility } from "@/types";
 // Servicios/amenidades que puede ofrecer un complejo
 const AMENITIES = [
     "Vestuarios", "Duchas", "Baños", "WiFi", "Estacionamiento", "Parrilla",
-    "Buffet", "Iluminación nocturna", "Alquiler de equipos", "Cafetería",
+    "Buffet", "Iluminación nocturna", "Alquiler de pecheras", "Cafetería",
     "Tribunas", "Aire acondicionado", "Kiosco", "Seguridad", "Accesible",
 ];
 

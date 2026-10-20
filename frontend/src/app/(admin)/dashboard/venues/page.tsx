@@ -28,7 +28,7 @@ const AMENITIES = [
   { key: "Parrilla", emoji: "🔥" },
   { key: "Buffet", emoji: "🍔" },
   { key: "Iluminación nocturna", emoji: "💡" },
-  { key: "Alquiler de equipos", emoji: "🎽" },
+  { key: "Alquiler de pecheras", emoji: "🎽" },
   { key: "Cafetería", emoji: "☕" },
   { key: "Tribunas", emoji: "🪑" },
   { key: "Aire acondicionado", emoji: "❄️" },

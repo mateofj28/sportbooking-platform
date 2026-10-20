@@ -17,7 +17,7 @@ const ICONS: Record<string, LucideIcon> = {
     parrilla: Flame,
     buffet: UtensilsCrossed,
     "iluminacion nocturna": Lightbulb,
-    "alquiler de equipos": Shirt,
+    "alquiler de pecheras": Shirt,
     cafeteria: Coffee,
     tribunas: Armchair,
     "aire acondicionado": Snowflake,

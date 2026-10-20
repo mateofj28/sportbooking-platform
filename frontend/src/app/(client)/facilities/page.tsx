@@ -11,6 +11,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { FacilityCard } from "@/components/cards/facility-card";
 import { useAvailabilitySummary, localDateStr } from "@/hooks/use-availability";
+import { amenityIcon } from "@/lib/amenities";
 import { Search, MapPin, ArrowLeft, Building2 } from "lucide-react";
 import type { Sport, Venue } from "@/types";
 
@@ -138,11 +139,20 @@ function FacilitiesContent() {
                                                 )}
                                                 {venue.amenities && venue.amenities.length > 0 && (
                                                     <div className="mt-3 flex flex-wrap gap-1.5">
-                                                        {venue.amenities.slice(0, 5).map((a) => (
-                                                            <Chip key={a} size="sm" variant="flat" className="text-[11px]">
-                                                                {a}
-                                                            </Chip>
-                                                        ))}
+                                                        {venue.amenities.slice(0, 5).map((a) => {
+                                                            const Icon = amenityIcon(a);
+                                                            return (
+                                                                <Chip
+                                                                    key={a}
+                                                                    size="sm"
+                                                                    variant="flat"
+                                                                    className="text-[11px]"
+                                                                    startContent={<Icon className="h-3 w-3" />}
+                                                                >
+                                                                    {a}
+                                                                </Chip>
+                                                            );
+                                                        })}
                                                         {venue.amenities.length > 5 && (
                                                             <Chip size="sm" variant="flat" color="default" className="text-[11px]">
                                                                 +{venue.amenities.length - 5}

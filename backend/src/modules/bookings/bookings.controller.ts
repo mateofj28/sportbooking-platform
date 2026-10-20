@@ -50,11 +50,13 @@ export class BookingsController {
     getStats(
         @CurrentUser() user: { id: string; role: Role; venueId?: string | null },
         @Query('range') range?: string,
+        @Query('from') from?: string,
+        @Query('to') to?: string,
         @Query('sportId') sportId?: string,
         @Query('venueId') venueId?: string,
         @Query('status') status?: string,
     ) {
-        return this.bookingsService.getStats(user, { range, sportId, venueId, status });
+        return this.bookingsService.getStats(user, { range, from, to, sportId, venueId, status });
     }
 
     @Get(':id')

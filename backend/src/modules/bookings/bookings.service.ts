@@ -395,22 +395,33 @@ export class BookingsService {
      */
     async getStats(
         user: { id: string; role: Role; venueId?: string | null },
-        filters: { range?: string; sportId?: string; venueId?: string; status?: string },
+        filters: { range?: string; from?: string; to?: string; sportId?: string; venueId?: string; status?: string },
     ) {
-        // Rango de fechas (según "range": today|yesterday|week|month|quarter|all)
+        // Rango de fechas (según "range": today|yesterday|week|month|custom|all)
         const now = new Date();
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         let start: Date | null = null;
         let end: Date | null = null;
-        switch (filters.range) {
-            case 'today': start = startOfToday; break;
-            case 'yesterday':
-                start = new Date(startOfToday); start.setDate(start.getDate() - 1);
-                end = startOfToday; break;
-            case 'week': start = new Date(now); start.setDate(now.getDate() - 7); break;
-            case 'month': start = new Date(now); start.setMonth(now.getMonth() - 1); break;
-            case 'quarter': start = new Date(now); start.setMonth(now.getMonth() - 3); break;
-            case 'all': default: start = null; break;
+        if (filters.range === 'custom') {
+            // Rango personalizado: from/to en formato YYYY-MM-DD (inclusive)
+            if (filters.from) {
+                const [y, m, d] = filters.from.split('-').map(Number);
+                start = new Date(y, m - 1, d);
+            }
+            if (filters.to) {
+                const [y, m, d] = filters.to.split('-').map(Number);
+                end = new Date(y, m - 1, d + 1); // fin exclusivo: incluye todo el día "to"
+            }
+        } else {
+            switch (filters.range) {
+                case 'today': start = startOfToday; break;
+                case 'yesterday':
+                    start = new Date(startOfToday); start.setDate(start.getDate() - 1);
+                    end = startOfToday; break;
+                case 'week': start = new Date(now); start.setDate(now.getDate() - 7); break;
+                case 'month': start = new Date(now); start.setMonth(now.getMonth() - 1); break;
+                case 'all': default: start = null; break;
+            }
         }
 
         // Scope por rol: el venue admin solo ve su sede

@@ -16,7 +16,7 @@ import {
 } from "@/components/charts/dashboard-charts";
 import type { Facility, Sport, User, PaginatedResult } from "@/types";
 
-type DateRange = "today" | "yesterday" | "week" | "month" | "quarter" | "all";
+type DateRange = "today" | "yesterday" | "week" | "month" | "custom" | "all";
 type StatusFilter = "ALL" | "CONFIRMED" | "COMPLETED";
 
 const DATE_OPTIONS: { key: DateRange; label: string }[] = [
@@ -24,7 +24,7 @@ const DATE_OPTIONS: { key: DateRange; label: string }[] = [
     { key: "yesterday", label: "Ayer" },
     { key: "week", label: "Última semana" },
     { key: "month", label: "Último mes" },
-    { key: "quarter", label: "Último trimestre" },
+    { key: "custom", label: "Personalizado" },
     { key: "all", label: "Todo" },
 ];
 
@@ -62,20 +62,27 @@ export default function StatisticsPage() {
     const { user } = useAuthStore();
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
     const [dateRange, setDateRange] = useState<DateRange>("month");
+    const [customFrom, setCustomFrom] = useState("");
+    const [customTo, setCustomTo] = useState("");
     const [sportFilter, setSportFilter] = useState("");
     const [venueFilter, setVenueFilter] = useState("");
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
 
+    // En modo personalizado, solo consultar cuando ambas fechas estén elegidas
+    const customReady = dateRange !== "custom" || (!!customFrom && !!customTo);
+
     // Estadísticas agregadas en el backend (escalable, respeta scope por rol)
     const { data: stats, isLoading } = useQuery({
-        queryKey: ["stats", dateRange, sportFilter, venueFilter, statusFilter],
+        queryKey: ["stats", dateRange, customFrom, customTo, sportFilter, venueFilter, statusFilter],
         queryFn: () =>
             apiClient.get<StatsResponse>("/bookings/stats", {
                 range: dateRange,
+                ...(dateRange === "custom" ? { from: customFrom, to: customTo } : {}),
                 ...(sportFilter ? { sportId: sportFilter } : {}),
                 ...(venueFilter ? { venueId: venueFilter } : {}),
                 ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
             }),
+        enabled: customReady,
     });
 
     // Catálogos para los filtros
@@ -102,12 +109,10 @@ export default function StatisticsPage() {
         return Array.from(map.values());
     })();
 
-    if (isLoading || !stats) {
-        return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;
-    }
-
-    const t = stats.totals;
-    const activeCount = t.total - t.cancelled;
+    // Mientras se cargan los datos (o faltan fechas en modo personalizado)
+    const showLoader = (isLoading || !stats) && customReady;
+    const t = stats?.totals;
+    const activeCount = t ? t.total - t.cancelled : 0;
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -134,6 +139,30 @@ export default function StatisticsPage() {
                         >
                             {DATE_OPTIONS.map((opt) => <SelectItem key={opt.key}>{opt.label}</SelectItem>)}
                         </Select>
+                        {dateRange === "custom" && (
+                            <>
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs text-default-500">Desde</label>
+                                    <input
+                                        type="date"
+                                        value={customFrom}
+                                        max={customTo || undefined}
+                                        onChange={(e) => setCustomFrom(e.target.value)}
+                                        className="rounded-lg border border-divider bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs text-default-500">Hasta</label>
+                                    <input
+                                        type="date"
+                                        value={customTo}
+                                        min={customFrom || undefined}
+                                        onChange={(e) => setCustomTo(e.target.value)}
+                                        className="rounded-lg border border-divider bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
+                                    />
+                                </div>
+                            </>
+                        )}
                         <Select
                             label="Deporte" size="sm" variant="bordered"
                             selectedKeys={sportFilter ? [sportFilter] : []}
@@ -160,9 +189,9 @@ export default function StatisticsPage() {
                     </div>
                     {(sportFilter || venueFilter || statusFilter !== "ALL" || dateRange !== "all") && (
                         <div className="mt-3 flex items-center gap-2">
-                            <span className="text-xs text-default-400">{t.total} reserva{t.total !== 1 ? "s" : ""} en el período</span>
+                            {t && <span className="text-xs text-default-400">{t.total} reserva{t.total !== 1 ? "s" : ""} en el período</span>}
                             <button
-                                onClick={() => { setDateRange("all"); setSportFilter(""); setVenueFilter(""); setStatusFilter("ALL"); }}
+                                onClick={() => { setDateRange("all"); setCustomFrom(""); setCustomTo(""); setSportFilter(""); setVenueFilter(""); setStatusFilter("ALL"); }}
                                 className="text-xs text-primary hover:underline"
                             >
                                 Limpiar filtros
@@ -171,6 +200,21 @@ export default function StatisticsPage() {
                     )}
                 </CardBody>
             </Card>
+
+            {/* Aviso en modo personalizado sin fechas completas */}
+            {dateRange === "custom" && !customReady && (
+                <Card className="border border-divider">
+                    <CardBody className="py-8 text-center text-sm text-default-500">
+                        Elegí una fecha de inicio y una de fin para ver las estadísticas del período.
+                    </CardBody>
+                </Card>
+            )}
+
+            {showLoader && (
+                <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>
+            )}
+
+            {t && !showLoader && <>
 
             {/* Stats Cards */}
             <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${isVenueAdmin ? "xl:grid-cols-6" : "xl:grid-cols-7"}`}>
@@ -361,6 +405,7 @@ export default function StatisticsPage() {
                     </Card>
                 )}
             </div>
+            </>}
         </div>
     );
 }

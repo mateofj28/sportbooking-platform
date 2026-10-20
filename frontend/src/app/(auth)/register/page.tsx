@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Input, Link, Divider } from "@heroui/react";
+import { Button, Input, Link, Divider, Checkbox } from "@heroui/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -33,6 +33,7 @@ export default function RegisterPage() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [countryCode, setCountryCode] = useState("+57");
     const [showCodes, setShowCodes] = useState(false);
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
 
     const {
         register,
@@ -242,24 +243,31 @@ export default function RegisterPage() {
                           )}
                       </div>
 
+                        <Checkbox
+                            isSelected={acceptedTerms}
+                            onValueChange={setAcceptedTerms}
+                            size="sm"
+                            className="mt-1"
+                        >
+                            <span className="text-xs text-default-500">
+                                Acepto los{" "}
+                                <Link href="/terminos" className="text-primary hover:underline" target="_blank">
+                                    Términos y Condiciones
+                                </Link>
+                            </span>
+                        </Checkbox>
+
                       <Button
                           type="submit"
                           color="primary"
                           size="lg"
                           isLoading={registerMutation.isPending}
-                          className="mt-2 font-semibold shadow-lg shadow-primary/20"
+                            isDisabled={!acceptedTerms}
+                            className="font-semibold shadow-lg shadow-primary/20"
                           endContent={!registerMutation.isPending && <ArrowRight className="h-4 w-4" />}
                       >
                           Crear Cuenta
                       </Button>
-
-                        <p className="text-center text-xs text-default-400">
-                            Al crear tu cuenta aceptás nuestros{" "}
-                            <Link href="/terminos" className="text-primary hover:underline" target="_blank">
-                                Términos y Condiciones
-                            </Link>
-                            .
-                        </p>
 
                       {registerMutation.isError && (
                           <div className="rounded-lg bg-danger-50 px-4 py-3 text-center text-sm text-danger">

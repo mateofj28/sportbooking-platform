@@ -253,6 +253,14 @@ export default function RegisterPage() {
                           Crear Cuenta
                       </Button>
 
+                        <p className="text-center text-xs text-default-400">
+                            Al crear tu cuenta aceptás nuestros{" "}
+                            <Link href="/terminos" className="text-primary hover:underline" target="_blank">
+                                Términos y Condiciones
+                            </Link>
+                            .
+                        </p>
+
                       {registerMutation.isError && (
                           <div className="rounded-lg bg-danger-50 px-4 py-3 text-center text-sm text-danger">
                               {(registerMutation.error as any)?.message || "Error al registrarse"}

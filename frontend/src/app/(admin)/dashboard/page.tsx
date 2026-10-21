@@ -174,108 +174,129 @@ const STATUS_LABELS: Record<string, string> = {
     COMPLETED: "Completada",
 };
 
+/** Precio base de una reserva (lo que le corresponde al complejo, sin comisión). */
+function basePriceOf(b: Booking): number {
+    const base = Number(b.basePrice);
+    if (base > 0) return base;
+    // Fallback: total menos comisión (por si basePrice no está)
+    return Number(b.totalPrice) - (Number(b.commissionAmount) || 0);
+}
+
+/** Tarjeta de una reserva del día (muestra el precio base). */
+function BookingRow({ booking }: { booking: Booking }) {
+    return (
+        <Card className="border border-divider">
+            <CardBody className="flex-row items-center justify-between p-4 gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                        <Calendar className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">{booking.facility.name}</p>
+                        <div className="flex items-center gap-3 mt-0.5 text-xs text-default-500">
+                            <span className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                {booking.user.firstName} {booking.user.lastName}
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {formatTime12h(booking.startDatetime)} — {formatTime12h(booking.endDatetime)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-sm font-bold text-success">${formatPrice(basePriceOf(booking))}</span>
+                    <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
+                        {STATUS_LABELS[booking.status]}
+                    </Chip>
+                </div>
+            </CardBody>
+        </Card>
+    );
+}
+
 function TodayBookings() {
     const today = new Date().toISOString().split("T")[0];
-    const [page, setPage] = useState(1);
-    const perPage = 6;
+    const now = Date.now();
 
     const { data: bookingsData, isLoading } = useQuery({
         queryKey: ["bookings", "today-list"],
-        queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=50"),
+        queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=100"),
         refetchOnMount: "always",
         staleTime: 0,
     });
 
+    // Reservas de hoy, no canceladas
     const todayBookings = (bookingsData?.data || []).filter((b) => {
         const bookingDate = new Date(b.startDatetime).toISOString().split("T")[0];
-        return bookingDate === today;
+        return bookingDate === today && b.status !== "CANCELLED";
     });
 
-    const totalPages = Math.ceil(todayBookings.length / perPage);
-    const paginatedBookings = todayBookings.slice((page - 1) * perPage, page * perPage);
+    // Pendientes de uso: pagadas cuyo turno aún no terminó
+    const pending = todayBookings.filter(
+        (b) => b.paymentStatus === "PAID" && new Date(b.endDatetime).getTime() > now,
+    );
+    // Utilizadas: cuyo turno ya pasó (se asume que el cliente asistió)
+    const used = todayBookings.filter((b) => new Date(b.endDatetime).getTime() <= now);
 
-    const formatTime = (d: string) => formatTime12h(d);
+    if (isLoading) {
+        return <div className="flex justify-center py-8"><Spinner /></div>;
+    }
 
     return (
-        <div>
-            <div className="flex items-center justify-between mb-4">
-                <div>
-                    <h2 className="text-lg font-bold">Reservas de hoy</h2>
-                    <p className="text-xs text-default-500">
-                        {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
-                    </p>
+        <div className="space-y-8">
+            {/* Reservas pagadas pendientes de uso */}
+            <div>
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 className="text-lg font-bold">Reservas pagadas pendientes de uso</h2>
+                        <p className="text-xs text-default-500">
+                            {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
+                        </p>
+                    </div>
+                    {pending.length > 0 && (
+                        <Chip size="sm" variant="flat" color="primary">{pending.length} reserva{pending.length !== 1 ? "s" : ""}</Chip>
+                    )}
                 </div>
-                {todayBookings.length > 0 && (
-                    <Chip size="sm" variant="flat" color="primary">{todayBookings.length} reservas</Chip>
+                {pending.length > 0 ? (
+                    <div className="space-y-3">
+                        {pending.map((b) => <BookingRow key={b.id} booking={b} />)}
+                    </div>
+                ) : (
+                    <Card className="border border-divider">
+                        <CardBody className="flex flex-col items-center py-8">
+                            <Calendar className="h-10 w-10 text-default-200" />
+                            <p className="mt-3 text-sm text-default-500">Sin reservas pendientes de uso hoy</p>
+                            </CardBody>
+                        </Card>
                 )}
             </div>
 
-            {isLoading ? (
-                <div className="flex justify-center py-8"><Spinner /></div>
-            ) : paginatedBookings.length > 0 ? (
-                <>
+            {/* Reservas utilizadas (turno ya pasó) */}
+            <div>
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 className="text-lg font-bold">Reservas utilizadas</h2>
+                        <p className="text-xs text-default-500">Turnos de hoy que ya finalizaron</p>
+                    </div>
+                    {used.length > 0 && (
+                        <Chip size="sm" variant="flat" color="success">{used.length} reserva{used.length !== 1 ? "s" : ""}</Chip>
+                    )}
+                </div>
+                {used.length > 0 ? (
                     <div className="space-y-3">
-                            {paginatedBookings.map((booking) => (
-                                <Card key={booking.id} className="border border-divider">
-                                    <CardBody className="flex-row items-center justify-between p-4 gap-3">
-                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                                                <Calendar className="h-5 w-5 text-primary" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-semibold text-sm truncate">{booking.facility.name}</p>
-                                                <div className="flex items-center gap-3 mt-0.5 text-xs text-default-500">
-                                                    <span className="flex items-center gap-1">
-                                                        <User className="h-3 w-3" />
-                                                        {booking.user.firstName} {booking.user.lastName}
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <Clock className="h-3 w-3" />
-                                                        {formatTime(booking.startDatetime)} — {formatTime(booking.endDatetime)}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 flex-shrink-0">
-                                            <span className="text-sm font-bold text-success">${formatPrice(Number(booking.totalPrice))}</span>
-                                            <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
-                                                {STATUS_LABELS[booking.status]}
-                                            </Chip>
-                                        </div>
-                                    </CardBody>
-                                </Card>
-                            ))}
-                        </div>
-                        {totalPages > 1 && (
-                            <div className="flex items-center justify-between mt-4">
-                                <p className="text-xs text-default-500">Página {page} de {totalPages}</p>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setPage((p) => p - 1)}
-                                        disabled={page <= 1}
-                                        className="px-3 py-1 text-xs font-medium rounded-lg bg-default-100 hover:bg-default-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                    >
-                                        Anterior
-                                    </button>
-                                    <button
-                                        onClick={() => setPage((p) => p + 1)}
-                                        disabled={page >= totalPages}
-                                        className="px-3 py-1 text-xs font-medium rounded-lg bg-default-100 hover:bg-default-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                    >
-                                        Siguiente
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </>
-            ) : (
-                <Card className="border border-divider">
-                    <CardBody className="flex flex-col items-center py-8">
-                        <Calendar className="h-10 w-10 text-default-200" />
-                        <p className="mt-3 text-sm text-default-500">Sin reservas para hoy</p>
-                    </CardBody>
-                </Card>
-            )}
+                        {used.map((b) => <BookingRow key={b.id} booking={b} />)}
+                    </div>
+                ) : (
+                    <Card className="border border-divider">
+                        <CardBody className="flex flex-col items-center py-8">
+                            <Calendar className="h-10 w-10 text-default-200" />
+                            <p className="mt-3 text-sm text-default-500">Todavía no hay turnos utilizados hoy</p>
+                        </CardBody>
+                    </Card>
+                )}
+            </div>
         </div>
     );
 }
@@ -303,12 +324,17 @@ function TodaySummary() {
     });
 
     const allBookings = bookingsData?.data || [];
+    const nowMs = Date.now();
     const todayBookings = allBookings.filter((b) => {
         const d = new Date(b.startDatetime).toISOString().split("T")[0];
         return d === today && b.status !== "CANCELLED";
     });
 
-    const todayRevenue = todayBookings.reduce((sum, b) => sum + Number(b.totalPrice), 0);
+    // Ingresos de hoy = precio BASE de los turnos de hoy que YA se usaron (su fin ya pasó).
+    // La plata se reconoce cuando el turno terminó, y sin la comisión de la empresa.
+    const todayRevenue = todayBookings
+        .filter((b) => new Date(b.endDatetime).getTime() <= nowMs)
+        .reduce((sum, b) => sum + basePriceOf(b), 0);
 
     // Comisión de la empresa: monto real guardado en cada reserva
     const todayCommission = todayBookings.reduce(

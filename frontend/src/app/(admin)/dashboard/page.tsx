@@ -1,6 +1,7 @@
 "use client";
 
-import { Card, CardBody, Chip, Spinner } from "@heroui/react";
+import { Card, CardBody, Chip, Spinner, DatePicker } from "@heroui/react";
+import { parseDate, type CalendarDate } from "@internationalized/date";
 import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
@@ -518,12 +519,19 @@ function RevenueByVenue() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <input
-                        type="date"
-                        value={selectedDay}
-                        max={argentinaToday()}
-                        onChange={(e) => setSelectedDay(e.target.value || argentinaToday())}
-                        className="rounded-lg border border-divider bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
+                    <DatePicker
+                        aria-label="Seleccionar día"
+                        size="sm"
+                        variant="bordered"
+                        className="w-44"
+                        value={(() => { try { return parseDate(selectedDay) as CalendarDate; } catch { return null; } })() as any}
+                        onChange={(v: any) => {
+                            if (!v) return;
+                            const iso = `${v.year}-${String(v.month).padStart(2, "0")}-${String(v.day).padStart(2, "0")}`;
+                            setSelectedDay(iso);
+                        }}
+                        maxValue={parseDate(argentinaToday()) as any}
+                        showMonthAndYearPickers
                     />
                     {!isToday && (
                         <button

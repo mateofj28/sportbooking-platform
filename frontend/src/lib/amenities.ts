@@ -26,6 +26,28 @@ const ICONS: Record<string, LucideIcon> = {
     accesible: Accessibility,
 };
 
+/**
+ * Emoji con forma y color para cada servicio (amenity).
+ * Mismas claves normalizadas que ICONS.
+ */
+const EMOJIS: Record<string, string> = {
+    vestuarios: "🚪",
+    duchas: "🚿",
+    banos: "🚻",
+    wifi: "📶",
+    estacionamiento: "🅿️",
+    parrilla: "🔥",
+    buffet: "🍔",
+    "iluminacion nocturna": "💡",
+    "alquiler de pecheras": "🎽",
+    cafeteria: "☕",
+    tribunas: "🪑",
+    "aire acondicionado": "❄️",
+    kiosco: "🏪",
+    seguridad: "🛡️",
+    accesible: "♿",
+};
+
 function normalize(name: string): string {
     return name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 }
@@ -33,4 +55,9 @@ function normalize(name: string): string {
 /** Devuelve el ícono del servicio, o un ícono genérico si no hay match. */
 export function amenityIcon(name: string): LucideIcon {
     return ICONS[normalize(name)] || Tag;
+}
+
+/** Devuelve el emoji (con forma y color) del servicio, o 🏷️ si no hay match. */
+export function amenityEmoji(name: string): string {
+    return EMOJIS[normalize(name)] || "🏷️";
 }

@@ -187,27 +187,47 @@ function basePriceOf(b: Booking): number {
 function BookingRow({ booking }: { booking: Booking }) {
     return (
         <Card className="border border-divider">
-            <CardBody className="flex-row items-center justify-between p-4 gap-3">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
+            <CardBody className="p-4">
+                {/* Fila principal: ícono + cancha + (precio/estado a la derecha en desktop) */}
+                <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
                         <Calendar className="h-5 w-5 text-primary" />
                     </div>
+
                     <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm truncate">{booking.facility.name}</p>
-                        <div className="flex items-center gap-3 mt-0.5 text-xs text-default-500">
-                            <span className="flex items-center gap-1">
-                                <User className="h-3 w-3" />
-                                {booking.user.firstName} {booking.user.lastName}
+
+                        {/* Metadatos: apilados en móvil, en línea desde sm */}
+                        <div className="mt-1 flex flex-col gap-1 text-xs text-default-500 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
+                            <span className="flex items-center gap-1.5 min-w-0">
+                                <User className="h-3.5 w-3.5 flex-shrink-0" />
+                                <span className="truncate">{booking.user.firstName} {booking.user.lastName}</span>
                             </span>
-                            <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {formatTime12h(booking.startDatetime)} — {formatTime12h(booking.endDatetime)}
+                            <span className="flex items-center gap-1.5">
+                                <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                                <span className="whitespace-nowrap">
+                                    {formatTime12h(booking.startDatetime)} — {formatTime12h(booking.endDatetime)}
+                                </span>
                             </span>
                         </div>
                     </div>
+
+                    {/* Precio + estado: visibles a la derecha solo en desktop */}
+                    <div className="hidden sm:flex flex-col items-end gap-1.5 flex-shrink-0">
+                        <span className="text-sm font-bold text-success whitespace-nowrap">
+                            ${formatPrice(basePriceOf(booking))}
+                        </span>
+                        <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
+                            {STATUS_LABELS[booking.status]}
+                        </Chip>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-sm font-bold text-success">${formatPrice(basePriceOf(booking))}</span>
+
+                {/* Precio + estado: fila inferior en móvil, separada con borde */}
+                <div className="mt-3 flex items-center justify-between border-t border-divider pt-3 sm:hidden">
+                    <span className="text-base font-bold text-success">
+                        ${formatPrice(basePriceOf(booking))}
+                    </span>
                     <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
                         {STATUS_LABELS[booking.status]}
                     </Chip>

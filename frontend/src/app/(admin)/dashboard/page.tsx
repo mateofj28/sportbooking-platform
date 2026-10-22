@@ -165,7 +165,7 @@ const STATUS_COLORS: Record<string, "warning" | "success" | "danger" | "default"
     PENDING: "warning",
     CONFIRMED: "success",
     CANCELLED: "danger",
-    COMPLETED: "default",
+    COMPLETED: "success",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -302,7 +302,7 @@ function TodayBookings() {
                         <p className="text-xs text-default-500">Turnos de hoy que ya finalizaron</p>
                     </div>
                     {used.length > 0 && (
-                        <Chip size="sm" variant="flat" color="success">{used.length} reserva{used.length !== 1 ? "s" : ""}</Chip>
+                        <Chip size="sm" variant="flat" color="default">{used.length} reserva{used.length !== 1 ? "s" : ""}</Chip>
                     )}
                 </div>
                 {used.length > 0 ? (

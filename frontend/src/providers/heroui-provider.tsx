@@ -11,7 +11,7 @@ export function HeroUIProviderWrapper({
     const router = useRouter();
 
     return (
-        <HeroUIProvider navigate={router.push}>
+        <HeroUIProvider navigate={router.push} locale="es-AR">
             {children}
         </HeroUIProvider>
     );

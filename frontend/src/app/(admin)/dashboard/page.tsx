@@ -394,7 +394,7 @@ function TodaySummary() {
             : []),
         {
             icon: <MapPin className="h-5 w-5 text-warning" />,
-            label: "Canchas ocupadas",
+            label: "Turnos ocupados",
             value: `${occupiedFacilities}/${facilities?.length || 0}`,
             bg: "bg-warning/10",
         },

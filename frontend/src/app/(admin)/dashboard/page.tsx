@@ -438,16 +438,16 @@ function TodaySummary() {
     return (
         <div>
             <h2 className="text-lg font-bold mb-4">Resumen del día</h2>
-            <div className={`grid grid-cols-2 gap-3 sm:grid-cols-3 ${isVenueAdmin ? "lg:grid-cols-5" : "lg:grid-cols-3 xl:grid-cols-6"}`}>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 {stats.map((stat, i) => (
-                    <Card key={i} className="border border-divider">
-                        <CardBody className="flex-row items-start gap-3 p-4">
-                            <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${stat.bg}`}>
+                    <Card key={i} className="border border-divider transition-shadow hover:shadow-sm">
+                        <CardBody className="flex-col items-start gap-3 p-5">
+                            <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl ${stat.bg}`}>
                                 {stat.icon}
                             </div>
                             <div className="min-w-0">
-                                <p className="text-xl font-bold leading-tight break-words">{stat.value}</p>
-                                <p className="text-[11px] text-default-500 leading-snug">{stat.label}</p>
+                                <p className="text-2xl font-bold leading-none break-words">{stat.value}</p>
+                                <p className="mt-1.5 text-xs text-default-500 leading-snug">{stat.label}</p>
                             </div>
                         </CardBody>
                     </Card>

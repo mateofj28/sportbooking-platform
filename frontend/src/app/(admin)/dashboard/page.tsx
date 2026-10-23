@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { formatTimeAr } from "@/lib/datetime";
 import { useState, useEffect, useCallback } from "react";
-import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp } from "lucide-react";
+import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp, CheckCircle2 } from "lucide-react";
 import type { Booking, Facility, PaginatedResult, User as UserType, Venue } from "@/types";
 
 /** Hora 12h en español sin cero adelante: "9:00 a. m." */
@@ -348,9 +348,17 @@ function TodaySummary() {
     const allBookings = bookingsData?.data || [];
     const nowMs = Date.now();
     const todayBookings = allBookings.filter((b) => {
-        const d = new Date(b.startDatetime).toISOString().split("T")[0];
-        return d === today && b.status !== "CANCELLED";
+        return argentinaDay(b.startDatetime) === today && b.status !== "CANCELLED";
     });
+
+    // Reservas pagadas pendientes de uso: pagadas y cuyo turno aún no terminó
+    const paidPendingCount = todayBookings.filter(
+        (b) => b.paymentStatus === "PAID" && new Date(b.endDatetime).getTime() > nowMs,
+    ).length;
+    // Reservas utilizadas: pagadas y cuyo turno ya pasó
+    const usedCount = todayBookings.filter(
+        (b) => b.paymentStatus === "PAID" && new Date(b.endDatetime).getTime() <= nowMs,
+    ).length;
 
     // Ingresos de hoy = precio BASE de los turnos de hoy que YA se usaron (su fin ya pasó).
     // La plata se reconoce cuando el turno terminó, y sin la comisión de la empresa.
@@ -379,10 +387,16 @@ function TodaySummary() {
 
     const stats = [
         {
-            icon: <Calendar className="h-5 w-5 text-primary" />,
-            label: "Reservas hoy",
-            value: todayBookings.length,
+            icon: <Clock className="h-5 w-5 text-primary" />,
+            label: "Reservas pagadas",
+            value: paidPendingCount,
             bg: "bg-primary/10",
+        },
+        {
+            icon: <CheckCircle2 className="h-5 w-5 text-success" />,
+            label: "Reservas utilizadas",
+            value: usedCount,
+            bg: "bg-success/10",
         },
         // Admin de sede ve "clientes que reservaron"; admin general ve "usuarios nuevos" del sistema
         isVenueAdmin
@@ -424,7 +438,7 @@ function TodaySummary() {
     return (
         <div>
             <h2 className="text-lg font-bold mb-4">Resumen del día</h2>
-            <div className={`grid grid-cols-2 gap-3 ${isVenueAdmin ? "lg:grid-cols-4" : "lg:grid-cols-5"}`}>
+            <div className={`grid grid-cols-2 gap-3 ${isVenueAdmin ? "lg:grid-cols-5" : "lg:grid-cols-3 xl:grid-cols-6"}`}>
                 {stats.map((stat, i) => (
                     <Card key={i} className="border border-divider">
                         <CardBody className="flex-row items-center gap-3 p-4">

@@ -185,6 +185,11 @@ function basePriceOf(b: Booking): number {
 
 /** Tarjeta de una reserva del día (muestra el precio base). */
 function BookingRow({ booking }: { booking: Booking }) {
+    const { user } = useAuthStore();
+    const isVenueAdmin = user?.role === "VENUE_ADMIN";
+    // Admin de sede: precio base (sin comisión). Admin general: precio completo (base + comisión).
+    const displayPrice = isVenueAdmin ? basePriceOf(booking) : Number(booking.totalPrice);
+
     return (
         <Card className="border border-divider">
             <CardBody className="p-4">
@@ -215,7 +220,7 @@ function BookingRow({ booking }: { booking: Booking }) {
                     {/* Precio + estado: visibles a la derecha solo en desktop */}
                     <div className="hidden sm:flex flex-col items-end gap-1.5 flex-shrink-0">
                         <span className="text-sm font-bold text-success whitespace-nowrap">
-                            ${formatPrice(basePriceOf(booking))}
+                            ${formatPrice(displayPrice)}
                         </span>
                         <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
                             {STATUS_LABELS[booking.status]}
@@ -226,7 +231,7 @@ function BookingRow({ booking }: { booking: Booking }) {
                 {/* Precio + estado: fila inferior en móvil, separada con borde */}
                 <div className="mt-3 flex items-center justify-between border-t border-divider pt-3 sm:hidden">
                     <span className="text-base font-bold text-success">
-                        ${formatPrice(basePriceOf(booking))}
+                        ${formatPrice(displayPrice)}
                     </span>
                     <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
                         {STATUS_LABELS[booking.status]}

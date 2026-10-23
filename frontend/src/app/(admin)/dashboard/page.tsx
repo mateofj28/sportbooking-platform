@@ -368,14 +368,14 @@ function TodaySummary() {
     // Ingresos de hoy = precio BASE de los turnos de hoy que YA se usaron (su fin ya pasó).
     // La plata se reconoce cuando el turno terminó, y sin la comisión de la empresa.
     const todayRevenue = todayBookings
-        .filter((b) => new Date(b.endDatetime).getTime() <= nowMs)
+        .filter((b) => b.paymentStatus === "PAID" && new Date(b.endDatetime).getTime() <= nowMs)
         .reduce((sum, b) => sum + basePriceOf(b), 0);
 
-    // Comisión de la empresa: monto real guardado en cada reserva
-    const todayCommission = todayBookings.reduce(
-        (sum, b) => sum + (Number(b.commissionAmount) || 0),
-        0,
-    );
+    // Comisión de la empresa: solo de turnos YA USADOS (pagados y cuyo fin ya pasó),
+    // mismo criterio que "reservas utilizadas" e "ingresos hoy".
+    const todayCommission = todayBookings
+        .filter((b) => b.paymentStatus === "PAID" && new Date(b.endDatetime).getTime() <= nowMs)
+        .reduce((sum, b) => sum + (Number(b.commissionAmount) || 0), 0);
 
     // Usuarios nuevos del sistema hoy (solo relevante para el admin general)
     const allUsers = usersData?.data || [];

@@ -238,7 +238,7 @@ function BookingRow({ booking }: { booking: Booking }) {
 }
 
 function TodayBookings() {
-    const today = new Date().toISOString().split("T")[0];
+    const today = argentinaToday();
     const now = Date.now();
 
     const { data: bookingsData, isLoading } = useQuery({
@@ -248,18 +248,19 @@ function TodayBookings() {
         staleTime: 0,
     });
 
-    // Reservas de hoy, no canceladas
+    // Reservas de hoy (en hora de Argentina), no canceladas
     const todayBookings = (bookingsData?.data || []).filter((b) => {
-        const bookingDate = new Date(b.startDatetime).toISOString().split("T")[0];
-        return bookingDate === today && b.status !== "CANCELLED";
+        return argentinaDay(b.startDatetime) === today && b.status !== "CANCELLED";
     });
 
     // Pendientes de uso: pagadas cuyo turno aún no terminó
     const pending = todayBookings.filter(
         (b) => b.paymentStatus === "PAID" && new Date(b.endDatetime).getTime() > now,
     );
-    // Utilizadas: cuyo turno ya pasó (se asume que el cliente asistió)
-    const used = todayBookings.filter((b) => new Date(b.endDatetime).getTime() <= now);
+    // Utilizadas: pagadas cuyo turno ya pasó (se asume que el cliente asistió)
+    const used = todayBookings.filter(
+        (b) => b.paymentStatus === "PAID" && new Date(b.endDatetime).getTime() <= now,
+    );
 
     if (isLoading) {
         return <div className="flex justify-center py-8"><Spinner /></div>;

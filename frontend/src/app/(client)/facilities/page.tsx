@@ -143,14 +143,14 @@ function FacilitiesContent() {
                                                                 key={a}
                                                                 size="sm"
                                                                 variant="flat"
-                                                                className="text-[11px]"
+                                                                className="bg-default-50 border border-default-200 text-default-600 text-[11px]"
                                                                 startContent={<span className="text-sm leading-none">{amenityEmoji(a)}</span>}
                                                             >
                                                                 {a}
                                                             </Chip>
                                                         ))}
                                                         {venue.amenities.length > 5 && (
-                                                            <Chip size="sm" variant="flat" color="default" className="text-[11px]">
+                                                            <Chip size="sm" variant="flat" className="bg-default-50 border border-default-200 text-default-600 text-[11px]">
                                                                 +{venue.amenities.length - 5}
                                                             </Chip>
                                                         )}

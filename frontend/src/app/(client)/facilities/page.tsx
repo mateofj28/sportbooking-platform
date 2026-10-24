@@ -138,7 +138,7 @@ function FacilitiesContent() {
                                                 )}
                                                 {venue.amenities && venue.amenities.length > 0 && (
                                                     <div className="mt-3 flex flex-wrap gap-1.5">
-                                                        {venue.amenities.slice(0, 5).map((a) => (
+                                                        {venue.amenities.map((a) => (
                                                             <Chip
                                                                 key={a}
                                                                 size="sm"
@@ -149,11 +149,6 @@ function FacilitiesContent() {
                                                                 {a}
                                                             </Chip>
                                                         ))}
-                                                        {venue.amenities.length > 5 && (
-                                                            <Chip size="sm" variant="flat" className="bg-default-50 border border-default-200 text-default-600 text-[11px]">
-                                                                +{venue.amenities.length - 5}
-                                                            </Chip>
-                                                        )}
                                                     </div>
                                                 )}
                                             </CardBody>

@@ -38,6 +38,7 @@ export class FacilitiesRepository {
             include: {
                 sport: true,
                 venue: { select: { id: true, name: true, city: true, address: true } },
+                schedules: { where: { isActive: true } },
             },
             // Orden determinista: desempatar por id para que filas con el mismo
             // nombre no cambien de posición entre recargas (evita confusión al

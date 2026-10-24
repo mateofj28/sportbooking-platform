@@ -387,8 +387,34 @@ function TodaySummary() {
     // Clientes distintos que reservaron hoy (relevante para el admin de sede)
     const clientsToday = new Set(todayBookings.map((b) => b.userId)).size;
 
-    // Unique facilities booked today
-    const occupiedFacilities = new Set(todayBookings.map((b) => b.facilityId)).size;
+    // Turnos ocupados hoy = reservas de hoy (no canceladas).
+    // Capacidad total de turnos hoy = suma, por cada cancha activa con horario hoy,
+    // de la cantidad de slots que caben en su franja según minBookingDuration.
+    const todayDow = (() => {
+        // Día de semana en AR (0=Lunes..6=Domingo)
+        const [y, m, d] = today.split("-").map(Number);
+        const jsDow = new Date(y, m - 1, d).getDay(); // 0=Domingo..6=Sábado
+        return (jsDow + 6) % 7;
+    })();
+
+    const slotsForSchedule = (openTime: string, closeTime: string, durationMin: number): number => {
+        if (!durationMin || durationMin <= 0) return 0;
+        const [oh, om] = openTime.split(":").map(Number);
+        const [ch, cm] = closeTime.split(":").map(Number);
+        let start = oh * 60 + om;
+        let end = ch * 60 + cm;
+        if (end <= start) end += 24 * 60; // cruza medianoche
+        return Math.max(0, Math.floor((end - start) / durationMin));
+    };
+
+    const totalTurnsToday = (facilities || []).reduce((sum, f) => {
+        if (!f.isActive) return sum;
+        const sch = f.schedules?.find((s) => s.dayOfWeek === todayDow && s.isActive);
+        if (!sch) return sum;
+        return sum + slotsForSchedule(sch.openTime, sch.closeTime, f.minBookingDuration);
+    }, 0);
+
+    const occupiedTurns = todayBookings.length;
 
     const stats = [
         {
@@ -435,7 +461,7 @@ function TodaySummary() {
         {
             icon: <MapPin className="h-5 w-5 text-warning" />,
             label: "Turnos ocupados",
-            value: `${occupiedFacilities}/${facilities?.length || 0}`,
+            value: `${occupiedTurns}/${totalTurnsToday}`,
             bg: "bg-warning/10",
         },
     ];

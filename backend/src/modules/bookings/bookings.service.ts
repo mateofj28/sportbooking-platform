@@ -446,6 +446,8 @@ export class BookingsService {
                 id: true,
                 status: true,
                 startDatetime: true,
+                endDatetime: true,
+                paymentStatus: true,
                 totalPrice: true,
                 basePrice: true,
                 commissionAmount: true,
@@ -486,37 +488,46 @@ export class BookingsService {
             else if (b.status === 'PENDING') pending += 1;
 
             const notCancelled = b.status !== 'CANCELLED';
+            // Ingreso/comisión reconocidos: reserva PAGADA y cuyo turno YA finalizó (ya usada).
+            const earned = b.paymentStatus === 'PAID' && new Date(b.endDatetime).getTime() <= now.getTime();
             const totalP = Number(b.totalPrice) || 0;
             const commission = Number(b.commissionAmount) || 0;
             const base = Number(b.basePrice) || totalP - commission;
 
             if (notCancelled) {
-                totalRevenue += totalP;
-                totalCommission += commission;
-                totalBase += base;
+                // Dinero: solo de turnos ya usados y pagados
+                if (earned) {
+                    totalRevenue += totalP;
+                    totalCommission += commission;
+                    totalBase += base;
+                }
 
-                // por día (fecha del turno en AR)
-                const day = arDayKey(b.startDatetime);
-                byDay[day] = (byDay[day] || 0) + totalP;
+                // por día (fecha del turno en AR) — solo ingresos reconocidos
+                if (earned) {
+                    const day = arDayKey(b.startDatetime);
+                    byDay[day] = (byDay[day] || 0) + totalP;
+                }
 
-                // por día de semana (0=Lunes..6=Domingo, en AR)
+                // por día de semana (0=Lunes..6=Domingo, en AR) — cuenta de reservas activas
                 const arDate = new Date(new Date(b.startDatetime).getTime() - AR_OFFSET_MIN * 60000);
                 const weekday = (arDate.getUTCDay() + 6) % 7;
                 byWeekday[weekday] += 1;
 
-                // por deporte
+                // por deporte — cuenta de reservas activas; ingreso solo si ya usado
                 const sp = b.facility?.sport;
                 if (sp) {
                     const e = bySport.get(sp.id) || { sportId: sp.id, name: sp.name, count: 0, revenue: 0 };
-                    e.count += 1; e.revenue += totalP;
+                    e.count += 1;
+                    if (earned) e.revenue += totalP;
                     bySport.set(sp.id, e);
                 }
 
-                // por complejo
+                // por complejo — cuenta de reservas activas; montos solo si ya usado
                 const v = b.facility?.venue;
                 if (v) {
                     const e = byVenue.get(v.id) || { venueId: v.id, venueName: v.name, total: 0, base: 0, commission: 0, count: 0 };
-                    e.total += totalP; e.base += base; e.commission += commission; e.count += 1;
+                    if (earned) { e.total += totalP; e.base += base; e.commission += commission; }
+                    e.count += 1;
                     byVenue.set(v.id, e);
                 }
 

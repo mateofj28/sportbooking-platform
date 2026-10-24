@@ -10,6 +10,12 @@ import {
     Divider,
     Textarea,
     Spinner,
+    Modal,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+    useDisclosure,
 } from "@heroui/react";
 import { useFacility } from "@/hooks/use-facilities";
 import { useCreateBooking, useCreateRecurringBooking } from "@/hooks/use-bookings";
@@ -30,6 +36,7 @@ import {
     ChevronRight,
     DollarSign,
     Check,
+    AlertTriangle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -141,6 +148,9 @@ export default function FacilityDetailPage({
         skippedCount: number;
         skipped: { date: string; reason: string }[];
     }>(null);
+
+    // Modal de advertencia al reservar para HOY (no se podrá cancelar)
+    const { isOpen: isTodayWarnOpen, onOpen: onTodayWarnOpen, onClose: onTodayWarnClose } = useDisclosure();
 
     const days = useMemo(() => getRemainingDaysOfMonth(), []);
 
@@ -281,11 +291,8 @@ export default function FacilityDetailPage({
         return new Date(Date.UTC(y, mo, d, h + 3, m, 0)).toISOString();
     };
 
-    const handleBooking = () => {
-        if (!isAuthenticated) {
-            router.push("/login");
-            return;
-        }
+    /** Crea la reserva (pago/confirmación real). */
+    const confirmBooking = () => {
         if (!selectedSlot) return;
 
         const startDatetime = buildArIso(selectedDate, selectedSlot);
@@ -295,6 +302,31 @@ export default function FacilityDetailPage({
             { facilityId: id, startDatetime, endDatetime, notes: notes || undefined },
             { onSuccess: () => router.push("/bookings") }
         );
+    };
+
+    /**
+     * Click en "Confirmar Reserva".
+     * Si la reserva es para HOY, primero muestra un aviso de que no podrá cancelarse
+     * (la cancelación requiere 24h de anticipación). Si no es hoy, confirma directo.
+     */
+    const handleBooking = () => {
+        if (!isAuthenticated) {
+            router.push("/login");
+            return;
+        }
+        if (!selectedSlot) return;
+
+        if (isToday) {
+            onTodayWarnOpen();
+            return;
+        }
+        confirmBooking();
+    };
+
+    /** Aceptar en el modal de hoy: cierra y procede con el pago/confirmación. */
+    const handleConfirmToday = () => {
+        onTodayWarnClose();
+        confirmBooking();
     };
 
     const handleRecurringBooking = () => {
@@ -700,6 +732,44 @@ export default function FacilityDetailPage({
                     </>
                 )}
             </main>
+
+            {/* Aviso al reservar para HOY: no se podrá cancelar */}
+            <Modal isOpen={isTodayWarnOpen} onClose={onTodayWarnClose} placement="center" size="md">
+                <ModalContent>
+                    <ModalHeader className="flex items-center gap-2">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-warning/15">
+                            <AlertTriangle className="h-5 w-5 text-warning" />
+                        </span>
+                        Reserva para hoy
+                    </ModalHeader>
+                    <ModalBody>
+                        <p className="text-sm text-default-700">
+                            Estás por reservar un turno para <span className="font-semibold">hoy</span>.
+                        </p>
+                        <p className="text-sm text-default-600">
+                            Las reservas solo se pueden cancelar con al menos 24 horas de anticipación.
+                            Como este turno es para hoy, <span className="font-semibold">no vas a poder cancelarlo</span> una
+                            vez confirmado el pago.
+                        </p>
+                        <p className="text-sm text-default-600">
+                            ¿Querés continuar con el pago de la reserva?
+                        </p>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="light" onPress={onTodayWarnClose}>
+                            Volver
+                        </Button>
+                        <Button
+                            color="primary"
+                            onPress={handleConfirmToday}
+                            isLoading={createBooking.isPending}
+                            startContent={<Check className="h-4 w-4" />}
+                        >
+                            Aceptar y pagar
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </div>
     );
 }

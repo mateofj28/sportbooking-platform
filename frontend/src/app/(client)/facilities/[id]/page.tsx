@@ -293,6 +293,17 @@ export default function FacilityDetailPage({
         return new Date(Date.UTC(y, mo, d, h + 3, m, 0)).toISOString();
     };
 
+    // Ventana de cancelación: el cliente solo puede cancelar con 24h o más de
+    // anticipación al INICIO del turno (igual que el backend). Si el turno elegido
+    // empieza dentro de las próximas 24h, ya no se podrá cancelar -> mostrar aviso.
+    const CANCEL_WINDOW_MS = 24 * 60 * 60 * 1000;
+    const startsWithinCancelWindow = useMemo(() => {
+        if (!selectedSlot) return false;
+        const startMs = new Date(buildArIso(selectedDate, selectedSlot)).getTime();
+        return startMs - Date.now() < CANCEL_WINDOW_MS;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedSlot, selectedDate, schedule]);
+
     /** Crea la reserva (pago/confirmación real). */
     const confirmBooking = () => {
         if (!selectedSlot) return;
@@ -318,7 +329,7 @@ export default function FacilityDetailPage({
         }
         if (!selectedSlot) return;
 
-        if (isToday) {
+        if (startsWithinCancelWindow) {
             setPendingAction("single");
             onTodayWarnOpen();
             return;
@@ -374,7 +385,7 @@ export default function FacilityDetailPage({
         }
         if (!selectedSlot) return;
 
-        if (isToday) {
+        if (startsWithinCancelWindow) {
             setPendingAction("recurring");
             onTodayWarnOpen();
             return;
@@ -754,24 +765,24 @@ export default function FacilityDetailPage({
                 )}
             </main>
 
-            {/* Aviso al reservar para HOY: no se podrá cancelar */}
+            {/* Aviso: el turno empieza en menos de 24h, no se podrá cancelar */}
             <Modal isOpen={isTodayWarnOpen} onClose={onTodayWarnClose} placement="center" size="md">
                 <ModalContent>
                     <ModalHeader className="flex items-center gap-2">
                         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-warning/15">
                             <AlertTriangle className="h-5 w-5 text-warning" />
                         </span>
-                        Reserva para hoy
+                        No vas a poder cancelar
                     </ModalHeader>
                     <ModalBody>
                         {pendingAction === "recurring" ? (
                             <>
                                 <p className="text-sm text-default-700">
-                                    La <span className="font-semibold">primera fecha</span> de tu turno fijo es <span className="font-semibold">hoy</span>.
+                                    La <span className="font-semibold">primera fecha</span> de tu turno fijo empieza en <span className="font-semibold">menos de 24 horas</span>.
                                 </p>
                                 <p className="text-sm text-default-600">
-                                    Las reservas solo se pueden cancelar con al menos 24 horas de anticipación.
-                                    Como esa primera fecha es para hoy, <span className="font-semibold">no vas a poder cancelarla</span> una
+                                    Las reservas solo se pueden cancelar con al menos 24 horas de anticipación al inicio del turno.
+                                    Como esa primera fecha está dentro de ese plazo, <span className="font-semibold">no vas a poder cancelarla</span> una
                                     vez confirmada. El resto de las fechas futuras sí se podrán cancelar.
                                 </p>
                                 <p className="text-sm text-default-600">
@@ -781,11 +792,11 @@ export default function FacilityDetailPage({
                         ) : (
                             <>
                                     <p className="text-sm text-default-700">
-                                        Estás por reservar un turno para <span className="font-semibold">hoy</span>.
+                                        Este turno empieza en <span className="font-semibold">menos de 24 horas</span>.
                                     </p>
                                     <p className="text-sm text-default-600">
-                                        Las reservas solo se pueden cancelar con al menos 24 horas de anticipación.
-                                        Como este turno es para hoy, <span className="font-semibold">no vas a poder cancelarlo</span> una
+                                        Las reservas solo se pueden cancelar con al menos 24 horas de anticipación al inicio del turno.
+                                        Como este turno está dentro de ese plazo, <span className="font-semibold">no vas a poder cancelarlo</span> una
                                         vez confirmado el pago.
                                     </p>
                                     <p className="text-sm text-default-600">

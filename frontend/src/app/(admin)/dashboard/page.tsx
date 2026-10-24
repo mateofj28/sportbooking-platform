@@ -399,7 +399,7 @@ function TodaySummary() {
         },
         {
             icon: <CheckCircle2 className="h-5 w-5 text-success" />,
-            label: "Reservas utilizadas",
+            label: "Reservas completadas",
             value: usedCount,
             bg: "bg-success/10",
         },

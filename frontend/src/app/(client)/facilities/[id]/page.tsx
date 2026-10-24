@@ -149,8 +149,10 @@ export default function FacilityDetailPage({
         skipped: { date: string; reason: string }[];
     }>(null);
 
-    // Modal de advertencia al reservar para HOY (no se podrá cancelar)
+    // Modal de advertencia al reservar para HOY (no se podrá cancelar).
+    // "pendingAction" indica qué confirmar al aceptar: reserva única o turno fijo.
     const { isOpen: isTodayWarnOpen, onOpen: onTodayWarnOpen, onClose: onTodayWarnClose } = useDisclosure();
+    const [pendingAction, setPendingAction] = useState<"single" | "recurring">("single");
 
     const days = useMemo(() => getRemainingDaysOfMonth(), []);
 
@@ -317,23 +319,22 @@ export default function FacilityDetailPage({
         if (!selectedSlot) return;
 
         if (isToday) {
+            setPendingAction("single");
             onTodayWarnOpen();
             return;
         }
         confirmBooking();
     };
 
-    /** Aceptar en el modal de hoy: cierra y procede con el pago/confirmación. */
+    /** Aceptar en el modal de hoy: cierra y procede con la acción pendiente. */
     const handleConfirmToday = () => {
         onTodayWarnClose();
-        confirmBooking();
+        if (pendingAction === "recurring") confirmRecurringBooking();
+        else confirmBooking();
     };
 
-    const handleRecurringBooking = () => {
-        if (!isAuthenticated) {
-            router.push("/login");
-            return;
-        }
+    /** Crea el turno fijo (pago/confirmación real de las 8 fechas). */
+    const confirmRecurringBooking = () => {
         if (!selectedSlot) return;
 
         const startDate = selectedDate.toISOString().split("T")[0];
@@ -359,6 +360,26 @@ export default function FacilityDetailPage({
                 },
             }
         );
+    };
+
+    /**
+     * Click en "Crear turno fijo".
+     * Si la PRIMERA fecha del turno fijo es HOY, avisa que esa reserva no podrá
+     * cancelarse antes de confirmar. Si no, crea directo.
+     */
+    const handleRecurringBooking = () => {
+        if (!isAuthenticated) {
+            router.push("/login");
+            return;
+        }
+        if (!selectedSlot) return;
+
+        if (isToday) {
+            setPendingAction("recurring");
+            onTodayWarnOpen();
+            return;
+        }
+        confirmRecurringBooking();
     };
 
     if (isLoading) {
@@ -743,17 +764,35 @@ export default function FacilityDetailPage({
                         Reserva para hoy
                     </ModalHeader>
                     <ModalBody>
-                        <p className="text-sm text-default-700">
-                            Estás por reservar un turno para <span className="font-semibold">hoy</span>.
-                        </p>
-                        <p className="text-sm text-default-600">
-                            Las reservas solo se pueden cancelar con al menos 24 horas de anticipación.
-                            Como este turno es para hoy, <span className="font-semibold">no vas a poder cancelarlo</span> una
-                            vez confirmado el pago.
-                        </p>
-                        <p className="text-sm text-default-600">
-                            ¿Querés continuar con el pago de la reserva?
-                        </p>
+                        {pendingAction === "recurring" ? (
+                            <>
+                                <p className="text-sm text-default-700">
+                                    La <span className="font-semibold">primera fecha</span> de tu turno fijo es <span className="font-semibold">hoy</span>.
+                                </p>
+                                <p className="text-sm text-default-600">
+                                    Las reservas solo se pueden cancelar con al menos 24 horas de anticipación.
+                                    Como esa primera fecha es para hoy, <span className="font-semibold">no vas a poder cancelarla</span> una
+                                    vez confirmada. El resto de las fechas futuras sí se podrán cancelar.
+                                </p>
+                                <p className="text-sm text-default-600">
+                                    ¿Querés continuar y crear el turno fijo?
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                    <p className="text-sm text-default-700">
+                                        Estás por reservar un turno para <span className="font-semibold">hoy</span>.
+                                    </p>
+                                    <p className="text-sm text-default-600">
+                                        Las reservas solo se pueden cancelar con al menos 24 horas de anticipación.
+                                        Como este turno es para hoy, <span className="font-semibold">no vas a poder cancelarlo</span> una
+                                        vez confirmado el pago.
+                                    </p>
+                                    <p className="text-sm text-default-600">
+                                        ¿Querés continuar con el pago de la reserva?
+                                    </p>
+                            </>
+                        )}
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="light" onPress={onTodayWarnClose}>
@@ -762,10 +801,10 @@ export default function FacilityDetailPage({
                         <Button
                             color="primary"
                             onPress={handleConfirmToday}
-                            isLoading={createBooking.isPending}
+                            isLoading={pendingAction === "recurring" ? createRecurring.isPending : createBooking.isPending}
                             startContent={<Check className="h-4 w-4" />}
                         >
-                            Aceptar y pagar
+                            {pendingAction === "recurring" ? "Aceptar y crear" : "Aceptar y pagar"}
                         </Button>
                     </ModalFooter>
                 </ModalContent>

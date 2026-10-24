@@ -197,10 +197,10 @@ export function RevenueAreaChart({ byDay }: { byDay: StatsByDay[] }) {
             <Divider />
             <CardBody>
                 <ResponsiveContainer width="100%" height={200}>
-                    <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <AreaChart data={data} margin={{ top: 10, right: 10, left: 12, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
                       <XAxis dataKey="name" tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} />
-                        <YAxis tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} tickFormatter={fmtNum} />
+                        <YAxis tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} tickFormatter={fmtNum} width={56} />
                       <Tooltip
                           contentStyle={{
                               borderRadius: "8px",

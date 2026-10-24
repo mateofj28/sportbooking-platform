@@ -304,7 +304,7 @@ function TodayBookings() {
             <div>
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h2 className="text-lg font-bold">Reservas utilizadas</h2>
+                        <h2 className="text-lg font-bold">Reservas completadas</h2>
                         <p className="text-xs text-default-500">Turnos de hoy que ya finalizaron</p>
                     </div>
                     {used.length > 0 && (
@@ -319,7 +319,7 @@ function TodayBookings() {
                     <Card className="border border-divider">
                         <CardBody className="flex flex-col items-center py-8">
                             <Calendar className="h-10 w-10 text-default-200" />
-                            <p className="mt-3 text-sm text-default-500">Todavía no hay turnos utilizados hoy</p>
+                                <p className="mt-3 text-sm text-default-500">Todavía no hay reservas completadas hoy</p>
                         </CardBody>
                     </Card>
                 )}

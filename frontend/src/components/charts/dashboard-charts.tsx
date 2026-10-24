@@ -17,6 +17,12 @@ const COLORS = {
 
 const DAY_NAMES = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
+/** Número con separador de miles (es-AR usa punto): 26250 -> "26.250" */
+function fmtNum(value: number | string): string {
+    const n = typeof value === "number" ? value : Number(value) || 0;
+    return Math.round(n).toLocaleString("es-AR");
+}
+
 export interface StatsByStatus {
     PENDING: number;
     CONFIRMED: number;
@@ -194,7 +200,7 @@ export function RevenueAreaChart({ byDay }: { byDay: StatsByDay[] }) {
                     <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
                       <XAxis dataKey="name" tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} />
-                      <YAxis tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} />
+                        <YAxis tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} tickFormatter={fmtNum} />
                       <Tooltip
                           contentStyle={{
                               borderRadius: "8px",
@@ -203,7 +209,7 @@ export function RevenueAreaChart({ byDay }: { byDay: StatsByDay[] }) {
                               border: `1px solid ${colors.tooltipBorder}`,
                               color: colors.text,
                           }}
-                          formatter={(value: any) => [`$${value}`, "Ingresos"]}
+                            formatter={(value: any) => [`$${fmtNum(value)}`, "Ingresos"]}
                       />
                       <defs>
                           <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
@@ -246,7 +252,7 @@ export function SportRevenueBar({ bySport }: { bySport: StatsBySport[] }) {
                 <ResponsiveContainer width="100%" height={180}>
                     <BarChart data={data} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
-                      <XAxis type="number" tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} />
+                        <XAxis type="number" tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} tickFormatter={fmtNum} />
                       <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: colors.text }} stroke={colors.grid} width={80} />
                       <Tooltip
                           contentStyle={{
@@ -256,7 +262,7 @@ export function SportRevenueBar({ bySport }: { bySport: StatsBySport[] }) {
                               border: `1px solid ${colors.tooltipBorder}`,
                               color: colors.text,
                           }}
-                          formatter={(value: any) => [`$${value}`, "Ingresos"]}
+                            formatter={(value: any) => [`$${fmtNum(value)}`, "Ingresos"]}
                       />
                       <Bar dataKey="ingresos" fill="#A78BFA" radius={[0, 4, 4, 0]} />
                   </BarChart>

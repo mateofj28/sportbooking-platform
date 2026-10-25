@@ -5,6 +5,7 @@ import {
   Patch,
   Delete,
   Param,
+  Query,
   Body,
   UseGuards,
 } from '@nestjs/common';
@@ -24,6 +25,15 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @ApiBearerAuth()
 export class BlockedSlotsController {
   constructor(private readonly blockedSlotsService: BlockedSlotsService) {}
+
+  @Get('blocked-slots')
+  @ApiOperation({ summary: 'Get blocked slots overlapping a day (scoped by role)' })
+  findForDay(
+    @CurrentUser() user: { role: Role; venueId?: string | null },
+    @Query('date') date?: string,
+  ) {
+    return this.blockedSlotsService.findForDay(user, date);
+  }
 
   @Get('facilities/:facilityId/blocked-slots')
   @ApiOperation({ summary: 'Get blocked slots for facility' })

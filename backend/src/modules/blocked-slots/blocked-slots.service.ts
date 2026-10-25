@@ -23,6 +23,47 @@ export class BlockedSlotsService {
     });
   }
 
+  /**
+   * Bloqueos que se solapan con un día (YYYY-MM-DD interpretado en hora de
+   * Argentina). Scope por rol: el venue admin solo ve los de su sede.
+   * Se usa en el dashboard para descontar turnos bloqueados de la capacidad.
+   */
+  async findForDay(
+    user: { role: string; venueId?: string | null },
+    date?: string,
+  ) {
+    const AR_OFFSET_MIN = 3 * 60;
+    // Inicio del día en AR -> UTC
+    const base = date ? new Date(`${date}T00:00:00`) : new Date();
+    const y = base.getFullYear();
+    const mo = base.getMonth();
+    const d = base.getDate();
+    // 00:00 AR del día = 03:00 UTC del mismo día
+    const dayStart = new Date(Date.UTC(y, mo, d, 0 + 3, 0, 0));
+    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+    void AR_OFFSET_MIN;
+
+    const where: any = {
+      // Solapa con el día: empieza antes del fin y termina después del inicio
+      startDatetime: { lt: dayEnd },
+      endDatetime: { gt: dayStart },
+    };
+    if (user.role === 'VENUE_ADMIN' && user.venueId) {
+      where.facility = { venueId: user.venueId };
+    }
+
+    return this.prisma.blockedSlot.findMany({
+      where,
+      select: {
+        id: true,
+        facilityId: true,
+        startDatetime: true,
+        endDatetime: true,
+      },
+      orderBy: { startDatetime: 'asc' },
+    });
+  }
+
   async create(facilityId: string, dto: CreateBlockedSlotDto, userId: string) {
     const start = new Date(dto.startDatetime);
     const end = new Date(dto.endDatetime);

@@ -331,7 +331,7 @@ function TodayBookings() {
 function TodaySummary() {
     const { user } = useAuthStore();
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
-    const today = new Date().toISOString().split("T")[0];
+    const today = argentinaToday();
 
     const { data: bookingsData } = useQuery({
         queryKey: ["bookings", "today-summary"],
@@ -348,6 +348,12 @@ function TodaySummary() {
     const { data: facilities } = useQuery({
         queryKey: ["admin-facilities"],
         queryFn: () => apiClient.get<Facility[]>("/facilities"),
+    });
+
+    // Bloqueos de hoy (para descontar turnos bloqueados de la capacidad)
+    const { data: blockedToday } = useQuery({
+        queryKey: ["admin-blocked-today", today],
+        queryFn: () => apiClient.get<{ id: string; facilityId: string; startDatetime: string; endDatetime: string }[]>(`/blocked-slots?date=${today}`),
     });
 
     const allBookings = bookingsData?.data || [];
@@ -397,21 +403,53 @@ function TodaySummary() {
         return (jsDow + 6) % 7;
     })();
 
-    const slotsForSchedule = (openTime: string, closeTime: string, durationMin: number): number => {
+    // Minutos desde la medianoche AR del día de hoy para un instante ISO.
+    // (puede dar > 1440 si el turno/bloqueo cae en la madrugada del día siguiente,
+    //  lo que es coherente con horarios que cruzan medianoche)
+    const arMinutesOfDay = (iso: string): number => {
+        const d = new Date(iso);
+        const arMs = d.getTime() - 3 * 60 * 60000; // UTC -> AR
+        const ar = new Date(arMs);
+        const dayKey = ar.toISOString().split("T")[0];
+        const mins = ar.getUTCHours() * 60 + ar.getUTCMinutes();
+        // Si el bloqueo cae el día siguiente al "today", sumamos 24h (cruce de medianoche)
+        return dayKey > today ? mins + 24 * 60 : mins;
+    };
+
+    // Capacidad de turnos de una cancha, descontando los slots solapados por bloqueos.
+    const slotsForFacility = (
+        openTime: string, closeTime: string, durationMin: number,
+        blocks: { startDatetime: string; endDatetime: string }[],
+    ): number => {
         if (!durationMin || durationMin <= 0) return 0;
         const [oh, om] = openTime.split(":").map(Number);
         const [ch, cm] = closeTime.split(":").map(Number);
         let start = oh * 60 + om;
         let end = ch * 60 + cm;
         if (end <= start) end += 24 * 60; // cruza medianoche
-        return Math.max(0, Math.floor((end - start) / durationMin));
+
+        const blockRanges = blocks.map((b) => ({
+            s: arMinutesOfDay(b.startDatetime),
+            e: arMinutesOfDay(b.endDatetime),
+        }));
+
+        let count = 0;
+        for (let m = start; m + durationMin <= end; m += durationMin) {
+            const slotStart = m;
+            const slotEnd = m + durationMin;
+            // El slot está bloqueado si solapa con algún bloqueo
+            const blocked = blockRanges.some((r) => slotStart < r.e && slotEnd > r.s);
+            if (!blocked) count += 1;
+        }
+        return count;
     };
 
     const totalTurnsToday = (facilities || []).reduce((sum, f) => {
         if (!f.isActive) return sum;
         const sch = f.schedules?.find((s) => s.dayOfWeek === todayDow && s.isActive);
         if (!sch) return sum;
-        return sum + slotsForSchedule(sch.openTime, sch.closeTime, f.minBookingDuration);
+        const facilityBlocks = (blockedToday || []).filter((b) => b.facilityId === f.id);
+        return sum + slotsForFacility(sch.openTime, sch.closeTime, f.minBookingDuration, facilityBlocks);
     }, 0);
 
     const occupiedTurns = todayBookings.length;

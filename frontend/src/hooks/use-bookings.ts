@@ -113,6 +113,8 @@ export function useMarkBookingPaid() {
         mutationFn: (id: string) => apiClient.patch<Booking>(`/bookings/${id}/pay`, {}),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["bookings"] });
+            queryClient.invalidateQueries({ queryKey: ["booking"] });
+            queryClient.invalidateQueries({ queryKey: ["recurring-bookings"] });
         },
     });
 }
@@ -125,6 +127,8 @@ export function useCancelBooking() {
             apiClient.patch<Booking>(`/bookings/${id}/cancel`, { reason }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["bookings"] });
+            queryClient.invalidateQueries({ queryKey: ["booking"] });
+            queryClient.invalidateQueries({ queryKey: ["recurring-bookings"] });
         },
     });
 }

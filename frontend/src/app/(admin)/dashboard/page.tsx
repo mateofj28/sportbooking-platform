@@ -250,6 +250,7 @@ function TodayBookings() {
         queryKey: ["bookings", "today-list"],
         queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=100"),
         refetchOnMount: "always",
+        refetchOnWindowFocus: true,
         staleTime: 0,
     });
 
@@ -338,6 +339,7 @@ function TodaySummary() {
         queryKey: ["bookings", "today-summary"],
         queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=100"),
         refetchOnMount: "always",
+        refetchOnWindowFocus: true,
         staleTime: 0,
     });
 
@@ -536,17 +538,17 @@ function TodaySummary() {
 }
 
 /** Fecha de hoy (YYYY-MM-DD) en hora local de Argentina (UTC-3) */
-function argentinaToday(): string {
-    const now = new Date();
-    const arMs = now.getTime() + now.getTimezoneOffset() * 60000 - 3 * 60 * 60000;
+/** Día (YYYY-MM-DD) en hora local de Argentina (UTC-3) de un instante ISO/Date */
+function argentinaDay(iso: string | Date): string {
+    const d = typeof iso === "string" ? new Date(iso) : iso;
+    // getTime() es UTC absoluto; AR = UTC - 3h
+    const arMs = d.getTime() - 3 * 60 * 60000;
     return new Date(arMs).toISOString().split("T")[0];
 }
 
-/** Día (YYYY-MM-DD) en hora local de Argentina de un instante ISO */
-function argentinaDay(iso: string): string {
-    const d = new Date(iso);
-    const arMs = d.getTime() - 3 * 60 * 60000;
-    return new Date(arMs).toISOString().split("T")[0];
+/** Fecha de hoy (YYYY-MM-DD) en hora local de Argentina. Misma base que argentinaDay. */
+function argentinaToday(): string {
+    return argentinaDay(new Date());
 }
 
 /**

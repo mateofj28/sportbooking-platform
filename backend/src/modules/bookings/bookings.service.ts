@@ -434,10 +434,17 @@ export class BookingsService {
             where.facility = { ...(where.facility || {}), sportId: filters.sportId };
         }
         if (filters.status && filters.status !== 'ALL') where.status = filters.status as BookingStatus;
+        // Rango del período. Traemos las reservas que caen dentro del rango por su
+        // INICIO o por su FIN, porque las métricas de actividad se cuentan por inicio
+        // y las de dinero por fin (un turno 23:00->00:30 "gana" al día siguiente).
         if (start || end) {
-            where.startDatetime = {};
-            if (start) where.startDatetime.gte = start;
-            if (end) where.startDatetime.lt = end;
+            const startInRange: any = {};
+            if (start) startInRange.gte = start;
+            if (end) startInRange.lt = end;
+            const endInRange: any = {};
+            if (start) endInRange.gte = start;
+            if (end) endInRange.lt = end;
+            where.OR = [{ startDatetime: startInRange }, { endDatetime: endInRange }];
         }
 
         const bookings = await this.prisma.booking.findMany({
@@ -479,61 +486,79 @@ export class BookingsService {
         const recentClientsSeen = new Set<string>();
         const recentClients: { id: string; firstName?: string; lastName?: string }[] = [];
 
+        // Helpers para saber si una reserva cae en el período por su inicio o por su fin.
+        const inRange = (d: Date) => {
+            const t = new Date(d).getTime();
+            if (start && t < start.getTime()) return false;
+            if (end && t >= end.getTime()) return false;
+            return true;
+        };
+
         for (const b of bookings) {
-            total += 1;
-            byStatus[b.status] = (byStatus[b.status] || 0) + 1;
-            if (b.status === 'CONFIRMED') confirmed += 1;
-            else if (b.status === 'CANCELLED') cancelled += 1;
-            else if (b.status === 'COMPLETED') completed += 1;
-            else if (b.status === 'PENDING') pending += 1;
+            // ACTIVIDAD (conteos): la reserva "pertenece" al período por su día de INICIO.
+            const inByStart = inRange(b.startDatetime);
+            // DINERO (ingresos): se reconoce el día que TERMINA el turno.
+            const inByEnd = inRange(b.endDatetime);
 
             const notCancelled = b.status !== 'CANCELLED';
-            // Ingreso/comisión reconocidos: reserva PAGADA y cuyo turno YA finalizó (ya usada).
-            const earned = b.paymentStatus === 'PAID' && new Date(b.endDatetime).getTime() <= now.getTime();
+            // Ingreso/comisión reconocidos: pagada, turno ya finalizado y su FIN cae en el período.
+            const earned =
+                inByEnd &&
+                b.paymentStatus === 'PAID' &&
+                new Date(b.endDatetime).getTime() <= now.getTime();
             const totalP = Number(b.totalPrice) || 0;
             const commission = Number(b.commissionAmount) || 0;
             const base = Number(b.basePrice) || totalP - commission;
 
+            // Conteos de actividad: solo las que empiezan dentro del período
+            if (inByStart) {
+                total += 1;
+                byStatus[b.status] = (byStatus[b.status] || 0) + 1;
+                if (b.status === 'CONFIRMED') confirmed += 1;
+                else if (b.status === 'CANCELLED') cancelled += 1;
+                else if (b.status === 'COMPLETED') completed += 1;
+                else if (b.status === 'PENDING') pending += 1;
+            }
+
             if (notCancelled) {
-                // Dinero: solo de turnos ya usados y pagados
+                // Dinero: solo de turnos pagados, ya usados y cuyo FIN cae en el período
                 if (earned) {
                     totalRevenue += totalP;
                     totalCommission += commission;
                     totalBase += base;
-                }
 
-                // por día (fecha del turno en AR) — solo ingresos reconocidos
-                if (earned) {
-                    // El ingreso se reconoce el día que TERMINA el turno (coherente con la regla de negocio)
+                    // por día: el ingreso se reconoce el día que TERMINA el turno
                     const day = arDayKey(b.endDatetime);
                     byDay[day] = (byDay[day] || 0) + totalP;
                 }
 
-                // por día de semana (0=Lunes..6=Domingo, en AR) — cuenta de reservas activas
-                const arDate = new Date(new Date(b.startDatetime).getTime() - AR_OFFSET_MIN * 60000);
-                const weekday = (arDate.getUTCDay() + 6) % 7;
-                byWeekday[weekday] += 1;
+                // por día de semana (0=Lunes..6=Domingo, en AR) — actividad, por inicio
+                if (inByStart) {
+                    const arDate = new Date(new Date(b.startDatetime).getTime() - AR_OFFSET_MIN * 60000);
+                    const weekday = (arDate.getUTCDay() + 6) % 7;
+                    byWeekday[weekday] += 1;
+                }
 
-                // por deporte — cuenta de reservas activas; ingreso solo si ya usado
+                // por deporte — cuenta por inicio; ingreso por fin ya usado
                 const sp = b.facility?.sport;
                 if (sp) {
                     const e = bySport.get(sp.id) || { sportId: sp.id, name: sp.name, count: 0, revenue: 0 };
-                    e.count += 1;
+                    if (inByStart) e.count += 1;
                     if (earned) e.revenue += totalP;
                     bySport.set(sp.id, e);
                 }
 
-                // por complejo — cuenta de reservas activas; montos solo si ya usado
+                // por complejo — cuenta por inicio; montos por fin ya usado
                 const v = b.facility?.venue;
                 if (v) {
                     const e = byVenue.get(v.id) || { venueId: v.id, venueName: v.name, total: 0, base: 0, commission: 0, count: 0 };
                     if (earned) { e.total += totalP; e.base += base; e.commission += commission; }
-                    e.count += 1;
+                    if (inByStart) e.count += 1;
                     byVenue.set(v.id, e);
                 }
 
-                // clientes únicos + recientes
-                if (b.userId) {
+                // clientes únicos + recientes (por inicio dentro del período)
+                if (inByStart && b.userId) {
                     clientIds.add(b.userId);
                     if (!recentClientsSeen.has(b.userId) && recentClients.length < 5) {
                         recentClientsSeen.add(b.userId);
@@ -558,8 +583,8 @@ export class BookingsService {
             byStatus,
             byWeekday,
             byDay: Object.entries(byDay).map(([date, revenue]) => ({ date, revenue })).sort((a, b) => a.date.localeCompare(b.date)),
-            bySport: Array.from(bySport.values()).sort((a, b) => b.count - a.count),
-            byVenue: Array.from(byVenue.values()).sort((a, b) => b.base - a.base),
+            bySport: Array.from(bySport.values()).filter((e) => e.count > 0 || e.revenue > 0).sort((a, b) => b.count - a.count),
+            byVenue: Array.from(byVenue.values()).filter((e) => e.count > 0 || e.base > 0).sort((a, b) => b.base - a.base),
             recentClients,
         };
     }

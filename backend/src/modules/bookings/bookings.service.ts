@@ -504,7 +504,8 @@ export class BookingsService {
 
                 // por día (fecha del turno en AR) — solo ingresos reconocidos
                 if (earned) {
-                    const day = arDayKey(b.startDatetime);
+                    // El ingreso se reconoce el día que TERMINA el turno (coherente con la regla de negocio)
+                    const day = arDayKey(b.endDatetime);
                     byDay[day] = (byDay[day] || 0) + totalP;
                 }
 

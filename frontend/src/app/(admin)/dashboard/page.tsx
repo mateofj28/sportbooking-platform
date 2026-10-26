@@ -253,18 +253,19 @@ function TodayBookings() {
         staleTime: 0,
     });
 
-    // Reservas de hoy (en hora de Argentina), no canceladas
-    const todayBookings = (bookingsData?.data || []).filter((b) => {
-        return argentinaDay(b.startDatetime) === today && b.status !== "CANCELLED";
-    });
+    const notCancelled = (bookingsData?.data || []).filter((b) => b.status !== "CANCELLED");
 
-    // Pendientes de uso: pagadas cuyo turno aún no terminó
-    const pending = todayBookings.filter(
-        (b) => b.paymentStatus === "PAID" && new Date(b.endDatetime).getTime() > now,
+    // Pendientes de uso: EMPIEZAN hoy, pagadas y cuyo turno aún no terminó
+    const pending = notCancelled.filter(
+        (b) => argentinaDay(b.startDatetime) === today
+            && b.paymentStatus === "PAID"
+            && new Date(b.endDatetime).getTime() > now,
     );
-    // Utilizadas: pagadas cuyo turno ya pasó (se asume que el cliente asistió)
-    const used = todayBookings.filter(
-        (b) => b.paymentStatus === "PAID" && new Date(b.endDatetime).getTime() <= now,
+    // Completadas: TERMINAN hoy, pagadas y cuyo turno ya pasó (se reconoce el día que finaliza)
+    const used = notCancelled.filter(
+        (b) => argentinaDay(b.endDatetime) === today
+            && b.paymentStatus === "PAID"
+            && new Date(b.endDatetime).getTime() <= now,
     );
 
     if (isLoading) {
@@ -358,28 +359,35 @@ function TodaySummary() {
 
     const allBookings = bookingsData?.data || [];
     const nowMs = Date.now();
-    const todayBookings = allBookings.filter((b) => {
-        return argentinaDay(b.startDatetime) === today && b.status !== "CANCELLED";
-    });
+    const notCancelled = allBookings.filter((b) => b.status !== "CANCELLED");
 
-    // Reservas pagadas pendientes de uso: pagadas y cuyo turno aún no terminó
-    const paidPendingCount = todayBookings.filter(
+    // Reservas cuyo turno EMPIEZA hoy (agrupadas por fecha de inicio).
+    // Base para "reservas pagadas pendientes de uso", clientes y turnos ocupados.
+    const startedToday = notCancelled.filter((b) => argentinaDay(b.startDatetime) === today);
+
+    // Reservas cuyo turno TERMINA hoy (agrupadas por fecha de fin).
+    // Base para "completadas" e "ingresos": la ganancia se reconoce el día que el
+    // turno finaliza. Un turno que empieza 23:00 y termina 00:30 cuenta al día siguiente.
+    const endedToday = notCancelled.filter((b) => argentinaDay(b.endDatetime) === today);
+
+    // Reservas pagadas pendientes de uso: empiezan hoy, pagadas y su turno aún no terminó
+    const paidPendingCount = startedToday.filter(
         (b) => b.paymentStatus === "PAID" && new Date(b.endDatetime).getTime() > nowMs,
     ).length;
-    // Reservas utilizadas: pagadas y cuyo turno ya pasó
-    const usedCount = todayBookings.filter(
+
+    // Reservas completadas: pagadas, terminan hoy y su turno ya pasó
+    const usedCount = endedToday.filter(
         (b) => b.paymentStatus === "PAID" && new Date(b.endDatetime).getTime() <= nowMs,
     ).length;
 
-    // Ingresos de hoy = precio BASE de los turnos de hoy que YA se usaron (su fin ya pasó).
+    // Ingresos de hoy = precio BASE de los turnos que TERMINARON hoy y ya se usaron.
     // La plata se reconoce cuando el turno terminó, y sin la comisión de la empresa.
-    const todayRevenue = todayBookings
+    const todayRevenue = endedToday
         .filter((b) => b.paymentStatus === "PAID" && new Date(b.endDatetime).getTime() <= nowMs)
         .reduce((sum, b) => sum + basePriceOf(b), 0);
 
-    // Comisión de la empresa: solo de turnos YA USADOS (pagados y cuyo fin ya pasó),
-    // mismo criterio que "reservas utilizadas" e "ingresos hoy".
-    const todayCommission = todayBookings
+    // Comisión de la empresa: mismo criterio que "completadas" e "ingresos hoy".
+    const todayCommission = endedToday
         .filter((b) => b.paymentStatus === "PAID" && new Date(b.endDatetime).getTime() <= nowMs)
         .reduce((sum, b) => sum + (Number(b.commissionAmount) || 0), 0);
 
@@ -390,8 +398,8 @@ function TodaySummary() {
         return new Date(u.createdAt).toISOString().split("T")[0] === today;
     });
 
-    // Clientes distintos que reservaron hoy (relevante para el admin de sede)
-    const clientsToday = new Set(todayBookings.map((b) => b.userId)).size;
+    // Clientes distintos que reservaron (turno que empieza hoy)
+    const clientsToday = new Set(startedToday.map((b) => b.userId)).size;
 
     // Turnos ocupados hoy = reservas de hoy (no canceladas).
     // Capacidad total de turnos hoy = suma, por cada cancha activa con horario hoy,
@@ -452,7 +460,8 @@ function TodaySummary() {
         return sum + slotsForFacility(sch.openTime, sch.closeTime, f.minBookingDuration, facilityBlocks);
     }, 0);
 
-    const occupiedTurns = todayBookings.length;
+    // Turnos ocupados = los que EMPIEZAN hoy (coherente con la capacidad del día)
+    const occupiedTurns = startedToday.length;
 
     const stats = [
         {
@@ -563,7 +572,8 @@ function RevenueByVenue() {
     const allBookings = bookingsData?.data || [];
     const now = Date.now();
 
-    // Ganancia = turno pagado y YA USADO (su horario de fin ya pasó), por fecha del turno.
+    // Ganancia = turno pagado y YA USADO (su horario de fin ya pasó), por FECHA DE FIN del turno.
+    // La ganancia se reconoce el día que el turno termina: un turno 23:00->00:30 cuenta al día siguiente.
     // Incluye las COMPLETED (cron) y las pagadas cuyo fin ya pasó aunque el cron no corrió aún.
     const completedBookings = allBookings.filter((b) => {
         if (b.status === "CANCELLED") return false;
@@ -571,7 +581,7 @@ function RevenueByVenue() {
         const isCompleted = b.status === "COMPLETED";
         const paidAndUsed = b.paymentStatus === "PAID" && alreadyUsed;
         if (!isCompleted && !paidAndUsed) return false;
-        return argentinaDay(b.startDatetime) === selectedDay;
+        return argentinaDay(b.endDatetime) === selectedDay;
     });
 
     // Agrupar por complejo. "earnings" = precio base (lo que se entrega al complejo)

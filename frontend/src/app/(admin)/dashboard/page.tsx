@@ -1,13 +1,18 @@
 "use client";
 
-import { Card, CardBody, Chip, Spinner, DatePicker, Button } from "@heroui/react";
+import {
+    Card, CardBody, Chip, Spinner, DatePicker, Button,
+    Modal, ModalContent, ModalHeader, ModalBody, useDisclosure,
+    Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
+    Pagination, Input,
+} from "@heroui/react";
 import { parseDate, type CalendarDate } from "@internationalized/date";
 import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { useState, useEffect, useCallback } from "react";
-import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp, CheckCircle2, ChevronRight } from "lucide-react";
+import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp, CheckCircle2, ChevronRight, Search } from "lucide-react";
 import type { Booking, Facility, PaginatedResult, User as UserType, Venue } from "@/types";
 
 /** Hora 12h en español sin cero adelante: "9:00 a. m." */
@@ -737,142 +742,144 @@ interface OverviewResponse {
     meta: { total: number; page: number; limit: number; totalPages: number };
 }
 
-/** Una fila del resumen general (incluye FECHA además de la hora). */
-function OverviewRow({ booking }: { booking: Booking }) {
-    const displayPrice = basePriceOf(booking);
-    return (
-        <Card className="border border-divider">
-            <CardBody className="p-4">
-                <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                        <Calendar className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{booking.facility.name}</p>
-                        <div className="mt-1 flex flex-col gap-1 text-xs text-default-500 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
-                            <span className="flex items-center gap-1.5 min-w-0">
-                                <User className="h-3.5 w-3.5 flex-shrink-0" />
-                                <span className="truncate">{booking.user.firstName} {booking.user.lastName}</span>
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
-                                <span className="whitespace-nowrap">{formatDateAr(booking.startDatetime, { day: "numeric", month: "short", year: "numeric" })}</span>
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <Clock className="h-3.5 w-3.5 flex-shrink-0" />
-                                <span className="whitespace-nowrap">
-                                    {formatTime12h(booking.startDatetime)} — {formatTime12h(booking.endDatetime)}
-                                </span>
-                            </span>
-                        </div>
-                    </div>
-                    <div className="hidden sm:flex flex-col items-end gap-1.5 flex-shrink-0">
-                        <span className="text-sm font-bold text-success whitespace-nowrap">${formatPrice(displayPrice)}</span>
-                        <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
-                            {STATUS_LABELS[booking.status]}
-                        </Chip>
-                    </div>
-                </div>
-                <div className="mt-3 flex items-center justify-between border-t border-divider pt-3 sm:hidden">
-                    <span className="text-base font-bold text-success">${formatPrice(displayPrice)}</span>
-                    <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
-                        {STATUS_LABELS[booking.status]}
-                    </Chip>
-                </div>
-            </CardBody>
-        </Card>
-    );
-}
+const PAGE_SIZE = 10;
 
-/** Lista paginada (una por tipo) con botón "Ver más". Informa el total con onTotal. */
-function OverviewList({
-    kind, emptyText, onTotal,
+/** Modal con tabla paginada + buscador. Escala a muchos registros. */
+function OverviewModal({
+    isOpen, onClose, kind, title,
 }: {
+        isOpen: boolean;
+        onClose: () => void;
         kind: "realizadas" | "completadas";
-    emptyText: string;
-        onTotal?: (total: number) => void;
+        title: string;
 }) {
     const [page, setPage] = useState(1);
-    const LIMIT = 10;
+    const [searchInput, setSearchInput] = useState("");
+    const [search, setSearch] = useState("");
 
-    const { data, isLoading, isFetching } = useQuery({
-        queryKey: ["bookings", "overview", kind, page],
-        queryFn: () => apiClient.get<OverviewResponse>(`/bookings/overview?kind=${kind}&page=${page}&limit=${LIMIT}`),
+    // Debounce de la búsqueda (evita una request por tecla)
+    useEffect(() => {
+        const t = setTimeout(() => { setSearch(searchInput.trim()); setPage(1); }, 350);
+        return () => clearTimeout(t);
+    }, [searchInput]);
+
+    // Reiniciar al abrir
+    useEffect(() => {
+        if (isOpen) { setPage(1); setSearchInput(""); setSearch(""); }
+    }, [isOpen]);
+
+    const { data, isFetching } = useQuery({
+        queryKey: ["bookings", "overview", kind, page, search],
+        queryFn: () => apiClient.get<OverviewResponse>(
+            `/bookings/overview?kind=${kind}&page=${page}&limit=${PAGE_SIZE}&search=${encodeURIComponent(search)}`,
+        ),
         placeholderData: (prev) => prev,
+        enabled: isOpen,
     });
 
-    // Acumulamos las páginas ya traídas para el patrón "Ver más"
-    const [items, setItems] = useState<Booking[]>([]);
-    useEffect(() => {
-        if (!data?.data) return;
-        setItems((prev) => (page === 1 ? data.data : [...prev, ...data.data]));
-        if (onTotal) onTotal(data.meta.total);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [data, page]);
-
+    const rows = data?.data ?? [];
     const total = data?.meta.total ?? 0;
-    const hasMore = items.length < total;
+    const totalPages = data?.meta.totalPages ?? 1;
 
-    if (isLoading && page === 1) {
-        return <div className="flex justify-center py-8"><Spinner /></div>;
-    }
-    if (items.length === 0) {
-        return (
-            <Card className="border border-divider">
-                <CardBody className="flex flex-col items-center py-8">
-                    <Calendar className="h-10 w-10 text-default-200" />
-                    <p className="mt-3 text-sm text-default-500">{emptyText}</p>
-                </CardBody>
-            </Card>
-        );
-    }
     return (
-        <>
-            <div className="space-y-3">
-                {items.map((b) => <OverviewRow key={b.id} booking={b} />)}
-            </div>
-            {hasMore && (
-                <div className="mt-4 flex justify-center">
-                    <Button
-                        variant="flat"
+        <Modal isOpen={isOpen} onClose={onClose} size="4xl" scrollBehavior="inside" placement="center">
+            <ModalContent>
+                <ModalHeader className="flex flex-col gap-1">
+                    <span>{title}</span>
+                    <span className="text-xs font-normal text-default-500">{total} en total</span>
+                </ModalHeader>
+                <ModalBody className="pb-6">
+                    <Input
                         size="sm"
-                        isLoading={isFetching}
-                        onPress={() => setPage((p) => p + 1)}
-                    >
-                        Ver más ({total - items.length} restantes)
-                    </Button>
-                </div>
-            )}
-        </>
+                        variant="bordered"
+                        placeholder="Buscar por cliente o cancha…"
+                        value={searchInput}
+                        onValueChange={setSearchInput}
+                        startContent={<Search className="h-4 w-4 text-default-400" />}
+                        isClearable
+                        onClear={() => setSearchInput("")}
+                        className="mb-2"
+                    />
+
+                    {isFetching && rows.length === 0 ? (
+                        <div className="flex justify-center py-10"><Spinner /></div>
+                    ) : rows.length === 0 ? (
+                        <div className="flex flex-col items-center py-10">
+                            <Calendar className="h-10 w-10 text-default-200" />
+                                <p className="mt-3 text-sm text-default-500">
+                                    {search ? "Sin resultados para la búsqueda" : "No hay reservas"}
+                                </p>
+                            </div>
+                    ) : (
+                        <Table aria-label={title} removeWrapper isStriped>
+                            <TableHeader>
+                                <TableColumn>CANCHA</TableColumn>
+                                <TableColumn>CLIENTE</TableColumn>
+                                <TableColumn>FECHA</TableColumn>
+                                <TableColumn>HORARIO</TableColumn>
+                                <TableColumn>MONTO</TableColumn>
+                                <TableColumn>ESTADO</TableColumn>
+                            </TableHeader>
+                            <TableBody>
+                                {rows.map((b) => (
+                                    <TableRow key={b.id}>
+                                        <TableCell className="font-medium">{b.facility.name}</TableCell>
+                                        <TableCell className="whitespace-nowrap">{b.user.firstName} {b.user.lastName}</TableCell>
+                                        <TableCell className="whitespace-nowrap">{formatDateAr(b.startDatetime, { day: "numeric", month: "short", year: "numeric" })}</TableCell>
+                                        <TableCell className="whitespace-nowrap">{formatTime12h(b.startDatetime)} — {formatTime12h(b.endDatetime)}</TableCell>
+                                        <TableCell className="whitespace-nowrap font-semibold text-success">${formatPrice(basePriceOf(b))}</TableCell>
+                                        <TableCell>
+                                            <Chip size="sm" variant="flat" color={STATUS_COLORS[b.status]}>
+                                                {STATUS_LABELS[b.status]}
+                                            </Chip>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
+
+                    {totalPages > 1 && (
+                        <div className="mt-4 flex justify-center">
+                            <Pagination
+                                showControls
+                                size="sm"
+                                total={totalPages}
+                                page={page}
+                                onChange={setPage}
+                            />
+                        </div>
+                    )}
+                </ModalBody>
+            </ModalContent>
+        </Modal>
     );
 }
 
-/** Tarjeta resumen con total; al tocarla despliega la lista. */
+/** Tarjeta resumen con total; al tocarla abre el modal con la tabla paginada. */
 function OverviewCard({
-    kind, title, subtitle, emptyText, icon, iconBg,
+    kind, title, subtitle, icon, iconBg,
 }: {
     kind: "realizadas" | "completadas";
     title: string;
-    subtitle: string;
-    emptyText: string;
+        subtitle: string;
     icon: React.ReactNode;
     iconBg: string;
 }) {
-    const [open, setOpen] = useState(false);
-    const [total, setTotal] = useState<number | null>(null);
+    const { isOpen, onOpen, onClose } = useDisclosure();
 
-    // Conteo liviano para mostrar el total aunque la tarjeta esté cerrada
+    // Conteo liviano para mostrar el total en la tarjeta
     const { data: countData } = useQuery({
         queryKey: ["bookings", "overview-count", kind],
         queryFn: () => apiClient.get<OverviewResponse>(`/bookings/overview?kind=${kind}&page=1&limit=1`),
     });
-    const shownTotal = total ?? countData?.meta.total ?? 0;
+    const shownTotal = countData?.meta.total ?? 0;
 
     return (
-        <div>
+        <>
             <Card
                 isPressable
-                onPress={() => setOpen((o) => !o)}
+                onPress={onOpen}
                 className="w-full border border-divider transition-shadow hover:shadow-sm"
             >
                 <CardBody className="flex-row items-center gap-4 p-5">
@@ -884,18 +891,12 @@ function OverviewCard({
                         <p className="mt-1 text-sm font-semibold">{title}</p>
                         <p className="text-xs text-default-500">{subtitle}</p>
                     </div>
-                    <ChevronRight
-                        className={`h-5 w-5 flex-shrink-0 text-default-400 transition-transform ${open ? "rotate-90" : ""}`}
-                    />
+                    <ChevronRight className="h-5 w-5 flex-shrink-0 text-default-400" />
                 </CardBody>
             </Card>
 
-            {open && (
-                <div className="mt-3">
-                    <OverviewList kind={kind} emptyText={emptyText} onTotal={setTotal} />
-                </div>
-            )}
-        </div>
+            <OverviewModal isOpen={isOpen} onClose={onClose} kind={kind} title={title} />
+        </>
     );
 }
 
@@ -913,7 +914,6 @@ function GeneralOverview() {
                     kind="realizadas"
                     title="Reservas realizadas"
                     subtitle="Pagadas cuyo turno todavía no pasó"
-                    emptyText="No hay reservas pendientes de uso"
                     icon={<Clock className="h-6 w-6 text-primary" />}
                     iconBg="bg-primary/10"
                 />
@@ -921,7 +921,6 @@ function GeneralOverview() {
                     kind="completadas"
                     title="Reservas completadas"
                     subtitle="Turnos ya finalizados"
-                    emptyText="Todavía no hay reservas completadas"
                     icon={<CheckCircle2 className="h-6 w-6 text-success" />}
                     iconBg="bg-success/10"
                 />

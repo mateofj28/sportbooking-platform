@@ -92,6 +92,7 @@ export class BookingsService {
         kind: 'realizadas' | 'completadas',
         page = 1,
         limit = 20,
+        search?: string,
     ) {
         const now = new Date();
 
@@ -103,6 +104,18 @@ export class BookingsService {
             scope.userId = user.id;
         }
         // ADMIN general: sin filtro adicional
+
+        // Búsqueda por nombre/apellido del cliente o nombre de la cancha (case-insensitive).
+        // El scope por rol (venueId) ya aplica como AND de nivel raíz, así que este OR
+        // solo agrega los criterios de texto sin perder el filtrado por sede.
+        const term = (search || '').trim();
+        if (term) {
+            scope.OR = [
+                { user: { firstName: { contains: term, mode: 'insensitive' } } },
+                { user: { lastName: { contains: term, mode: 'insensitive' } } },
+                { facility: { name: { contains: term, mode: 'insensitive' } } },
+            ];
+        }
 
         // Realizadas: turno futuro (fin > ahora). Completadas: turno ya pasó (fin <= ahora).
         const where =

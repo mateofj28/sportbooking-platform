@@ -68,12 +68,14 @@ export class BookingsController {
         @Query('kind') kind: 'realizadas' | 'completadas',
         @Query('page') page?: number,
         @Query('limit') limit?: number,
+        @Query('search') search?: string,
     ) {
         return this.bookingsService.getOverview(
             user,
             kind === 'completadas' ? 'completadas' : 'realizadas',
             page ? +page : 1,
             limit ? +limit : 20,
+            search,
         );
     }
 

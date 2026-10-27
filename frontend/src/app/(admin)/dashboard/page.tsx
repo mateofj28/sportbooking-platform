@@ -1,11 +1,11 @@
 "use client";
 
-import { Card, CardBody, Chip, Spinner, DatePicker } from "@heroui/react";
+import { Card, CardBody, Chip, Spinner, DatePicker, Button } from "@heroui/react";
 import { parseDate, type CalendarDate } from "@internationalized/date";
 import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { formatTimeAr } from "@/lib/datetime";
+import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { useState, useEffect, useCallback } from "react";
 import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp, CheckCircle2 } from "lucide-react";
 import type { Booking, Facility, PaginatedResult, User as UserType, Venue } from "@/types";
@@ -137,6 +137,9 @@ export default function DashboardPage() {
 
             {/* Revenue by venue (admin solo widget) */}
             {user?.role !== "CLIENT" && <RevenueByVenue />}
+
+            {/* Resumen general (histórico) - solo admin de sede */}
+            {isVenueAdmin && <GeneralOverview />}
       </div>
   );
 }
@@ -724,6 +727,163 @@ function RevenueByVenue() {
                     </div>
                 </>
             )}
+        </div>
+    );
+}
+
+/** Respuesta paginada del endpoint /bookings/overview */
+interface OverviewResponse {
+    data: Booking[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+}
+
+/** Una fila del resumen general (incluye FECHA además de la hora). */
+function OverviewRow({ booking }: { booking: Booking }) {
+    const displayPrice = basePriceOf(booking);
+    return (
+        <Card className="border border-divider">
+            <CardBody className="p-4">
+                <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                        <Calendar className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">{booking.facility.name}</p>
+                        <div className="mt-1 flex flex-col gap-1 text-xs text-default-500 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
+                            <span className="flex items-center gap-1.5 min-w-0">
+                                <User className="h-3.5 w-3.5 flex-shrink-0" />
+                                <span className="truncate">{booking.user.firstName} {booking.user.lastName}</span>
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                                <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+                                <span className="whitespace-nowrap">{formatDateAr(booking.startDatetime, { day: "numeric", month: "short", year: "numeric" })}</span>
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                                <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                                <span className="whitespace-nowrap">
+                                    {formatTime12h(booking.startDatetime)} — {formatTime12h(booking.endDatetime)}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div className="hidden sm:flex flex-col items-end gap-1.5 flex-shrink-0">
+                        <span className="text-sm font-bold text-success whitespace-nowrap">${formatPrice(displayPrice)}</span>
+                        <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
+                            {STATUS_LABELS[booking.status]}
+                        </Chip>
+                    </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between border-t border-divider pt-3 sm:hidden">
+                    <span className="text-base font-bold text-success">${formatPrice(displayPrice)}</span>
+                    <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
+                        {STATUS_LABELS[booking.status]}
+                    </Chip>
+                </div>
+            </CardBody>
+        </Card>
+    );
+}
+
+/** Lista paginada (una por tipo) con botón "Ver más". */
+function OverviewList({
+    kind, title, subtitle, emptyText, chipColor,
+}: {
+    kind: "realizadas" | "completadas";
+    title: string;
+    subtitle: string;
+    emptyText: string;
+    chipColor: "primary" | "default";
+}) {
+    const [page, setPage] = useState(1);
+    const LIMIT = 10;
+
+    const { data, isLoading, isFetching } = useQuery({
+        queryKey: ["bookings", "overview", kind, page],
+        queryFn: () => apiClient.get<OverviewResponse>(`/bookings/overview?kind=${kind}&page=${page}&limit=${LIMIT}`),
+        placeholderData: (prev) => prev,
+    });
+
+    // Acumulamos las páginas ya traídas para el patrón "Ver más"
+    const [items, setItems] = useState<Booking[]>([]);
+    useEffect(() => {
+        if (!data?.data) return;
+        setItems((prev) => (page === 1 ? data.data : [...prev, ...data.data]));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data, page]);
+
+    const total = data?.meta.total ?? 0;
+    const hasMore = items.length < total;
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <h3 className="text-base font-bold">{title}</h3>
+                    <p className="text-xs text-default-500">{subtitle}</p>
+                </div>
+                {total > 0 && (
+                    <Chip size="sm" variant="flat" color={chipColor}>
+                        {total} reserva{total !== 1 ? "s" : ""}
+                    </Chip>
+                )}
+            </div>
+
+            {isLoading && page === 1 ? (
+                <div className="flex justify-center py-8"><Spinner /></div>
+            ) : items.length === 0 ? (
+                <Card className="border border-divider">
+                    <CardBody className="flex flex-col items-center py-8">
+                        <Calendar className="h-10 w-10 text-default-200" />
+                        <p className="mt-3 text-sm text-default-500">{emptyText}</p>
+                    </CardBody>
+                </Card>
+            ) : (
+                <>
+                    <div className="space-y-3">
+                        {items.map((b) => <OverviewRow key={b.id} booking={b} />)}
+                    </div>
+                    {hasMore && (
+                        <div className="mt-4 flex justify-center">
+                            <Button
+                                variant="flat"
+                                size="sm"
+                                isLoading={isFetching}
+                                onPress={() => setPage((p) => p + 1)}
+                            >
+                                Ver más ({total - items.length} restantes)
+                            </Button>
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
+
+/** Sección "Resumen general": histórico de realizadas y completadas (solo admin de sede). */
+function GeneralOverview() {
+    return (
+        <div className="space-y-8">
+            <div>
+                <h2 className="text-lg font-bold">Resumen general</h2>
+                <p className="text-xs text-default-500">Todas tus reservas, sin importar la fecha</p>
+            </div>
+
+            <OverviewList
+                kind="realizadas"
+                title="Reservas realizadas"
+                subtitle="Pagadas cuyo turno todavía no pasó"
+                emptyText="No hay reservas pendientes de uso"
+                chipColor="primary"
+            />
+
+            <OverviewList
+                kind="completadas"
+                title="Reservas completadas"
+                subtitle="Turnos ya finalizados"
+                emptyText="Todavía no hay reservas completadas"
+                chipColor="default"
+            />
         </div>
     );
 }

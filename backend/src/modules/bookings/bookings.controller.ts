@@ -59,6 +59,24 @@ export class BookingsController {
         return this.bookingsService.getStats(user, { range, from, to, sportId, venueId, status });
     }
 
+    @Get('overview')
+    @UseGuards(RolesGuard)
+    @Roles(Role.ADMIN, Role.VENUE_ADMIN)
+    @ApiOperation({ summary: 'Resumen general: realizadas (futuras) o completadas (histórico), paginado' })
+    getOverview(
+        @CurrentUser() user: { id: string; role: Role; venueId?: string | null },
+        @Query('kind') kind: 'realizadas' | 'completadas',
+        @Query('page') page?: number,
+        @Query('limit') limit?: number,
+    ) {
+        return this.bookingsService.getOverview(
+            user,
+            kind === 'completadas' ? 'completadas' : 'realizadas',
+            page ? +page : 1,
+            limit ? +limit : 20,
+        );
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Get booking by ID' })
     findById(@Param('id') id: string) {

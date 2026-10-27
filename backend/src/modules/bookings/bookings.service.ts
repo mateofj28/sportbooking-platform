@@ -81,6 +81,69 @@ export class BookingsService {
         return this.bookingsRepository.findAll(user.id, status, page, limit);
     }
 
+    /**
+     * Resumen general (histórico, sin límite de "hoy"). Scope por rol.
+     * - realizadas: pagadas y cuyo turno AÚN NO terminó (futuras pendientes de uso)
+     * - completadas: pagadas y cuyo turno YA finalizó
+     * Cada lista viene paginada con su total, para que escale.
+     */
+    async getOverview(
+        user: { id: string; role: Role; venueId?: string | null },
+        kind: 'realizadas' | 'completadas',
+        page = 1,
+        limit = 20,
+    ) {
+        const now = new Date();
+
+        // Scope por rol
+        const scope: any = { status: { not: BookingStatus.CANCELLED }, paymentStatus: 'PAID' };
+        if (user.role === Role.VENUE_ADMIN && user.venueId) {
+            scope.facility = { venueId: user.venueId };
+        } else if (user.role === Role.CLIENT) {
+            scope.userId = user.id;
+        }
+        // ADMIN general: sin filtro adicional
+
+        // Realizadas: turno futuro (fin > ahora). Completadas: turno ya pasó (fin <= ahora).
+        const where =
+            kind === 'realizadas'
+                ? { ...scope, endDatetime: { gt: now } }
+                : { ...scope, endDatetime: { lte: now } };
+
+        const take = Math.min(Math.max(limit, 1), 100);
+        const skip = (Math.max(page, 1) - 1) * take;
+
+        const [total, data] = await this.prisma.$transaction([
+            this.prisma.booking.count({ where }),
+            this.prisma.booking.findMany({
+                where,
+                orderBy: { startDatetime: kind === 'realizadas' ? 'asc' : 'desc' },
+                skip,
+                take,
+                include: {
+                    facility: {
+                        select: {
+                            id: true,
+                            name: true,
+                            venue: { select: { id: true, name: true } },
+                        },
+                    },
+                    user: { select: { id: true, firstName: true, lastName: true } },
+                },
+            }),
+        ]);
+
+        return {
+            data,
+            meta: {
+                total,
+                page: Math.max(page, 1),
+                limit: take,
+                totalPages: Math.ceil(total / take),
+            },
+        };
+    }
+
     async findById(id: string) {
         const booking = await this.bookingsRepository.findById(id);
         if (!booking) {

@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { useState, useEffect, useCallback } from "react";
-import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp, CheckCircle2, ChevronRight } from "lucide-react";
 import type { Booking, Facility, PaginatedResult, User as UserType, Venue } from "@/types";
 
 /** Hora 12h en español sin cero adelante: "9:00 a. m." */
@@ -784,15 +784,13 @@ function OverviewRow({ booking }: { booking: Booking }) {
     );
 }
 
-/** Lista paginada (una por tipo) con botón "Ver más". */
+/** Lista paginada (una por tipo) con botón "Ver más". Informa el total con onTotal. */
 function OverviewList({
-    kind, title, subtitle, emptyText, chipColor,
+    kind, emptyText, onTotal,
 }: {
-    kind: "realizadas" | "completadas";
-    title: string;
-    subtitle: string;
+        kind: "realizadas" | "completadas";
     emptyText: string;
-    chipColor: "primary" | "default";
+        onTotal?: (total: number) => void;
 }) {
     const [page, setPage] = useState(1);
     const LIMIT = 10;
@@ -808,53 +806,94 @@ function OverviewList({
     useEffect(() => {
         if (!data?.data) return;
         setItems((prev) => (page === 1 ? data.data : [...prev, ...data.data]));
+        if (onTotal) onTotal(data.meta.total);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data, page]);
 
     const total = data?.meta.total ?? 0;
     const hasMore = items.length < total;
 
+    if (isLoading && page === 1) {
+        return <div className="flex justify-center py-8"><Spinner /></div>;
+    }
+    if (items.length === 0) {
+        return (
+            <Card className="border border-divider">
+                <CardBody className="flex flex-col items-center py-8">
+                    <Calendar className="h-10 w-10 text-default-200" />
+                    <p className="mt-3 text-sm text-default-500">{emptyText}</p>
+                </CardBody>
+            </Card>
+        );
+    }
+    return (
+        <>
+            <div className="space-y-3">
+                {items.map((b) => <OverviewRow key={b.id} booking={b} />)}
+            </div>
+            {hasMore && (
+                <div className="mt-4 flex justify-center">
+                    <Button
+                        variant="flat"
+                        size="sm"
+                        isLoading={isFetching}
+                        onPress={() => setPage((p) => p + 1)}
+                    >
+                        Ver más ({total - items.length} restantes)
+                    </Button>
+                </div>
+            )}
+        </>
+    );
+}
+
+/** Tarjeta resumen con total; al tocarla despliega la lista. */
+function OverviewCard({
+    kind, title, subtitle, emptyText, icon, iconBg,
+}: {
+    kind: "realizadas" | "completadas";
+    title: string;
+    subtitle: string;
+    emptyText: string;
+    icon: React.ReactNode;
+    iconBg: string;
+}) {
+    const [open, setOpen] = useState(false);
+    const [total, setTotal] = useState<number | null>(null);
+
+    // Conteo liviano para mostrar el total aunque la tarjeta esté cerrada
+    const { data: countData } = useQuery({
+        queryKey: ["bookings", "overview-count", kind],
+        queryFn: () => apiClient.get<OverviewResponse>(`/bookings/overview?kind=${kind}&page=1&limit=1`),
+    });
+    const shownTotal = total ?? countData?.meta.total ?? 0;
+
     return (
         <div>
-            <div className="flex items-center justify-between mb-4">
-                <div>
-                    <h3 className="text-base font-bold">{title}</h3>
-                    <p className="text-xs text-default-500">{subtitle}</p>
-                </div>
-                {total > 0 && (
-                    <Chip size="sm" variant="flat" color={chipColor}>
-                        {total} reserva{total !== 1 ? "s" : ""}
-                    </Chip>
-                )}
-            </div>
-
-            {isLoading && page === 1 ? (
-                <div className="flex justify-center py-8"><Spinner /></div>
-            ) : items.length === 0 ? (
-                <Card className="border border-divider">
-                    <CardBody className="flex flex-col items-center py-8">
-                        <Calendar className="h-10 w-10 text-default-200" />
-                        <p className="mt-3 text-sm text-default-500">{emptyText}</p>
-                    </CardBody>
-                </Card>
-            ) : (
-                <>
-                    <div className="space-y-3">
-                        {items.map((b) => <OverviewRow key={b.id} booking={b} />)}
+            <Card
+                isPressable
+                onPress={() => setOpen((o) => !o)}
+                className="w-full border border-divider transition-shadow hover:shadow-sm"
+            >
+                <CardBody className="flex-row items-center gap-4 p-5">
+                    <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
+                        {icon}
                     </div>
-                    {hasMore && (
-                        <div className="mt-4 flex justify-center">
-                            <Button
-                                variant="flat"
-                                size="sm"
-                                isLoading={isFetching}
-                                onPress={() => setPage((p) => p + 1)}
-                            >
-                                Ver más ({total - items.length} restantes)
-                            </Button>
-                        </div>
-                    )}
-                </>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-2xl font-bold leading-none">{shownTotal}</p>
+                        <p className="mt-1 text-sm font-semibold">{title}</p>
+                        <p className="text-xs text-default-500">{subtitle}</p>
+                    </div>
+                    <ChevronRight
+                        className={`h-5 w-5 flex-shrink-0 text-default-400 transition-transform ${open ? "rotate-90" : ""}`}
+                    />
+                </CardBody>
+            </Card>
+
+            {open && (
+                <div className="mt-3">
+                    <OverviewList kind={kind} emptyText={emptyText} onTotal={setTotal} />
+                </div>
             )}
         </div>
     );
@@ -863,27 +902,30 @@ function OverviewList({
 /** Sección "Resumen general": histórico de realizadas y completadas (solo admin de sede). */
 function GeneralOverview() {
     return (
-        <div className="space-y-8">
+        <div className="space-y-4">
             <div>
                 <h2 className="text-lg font-bold">Resumen general</h2>
-                <p className="text-xs text-default-500">Todas tus reservas, sin importar la fecha</p>
+                <p className="text-xs text-default-500">Todas tus reservas, sin importar la fecha. Tocá una tarjeta para ver el detalle.</p>
             </div>
 
-            <OverviewList
-                kind="realizadas"
-                title="Reservas realizadas"
-                subtitle="Pagadas cuyo turno todavía no pasó"
-                emptyText="No hay reservas pendientes de uso"
-                chipColor="primary"
-            />
-
-            <OverviewList
-                kind="completadas"
-                title="Reservas completadas"
-                subtitle="Turnos ya finalizados"
-                emptyText="Todavía no hay reservas completadas"
-                chipColor="default"
-            />
+            <div className="grid gap-4 sm:grid-cols-2">
+                <OverviewCard
+                    kind="realizadas"
+                    title="Reservas realizadas"
+                    subtitle="Pagadas cuyo turno todavía no pasó"
+                    emptyText="No hay reservas pendientes de uso"
+                    icon={<Clock className="h-6 w-6 text-primary" />}
+                    iconBg="bg-primary/10"
+                />
+                <OverviewCard
+                    kind="completadas"
+                    title="Reservas completadas"
+                    subtitle="Turnos ya finalizados"
+                    emptyText="Todavía no hay reservas completadas"
+                    icon={<CheckCircle2 className="h-6 w-6 text-success" />}
+                    iconBg="bg-success/10"
+                />
+            </div>
         </div>
     );
 }

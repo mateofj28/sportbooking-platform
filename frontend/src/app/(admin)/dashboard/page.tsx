@@ -279,7 +279,7 @@ function TodayBookings() {
             <div>
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h2 className="text-lg font-bold">Reservas pagadas pendientes de uso</h2>
+                        <h2 className="text-lg font-bold">Reservas realizadas pendientes de uso</h2>
                         <p className="text-xs text-default-500">
                             {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
                         </p>
@@ -468,7 +468,7 @@ function TodaySummary() {
     const stats = [
         {
             icon: <Clock className="h-5 w-5 text-primary" />,
-            label: "Reservas pagadas",
+            label: "Reservas realizadas",
             value: paidPendingCount,
             bg: "bg-primary/10",
         },

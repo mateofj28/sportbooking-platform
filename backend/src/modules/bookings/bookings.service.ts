@@ -475,27 +475,40 @@ export class BookingsService {
     ) {
         // Rango de fechas (según "range": today|yesterday|week|month|custom|all)
         const now = new Date();
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const AR_OFFSET_MS = 3 * 60 * 60 * 1000; // Argentina = UTC-3
+
+        // Medianoche (00:00 hora Argentina) de un día dado, como instante UTC.
+        // La 00:00 AR del día D equivale a las 03:00 UTC de D.
+        const arMidnightUtc = (y: number, m: number, d: number) =>
+            new Date(Date.UTC(y, m, d, 0, 0, 0) + AR_OFFSET_MS);
+
+        // Componentes del "hoy" en hora de Argentina
+        const arNow = new Date(now.getTime() - AR_OFFSET_MS);
+        const arY = arNow.getUTCFullYear();
+        const arM = arNow.getUTCMonth();
+        const arD = arNow.getUTCDate();
+        const startOfToday = arMidnightUtc(arY, arM, arD); // 00:00 AR de hoy
+
         let start: Date | null = null;
         let end: Date | null = null;
         if (filters.range === 'custom') {
-            // Rango personalizado: from/to en formato YYYY-MM-DD (inclusive)
+            // Rango personalizado: from/to en formato YYYY-MM-DD (inclusive), en hora AR
             if (filters.from) {
                 const [y, m, d] = filters.from.split('-').map(Number);
-                start = new Date(y, m - 1, d);
+                start = arMidnightUtc(y, m - 1, d);
             }
             if (filters.to) {
                 const [y, m, d] = filters.to.split('-').map(Number);
-                end = new Date(y, m - 1, d + 1); // fin exclusivo: incluye todo el día "to"
+                end = arMidnightUtc(y, m - 1, d + 1); // fin exclusivo: incluye todo el día "to"
             }
         } else {
             switch (filters.range) {
                 case 'today': start = startOfToday; break;
                 case 'yesterday':
-                    start = new Date(startOfToday); start.setDate(start.getDate() - 1);
+                    start = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000);
                     end = startOfToday; break;
-                case 'week': start = new Date(now); start.setDate(now.getDate() - 7); break;
-                case 'month': start = new Date(now); start.setMonth(now.getMonth() - 1); break;
+                case 'week': start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); break;
+                case 'month': start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); break;
                 case 'all': default: start = null; break;
             }
         }

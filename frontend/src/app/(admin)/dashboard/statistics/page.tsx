@@ -254,17 +254,17 @@ export default function StatisticsPage() {
                 <CardBody className="gap-3">
                     {!isVenueAdmin && stats.byVenue.length > 0 && (
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                            <div className="rounded-xl bg-success-50 p-3">
-                                <p className="text-[11px] font-medium uppercase tracking-wide text-success-600">Para los complejos</p>
-                                <p className="text-xl font-bold text-success-700">${fmt(t.totalBase)}</p>
+                                <div className="rounded-xl border border-success-200 bg-success-50 p-3 dark:border-success-500/20 dark:bg-success-500/10">
+                                    <p className="text-[11px] font-medium uppercase tracking-wide text-success-600 dark:text-success-400">Para los complejos</p>
+                                    <p className="text-xl font-bold text-success-700 dark:text-success-400">${fmt(t.totalBase)}</p>
                             </div>
-                            <div className="rounded-xl bg-emerald-100 p-3">
-                                <p className="text-[11px] font-medium uppercase tracking-wide text-emerald-600">Para la empresa (comisión)</p>
-                                <p className="text-xl font-bold text-emerald-700">${fmt(t.totalCommission)}</p>
+                                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                                    <p className="text-[11px] font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Para la empresa (comisión)</p>
+                                    <p className="text-xl font-bold text-emerald-700 dark:text-emerald-400">${fmt(t.totalCommission)}</p>
                             </div>
-                            <div className="rounded-xl bg-default-100 p-3">
+                                <div className="rounded-xl border border-default-200 bg-default-100 p-3 dark:border-default-100 dark:bg-default-100/50">
                                 <p className="text-[11px] font-medium uppercase tracking-wide text-default-500">Total cobrado</p>
-                                <p className="text-xl font-bold">${fmt(t.totalRevenue)}</p>
+                                    <p className="text-xl font-bold text-default-700 dark:text-default-foreground">${fmt(t.totalRevenue)}</p>
                             </div>
                         </div>
                     )}

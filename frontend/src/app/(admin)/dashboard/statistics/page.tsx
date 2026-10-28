@@ -223,7 +223,7 @@ export default function StatisticsPage() {
             {t && !showLoader && <>
 
             {/* Stats Cards */}
-            <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${isVenueAdmin ? "xl:grid-cols-6" : "xl:grid-cols-7"}`}>
+                <div className={`grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 ${isVenueAdmin ? "xl:grid-cols-6" : "xl:grid-cols-7"}`}>
                 <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Ingresos" value={`$${fmt(t.totalBase)}`} color="bg-success-50 text-success-600" />
                 {!isVenueAdmin && (
                     <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Comisión empresa" value={`$${fmt(t.totalCommission)}`} color="bg-emerald-100 text-emerald-600" />
@@ -421,20 +421,20 @@ function StatCard({ icon, label, value, color, trend, trendUp }: {
 }) {
     return (
         <Card className="hover:shadow-md transition-shadow">
-            <CardBody className="gap-3">
-                <div className="flex items-center justify-between">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>{icon}</div>
+            <CardBody className="gap-3 p-4">
+                <div className="flex items-start justify-between gap-2">
+                    <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${color}`}>{icon}</div>
                     {trend && (
-                        <span className={`flex items-center gap-1 text-xs ${trendUp === true ? "text-success" : trendUp === false ? "text-danger" : "text-default-400"}`}>
-                            {trendUp === true && <ArrowUpRight className="h-3 w-3" />}
-                            {trendUp === false && <ArrowDownRight className="h-3 w-3" />}
-                            {trend}
+                        <span className={`flex items-center gap-1 text-right text-[11px] leading-tight ${trendUp === true ? "text-success" : trendUp === false ? "text-danger" : "text-default-400"}`}>
+                            {trendUp === true && <ArrowUpRight className="h-3 w-3 flex-shrink-0" />}
+                            {trendUp === false && <ArrowDownRight className="h-3 w-3 flex-shrink-0" />}
+                            <span className="min-w-0">{trend}</span>
                         </span>
                     )}
                 </div>
-                <div>
-                    <p className="text-2xl font-bold tracking-tight">{value}</p>
-                    <p className="text-xs text-default-500">{label}</p>
+                <div className="min-w-0">
+                    <p className="text-xl font-bold tracking-tight break-words sm:text-2xl">{value}</p>
+                    <p className="text-xs text-default-500 leading-snug">{label}</p>
                 </div>
             </CardBody>
         </Card>

@@ -196,7 +196,7 @@ export default function StatisticsPage() {
                     </div>
                     {(sportFilter || venueFilter || statusFilter !== "ALL" || dateRange !== "all") && (
                         <div className="mt-3 flex items-center gap-2">
-                            {t && <span className="text-xs text-default-400">{t.total} reserva{t.total !== 1 ? "s" : ""} en el período</span>}
+                            {t && <span className="text-xs text-default-400">{t.totalAll} reserva{t.totalAll !== 1 ? "s" : ""} en el período</span>}
                             <button
                                 onClick={() => { setDateRange("all"); setCustomFrom(null); setCustomTo(null); setSportFilter(""); setVenueFilter(""); setStatusFilter("ALL"); }}
                                 className="text-xs text-primary hover:underline"

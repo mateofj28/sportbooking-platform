@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { VenuesRepository } from './venues.repository';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateVenueDto, UpdateVenueDto } from './dto/create-venue.dto';
 
 @Injectable()
 export class VenuesService {
-    constructor(private readonly venuesRepository: VenuesRepository) { }
+    constructor(
+        private readonly venuesRepository: VenuesRepository,
+        private readonly notificationsService: NotificationsService,
+    ) { }
 
     async findAll() {
         return this.venuesRepository.findAll();
@@ -19,7 +23,11 @@ export class VenuesService {
     }
 
     async create(dto: CreateVenueDto) {
-        return this.venuesRepository.create(dto);
+        const venue = await this.venuesRepository.create(dto);
+        void this.notificationsService.notifyVenueOrFacilityCreated({
+            label: `Se dio de alta el complejo "${(venue as any)?.name ?? dto.name}".`,
+        });
+        return venue;
     }
 
     async update(id: string, dto: UpdateVenueDto) {

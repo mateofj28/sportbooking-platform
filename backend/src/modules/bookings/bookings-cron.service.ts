@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { BookingStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 /**
  * Tareas programadas de reservas.
@@ -17,6 +18,7 @@ export class BookingsCronService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly mailService: MailService,
+        private readonly notificationsService: NotificationsService,
     ) { }
 
     @Cron(CronExpression.EVERY_HOUR)
@@ -47,18 +49,20 @@ export class BookingsCronService {
             data: { status: BookingStatus.CANCELLED, cancelledAt: now, cancellationReason: reason },
         });
 
-        // Avisar por email a cada cliente afectado (best-effort)
+        // Avisar por email a cada cliente afectado (best-effort) + notificación in-app al admin
         for (const b of toCancel) {
-            if (!b.user?.email) continue;
-            void this.mailService.sendBookingCancellation({
-                email: b.user.email,
-                firstName: b.user.firstName || '',
-                venueName: b.facility?.venue?.name || '',
-                facilityName: b.facility?.name || '',
-                dateLabel: this.arDateLabel(b.startDatetime),
-                timeLabel: `${this.arTime(b.startDatetime)} - ${this.arTime(b.endDatetime)}`,
-                reason,
-            });
+            if (b.user?.email) {
+                void this.mailService.sendBookingCancellation({
+                    email: b.user.email,
+                    firstName: b.user.firstName || '',
+                    venueName: b.facility?.venue?.name || '',
+                    facilityName: b.facility?.name || '',
+                    dateLabel: this.arDateLabel(b.startDatetime),
+                    timeLabel: `${this.arTime(b.startDatetime)} - ${this.arTime(b.endDatetime)}`,
+                    reason,
+                });
+            }
+            void this.notificationsService.notifyBookingCancelled(b as any, reason, true);
         }
 
         this.logger.log(
@@ -138,14 +142,38 @@ export class BookingsCronService {
     async completePastPaidBookings() {
         const now = new Date();
 
-        const result = await this.prisma.booking.updateMany({
+        // Traemos las que se van a completar para poder notificar la comisión por sede
+        const toComplete = await this.prisma.booking.findMany({
             where: {
                 status: BookingStatus.CONFIRMED,
                 paymentStatus: 'PAID',
                 endDatetime: { lt: now },
             },
+            select: {
+                id: true,
+                commissionAmount: true,
+                facility: { select: { venue: { select: { name: true } } } },
+            },
+        });
+
+        if (toComplete.length === 0) return;
+
+        const result = await this.prisma.booking.updateMany({
+            where: { id: { in: toComplete.map((b) => b.id) } },
             data: { status: BookingStatus.COMPLETED },
         });
+
+        // N8: comisión generada, agrupada por sede (solo admin general). Best-effort.
+        const byVenue = new Map<string, number>();
+        for (const b of toComplete) {
+            const venueName = b.facility?.venue?.name || 'Sin sede';
+            byVenue.set(venueName, (byVenue.get(venueName) || 0) + (Number(b.commissionAmount) || 0));
+        }
+        for (const [venueName, amount] of byVenue) {
+            if (amount > 0) {
+                void this.notificationsService.notifyCommissionEarned({ venueName, amount });
+            }
+        }
 
         if (result.count > 0) {
             this.logger.log(`Completado automático: ${result.count} reserva(s) pagada(s) ya pasada(s) marcadas como COMPLETED`);

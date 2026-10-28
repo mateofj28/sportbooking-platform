@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto } from './dto';
 
 @Injectable()
@@ -19,6 +20,7 @@ export class AuthService {
         private jwtService: JwtService,
         private configService: ConfigService,
         private mailService: MailService,
+        private notificationsService: NotificationsService,
     ) { }
 
     async register(dto: RegisterDto) {
@@ -43,6 +45,12 @@ export class AuthService {
         });
 
         const tokens = await this.generateTokens(user.id, user.email, user.role, user.venueId);
+
+        // Notificación in-app al admin general (best-effort)
+        void this.notificationsService.notifyUserRegistered({
+            name: `${user.firstName} ${user.lastName}`.trim(),
+            email: user.email,
+        });
 
         return {
             user: {

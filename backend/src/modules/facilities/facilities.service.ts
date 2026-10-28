@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { FacilitiesRepository } from './facilities.repository';
 import { CreateFacilityDto, UpdateFacilityDto } from './dto/create-facility.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { BookingStatus } from '@prisma/client';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class FacilitiesService {
     constructor(
         private readonly facilitiesRepository: FacilitiesRepository,
         private readonly prisma: PrismaService,
+        private readonly notificationsService: NotificationsService,
     ) { }
 
     async findAll(filters: {
@@ -31,7 +33,11 @@ export class FacilitiesService {
     }
 
     async create(dto: CreateFacilityDto) {
-        return this.facilitiesRepository.create(dto);
+        const facility = await this.facilitiesRepository.create(dto);
+        void this.notificationsService.notifyVenueOrFacilityCreated({
+            label: `Se creó la cancha "${(facility as any)?.name ?? dto.name}".`,
+        });
+        return facility;
     }
 
     async update(id: string, dto: UpdateFacilityDto) {

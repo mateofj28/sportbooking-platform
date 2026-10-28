@@ -23,14 +23,14 @@
   - [x] 3.3 Implementar la detección de "nuevo cliente" (N6): contar bookings previos del cliente en la sede.
     - _Requisitos: (N6)_
 
-- [ ] 4. Integrar la emisión en los eventos existentes
-  - [ ] 4.1 Inyectar `NotificationsService` en `BookingsService`. Emitir en `create`, `createManual` (N1/N7 + chequeo N6), `markAsPaid` (N2), `cancel` (N3), `createRecurring` (N4). Sin bloquear la operación.
+- [x] 4. Integrar la emisión en los eventos existentes
+  - [x] 4.1 Inyectar `NotificationsService` en `BookingsService`. Emitir en `create`, `createManual` (N1/N7 + chequeo N6), `markAsPaid` (N2), `cancel` (N3), `createRecurring` (N4). Sin bloquear la operación.
     - _Requisitos: 2.1, 2.2, 2.3, 2.5, 2.6_
-  - [ ] 4.2 Inyectar `NotificationsService` en `BookingsCronService`. Emitir en `cancelUnpaidRecurringBookings` (N5) y `completePastPaidBookings` (N8, agrupado por sede), de forma idempotente (sobre las reservas que recién cambian de estado).
+  - [x] 4.2 Inyectar `NotificationsService` en `BookingsCronService`. Emitir en `cancelUnpaidRecurringBookings` (N5) y `completePastPaidBookings` (N8, agrupado por sede), de forma idempotente (sobre las reservas que recién cambian de estado).
     - _Requisitos: 2.4_
-  - [ ] 4.3 Emitir N9 (alta de complejo/cancha) y N10 (registro de usuario) en los módulos correspondientes (venues/facilities y auth), best-effort.
+  - [x] 4.3 Emitir N9 (alta de complejo/cancha) y N10 (registro de usuario) en los módulos correspondientes (venues/facilities y auth), best-effort.
     - _Requisitos: (N9, N10)_
-  - [ ] 4.4 Verificar build backend (`npx nest build`).
+  - [x] 4.4 Verificar build backend (`npx nest build`).
 
 - [ ] 5. Frontend — hooks y api
   - [ ] 5.1 Crear `frontend/src/hooks/use-notifications.ts`: `useNotifications()` (lista paginada), `useUnreadCount()` (con `refetchInterval: 30000` y `refetchOnWindowFocus`), `useMarkRead()` y `useMarkAllRead()` (invalidan `["notifications"]` y `["notifications","unread"]`).

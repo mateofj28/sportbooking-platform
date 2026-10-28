@@ -8,6 +8,7 @@ import { BookingStatus, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BookingsRepository } from './bookings.repository';
 import { MailService, BookingEmailData } from '../mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateBookingDto, ManualBookingDto, CancelBookingDto, CreateRecurringBookingDto } from './dto/create-booking.dto';
 
 /** "19:00" -> "7:00 p. m." (formato español sin cero adelante) */
@@ -26,6 +27,7 @@ export class BookingsService {
         private readonly bookingsRepository: BookingsRepository,
         private readonly prisma: PrismaService,
         private readonly mailService: MailService,
+        private readonly notificationsService: NotificationsService,
     ) { }
 
     /** Arma los datos del correo a partir de una reserva con facility+venue+user. */
@@ -193,6 +195,9 @@ export class BookingsService {
         const emailData = this.toEmailData(booking);
         if (emailData) void this.mailService.sendBookingConfirmation(emailData);
 
+        // Notificación in-app al admin (best-effort)
+        void this.notificationsService.notifyBookingCreated(booking as any);
+
         return booking;
     }
 
@@ -240,6 +245,8 @@ export class BookingsService {
         const emailData = this.toEmailData(booking);
         if (emailData) void this.mailService.sendBookingConfirmation(emailData);
 
+        void this.notificationsService.notifyBookingCreated(booking as any);
+
         return booking;
     }
 
@@ -259,10 +266,15 @@ export class BookingsService {
         if (user.role === Role.VENUE_ADMIN && booking.facility.venueId !== user.venueId) {
             throw new BadRequestException('No puedes gestionar reservas de otra sede');
         }
-        return this.prisma.booking.update({
+        const updated = await this.prisma.booking.update({
             where: { id },
             data: { paymentStatus: 'PAID', paidAt: new Date() },
         });
+
+        // Notificación in-app: usamos "booking" (findById) que trae facility.venue y user
+        void this.notificationsService.notifyBookingPaid(booking as any);
+
+        return updated;
     }
 
     async cancel(
@@ -295,6 +307,9 @@ export class BookingsService {
         // Correo de cancelación (best-effort). booking trae facility/venue/user de findById.
         const emailData = this.toEmailData(booking);
         if (emailData) void this.mailService.sendBookingCancellation({ ...emailData, reason: dto.reason });
+
+        // Notificación in-app al admin (best-effort)
+        void this.notificationsService.notifyBookingCancelled(booking as any, dto.reason, false);
 
         return cancelled;
     }
@@ -425,6 +440,23 @@ export class BookingsService {
 
         // Correo resumen del turno fijo (uno solo, no por cada ocurrencia).
         void this.sendRecurringConfirmation(targetUserId, facility, dto, created.length);
+
+        // Notificación in-app al admin de la sede (best-effort)
+        void (async () => {
+            const client = await this.prisma.user.findUnique({
+                where: { id: targetUserId },
+                select: { firstName: true, lastName: true },
+            });
+            void this.notificationsService.notifyRecurringCreated({
+                venueId: facility.venueId,
+                facilityName: facility.name,
+                clientName: `${client?.firstName ?? ''} ${client?.lastName ?? ''}`.trim(),
+                dayOfWeek: dto.dayOfWeek,
+                startTime: dto.startTime,
+                endTime: dto.endTime,
+                createdCount: created.length,
+            });
+        })();
 
         return {
             recurringBookingId: recurring.id,

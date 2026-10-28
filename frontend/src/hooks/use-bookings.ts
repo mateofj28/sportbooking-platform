@@ -8,7 +8,12 @@ export function useBookings(status?: string) {
     return useQuery({
         queryKey: ["bookings", status],
         queryFn: () =>
-            apiClient.get<{ data: Booking[]; meta: { total: number; page: number; limit: number; totalPages: number } }>("/bookings", status ? { status } : undefined),
+            apiClient.get<{ data: Booking[]; meta: { total: number; page: number; limit: number; totalPages: number } }>(
+                "/bookings",
+                // limit alto: el cliente no tiene tantas reservas y así no se pierden
+                // las más recientes (el backend pagina de a 20 por defecto).
+                status ? { status, limit: "200" } : { limit: "200" },
+            ),
     });
 }
 

@@ -662,11 +662,13 @@ export class BookingsService {
             }
         }
 
-        // "total" ya excluye canceladas, así que las activas son directamente "total".
+        // "total" ya excluye canceladas (= realizadas + completadas = activas).
         const totalActive = total;
-        // Tasa de concreción: una reserva CONFIRMED (vigente) o COMPLETED (ya usada)
-        // cuenta como "concretada". Las canceladas quedan fuera de "activas".
-        const occupancyRate = totalActive > 0 ? Math.round(((confirmed + completed) / totalActive) * 100) : 0;
+        // Total de reservas hechas por los usuarios (incluye canceladas).
+        const totalAll = total + cancelled;
+        // Tasa de concreción: de TODAS las reservas, qué proporción NO se canceló.
+        // (realizadas + completadas) / total. Si no hay canceladas -> 100%.
+        const occupancyRate = totalAll > 0 ? Math.round((totalActive / totalAll) * 100) : 0;
         // Precio promedio basado en lo que le corresponde al complejo (precio base)
         const avgPrice = totalActive > 0 ? Math.round(totalBase / totalActive) : 0;
 
@@ -674,7 +676,7 @@ export class BookingsService {
             totals: {
                 // "total" = reservas activas (realizadas + completadas), sin canceladas.
                 // "totalAll" = TODAS las reservas que hicieron los usuarios (incluye canceladas).
-                total, totalAll: total + cancelled,
+                total, totalAll,
                 confirmed, cancelled, completed, pending,
                 totalRevenue, totalCommission, totalBase,
                 occupancyRate, avgPrice,

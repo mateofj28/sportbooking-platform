@@ -22,7 +22,7 @@ Relación clave:
 - **Realizadas**: pagadas cuyo turno aún no pasó.
 - **Completadas**: turnos ya usados (finalizados).
 - **Ingresos**: ver abajo.
-- **Confirmación**: tasa de concreción = (Realizadas + Completadas) / activas, donde activas = total − canceladas. Las canceladas quedan fuera del cálculo.
+- **Confirmación**: de TODAS las reservas, qué proporción NO se canceló = (Realizadas + Completadas) / Total, donde Total = Realizadas + Completadas + Canceladas. Si no hay canceladas → 100%. Subtexto: "X canceladas".
 
 ## Dinero / ganancias
 

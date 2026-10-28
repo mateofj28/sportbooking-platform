@@ -35,9 +35,10 @@ function formatTime12h(time: string): string {
     return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-type BookingFilter = "ALL" | "PENDING_PAYMENT" | "PAID" | BookingStatus;
+type BookingFilter = "UPCOMING" | "ALL" | "PENDING_PAYMENT" | "PAID" | BookingStatus;
 
 const FILTER_TABS: { key: BookingFilter; label: string }[] = [
+    { key: "UPCOMING", label: "Próximas reservas" },
     { key: "ALL", label: "Todas" },
     { key: "PENDING_PAYMENT", label: "Pendiente de pago" },
     { key: "PAID", label: "Pagadas" },
@@ -49,7 +50,7 @@ export default function BookingsPage() {
     const { isAuthenticated, isHydrated } = useAuthStore();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<"bookings" | "recurring">("bookings");
-    const [activeFilter, setActiveFilter] = useState<BookingFilter>("ALL");
+    const [activeFilter, setActiveFilter] = useState<BookingFilter>("UPCOMING");
 
     const { data: recurringList, isLoading: recurringLoading } = useRecurringBookings();
     const cancelRecurring = useCancelRecurringBooking();
@@ -72,13 +73,25 @@ export default function BookingsPage() {
     if (!isHydrated) return <div className="flex min-h-screen items-center justify-center"><Spinner size="lg" /></div>;
     if (!isAuthenticated) return null;
 
+    const nowMs = Date.now();
     const matchesFilter = (b: Booking, f: BookingFilter): boolean => {
         if (f === "ALL") return true;
+        // Próximas: pagadas, no canceladas y cuyo turno aún no pasó (futuras pendientes de uso)
+        if (f === "UPCOMING") {
+            return b.status !== "CANCELLED"
+                && b.paymentStatus === "PAID"
+                && new Date(b.endDatetime).getTime() > nowMs;
+        }
         if (f === "PENDING_PAYMENT") return b.status === "CONFIRMED" && b.paymentStatus === "PENDING";
         if (f === "PAID") return b.status === "CONFIRMED" && b.paymentStatus === "PAID";
         return b.status === f;
     };
-    const filteredBookings = bookings?.filter((b) => matchesFilter(b, activeFilter)) || [];
+    const filteredBookings = (bookings?.filter((b) => matchesFilter(b, activeFilter)) || []).sort((a, b) => {
+        // En "Próximas" mostramos la más cercana primero; en el resto, la más reciente primero
+        const ta = new Date(a.startDatetime).getTime();
+        const tb = new Date(b.startDatetime).getTime();
+        return activeFilter === "UPCOMING" ? ta - tb : tb - ta;
+    });
 
     const handleCancelClick = (booking: Booking) => {
         setSelectedBooking(booking);

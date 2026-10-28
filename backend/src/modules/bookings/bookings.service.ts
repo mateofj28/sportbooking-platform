@@ -599,14 +599,19 @@ export class BookingsService {
             const commission = Number(b.commissionAmount) || 0;
             const base = Number(b.basePrice) || totalP - commission;
 
-            // Conteos de actividad: solo las que empiezan dentro del período
+            // Conteos de actividad: solo las que empiezan dentro del período.
+            // "total" cuenta reservas ACTIVAS (no canceladas); las canceladas se
+            // registran aparte en "cancelled" y en byStatus para no mezclarlas.
             if (inByStart) {
-                total += 1;
                 byStatus[b.status] = (byStatus[b.status] || 0) + 1;
-                if (b.status === 'CONFIRMED') confirmed += 1;
-                else if (b.status === 'CANCELLED') cancelled += 1;
-                else if (b.status === 'COMPLETED') completed += 1;
-                else if (b.status === 'PENDING') pending += 1;
+                if (b.status === 'CANCELLED') {
+                    cancelled += 1;
+                } else {
+                    total += 1;
+                    if (b.status === 'CONFIRMED') confirmed += 1;
+                    else if (b.status === 'COMPLETED') completed += 1;
+                    else if (b.status === 'PENDING') pending += 1;
+                }
             }
 
             if (notCancelled) {
@@ -657,7 +662,8 @@ export class BookingsService {
             }
         }
 
-        const totalActive = total - cancelled;
+        // "total" ya excluye canceladas, así que las activas son directamente "total".
+        const totalActive = total;
         // Tasa de concreción: una reserva CONFIRMED (vigente) o COMPLETED (ya usada)
         // cuenta como "concretada". Las canceladas quedan fuera de "activas".
         const occupancyRate = totalActive > 0 ? Math.round(((confirmed + completed) / totalActive) * 100) : 0;

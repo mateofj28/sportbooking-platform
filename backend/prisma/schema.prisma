@@ -48,13 +48,14 @@ model User {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  bookings        Booking[]     @relation("UserBookings")
-  createdBookings Booking[]     @relation("BookingCreator")
-  cancelledBookings Booking[]   @relation("BookingCanceller")
-  blockedSlots    BlockedSlot[]
-  venue           Venue?        @relation("VenueAdmins", fields: [venueId], references: [id])
+  bookings                 Booking[]          @relation("UserBookings")
+  createdBookings          Booking[]          @relation("BookingCreator")
+  cancelledBookings        Booking[]          @relation("BookingCanceller")
+  blockedSlots             BlockedSlot[]
+  venue                    Venue?             @relation("VenueAdmins", fields: [venueId], references: [id])
   recurringBookings        RecurringBooking[] @relation("UserRecurringBookings")
   createdRecurringBookings RecurringBooking[] @relation("RecurringBookingCreator")
+  notificationReads        NotificationRead[]
 
   @@map("users")
 }
@@ -78,22 +79,23 @@ model Venue {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  facilities Facility[]
-  sports     VenueSport[]
-  admins     User[]       @relation("VenueAdmins")
+  facilities    Facility[]
+  sports        VenueSport[]
+  admins        User[]         @relation("VenueAdmins")
+  notifications Notification[]
 
   @@map("venues")
 }
 
 model Sport {
-  id          String   @id @default(uuid())
+  id          String      @id @default(uuid())
   name        String      @unique
   description String?
   maxPlayers  Int?        @map("max_players")
   billingType BillingType @default(PER_SESSION) @map("billing_type")
   isActive    Boolean     @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
 
   facilities Facility[]
   venues     VenueSport[]
@@ -128,12 +130,12 @@ model Facility {
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
-  venue        Venue         @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  sport        Sport         @relation(fields: [sportId], references: [id])
-  schedules    Schedule[]
-  pricing      Pricing[]
-  blockedSlots BlockedSlot[]
-  bookings     Booking[]
+  venue             Venue              @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  sport             Sport              @relation(fields: [sportId], references: [id])
+  schedules         Schedule[]
+  pricing           Pricing[]
+  blockedSlots      BlockedSlot[]
+  bookings          Booking[]
   recurringBookings RecurringBooking[]
 
   @@map("facilities")
@@ -155,17 +157,17 @@ model Schedule {
 }
 
 model Pricing {
-  id           String   @id @default(uuid())
-  facilityId   String   @map("facility_id")
-  dayOfWeek    Int?     @map("day_of_week")
-  startTime    String   @map("start_time")
-  endTime      String   @map("end_time")
+  id            String   @id @default(uuid())
+  facilityId    String   @map("facility_id")
+  dayOfWeek     Int?     @map("day_of_week")
+  startTime     String   @map("start_time")
+  endTime       String   @map("end_time")
   pricePerHour  Decimal  @map("price_per_hour") @db.Decimal(10, 2)
   profitPercent Decimal  @default(0) @map("profit_percent") @db.Decimal(5, 2)
   currency      String   @default("ARS")
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
 
@@ -211,28 +213,28 @@ model Booking {
   createdAt          DateTime      @default(now()) @map("created_at")
   updatedAt          DateTime      @updatedAt @map("updated_at")
 
-  facility    Facility @relation(fields: [facilityId], references: [id])
-  user        User     @relation("UserBookings", fields: [userId], references: [id])
-  createdBy   User     @relation("BookingCreator", fields: [createdById], references: [id])
-  cancelledBy User?    @relation("BookingCanceller", fields: [cancelledById], references: [id])
+  facility         Facility          @relation(fields: [facilityId], references: [id])
+  user             User              @relation("UserBookings", fields: [userId], references: [id])
+  createdBy        User              @relation("BookingCreator", fields: [createdById], references: [id])
+  cancelledBy      User?             @relation("BookingCanceller", fields: [cancelledById], references: [id])
   recurringBooking RecurringBooking? @relation(fields: [recurringBookingId], references: [id], onDelete: SetNull)
 
   @@map("bookings")
 }
 
 model RecurringBooking {
-  id            String    @id @default(uuid())
-  facilityId    String    @map("facility_id")
-  userId        String    @map("user_id")
-  dayOfWeek     Int       @map("day_of_week") // 0=Lunes ... 6=Domingo (consistente con schedules)
-  startTime     String    @map("start_time")  // "20:00"
-  endTime       String    @map("end_time")    // "22:00"
-  startDate     DateTime  @map("start_date")  // desde
-  endDate       DateTime  @map("end_date")    // hasta (inclusive)
-  isActive      Boolean   @default(true) @map("is_active")
-  createdById   String    @map("created_by")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  facilityId  String   @map("facility_id")
+  userId      String   @map("user_id")
+  dayOfWeek   Int      @map("day_of_week") // 0=Lunes ... 6=Domingo (consistente con schedules)
+  startTime   String   @map("start_time") // "20:00"
+  endTime     String   @map("end_time") // "22:00"
+  startDate   DateTime @map("start_date") // desde
+  endDate     DateTime @map("end_date") // hasta (inclusive)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdById String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   facility  Facility  @relation(fields: [facilityId], references: [id], onDelete: Cascade)
   user      User      @relation("UserRecurringBookings", fields: [userId], references: [id])
@@ -240,4 +242,49 @@ model RecurringBooking {
   bookings  Booking[]
 
   @@map("recurring_bookings")
+}
+
+enum NotificationType {
+  BOOKING_CREATED
+  BOOKING_PAID
+  BOOKING_CANCELLED
+  BOOKING_AUTO_CANCELLED
+  RECURRING_CREATED
+  NEW_CLIENT
+  COMMISSION_EARNED
+  VENUE_OR_FACILITY_CREATED
+  USER_REGISTERED
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  title     String
+  body      String
+  venueId   String?          @map("venue_id") // sede a la que pertenece (null = global)
+  adminOnly Boolean          @default(false) @map("admin_only") // solo admin general
+  bookingId String?          @map("booking_id")
+  data      Json?
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  venue Venue?             @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  reads NotificationRead[]
+
+  @@index([venueId, createdAt])
+  @@index([adminOnly, createdAt])
+  @@map("notifications")
+}
+
+model NotificationRead {
+  id             String   @id @default(uuid())
+  notificationId String   @map("notification_id")
+  userId         String   @map("user_id")
+  readAt         DateTime @default(now()) @map("read_at")
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+  @@index([userId])
+  @@map("notification_reads")
 }

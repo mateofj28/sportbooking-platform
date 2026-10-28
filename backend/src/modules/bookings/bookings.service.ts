@@ -658,7 +658,9 @@ export class BookingsService {
         }
 
         const totalActive = total - cancelled;
-        const occupancyRate = totalActive > 0 ? Math.round((confirmed / totalActive) * 100) : 0;
+        // Tasa de concreción: una reserva CONFIRMED (vigente) o COMPLETED (ya usada)
+        // cuenta como "concretada". Las canceladas quedan fuera de "activas".
+        const occupancyRate = totalActive > 0 ? Math.round(((confirmed + completed) / totalActive) * 100) : 0;
         // Precio promedio basado en lo que le corresponde al complejo (precio base)
         const avgPrice = totalActive > 0 ? Math.round(totalBase / totalActive) : 0;
 

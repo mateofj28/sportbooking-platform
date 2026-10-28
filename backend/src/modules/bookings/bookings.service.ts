@@ -672,7 +672,10 @@ export class BookingsService {
 
         return {
             totals: {
-                total, confirmed, cancelled, completed, pending,
+                // "total" = reservas activas (realizadas + completadas), sin canceladas.
+                // "totalAll" = TODAS las reservas que hicieron los usuarios (incluye canceladas).
+                total, totalAll: total + cancelled,
+                confirmed, cancelled, completed, pending,
                 totalRevenue, totalCommission, totalBase,
                 occupancyRate, avgPrice,
                 uniqueClients: clientIds.size,

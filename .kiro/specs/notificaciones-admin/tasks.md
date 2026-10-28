@@ -37,9 +37,9 @@
     - _Requisitos: 4.1, 4.2, 4.3, 4.4, 6.2_
   - [x] 5.2 Tipos `Notification` en `frontend/src/types`.
 
-- [ ] 6. Frontend — badge de campana en el navbar del panel
-  - [ ] 6.1 Crear componente `NotificationBell` (ícono `Bell` + badge con `unreadCount`), que al hacer clic navega a `/dashboard/notifications`.
-  - [ ] 6.2 Ubicarlo en el navbar del panel admin (`dashboard/layout.tsx`), visible para ADMIN y VENUE_ADMIN.
+- [x] 6. Frontend — badge de campana en el navbar del panel
+  - [x] 6.1 Crear componente `NotificationBell` (ícono `Bell` + badge con `unreadCount`), que al hacer clic navega a `/dashboard/notifications`.
+  - [x] 6.2 Ubicarlo en el navbar del panel admin (`dashboard/layout.tsx`), visible para ADMIN y VENUE_ADMIN.
     - _Requisitos: 6.1, 6.2, 6.3_
 
 - [ ] 7. Frontend — centro de notificaciones (reemplazar placeholder)

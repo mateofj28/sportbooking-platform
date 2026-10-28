@@ -22,6 +22,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { Trophy, LogOut, User, Calendar, LayoutDashboard, Sun, Moon, Menu } from "lucide-react";
 
 export function Navbar() {
@@ -102,6 +103,12 @@ export function Navbar() {
             </NavbarContent>
 
             <NavbarContent justify="end">
+                {/* Campana de notificaciones: solo para administradores */}
+                {isAuthenticated && (user?.role === "ADMIN" || user?.role === "VENUE_ADMIN") && (
+                    <NavbarItem>
+                        <NotificationBell />
+                    </NavbarItem>
+                )}
                 {/* Theme toggle */}
                 {mounted && (
                     <NavbarItem>

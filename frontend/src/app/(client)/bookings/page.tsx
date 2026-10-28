@@ -39,11 +39,11 @@ type BookingFilter = "UPCOMING" | "ALL" | "PENDING_PAYMENT" | "PAID" | BookingSt
 
 const FILTER_TABS: { key: BookingFilter; label: string }[] = [
     { key: "UPCOMING", label: "Próximas reservas" },
-    { key: "ALL", label: "Todas" },
     { key: "PENDING_PAYMENT", label: "Pendiente de pago" },
     { key: "PAID", label: "Pagadas" },
-    { key: "CANCELLED", label: "Canceladas" },
     { key: "COMPLETED", label: "Completadas" },
+    { key: "CANCELLED", label: "Canceladas" },
+    { key: "ALL", label: "Todas" },
 ];
 
 export default function BookingsPage() {

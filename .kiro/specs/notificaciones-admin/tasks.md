@@ -42,12 +42,12 @@
   - [x] 6.2 Ubicarlo en el navbar del panel admin (`dashboard/layout.tsx`), visible para ADMIN y VENUE_ADMIN.
     - _Requisitos: 6.1, 6.2, 6.3_
 
-- [ ] 7. Frontend — centro de notificaciones (reemplazar placeholder)
-  - [ ] 7.1 Reemplazar `/dashboard/notifications/page.tsx`: listar notificaciones (más recientes primero), ícono por `type`, título, cuerpo, tiempo relativo en hora AR, destacado si no leída.
+- [x] 7. Frontend — centro de notificaciones (reemplazar placeholder)
+  - [x] 7.1 Reemplazar `/dashboard/notifications/page.tsx`: listar notificaciones (más recientes primero), ícono por `type`, título, cuerpo, tiempo relativo en hora AR, destacado si no leída.
     - _Requisitos: 5.1, 5.2, 5.5_
-  - [ ] 7.2 Clic en una no leída → `markRead`; si tiene `bookingId` → navegar al detalle. Botón "Marcar todas como leídas". Paginación / "ver más".
+  - [x] 7.2 Clic en una no leída → `markRead`; si tiene `bookingId` → navegar al detalle. Botón "Marcar todas como leídas". Paginación / "ver más".
     - _Requisitos: 5.3, 5.4, 5.6_
-  - [ ] 7.3 Verificar build frontend (`npx next build`).
+  - [x] 7.3 Verificar build frontend (`npx next build`).
 
 - [ ] 8. Verificación end-to-end y cierre
   - Prueba manual: como cliente crear/pagar/cancelar una reserva; confirmar que la notificación aparece en el panel del admin de la sede y del admin general con el scope correcto (otra sede NO la ve) y montos correctos (venue admin base, admin general comisión/total).

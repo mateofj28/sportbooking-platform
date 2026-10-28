@@ -15,12 +15,12 @@
     - _Requisitos: 4.1, 4.2, 4.3, 4.4, 4.5, 3.3_
   - [x] 2.4 Crear `notifications.module.ts` (exporta `NotificationsService`) y registrarlo en `app.module.ts`.
 
-- [ ] 3. Emisión de notificaciones (`NotificationsService.emit` + helpers)
-  - [ ] 3.1 Implementar `emit(input)` best-effort (try/catch interno, nunca lanza).
+- [x] 3. Emisión de notificaciones (`NotificationsService.emit` + helpers)
+  - [x] 3.1 Implementar `emit(input)` best-effort (try/catch interno, nunca lanza).
     - _Requisitos: 2.6_
-  - [ ] 3.2 Implementar helpers que arman título/cuerpo/`data` en hora AR y montos según reglas: `notifyBookingCreated`, `notifyBookingPaid`, `notifyBookingCancelled(auto)`, `notifyRecurringCreated`, `notifyNewClient`, `notifyCommissionEarned`, `notifyVenueOrFacilityCreated`, `notifyUserRegistered`. Reusar el armado de labels de `toEmailData`.
+  - [x] 3.2 Implementar helpers que arman título/cuerpo/`data` en hora AR y montos según reglas: `notifyBookingCreated`, `notifyBookingPaid`, `notifyBookingCancelled(auto)`, `notifyRecurringCreated`, `notifyNewClient`, `notifyCommissionEarned`, `notifyVenueOrFacilityCreated`, `notifyUserRegistered`. Reusar el armado de labels de `toEmailData`.
     - _Requisitos: 7.1, 7.2, 7.3_
-  - [ ] 3.3 Implementar la detección de "nuevo cliente" (N6): contar bookings previos del cliente en la sede.
+  - [x] 3.3 Implementar la detección de "nuevo cliente" (N6): contar bookings previos del cliente en la sede.
     - _Requisitos: (N6)_
 
 - [ ] 4. Integrar la emisión en los eventos existentes

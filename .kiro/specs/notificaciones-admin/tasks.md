@@ -32,10 +32,10 @@
     - _Requisitos: (N9, N10)_
   - [x] 4.4 Verificar build backend (`npx nest build`).
 
-- [ ] 5. Frontend — hooks y api
-  - [ ] 5.1 Crear `frontend/src/hooks/use-notifications.ts`: `useNotifications()` (lista paginada), `useUnreadCount()` (con `refetchInterval: 30000` y `refetchOnWindowFocus`), `useMarkRead()` y `useMarkAllRead()` (invalidan `["notifications"]` y `["notifications","unread"]`).
+- [x] 5. Frontend — hooks y api
+  - [x] 5.1 Crear `frontend/src/hooks/use-notifications.ts`: `useNotifications()` (lista paginada), `useUnreadCount()` (con `refetchInterval: 30000` y `refetchOnWindowFocus`), `useMarkRead()` y `useMarkAllRead()` (invalidan `["notifications"]` y `["notifications","unread"]`).
     - _Requisitos: 4.1, 4.2, 4.3, 4.4, 6.2_
-  - [ ] 5.2 Tipos `Notification` en `frontend/src/types`.
+  - [x] 5.2 Tipos `Notification` en `frontend/src/types`.
 
 - [ ] 6. Frontend — badge de campana en el navbar del panel
   - [ ] 6.1 Crear componente `NotificationBell` (ícono `Bell` + badge con `unreadCount`), que al hacer clic navega a `/dashboard/notifications`.

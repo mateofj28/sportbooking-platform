@@ -159,3 +159,27 @@ export interface ApiError {
     message: string;
     errors?: string[];
 }
+
+export type NotificationType =
+    | "BOOKING_CREATED"
+    | "BOOKING_PAID"
+    | "BOOKING_CANCELLED"
+    | "BOOKING_AUTO_CANCELLED"
+    | "RECURRING_CREATED"
+    | "NEW_CLIENT"
+    | "COMMISSION_EARNED"
+    | "VENUE_OR_FACILITY_CREATED"
+    | "USER_REGISTERED";
+
+export interface AppNotification {
+    id: string;
+    type: NotificationType;
+    title: string;
+    body: string;
+    venueId?: string | null;
+    adminOnly: boolean;
+    bookingId?: string | null;
+    data?: Record<string, unknown> | null;
+    read: boolean;
+    createdAt: string;
+}

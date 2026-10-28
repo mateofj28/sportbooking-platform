@@ -13,6 +13,7 @@ import { PricingModule } from './modules/pricing/pricing.module';
 import { BlockedSlotsModule } from './modules/blocked-slots/blocked-slots.module';
 import { MailModule } from './modules/mail/mail.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import appConfig from './config/app.config';
 
 @Module({
@@ -34,6 +35,7 @@ import appConfig from './config/app.config';
     PricingModule,
     BlockedSlotsModule,
     UploadsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule { }

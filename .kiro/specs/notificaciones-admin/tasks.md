@@ -6,14 +6,14 @@
   - Crear la migración y aplicarla a la base (dev y Railway de forma no destructiva). Regenerar Prisma Client.
   - _Requisitos: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 2. Módulo backend `notifications` (repository + service de consulta)
-  - [ ] 2.1 Crear `notifications.repository.ts` con: `create`, `listForUser(scopeWhere, page, limit)` (incluye flag `read` por usuario), `countUnread(scopeWhere, userId)`, `markRead(notificationId, userId)` (upsert), `markAllRead(scopeWhere, userId)`.
+- [x] 2. Módulo backend `notifications` (repository + service de consulta)
+  - [x] 2.1 Crear `notifications.repository.ts` con: `create`, `listForUser(scopeWhere, page, limit)` (incluye flag `read` por usuario), `countUnread(scopeWhere, userId)`, `markRead(notificationId, userId)` (upsert), `markAllRead(scopeWhere, userId)`.
     - _Requisitos: 3.1, 3.2, 4.1, 4.2, 4.3, 4.4_
-  - [ ] 2.2 Crear `notifications.service.ts` con el scope por rol (`VENUE_ADMIN` → `{ venueId }`, `ADMIN` → `{}`) y los métodos `list`, `unreadCount`, `markRead`, `markAllRead`.
+  - [x] 2.2 Crear `notifications.service.ts` con el scope por rol (`VENUE_ADMIN` → `{ venueId }`, `ADMIN` → `{}`) y los métodos `list`, `unreadCount`, `markRead`, `markAllRead`.
     - _Requisitos: 3.1, 3.2, 3.3_
-  - [ ] 2.3 Crear `notifications.controller.ts` con `GET /notifications`, `GET /notifications/unread-count`, `PATCH /notifications/:id/read`, `PATCH /notifications/read-all`, todos con `JwtAuthGuard` + `RolesGuard` + `@Roles(ADMIN, VENUE_ADMIN)`.
+  - [x] 2.3 Crear `notifications.controller.ts` con `GET /notifications`, `GET /notifications/unread-count`, `PATCH /notifications/:id/read`, `PATCH /notifications/read-all`, todos con `JwtAuthGuard` + `RolesGuard` + `@Roles(ADMIN, VENUE_ADMIN)`.
     - _Requisitos: 4.1, 4.2, 4.3, 4.4, 4.5, 3.3_
-  - [ ] 2.4 Crear `notifications.module.ts` (exporta `NotificationsService`) y registrarlo en `app.module.ts`.
+  - [x] 2.4 Crear `notifications.module.ts` (exporta `NotificationsService`) y registrarlo en `app.module.ts`.
 
 - [ ] 3. Emisión de notificaciones (`NotificationsService.emit` + helpers)
   - [ ] 3.1 Implementar `emit(input)` best-effort (try/catch interno, nunca lanza).

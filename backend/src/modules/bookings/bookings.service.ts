@@ -503,12 +503,19 @@ export class BookingsService {
             }
         } else {
             switch (filters.range) {
-                case 'today': start = startOfToday; break;
+                case 'today':
+                    start = startOfToday;
+                    end = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000); // hasta fin de hoy
+                    break;
                 case 'yesterday':
                     start = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000);
                     end = startOfToday; break;
-                case 'week': start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); break;
-                case 'month': start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); break;
+                case 'week':
+                    start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    end = now; break; // hasta ahora: no incluir turnos futuros
+                case 'month':
+                    start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    end = now; break; // hasta ahora: no incluir turnos futuros
                 case 'all': default: start = null; break;
             }
         }

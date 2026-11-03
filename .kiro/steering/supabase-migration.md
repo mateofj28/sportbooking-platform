@@ -489,13 +489,84 @@ Frontend Next.js (Vercel)
 
 ---
 
-## 9. REGLAS DE IMPLEMENTACIÓN (para el spec)
+## 9. PRINCIPIOS SUPABASE-FIRST (guía de implementación)
 
-1. **Zona horaria**: toda la lógica de fecha usa UTC internamente; la conversión a hora Argentina (UTC-3) solo para labels de UI y para calcular el "día AR" de una reserva.
-2. **Precio por turno**: `price_per_hour` es el precio fijo del turno, no se multiplica por la duración.
-3. **Ganancia del complejo** = `base_price` (sin comisión). `commission_amount` es para la empresa. Nunca mostrar `total_price` como "ingresos" del admin de sede.
-4. **Best-effort**: emails y notificaciones nunca bloquean la operación de negocio. Si fallan, se loguea y se sigue.
-5. **Idempotencia de crons**: el campo `reminder_sent_at` evita enviar el mismo recordatorio dos veces. Los crons de cancelación/completado solo procesan los que acaban de cambiar de estado.
-6. **RLS sobre service role**: las Edge Functions usan la `service_role` key para saltarse el RLS cuando necesitan escribir notificaciones, ejecutar crons, etc. El cliente frontend NUNCA recibe la `service_role` key.
-7. **Realtime**: usar Supabase Realtime para reemplazar el polling de notificaciones (tabla `notifications` con `INSERT` listener filtrado por `venue_id` o `admin_only`).
-8. **Migraciones**: todo el schema se crea con SQL directo en Supabase (no Prisma). Se documenta en un archivo `supabase/migrations/`.
+### Qué va dónde
+
+| Lógica | Dónde implementar | Por qué |
+|---|---|---|
+| Queries de lectura con filtros | `supabase.from().select()` (cliente) con RLS | RLS garantiza el scope automáticamente |
+| Validaciones + escrituras + emails | **Edge Function** | Necesita `service_role` y llamadas externas (Resend) |
+| Cálculos complejos de solo datos (stats, disponibilidad, precio) | **Postgres RPC** (`CREATE FUNCTION ... LANGUAGE plpgsql`) | Más eficiente: corre en la DB, una sola llamada |
+| Cron jobs | **`pg_cron`** (Postgres nativo en Supabase) | No requiere servidor extra, es nativo |
+| Realtime | `supabase.channel().on('postgres_changes')` | Nativo, sin polling |
+
+### Regla de decisión
+- ¿La operación necesita llamar a un servicio externo (Resend, Cloudinary)? → **Edge Function**
+- ¿La operación necesita saltarse el RLS (escribir notificaciones, ejecutar crons)? → **Edge Function** con `service_role`
+- ¿La operación es solo lógica de datos / SQL complejo? → **Postgres RPC** (`supabase.rpc('nombre_funcion')`)
+- ¿La operación es una lectura simple con filtros? → **Query directa** con `supabase.from()`
+
+### RLS helpers: preferir `profiles` sobre JWT parsing
+```sql
+-- NO: parsear el JWT (frágil ante cambios de Supabase)
+-- EVITAR: auth.jwt() -> 'app_metadata' ->> 'role'
+
+-- SÍ: leer desde profiles (robusto, siempre actualizado)
+CREATE OR REPLACE FUNCTION get_my_role()
+RETURNS text LANGUAGE sql STABLE SECURITY DEFINER AS $$
+  SELECT role::text FROM public.profiles WHERE id = auth.uid();
+$$;
+
+CREATE OR REPLACE FUNCTION get_my_venue_id()
+RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER AS $$
+  SELECT venue_id FROM public.profiles WHERE id = auth.uid();
+$$;
+```
+
+### Modularidad en Edge Functions
+- Toda la lógica compartida vive en `supabase/functions/_shared/`:
+  - `db.ts` → cliente Supabase admin (service role), helpers de query
+  - `pricing.ts` → cálculo de precio (base, comisión, total)
+  - `ar-time.ts` → helpers de zona horaria Argentina (UTC-3)
+  - `email.ts` → wrapper Resend (best-effort, nunca lanza)
+  - `notifications.ts` → emisores de notificaciones in-app
+  - `availability.ts` → lógica de slots (reutilizada en RPC y Edge Functions)
+- Cada Edge Function importa lo que necesita de `_shared/`, no duplica código.
+- Cada Edge Function maneja sus propios errores y retorna `{ data, error }` consistente.
+
+### Estructura de carpetas del proyecto
+```
+supabase/
+├── migrations/
+│   ├── 001_schema.sql      → enums + tablas + índices + FKs
+│   ├── 002_triggers.sql    → on_auth_user_created, updated_at, set_user_role
+│   ├── 003_rls.sql         → RLS policies + helper functions
+│   ├── 004_rpc.sql         → Postgres RPC functions (stats, availability, price)
+│   └── 005_crons.sql       → pg_cron jobs
+└── functions/
+    ├── _shared/            → módulos compartidos (no son Edge Functions)
+    │   ├── db.ts
+    │   ├── pricing.ts
+    │   ├── ar-time.ts
+    │   ├── email.ts
+    │   ├── notifications.ts
+    │   └── availability.ts
+    ├── create-booking/     → Edge Function
+    ├── create-recurring/
+    ├── cancel-booking/
+    ├── cancel-recurring/
+    ├── mark-paid/
+    ├── cron-cancel-unpaid/
+    ├── cron-send-reminders/
+    └── cron-complete-bookings/
+```
+
+### Edge cases críticos a cubrir siempre
+1. **Usuario sin perfil**: si `profiles` no existe aún (trigger tardío), los helpers de rol devuelven `CLIENT` por defecto.
+2. **venue_id null en VENUE_ADMIN**: si un VENUE_ADMIN no tiene `venue_id`, las políticas RLS deben denegarle acceso en vez de mostrar todo.
+3. **Turno que cruza medianoche**: `end_time` puede ser menor que `start_time` (ej. 23:00 → 01:00). La ventana del día debe ser de 48h.
+4. **Concurrencia en reservas**: dos usuarios reservando el mismo slot al mismo tiempo. Usar `INSERT ... WHERE NOT EXISTS` en una Postgres function para garantizar atomicidad.
+5. **Crons idempotentes**: si un cron corre dos veces seguidas (falla de red, reintento), no debe duplicar emails ni notificaciones. `reminder_sent_at` previene esto.
+6. **Best-effort en emails/notificaciones**: nunca hacer `await` de emails dentro de una transacción. Disparar y olvidar (`fire and forget`) con manejo de error silencioso.
+7. **RLS en tablas sin `venue_id` directo**: para `schedules`, `pricing`, `blocked_slots`, el scope de sede se obtiene haciendo JOIN a `facilities` → `venues`.

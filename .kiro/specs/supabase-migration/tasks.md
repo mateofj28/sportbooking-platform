@@ -1,151 +1,187 @@
 # Plan de tareas — Migración a Supabase
 
-## Fase 1 — Fundación (schema + auth + RLS)
+## Fase 1 — Fundación de base de datos
 
-- [ ] 1. Crear el schema SQL completo
-  - Crear `supabase/migrations/001_schema.sql` con enums, tablas, índices y FKs.
-  - Aplicar en el proyecto Supabase (`https://olrmhtimfndshayvuowc.supabase.co`).
+- [ ] 1. Schema SQL: enums, tablas, índices
+  - Crear `supabase/migrations/001_schema.sql`.
+  - Enums primero: `role`, `booking_status`, `payment_status`, `billing_type`, `notification_type`.
+  - 12 tablas en orden de dependencia (sin FKs circulares).
+  - Índices de `notifications` y `notification_reads`.
+  - Usar `CREATE TYPE IF NOT EXISTS` y `CREATE TABLE IF NOT EXISTS` para idempotencia.
+  - Aplicar en Supabase.
   - _REQ-1_
 
-- [ ] 2. Triggers de base de datos
-  - Trigger `on_auth_user_created` → crea fila en `profiles` automáticamente.
-  - Trigger `updated_at` → actualiza el campo en cada UPDATE.
-  - Función SQL `set_user_role(user_id, role, venue_id)` para asignar roles en `app_metadata`.
-  - _REQ-1, REQ-2_
+- [ ] 2. Triggers y funciones de DB
+  - Crear `supabase/migrations/002_triggers.sql`.
+  - Trigger `handle_new_user` → popula `profiles` al registrarse.
+  - Trigger `set_updated_at` → actualiza `updated_at` en cada UPDATE.
+  - Función `set_user_role(p_user_id, p_role, p_venue_id)` con SECURITY DEFINER.
+  - Funciones helper RLS: `get_my_role()` y `get_my_venue_id()` leyendo desde `profiles` (no desde JWT).
+  - Edge case: `get_my_role()` devuelve `'CLIENT'` si el perfil no existe aún.
+  - Aplicar en Supabase.
+  - _REQ-2_
 
-- [ ] 3. Row Level Security
+- [ ] 3. Row Level Security (RLS)
+  - Crear `supabase/migrations/003_rls.sql`.
   - Habilitar RLS en las 12 tablas.
-  - Crear funciones helper `auth.user_role()` y `auth.user_venue_id()`.
-  - Crear políticas SELECT/INSERT/UPDATE/DELETE según la tabla del steering (sección 3).
-  - Crear `supabase/migrations/002_rls.sql`.
-  - _REQ-3_
-
-- [ ] 4. Cliente Supabase en el frontend
-  - Instalar `@supabase/supabase-js` en el frontend.
-  - Crear `frontend/src/lib/supabase.ts` con el cliente.
-  - Agregar variables de entorno `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-  - _REQ-10_
-
-- [ ] 5. Reescribir `useAuthStore` y el flujo de auth del frontend
-  - Reemplazar JWT propio por `supabase.auth.signUp/signInWithPassword/signOut/getUser`.
-  - El store escucha `supabase.auth.onAuthStateChange` para mantener la sesión.
-  - Extraer `role` y `venue_id` del JWT de Supabase (`app_metadata`).
-  - Reescribir las páginas de login y registro para usar el SDK.
-  - _REQ-2, REQ-10_
-
----
-
-## Fase 2 — Edge Functions (lógica de negocio)
-
-- [ ] 6. Setup de Edge Functions
-  - Instalar Supabase CLI.
-  - Inicializar `supabase/` en el proyecto.
-  - Crear helper compartido `supabase/functions/_shared/` con: cliente admin (service role), helper de precio, helper de zona AR, helper de emails (Resend), helper de notificaciones.
-  - _REQ-4, REQ-5, REQ-6_
-
-- [ ] 7. Edge Function: `/create-booking`
-  - Validar los 8 criterios (no pasado, duración, horario, conflictos, tarifa).
-  - Calcular precio (base, comisión, total).
-  - Insertar `booking` + `CONFIRMED` + `PAID` + `paid_at`.
-  - Emitir notificación `BOOKING_CREATED` + chequeo `NEW_CLIENT`.
-  - Enviar email de confirmación (best-effort).
+  - Políticas por tabla según sección 3 del steering.
+  - Edge case: VENUE_ADMIN sin venue_id → denegar acceso a datos de sede.
+  - Edge case: usuario anónimo → solo lectura en tablas públicas.
+  - Aplicar en Supabase.
   - _REQ-4_
 
-- [ ] 8. Edge Function: `/create-recurring`
-  - Generar 8 ocurrencias en hora AR.
-  - Validar cada fecha (saltar conflictos).
-  - Crear `recurring_booking` + N `bookings` con `PENDING`.
-  - Emitir notificación `RECURRING_CREATED`.
-  - Enviar email resumen (best-effort).
-  - _REQ-4_
+- [ ] 4. Postgres RPC: precio, disponibilidad y estadísticas
+  - Crear `supabase/migrations/004_rpc.sql`.
+  - `calculate_price(p_facility_id, p_start_datetime)` → `{base_price, commission_amount, total_price}`.
+  - `get_availability(p_facility_id, p_date)` → slots con `available/booked/blocked/past`.
+  - `get_availability_summary(p_venue_id, p_sport_id, p_date)` → batch 3 queries.
+  - `get_stats(p_range, p_from, p_to, p_sport_id, p_venue_id, p_status)` → métricas completas con scope por rol automático.
+  - Todas manejan el edge case de horario que cruza medianoche (ventana 48h).
+  - `get_stats` lee `get_my_venue_id()` internamente para scope VENUE_ADMIN.
+  - Aplicar en Supabase.
+  - _REQ-5, REQ-6_
 
-- [ ] 9. Edge Functions: `/cancel-booking` y `/cancel-recurring`
-  - `/cancel-booking`: validar 24h para CLIENT, cancelar, email + notif `BOOKING_CANCELLED`.
-  - `/cancel-recurring`: cancelar futuras, `is_active = false`, retornar count.
-  - _REQ-4_
-
-- [ ] 10. Edge Function: `/mark-paid`
-  - Validar scope (CLIENT solo las suyas, VENUE_ADMIN solo su sede).
-  - Actualizar `payment_status = PAID` + `paid_at`.
-  - Emitir notificación `BOOKING_PAID`.
-  - _REQ-4_
-
-- [ ] 11. Edge Functions: `/get-availability` y `/get-availability-summary`
-  - Lógica de slots disponibles/ocupados/bloqueados/pasados con ventana UTC+AR.
-  - Versión batch para muchas canchas (3 queries totales).
-  - _REQ-5_
-
-- [ ] 12. Edge Function: `/get-stats`
-  - Rangos de fecha en medianoche hora AR.
-  - Métricas completas: total, totalAll, confirmed, completed, cancelled, totalBase, totalCommission, occupancyRate, byStatus, byWeekday, byDay, bySport, byVenue, recentClients.
-  - Scope por rol (VENUE_ADMIN solo su sede).
-  - _REQ-6_
-
----
-
-## Fase 3 — Crons, Realtime y Storage
-
-- [ ] 13. Cron jobs
-  - Implementar los 3 crons (cancelación impago, recordatorios, completar turnos).
-  - Usar `pg_cron` de Supabase o Edge Functions programadas.
-  - Cada cron llama a helpers de email y notificaciones (best-effort).
-  - _REQ-7_
-
-- [ ] 14. Realtime para notificaciones
-  - Suscribir al canal de `notifications` con filtro por `venue_id` o `admin_only`.
-  - Reemplazar el polling de 30s por Supabase Realtime.
-  - Actualizar `NotificationBell` para usar Realtime.
+- [ ] 5. Cron jobs con pg_cron
+  - Crear `supabase/migrations/005_crons.sql`.
+  - Cron 1 (cada hora): cancelar turnos fijos impagas < 24h.
+  - Cron 2 (cada 10 min): recordatorios < 2h (idempotente por `reminder_sent_at`).
+  - Cron 3 (cada hora): completar turnos `PAID` ya pasados.
+  - Los crons hacen el cambio de estado en DB y luego llaman a una Edge Function para emails (best-effort).
+  - Aplicar en Supabase (requiere extensión `pg_cron` habilitada).
   - _REQ-8_
 
-- [ ] 15. Storage para imágenes
-  - Crear los 3 buckets (`venues`, `facilities`, `avatars`) en Supabase Storage.
-  - Configurar políticas de acceso público para lectura.
-  - Reescribir el componente `ImageUpload` para usar `supabase.storage`.
-  - _REQ-9_
+---
+
+## Fase 2 — Cliente Supabase y Auth en el frontend
+
+- [ ] 6. Setup del cliente Supabase en el frontend
+  - Instalar `@supabase/supabase-js` y `@supabase/ssr` en el frontend.
+  - Crear `frontend/src/lib/supabase.ts`: cliente browser y helper de server.
+  - Agregar `.env.local`: `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+  - _REQ-11_
+
+- [ ] 7. Reescribir `useAuthStore` y páginas de auth
+  - Reescribir `useAuthStore` para usar `supabase.auth.onAuthStateChange`.
+  - Extraer `role` y `venue_id` del `user.app_metadata` del JWT de Supabase.
+  - Fallback: si `app_metadata` está vacío, leer de `profiles` directamente.
+  - Reescribir página de login: usar `signInWithPassword`.
+  - Reescribir página de registro: usar `signUp` con `data: { first_name, last_name }`.
+  - Edge case: token expirado → Supabase refresca automáticamente.
+  - Edge case: trigger de profiles fallido → mostrar error de registro gracioso.
+  - _REQ-3, REQ-11_
 
 ---
 
-## Fase 4 — Reescritura de hooks y páginas del frontend
+## Fase 3 — Módulos compartidos y Edge Functions
 
-- [ ] 16. Hooks de datos directos (sin Edge Functions)
-  - Reescribir hooks que hacen queries simples: `useVenues`, `useFacilities`, `useSports`, `useSchedules`, `usePricing`, `useBlockedSlots`, `useUsers`.
-  - Usar `supabase.from(tabla).select()` con joins y filtros.
-  - Reemplazar `react-query` donde aplique o mantenerlo con `queryFn` que llame al SDK.
-  - _REQ-10_
+- [ ] 8. Módulos compartidos (`_shared/`)
+  - Crear `supabase/functions/_shared/db.ts`: cliente Supabase admin (service role), helper para crear el cliente con la request.
+  - Crear `supabase/functions/_shared/ar-time.ts`: `arMidnightUtc`, `arDayKey`, `arDateLabel`, `arTime`, `toArDate`.
+  - Crear `supabase/functions/_shared/pricing.ts`: wrapper de la RPC `calculate_price`.
+  - Crear `supabase/functions/_shared/email.ts`: wrapper Resend best-effort (`sendConfirmation`, `sendCancellation`, `sendReminder`). Nunca lanza.
+  - Crear `supabase/functions/_shared/notifications.ts`: `emitNotification(type, title, body, venueId?, adminOnly?)` con service role. Nunca lanza.
+  - Cada módulo es independiente y no importa de otros `_shared/` para evitar acoplamiento circular.
+  - _REQ-7_
 
-- [ ] 17. Hooks de reservas
-  - `useBookings` → `supabase.from('bookings').select()` con joins a `facilities`, `venues`, `profiles`.
+- [ ] 9. Edge Function: `create-booking`
+  - Validar autenticación (JWT requerido).
+  - Validar los 8 criterios de booking (usar RPC `calculate_price` y query de conflictos).
+  - Insertar en `bookings` usando `service_role` para garantizar atomicidad.
+  - Emitir `BOOKING_CREATED` + chequeo `NEW_CLIENT`.
+  - Email de confirmación best-effort.
+  - Responde `{ data: booking, error: null }` o `{ data: null, error: { message, code } }`.
+  - Edge case: conflicto de concurrencia → 409.
+  - _REQ-7_
+
+- [ ] 10. Edge Function: `create-recurring`
+  - Generar 8 ocurrencias en hora AR.
+  - Validar y crear cada una en loop (saltar conflictos).
+  - Edge case: todas fallan → rollback de `recurring_bookings` + error 400.
+  - Emitir `RECURRING_CREATED`, email resumen best-effort.
+  - _REQ-7_
+
+- [ ] 11. Edge Functions: `cancel-booking` y `cancel-recurring`
+  - `cancel-booking`: validar 24h para CLIENT. Edge cases: ya cancelada, ya completada.
+  - `cancel-recurring`: cancelar futuras, `is_active = false`.
+  - Notif + email best-effort en ambas.
+  - _REQ-7_
+
+- [ ] 12. Edge Function: `mark-paid`
+  - Validar scope por rol.
+  - Idempotente: si ya es PAID, retornar éxito sin re-procesar.
+  - Emitir `BOOKING_PAID`.
+  - _REQ-7_
+
+- [ ] 13. Edge Functions de crons (efectos secundarios)
+  - `cron-cancel-unpaid`: recibe lista de bookings cancelados → envía emails + notifs.
+  - `cron-send-reminders`: recibe lista de bookings → envía recordatorios.
+  - `cron-complete-bookings`: recibe bookings completados → emite notifs de comisión por sede.
+  - Son llamadas por los crons de `pg_cron`, no expuestas al frontend.
+  - _REQ-8_
+
+---
+
+## Fase 4 — Reescritura de hooks del frontend
+
+- [ ] 14. Hooks de datos (queries directas con SDK)
+  - `useVenues`: `supabase.from('venues').select()`.
+  - `useFacilities`: `supabase.from('facilities').select('*, sport(*), venue(*), schedules(*), pricing(*)')`.
+  - `useSports`, `useSchedules`, `usePricing`, `useBlockedSlots`, `useUsers`.
+  - Mantener `react-query` como capa de cache; `queryFn` usa el SDK.
+  - _REQ-11_
+
+- [ ] 15. Hooks de reservas
+  - `useBookings`: `supabase.from('bookings').select('*, facility(*, venue(*)), user:profiles(*)')`.
   - `useCreateBooking` → `supabase.functions.invoke('create-booking')`.
   - `useCancelBooking` → `supabase.functions.invoke('cancel-booking')`.
   - `useMarkBookingPaid` → `supabase.functions.invoke('mark-paid')`.
   - `useRecurringBookings`, `useCreateRecurringBooking`, `useCancelRecurringBooking`.
-  - _REQ-10_
+  - Invalidar queries correctas en `onSuccess` de cada mutación.
+  - _REQ-11_
 
-- [ ] 18. Hooks de disponibilidad y estadísticas
-  - `useFacilityAvailability` → `supabase.functions.invoke('get-availability')`.
-  - `useAvailabilitySummary` → `supabase.functions.invoke('get-availability-summary')`.
-  - Hook de stats → `supabase.functions.invoke('get-stats')`.
-  - _REQ-10_
+- [ ] 16. Hooks de disponibilidad y estadísticas
+  - `useFacilityAvailability` → `supabase.rpc('get_availability', { p_facility_id, p_date })`.
+  - `useAvailabilitySummary` → `supabase.rpc('get_availability_summary', { p_venue_id, p_sport_id, p_date })`.
+  - `useStats` → `supabase.rpc('get_stats', { p_range, ... })`.
+  - _REQ-11_
 
-- [ ] 19. Hooks de notificaciones (Realtime)
-  - `useUnreadCount` → suscripción Realtime en vez de polling.
-  - `useNotifications` → `supabase.from('notifications').select()`.
-  - `useMarkNotificationRead` / `useMarkAllNotificationsRead`.
-  - _REQ-8, REQ-10_
+- [ ] 17. Notificaciones con Realtime
+  - `useNotifications` → `supabase.from('notifications').select('*, reads:notification_reads(*)')`.
+  - `useUnreadCount` → suscripción Realtime en `notifications` (INSERT) + query inicial.
+  - Componente `NotificationBell` reescrito con Realtime (eliminar polling de 30s).
+  - Edge case: reconexión automática de Realtime → resincronizar el contador.
+  - `useMarkNotificationRead`, `useMarkAllNotificationsRead` → insert en `notification_reads`.
+  - _REQ-9, REQ-11_
 
 ---
 
-## Fase 5 — Cierre
+## Fase 5 — Storage
+
+- [ ] 18. Buckets y políticas de Storage
+  - Crear buckets `venues`, `facilities`, `avatars` en Supabase Storage (públicos para lectura).
+  - Políticas: ADMIN/VENUE_ADMIN pueden subir a `venues` y `facilities`; cada usuario solo a `avatars/{uid}/`.
+  - Edge case: validar tipo y tamaño antes de subir (solo imágenes, máx 5MB).
+  - _REQ-10_
+
+- [ ] 19. Reescribir componente `ImageUpload`
+  - Reemplazar `apiClient.upload()` (Cloudinary) por `supabase.storage.from(bucket).upload(path, file)`.
+  - Guardar la URL pública obtenida de `supabase.storage.from(bucket).getPublicUrl(path)`.
+  - _REQ-10_
+
+---
+
+## Fase 6 — Cierre
 
 - [ ] 20. Variables de entorno y verificación end-to-end
-  - Configurar `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en Vercel.
-  - Configurar `SUPABASE_SERVICE_ROLE_KEY` y `RESEND_API_KEY` en Edge Functions.
-  - Verificar el flujo completo: registro → login → buscar cancha → reservar → pagar → cancelar → notificaciones → estadísticas → subir foto.
-  - _REQ-1 al REQ-10_
+  - Configurar en Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+  - Configurar en Edge Functions: `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`.
+  - Verificar flujo completo: registro → login → buscar cancha → reservar → pagar → cancelar → notificaciones → estadísticas → subir foto.
+  - Verificar scope por rol: CLIENT, VENUE_ADMIN, ADMIN.
+  - _REQ-1 al REQ-11_
 
-- [ ] 21. Eliminar el backend NestJS
-  - Verificar que todo funciona con Supabase.
+- [ ] 21. Eliminar backend NestJS
+  - Confirmar que todo el flujo funciona en Supabase.
   - Eliminar `backend/` del repositorio.
-  - Dar de baja el servicio en Railway.
-  - Actualizar `README.md`.
-  - _REQ-11_
+  - Dar de baja servicio en Railway.
+  - Actualizar `README.md` con nueva arquitectura.
+  - _REQ-12_

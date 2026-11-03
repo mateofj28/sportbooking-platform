@@ -570,3 +570,11 @@ supabase/
 5. **Crons idempotentes**: si un cron corre dos veces seguidas (falla de red, reintento), no debe duplicar emails ni notificaciones. `reminder_sent_at` previene esto.
 6. **Best-effort en emails/notificaciones**: nunca hacer `await` de emails dentro de una transacción. Disparar y olvidar (`fire and forget`) con manejo de error silencioso.
 7. **RLS en tablas sin `venue_id` directo**: para `schedules`, `pricing`, `blocked_slots`, el scope de sede se obtiene haciendo JOIN a `facilities` → `venues`.
+
+---
+
+## TAREAS PENDIENTES ANTES DE LANZAR AL PÚBLICO
+
+- [ ] **Verificar dominio en Resend** para poder enviar emails a cualquier destinatario.
+  - Hoy se usa `onboarding@resend.dev` (solo llega al email registrado en Resend, sirve para testing).
+  - Para producción: ir a **https://resend.com/domains**, agregar tu dominio, configurar los registros DNS que Resend indique, y luego actualizar el secret `RESEND_FROM_EMAIL` en Supabase Edge Functions con `SportBooking <notificaciones@tudominio.com>`.

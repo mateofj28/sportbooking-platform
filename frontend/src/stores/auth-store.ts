@@ -1,66 +1,89 @@
-import { create } from "zustand";
-import type { User } from "@/types";
+// ============================================================
+// stores/auth-store.ts
+// Estado global de autenticación basado en Supabase Auth.
+//
+// Cambios respecto al sistema anterior (NestJS + JWT manual):
+// - Ya no se guarda el token en localStorage (Supabase lo gestiona en cookies).
+// - isHydrated se resuelve cuando Supabase termina de verificar la sesión.
+// - El store se sincroniza automáticamente via onAuthStateChange.
+// - role y venueId se leen desde app_metadata del JWT de Supabase.
+// ============================================================
+
+import { create } from 'zustand'
+import type { User as SupabaseUser, Session } from '@supabase/supabase-js'
+
+export type AppRole = 'CLIENT' | 'ADMIN' | 'VENUE_ADMIN'
+
+// Tipo del usuario de la app (derivado del JWT de Supabase)
+export interface AppUser {
+    id: string
+    email: string
+    firstName: string
+    lastName: string
+    role: AppRole
+    venueId: string | null
+    avatarUrl: string | null
+    phone?: string | null
+}
 
 interface AuthState {
-    user: User | null;
-    accessToken: string | null;
-    isAuthenticated: boolean;
-    isHydrated: boolean;
-    setAuth: (user: User, accessToken: string, refreshToken: string) => void;
-    logout: () => void;
-    updateUser: (user: Partial<User>) => void;
-    hydrate: () => void;
+    user: AppUser | null
+    session: Session | null
+    isAuthenticated: boolean
+    isHydrated: boolean        // true cuando Supabase terminó de resolver la sesión inicial
+
+    // Acciones — solo las usa AuthHydration, no los componentes directamente
+    _setSession: (session: Session | null) => void
+    _setHydrated: () => void
+    _updateUser: (partial: Partial<AppUser>) => void
+    logout: () => void
+}
+
+/** Extrae los datos del usuario de la app desde el user de Supabase */
+export function mapSupabaseUser(supabaseUser: SupabaseUser | null): AppUser | null {
+    if (!supabaseUser) return null
+
+    const meta = supabaseUser.app_metadata ?? {}
+    const userMeta = supabaseUser.user_metadata ?? {}
+
+    return {
+        id: supabaseUser.id,
+        email: supabaseUser.email ?? '',
+        // Puede venir de app_metadata (si se seteó con set_user_role)
+        // o de user_metadata (si es recién registrado)
+        firstName: userMeta.first_name ?? userMeta.firstName ?? '',
+        lastName: userMeta.last_name ?? userMeta.lastName ?? '',
+        role: (meta.role ?? 'CLIENT') as AppRole,
+        venueId: meta.venue_id ?? null,
+        avatarUrl: userMeta.avatar_url ?? null,
+    }
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
-    accessToken: null,
+    session: null,
     isAuthenticated: false,
     isHydrated: false,
 
-    setAuth: (user, accessToken, refreshToken) => {
-        if (typeof window !== "undefined") {
-            localStorage.setItem("accessToken", accessToken);
-            localStorage.setItem("refreshToken", refreshToken);
-            localStorage.setItem("user", JSON.stringify(user));
-        }
-        set({ user, accessToken, isAuthenticated: true });
+    _setSession: (session) => {
+        set({
+            session,
+            user: mapSupabaseUser(session?.user ?? null),
+            isAuthenticated: !!session,
+        })
     },
 
-    logout: () => {
-        if (typeof window !== "undefined") {
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
-            localStorage.removeItem("user");
-        }
-        set({ user: null, accessToken: null, isAuthenticated: false });
+    _setHydrated: () => set({ isHydrated: true }),
+
+    _updateUser: (partial) => {
+        const current = get().user
+        if (current) set({ user: { ...current, ...partial } })
     },
 
-    updateUser: (userData) => {
-        const current = get().user;
-        if (current) {
-            const updated = { ...current, ...userData };
-            if (typeof window !== "undefined") {
-                localStorage.setItem("user", JSON.stringify(updated));
-            }
-            set({ user: updated });
-        }
-    },
-
-    hydrate: () => {
-        if (typeof window !== "undefined") {
-            const token = localStorage.getItem("accessToken");
-            const userStr = localStorage.getItem("user");
-            if (token && userStr) {
-                try {
-                    const user = JSON.parse(userStr);
-                    set({ user, accessToken: token, isAuthenticated: true, isHydrated: true });
-                } catch {
-                    set({ isHydrated: true });
-                }
-            } else {
-                set({ isHydrated: true });
-            }
-        }
-    },
-}));
+    // logout solo actualiza el store — el signOut real se hace en use-auth.ts
+    logout: () => set({
+        user: null,
+        session: null,
+        isAuthenticated: false,
+    }),
+}))

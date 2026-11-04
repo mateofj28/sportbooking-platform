@@ -8,6 +8,7 @@ import {
     type RegisterFormData,
 } from "@/lib/validations/auth.schema";
 import { useAuth } from "@/hooks/use-auth";
+import { useRouter } from "next/navigation";
 import { Trophy, Mail, Lock, User, Phone, ArrowRight, CheckCircle2, Eye, EyeOff, Globe } from "lucide-react";
 import { useState } from "react";
 
@@ -29,6 +30,7 @@ const COUNTRY_CODES = [
 
 export default function RegisterPage() {
     const { register: registerMutation } = useAuth();
+    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [countryCode, setCountryCode] = useState("+57");
@@ -52,11 +54,15 @@ export default function RegisterPage() {
 
     const onSubmit = (data: RegisterFormData) => {
         const { confirmPassword, ...registerData } = data;
-      // Prepend country code to phone if provided
       if (registerData.phone) {
           registerData.phone = `${countryCode} ${registerData.phone}`;
       }
-      registerMutation.mutate(registerData);
+        registerMutation.mutate(registerData, {
+            onSuccess: () => {
+                // Los nuevos usuarios siempre son CLIENT al registrarse
+                router.push("/inicio");
+            },
+        });
   };
 
     const selectedCountry = COUNTRY_CODES.find((c) => c.code === countryCode);

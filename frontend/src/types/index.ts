@@ -1,4 +1,4 @@
-// Auth types
+// Auth types — compatibles con Supabase Auth + profiles
 export interface User {
     id: string;
     email: string;
@@ -8,11 +8,13 @@ export interface User {
     dni?: string;
     avatarUrl?: string;
     role: "CLIENT" | "ADMIN" | "VENUE_ADMIN";
-    venueId?: string;
+    venueId?: string | null;
     isActive?: boolean;
     createdAt?: string;
 }
 
+// Ya no se usa — Supabase Auth no devuelve tokens manuales.
+// Se mantiene para compatibilidad durante la migración gradual.
 export interface AuthResponse {
     user: User;
     accessToken: string;

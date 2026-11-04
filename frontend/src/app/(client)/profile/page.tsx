@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import type { User as UserType } from "@/types";
 
 export default function ProfilePage() {
-    const { user, updateUser, isAuthenticated, isHydrated } = useAuthStore();
+    const { user, _updateUser: updateUser, isAuthenticated, isHydrated } = useAuthStore();
     const router = useRouter();
 
     useEffect(() => {

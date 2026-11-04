@@ -5,11 +5,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth.schema";
 import { useAuth } from "@/hooks/use-auth";
+import { useAuthStore } from "@/stores/auth-store";
+import { useRouter } from "next/navigation";
 import { Trophy, Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
 export default function LoginPage() {
     const { login } = useAuth();
+    const router = useRouter();
+    const user = useAuthStore((s) => s.user);
     const [showPassword, setShowPassword] = useState(false);
 
     const {
@@ -21,7 +25,17 @@ export default function LoginPage() {
     });
 
     const onSubmit = (data: LoginFormData) => {
-        login.mutate(data);
+        login.mutate(data, {
+            onSuccess: (result) => {
+                // Navegar según el rol del usuario
+                const role = result.user?.app_metadata?.role ?? 'CLIENT';
+                if (role === "ADMIN" || role === "VENUE_ADMIN") {
+                    router.push("/dashboard");
+                } else {
+                    router.push("/inicio");
+                }
+            },
+        });
     };
 
     return (

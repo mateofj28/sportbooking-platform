@@ -1,54 +1,75 @@
-"use client";
+'use client'
 
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { apiClient } from "@/lib/api-client";
-import { useAuthStore } from "@/stores/auth-store";
-import type { AuthResponse, User, LoginCredentials, RegisterData } from "@/types";
+// ============================================================
+// hooks/use-auth.ts
+// Hook de autenticación basado en Supabase Auth.
+//
+// Expone login, register, logout y el estado del usuario.
+// Las mutaciones usan useMutation de TanStack Query para
+// mantener el patrón existente (isPending, error, onSuccess).
+// La navegación post-login se hace en el componente, no aquí,
+// para mantener el hook sin acoplamiento al router.
+// ============================================================
+
+import { useMutation } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/stores/auth-store'
+import type { LoginCredentials, RegisterData } from '@/types'
 
 export function useAuth() {
-    const router = useRouter();
-    const { setAuth, logout: storeLogout, user, isAuthenticated } = useAuthStore();
+    const { user, isAuthenticated, logout: storeLogout } = useAuthStore()
 
-    const loginMutation = useMutation({
-        mutationFn: (credentials: LoginCredentials) =>
-            apiClient.post<AuthResponse>("/auth/login", credentials),
-        onSuccess: (data) => {
-            setAuth(data.user, data.accessToken, data.refreshToken);
-            if (data.user.role === "ADMIN" || data.user.role === "VENUE_ADMIN") {
-                router.push("/dashboard");
-            } else {
-                router.push("/inicio");
-            }
+    // ---- LOGIN ----
+    const login = useMutation({
+        mutationFn: async (credentials: LoginCredentials) => {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: credentials.email,
+                password: credentials.password,
+            })
+            if (error) throw new Error(error.message)
+            if (!data.session) throw new Error('No se pudo iniciar sesión')
+            return data
         },
-    });
+      // El store se actualiza automáticamente via onAuthStateChange en AuthHydration.
+      // No necesitamos hacer nada aquí — el componente maneja la navegación.
+  })
 
-    const registerMutation = useMutation({
-        mutationFn: (data: RegisterData) =>
-            apiClient.post<AuthResponse>("/auth/register", data),
-        onSuccess: (data) => {
-            setAuth(data.user, data.accessToken, data.refreshToken);
-            router.push("/inicio");
+    // ---- REGISTER ----
+    const register = useMutation({
+        mutationFn: async (data: RegisterData) => {
+            const { data: result, error } = await supabase.auth.signUp({
+                email: data.email,
+                password: data.password,
+                options: {
+                    data: {
+                        // Se guardan en user_metadata y el trigger handle_new_user
+                        // los usa para crear la fila en profiles
+                        first_name: data.firstName,
+                        last_name: data.lastName,
+                        phone: data.phone,
+                    },
+                },
+            })
+            if (error) throw new Error(error.message)
+            if (!result.user) throw new Error('No se pudo crear el usuario')
+            return result
         },
-    });
+  })
 
-    const profileQuery = useQuery({
-        queryKey: ["profile"],
-        queryFn: () => apiClient.get<User>("/auth/me"),
-        enabled: isAuthenticated,
-    });
-
-    const logout = () => {
-        storeLogout();
-        router.push("/login");
-    };
+    // ---- LOGOUT ----
+    const logout = async () => {
+        // 1. Cerrar sesión en Supabase (invalida el token)
+        await supabase.auth.signOut()
+        // 2. Limpiar el store local (onAuthStateChange también lo hace,
+        //    pero esto garantiza inmediatez en la UI)
+        storeLogout()
+    }
 
     return {
         user,
         isAuthenticated,
-        login: loginMutation,
-        register: registerMutation,
-        profile: profileQuery,
-        logout,
-    };
+      login,
+      register,
+      logout,
+  }
 }

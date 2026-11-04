@@ -140,7 +140,7 @@ export function Navbar() {
                                 color="primary"
                                 name={`${user?.firstName} ${user?.lastName}`}
                                 size="sm"
-                                src={user?.avatarUrl}
+                                    src={user?.avatarUrl ?? undefined}
                             />
                         </DropdownTrigger>
                         <DropdownMenu aria-label="Acciones de usuario" variant="flat">

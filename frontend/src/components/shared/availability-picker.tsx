@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { useQueries } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { supabase } from "@/lib/supabase";
 import type { Facility } from "@/types";
 import { finalPriceForDuration } from "@/lib/pricing";
 
@@ -154,7 +154,15 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
     const availabilityQueries = useQueries({
         queries: dayInfos.map((info) => ({
             queryKey: ["availability", facility.id, info.dateStr],
-            queryFn: () => apiClient.get<AvailabilityResponse>(`/facilities/${facility.id}/availability`, { date: info.dateStr }),
+            queryFn: async (): Promise<AvailabilityResponse> => {
+                // Usa Supabase RPC (get_availability) en vez de apiClient directo
+                const { data, error } = await supabase.rpc('get_availability' as any, {
+                    p_facility_id: facility.id,
+                    p_date: info.dateStr,
+                })
+                if (error) throw new Error(error.message)
+                return data as AvailabilityResponse
+            },
             enabled: info.hasSchedule,
             staleTime: 60_000,
         })),

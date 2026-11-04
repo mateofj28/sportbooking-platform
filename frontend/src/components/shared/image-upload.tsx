@@ -3,42 +3,79 @@
 import { useRef, useState } from "react";
 import { Spinner } from "@heroui/react";
 import { ImagePlus, X } from "lucide-react";
-import { apiClient } from "@/lib/api-client";
+import { supabase } from "@/lib/supabase";
+import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
+
+type StorageBucket = "venues" | "facilities" | "avatars";
 
 interface ImageUploadProps {
     /** URL actual de la imagen (si ya hay una). */
     value?: string;
-    /** Se llama con la URL subida (o "" al quitar). */
+    /** Se llama con la URL pública subida (o "" al quitar). */
     onChange: (url: string) => void;
+    /** Bucket de Supabase Storage donde se sube. */
+    bucket?: StorageBucket;
     label?: string;
 }
 
 /**
- * Sube una imagen al backend (Cloudinary) y devuelve la URL pública.
- * Muestra preview, permite reemplazar o quitar.
+ * Sube una imagen a Supabase Storage y devuelve la URL pública.
+ * Reemplaza la subida a Cloudinary via NestJS.
+ * Valida tipo (solo imágenes) y tamaño (máx 5 MB) antes de subir.
  */
-export function ImageUpload({ value, onChange, label = "Foto del complejo" }: ImageUploadProps) {
+export function ImageUpload({
+    value,
+    onChange,
+    bucket = "venues",
+    label = "Foto del complejo",
+}: ImageUploadProps) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [uploading, setUploading] = useState(false);
     const addToast = useToastStore((s) => s.addToast);
+    const userId = useAuthStore((s) => s.user?.id);
 
     const handleFile = async (file: File | undefined) => {
         if (!file) return;
-        if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+
+        // Validar tipo
+        const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+        if (!ALLOWED.includes(file.type)) {
             addToast("Formato no permitido. Usa JPG, PNG, WEBP o GIF");
             return;
         }
+
+        // Validar tamaño (5 MB)
         if (file.size > 5 * 1024 * 1024) {
             addToast("La imagen supera los 5 MB");
             return;
         }
+
         setUploading(true);
         try {
-            const res = await apiClient.upload<{ url: string }>("/uploads/image", file);
-            onChange(res.url);
-        } catch {
-            addToast("No se pudo subir la imagen");
+            // Path con prefijo por scope:
+            // - avatars: "{user_id}/{timestamp}.ext"   (RLS scope por usuario)
+            // - venues/facilities: "{scope_id}/{timestamp}.ext"
+            const ext = file.name.split(".").pop() ?? "jpg";
+            const prefix = bucket === "avatars" ? userId ?? "unknown" : userId ?? "unknown";
+            const path = `${prefix}/${Date.now()}.${ext}`;
+
+            // Subir el archivo
+            const { error: uploadError } = await supabase.storage
+                .from(bucket)
+                .upload(path, file, {
+                    cacheControl: "3600",
+                    upsert: true,
+                });
+
+            if (uploadError) throw uploadError;
+
+            // Obtener URL pública
+            const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+            onChange(data.publicUrl);
+        } catch (e: any) {
+            console.error("ImageUpload error:", e);
+            addToast(e?.message ?? "No se pudo subir la imagen");
         } finally {
             setUploading(false);
             if (inputRef.current) inputRef.current.value = "";

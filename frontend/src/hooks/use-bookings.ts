@@ -1,139 +1,238 @@
-"use client";
+'use client'
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
-import type { Booking, CreateBookingData } from "@/types";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { camelize, BOOKING_SELECT, RECURRING_BOOKING_SELECT, invokeFunction } from '@/lib/supabase-helpers'
+import type { Booking, CreateBookingData } from '@/types'
 
-export function useBookings(status?: string) {
-    return useQuery({
-        queryKey: ["bookings", status],
-        queryFn: () =>
-            apiClient.get<{ data: Booking[]; meta: { total: number; page: number; limit: number; totalPages: number } }>(
-                "/bookings",
-                // limit alto: el cliente no tiene tantas reservas y así no se pierden
-                // las más recientes (el backend pagina de a 20 por defecto).
-                status ? { status, limit: "200" } : { limit: "200" },
-            ),
-    });
-}
+// ---- Tipos ----
 
-export function useCreateBooking() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: (data: CreateBookingData) =>
-            apiClient.post<Booking>("/bookings", data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["bookings"] });
-        },
-    });
+export interface RecurringBooking {
+    id: string
+    facilityId: string
+    userId: string
+    dayOfWeek: number
+    startTime: string
+    endTime: string
+    startDate: string
+    endDate: string
+    isActive: boolean
+    upcomingCount: number
+    totalCount: number
+    facility: {
+        id: string
+        name: string
+        sport: { id: string; name: string }
+        venue: { id: string; name: string; city: string }
+    }
+    bookings: {
+        id: string
+        startDatetime: string
+        endDatetime: string
+        status: string
+        paymentStatus?: string
+        totalPrice?: number
+    }[]
 }
 
 export interface CreateRecurringBookingData {
-    facilityId: string;
-    dayOfWeek: number; // 0=Lunes..6=Domingo
-    startTime: string; // "20:00"
-    endTime: string;   // "22:00"
-    startDate: string; // "2026-09-15" (punto de partida; se generan 4 ocurrencias)
-    userId?: string;
-    notes?: string;
+    facilityId: string
+    dayOfWeek: number
+    startTime: string
+    endTime: string
+    startDate: string
+    userId?: string
+    notes?: string
 }
 
 export interface RecurringBookingResult {
-    recurringBookingId: string;
-    totalDates: number;
-    createdCount: number;
-    skippedCount: number;
-    created: { date: string; bookingId: string }[];
-    skipped: { date: string; reason: string }[];
+    recurringBookingId: string
+    totalDates: number
+    createdCount: number
+    skippedCount: number
+    created: { date: string; bookingId: string }[]
+    skipped: { date: string; reason: string }[]
 }
 
-export function useCreateRecurringBooking() {
-    const queryClient = useQueryClient();
+// ---- Helpers ----
 
-    return useMutation({
-        mutationFn: (data: CreateRecurringBookingData) =>
-            apiClient.post<RecurringBookingResult>("/bookings/recurring", data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["bookings"] });
-            queryClient.invalidateQueries({ queryKey: ["recurring-bookings"] });
-        },
-    });
+function rowToBooking(row: any): Booking {
+    return camelize(row) as unknown as Booking
 }
 
-export interface RecurringBooking {
-    id: string;
-    facilityId: string;
-    userId: string;
-    dayOfWeek: number;
-    startTime: string;
-    endTime: string;
-    startDate: string;
-    endDate: string;
-    isActive: boolean;
-    upcomingCount: number;
-    totalCount: number;
-    facility: {
-        id: string;
-        name: string;
-        sport: { id: string; name: string };
-        venue: { id: string; name: string; city: string };
-    };
-    user: { id: string; firstName: string; lastName: string; email: string };
-    bookings: { id: string; startDatetime: string; endDatetime: string; status: string; paymentStatus?: string; totalPrice?: number }[];
+function rowToRecurring(row: any): RecurringBooking {
+    const c = camelize(row) as any
+    return {
+        ...c,
+        upcomingCount: (row.bookings ?? []).filter(
+            (b: any) => b.status === 'CONFIRMED' && new Date(b.start_datetime) >= new Date()
+        ).length,
+        totalCount: (row.bookings ?? []).length,
+        bookings: (row.bookings ?? []).map((b: any) => ({
+            id: b.id,
+            startDatetime: b.start_datetime,
+            endDatetime: b.end_datetime,
+            status: b.status,
+            paymentStatus: b.payment_status,
+            totalPrice: b.total_price,
+        })),
+    }
 }
 
-export function useRecurringBookings() {
+function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
+    queryClient.invalidateQueries({ queryKey: ['bookings'] })
+    queryClient.invalidateQueries({ queryKey: ['booking'] })
+    queryClient.invalidateQueries({ queryKey: ['recurring-bookings'] })
+}
+
+// ============================================================
+// LECTURAS — supabase.from() directo con RLS automático
+// ============================================================
+
+/** Lista de reservas (RLS filtra por rol: CLIENT ve las suyas, VENUE_ADMIN su sede, ADMIN todas). */
+export function useBookings(status?: string) {
     return useQuery({
-        queryKey: ["recurring-bookings"],
-        queryFn: () => apiClient.get<RecurringBooking[]>("/bookings/recurring"),
-    });
-}
+        queryKey: ['bookings', status],
+        queryFn: async (): Promise<{ data: Booking[]; meta: { total: number } }> => {
+            let query = supabase
+                .from('bookings')
+                .select(BOOKING_SELECT, { count: 'exact' })
+                .order('start_datetime', { ascending: false })
+                .limit(200)
 
-export function useCancelRecurringBooking() {
-    const queryClient = useQueryClient();
+            if (status) query = query.eq('status', status as any)
 
-    return useMutation({
-        mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
-            apiClient.patch<{ recurringBookingId: string; cancelledCount: number }>(`/bookings/recurring/${id}/cancel`, { reason }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["bookings"] });
-            queryClient.invalidateQueries({ queryKey: ["recurring-bookings"] });
+          const { data, error, count } = await query
+          if (error) throw new Error(error.message)
+
+            return {
+                data: (data ?? []).map(rowToBooking),
+                meta: { total: count ?? 0 },
+            }
         },
-    });
+    })
 }
 
+/** Una reserva por id. */
 export function useBooking(id: string) {
     return useQuery({
-        queryKey: ["booking", id],
-        queryFn: () => apiClient.get<Booking>(`/bookings/${id}`),
+        queryKey: ['booking', id],
+        queryFn: async (): Promise<Booking> => {
+            const { data, error } = await supabase
+                .from('bookings')
+                .select(BOOKING_SELECT)
+                .eq('id', id)
+                .single()
+            if (error) throw new Error(error.message)
+            return rowToBooking(data)
+        },
         enabled: !!id,
-    });
+    })
 }
 
-export function useMarkBookingPaid() {
-    const queryClient = useQueryClient();
+/** Turnos fijos del usuario (RLS filtra por rol). */
+export function useRecurringBookings() {
+    return useQuery({
+        queryKey: ['recurring-bookings'],
+        queryFn: async (): Promise<RecurringBooking[]> => {
+            const { data, error } = await supabase
+                .from('recurring_bookings')
+                .select(RECURRING_BOOKING_SELECT)
+                .order('created_at', { ascending: false })
 
-    return useMutation({
-        mutationFn: (id: string) => apiClient.patch<Booking>(`/bookings/${id}/pay`, {}),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["bookings"] });
-            queryClient.invalidateQueries({ queryKey: ["booking"] });
-            queryClient.invalidateQueries({ queryKey: ["recurring-bookings"] });
+            if (error) throw new Error(error.message)
+            return (data ?? []).map(rowToRecurring)
         },
-    });
+    })
 }
 
+// ============================================================
+// MUTACIONES — Edge Functions
+// (necesitan service_role para validaciones, emails, notifs)
+// ============================================================
+
+/** Crea una reserva única. Valida slots, calcula precio, envía email. */
+export function useCreateBooking() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: async (data: CreateBookingData): Promise<Booking> => {
+            const { data: result, error } = await invokeFunction<Booking>('create-booking', {
+                facility_id: data.facilityId,
+                start_datetime: data.startDatetime,
+                end_datetime: data.endDatetime,
+                notes: data.notes,
+            })
+            if (error) throw new Error(error)
+            return result!
+        },
+        onSuccess: () => invalidateAll(queryClient),
+    })
+}
+
+/** Crea un turno fijo (8 ocurrencias semanales). */
+export function useCreateRecurringBooking() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: async (data: CreateRecurringBookingData): Promise<RecurringBookingResult> => {
+            const { data: result, error } = await invokeFunction<RecurringBookingResult>('create-recurring', {
+                facility_id: data.facilityId,
+                day_of_week: data.dayOfWeek,
+                start_time: data.startTime,
+                end_time: data.endTime,
+                start_date: data.startDate,
+                user_id: data.userId,
+                notes: data.notes,
+            })
+            if (error) throw new Error(error)
+            return result!
+        },
+        onSuccess: () => invalidateAll(queryClient),
+    })
+}
+
+/** Cancela una reserva. Valida regla 24h para CLIENT. */
 export function useCancelBooking() {
-    const queryClient = useQueryClient();
-
+    const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
-            apiClient.patch<Booking>(`/bookings/${id}/cancel`, { reason }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["bookings"] });
-            queryClient.invalidateQueries({ queryKey: ["booking"] });
-            queryClient.invalidateQueries({ queryKey: ["recurring-bookings"] });
+        mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+            const { data: result, error } = await invokeFunction('cancel-booking', {
+                booking_id: id,
+                reason,
+            })
+            if (error) throw new Error(error)
+            return result
         },
-    });
+        onSuccess: () => invalidateAll(queryClient),
+    })
+}
+
+/** Cancela toda la serie de un turno fijo. */
+export function useCancelRecurringBooking() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+            const { data: result, error } = await invokeFunction('cancel-recurring', {
+                recurring_booking_id: id,
+                reason,
+            })
+            if (error) throw new Error(error)
+            return result
+        },
+        onSuccess: () => invalidateAll(queryClient),
+    })
+}
+
+/** Marca una reserva como pagada. */
+export function useMarkBookingPaid() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const { data: result, error } = await invokeFunction('mark-paid', {
+                booking_id: id,
+            })
+            if (error) throw new Error(error)
+            return result
+        },
+        onSuccess: () => invalidateAll(queryClient),
+    })
 }

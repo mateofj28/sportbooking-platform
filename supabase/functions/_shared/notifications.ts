@@ -101,3 +101,30 @@ export async function notifyCommissionEarned(venueName: string, amount: number):
     data:      { sede: venueName, comision: amount },
   })
 }
+
+export async function notifyBookingPaid(booking: Parameters<typeof bookingData>[0]): Promise<void> {
+  const venueId = booking.facility?.venue?.id ?? null
+  const clientName = `${booking.user?.first_name ?? ''} ${booking.user?.last_name ?? ''}`.trim() || 'Un cliente'
+  const data = bookingData(booking)
+  await emit({
+    type: 'BOOKING_PAID',
+    title: 'Reserva pagada',
+    body: `${clientName} pagó la reserva de ${booking.facility?.name ?? 'una cancha'} ($${Math.round(data.base).toLocaleString('es-AR')}).`,
+    venueId,
+    bookingId: booking.id,
+    data,
+  })
+}
+
+export async function notifyBookingCreated(booking: Parameters<typeof bookingData>[0]): Promise<void> {
+  const venueId = booking.facility?.venue?.id ?? null
+  const clientName = `${booking.user?.first_name ?? ''} ${booking.user?.last_name ?? ''}`.trim() || 'Un cliente'
+  await emit({
+    type: 'BOOKING_CREATED',
+    title: 'Nueva reserva',
+    body: `${clientName} reservó ${booking.facility?.name ?? 'una cancha'} para el ${arDateLabel(booking.start_datetime)} a las ${arTime(booking.start_datetime)}.`,
+    venueId,
+    bookingId: booking.id,
+    data: bookingData(booking),
+  })
+}

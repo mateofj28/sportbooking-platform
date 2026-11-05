@@ -22,7 +22,14 @@ export const registerSchema = z
             .regex(/[A-Z]/, "Debe tener al menos una mayúscula")
             .regex(/\d/, "Debe tener al menos un número"),
         confirmPassword: z.string(),
-        phone: z.string().optional(),
+        phone: z
+            .string()
+            .optional()
+            .refine(
+                (v) => !v || /^[\d\s\-]{6,15}$/.test(v.replace(/\s/g, "").replace(/-/g, "")),
+                "El teléfono debe tener entre 6 y 15 dígitos",
+            )
+            .transform((v) => v?.trim() || undefined),
     })
     .refine((data) => data.password === data.confirmPassword, {
         message: "Las contraseñas no coinciden",

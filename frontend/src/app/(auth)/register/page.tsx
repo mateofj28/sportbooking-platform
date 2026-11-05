@@ -265,8 +265,16 @@ export default function RegisterPage() {
                               label="Teléfono (opcional)"
                               placeholder="300 123 4567"
                               type="tel"
+                                            inputMode="numeric"
+                                            maxLength={15}
                               variant="bordered"
                               classNames={{ inputWrapper: "bg-default-50" }}
+                                            isInvalid={!!errors.phone}
+                                            errorMessage={errors.phone?.message}
+                                            onKeyPress={(e) => {
+                                                // Solo dígitos, espacios y guiones
+                                                if (!/[\d\s\-]/.test(e.key)) e.preventDefault();
+                                            }}
                               startContent={
                                   <div className="relative">
                                       <button

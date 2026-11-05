@@ -1,11 +1,11 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 import { Autocomplete, AutocompleteItem } from "@heroui/autocomplete";
 import { useMemo, useState } from "react";
-import type { Facility, Venue } from "@/types";
+import { useVenues } from "@/hooks/use-venues";
+import { useFacilities } from "@/hooks/use-facilities";
+import type { Facility } from "@/types";
 
 interface VenueFacilityPickerProps {
   selectedFacilityId: string;
@@ -18,21 +18,17 @@ export function VenueFacilityPicker({ selectedFacilityId, onFacilityChange, clas
   const isVenueAdmin = user?.role === "VENUE_ADMIN";
   const [selectedVenueId, setSelectedVenueId] = useState<string>("");
 
-  const { data: venues } = useQuery({
-    queryKey: ["venues"],
-    queryFn: () => apiClient.get<Venue[]>("/venues"),
-  });
+  const { data: venues } = useVenues();
 
-  const { data: facilities } = useQuery({
-    queryKey: ["facilities", isVenueAdmin ? user?.venueId : "all"],
-    queryFn: () => apiClient.get<Facility[]>("/facilities",
-      isVenueAdmin && user?.venueId ? { venueId: user.venueId } : undefined,
-    ),
-  });
+  const { data: facilities } = useFacilities(
+    isVenueAdmin && user?.venueId
+      ? { venueId: user.venueId }
+      : {},
+  );
 
   // Filter facilities by selected venue
   const filteredFacilities = useMemo(() => {
-    if (!facilities) return [];
+    if (!facilities) return [] as Facility[];
     if (!selectedVenueId) return facilities;
     return facilities.filter((f) => f.venue.id === selectedVenueId);
   }, [facilities, selectedVenueId]);

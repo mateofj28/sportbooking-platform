@@ -6,7 +6,9 @@ import {
 } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { supabase } from "@/lib/supabase";
+import { camelize } from "@/lib/supabase-helpers";
+import { useAuthStore } from "@/stores/auth-store";
 import { Plus, Trash2, Clock, Pencil } from "lucide-react";
 import { useState } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
@@ -37,6 +39,7 @@ function formatTime12h(time: string): string {
 export default function AdminSchedulesPage() {
   const queryClient = useQueryClient();
   const addToast = useToastStore((s) => s.addToast);
+  const { user } = useAuthStore();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
@@ -47,7 +50,15 @@ export default function AdminSchedulesPage() {
 
   const { data: schedules, isLoading } = useQuery({
     queryKey: ["schedules", selectedFacility],
-    queryFn: () => apiClient.get<Schedule[]>(`/facilities/${selectedFacility}/schedules`),
+    queryFn: async (): Promise<Schedule[]> => {
+      const { data, error } = await supabase
+        .from("schedules")
+        .select("*")
+        .eq("facility_id", selectedFacility)
+        .order("day_of_week", { ascending: true });
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((r) => camelize(r) as unknown as Schedule);
+    },
     enabled: !!selectedFacility,
   });
 
@@ -69,14 +80,26 @@ export default function AdminSchedulesPage() {
     const skipped: string[] = [];
     for (const day of form.days) {
       try {
-        await apiClient.post(`/facilities/${selectedFacility}/schedules`, {
-          dayOfWeek: day,
-          openTime: form.openTime,
-          closeTime: form.closeTime,
+        // Check if schedule already exists for this day
+        const { data: existing } = await supabase
+          .from("schedules")
+          .select("id")
+          .eq("facility_id", selectedFacility)
+          .eq("day_of_week", day)
+          .maybeSingle();
+        if (existing) {
+          skipped.push(DAYS[day]);
+          continue;
+        }
+        const { error } = await supabase.from("schedules").insert({
+          facility_id: selectedFacility,
+          day_of_week: day,
+          open_time: form.openTime,
+          close_time: form.closeTime,
         });
+        if (error) { skipped.push(DAYS[day]); continue; }
         created.push(day);
       } catch (error: any) {
-        const msg = error?.message || "error";
         skipped.push(`${DAYS[day]}`);
       }
     }
@@ -92,16 +115,25 @@ export default function AdminSchedulesPage() {
   };
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiClient.delete(`/schedules/${id}`),
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("schedules").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["schedules", selectedFacility] }); addToast("Item eliminado correctamente"); },
   });
 
   const editMutation = useMutation({
-    mutationFn: ({ id, ...data }: { id: string; dayOfWeek: number; openTime: string; closeTime: string }) =>
-      apiClient.patch(`/schedules/${id}`, data),
+    mutationFn: async ({ id, ...data }: { id: string; dayOfWeek: number; openTime: string; closeTime: string }) => {
+      const { error } = await supabase.from("schedules").update({
+        day_of_week: data.dayOfWeek,
+        open_time: data.openTime,
+        close_time: data.closeTime,
+      }).eq("id", id);
+      if (error) throw new Error(error.message);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["schedules", selectedFacility] }); onEditClose(); addToast("Horario actualizado correctamente"); },
     onError: (error: any) => {
-      const msg = error?.message || error?.response?.data?.message || "No se pudo actualizar el horario";
+      const msg = error?.message || "No se pudo actualizar el horario";
       addToast(Array.isArray(msg) ? msg[0] : msg);
     },
   });

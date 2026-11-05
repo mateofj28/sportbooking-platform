@@ -3,16 +3,15 @@
 import { Suspense, useMemo, useState } from "react";
 import { Card, CardBody, CardFooter, Input, Spinner, Button, Chip } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
-import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { apiClient } from "@/lib/api-client";
 import { useFacilities } from "@/hooks/use-facilities";
+import { useVenues } from "@/hooks/use-venues";
+import { useSports } from "@/hooks/use-sports";
 import { Navbar } from "@/components/layout/navbar";
 import { FacilityCard } from "@/components/cards/facility-card";
 import { useAvailabilitySummary, localDateStr } from "@/hooks/use-availability";
 import { amenityEmoji } from "@/lib/amenities";
 import { Search, MapPin, ArrowLeft, Building2 } from "lucide-react";
-import type { Sport, Venue } from "@/types";
 
 const VENUE_IMAGE = "https://images.unsplash.com/photo-1461896836934-bd900bb65104?w=600&h=300&fit=crop";
 
@@ -25,15 +24,8 @@ function FacilitiesContent() {
     // Filtro por deporte (nivel 2)
     const [sportId, setSportId] = useState(() => searchParams.get("sportId") || "");
 
-    const { data: venues, isLoading: venuesLoading } = useQuery({
-        queryKey: ["venues"],
-        queryFn: () => apiClient.get<Venue[]>("/venues"),
-    });
-
-    const { data: sports } = useQuery({
-        queryKey: ["sports"],
-        queryFn: () => apiClient.get<Sport[]>("/sports"),
-    });
+    const { data: venues, isLoading: venuesLoading } = useVenues();
+    const { data: sports } = useSports();
 
     const selectedVenue = useMemo(
         () => venues?.find((v) => v.id === venueId),

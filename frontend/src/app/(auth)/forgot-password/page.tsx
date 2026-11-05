@@ -8,13 +8,17 @@ import {
     type ForgotPasswordFormData,
 } from "@/lib/validations/auth.schema";
 import { useMutation } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { supabase } from "@/lib/supabase";
 import { Trophy, Mail, ArrowLeft } from "lucide-react";
 
 export default function ForgotPasswordPage() {
     const mutation = useMutation({
-        mutationFn: (data: ForgotPasswordFormData) =>
-            apiClient.post("/auth/forgot-password", data),
+        mutationFn: async (data: ForgotPasswordFormData) => {
+            const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+                redirectTo: (typeof window !== "undefined" ? window.location.origin : "") + "/reset-password",
+            });
+            if (error) throw new Error(error.message);
+        },
     });
 
     const {

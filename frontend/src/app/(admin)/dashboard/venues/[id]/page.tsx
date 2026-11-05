@@ -3,10 +3,10 @@
 import { use, useState, useMemo } from "react";
 import { Card, CardBody, Chip, Spinner, Button, Link, Input } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { useVenue } from "@/hooks/use-venues";
+import { useFacilities } from "@/hooks/use-facilities";
 import { ArrowLeft, MapPin, Search, Trophy } from "lucide-react";
-import type { Venue, Facility } from "@/types";
+import type { Facility } from "@/types";
 
 /** Devuelve el emoji correspondiente al deporte (por nombre normalizado) */
 function getSportEmoji(sportName?: string): string {
@@ -44,15 +44,9 @@ function getSportEmoji(sportName?: string): string {
 export default function VenueDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
-  const { data: venue, isLoading: loadingVenue } = useQuery({
-    queryKey: ["venue", id],
-    queryFn: () => apiClient.get<Venue>(`/venues/${id}`),
-  });
+  const { data: venue, isLoading: loadingVenue } = useVenue(id);
 
-  const { data: allFacilities, isLoading: loadingFacilities } = useQuery({
-    queryKey: ["facilities"],
-    queryFn: () => apiClient.get<Facility[]>("/facilities"),
-  });
+  const { data: allFacilities, isLoading: loadingFacilities } = useFacilities({ includeInactive: true });
 
   const venueFacilities = useMemo(
     () => (allFacilities || []).filter((f) => f.venueId === id),

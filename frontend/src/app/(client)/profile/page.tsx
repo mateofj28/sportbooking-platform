@@ -3,7 +3,7 @@
 import { Button, Card, CardBody, CardHeader, Input, Divider, Spinner } from "@heroui/react";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { Navbar } from "@/components/layout/navbar";
@@ -31,10 +31,28 @@ export default function ProfilePage() {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (data: Partial<UserType>) =>
-            apiClient.patch<UserType>("/users/profile", data),
+        mutationFn: async (data: { firstName?: string; lastName?: string; phone?: string }) => {
+            if (!user?.id) throw new Error("No autenticado");
+            const { data: result, error } = await supabase
+                .from("profiles")
+                .update({
+                    first_name: data.firstName,
+                    last_name: data.lastName,
+                    phone: data.phone,
+                })
+                .eq("id", user.id)
+                .select()
+                .single();
+            if (error) throw new Error(error.message);
+            return result;
+        },
         onSuccess: (data) => {
-            updateUser(data);
+            // Merge updated profile fields back into auth store
+            updateUser({
+                firstName: data.first_name,
+                lastName: data.last_name,
+                phone: data.phone ?? undefined,
+            } as Partial<UserType>);
         },
     });
 
@@ -123,55 +141,43 @@ export default function ProfilePage() {
 }
 
 function ChangePasswordForm() {
-    const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [showCurrent, setShowCurrent] = useState(false);
     const [showNew, setShowNew] = useState(false);
     const addToast = useToastStore((s) => s.addToast);
 
+    // Supabase Auth no valida la contraseña actual en updateUser.
+    // El usuario ya está autenticado, por lo que this is sufficient.
     const mutation = useMutation({
-        mutationFn: (data: { currentPassword: string; newPassword: string }) =>
-            apiClient.patch("/auth/change-password", data),
+        mutationFn: async (password: string) => {
+            const { error } = await supabase.auth.updateUser({ password });
+            if (error) throw new Error(error.message);
+        },
         onSuccess: () => {
             addToast("Contraseña actualizada correctamente");
-            setCurrentPassword("");
             setNewPassword("");
             setConfirmPassword("");
         },
     });
 
     const passwordsMatch = newPassword && confirmPassword && newPassword === confirmPassword;
-    const canSubmit = currentPassword && newPassword.length >= 8 && passwordsMatch;
+    const canSubmit = newPassword.length >= 8 && passwordsMatch;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!canSubmit) return;
-        mutation.mutate({ currentPassword, newPassword });
+        mutation.mutate(newPassword);
     };
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <Input
-                label="Contraseña actual"
-                type={showCurrent ? "text" : "password"}
-                variant="bordered"
-                value={currentPassword}
-                onValueChange={setCurrentPassword}
-                startContent={<Lock className="h-4 w-4 text-default-400" />}
-                endContent={
-                    <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="text-default-400 hover:text-default-600">
-                        {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                }
-            />
             <Input
                 label="Nueva contraseña"
                 type={showNew ? "text" : "password"}
                 variant="bordered"
                 value={newPassword}
                 onValueChange={setNewPassword}
-                placeholder="Mín. 8 caracteres, 1 mayúscula, 1 número"
+                placeholder="Mín. 8 caracteres"
                 startContent={<Lock className="h-4 w-4 text-default-400" />}
                 endContent={
                     <button type="button" onClick={() => setShowNew(!showNew)} className="text-default-400 hover:text-default-600">

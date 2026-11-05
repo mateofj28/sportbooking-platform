@@ -6,7 +6,8 @@ import {
 } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { supabase } from "@/lib/supabase";
+import { camelize } from "@/lib/supabase-helpers";
 import { Plus, Trash2, DollarSign, Percent, Pencil, AlertTriangle } from "lucide-react";
 import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
@@ -98,14 +99,29 @@ export default function AdminPricingPage() {
 
   const { data: pricing, isLoading } = useQuery({
     queryKey: ["pricing", selectedFacility],
-    queryFn: () => apiClient.get<Pricing[]>(`/facilities/${selectedFacility}/pricing`),
+    queryFn: async (): Promise<Pricing[]> => {
+      const { data, error } = await supabase
+        .from("pricing")
+        .select("*")
+        .eq("facility_id", selectedFacility)
+        .order("day_of_week", { ascending: true });
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((r) => camelize(r) as unknown as Pricing);
+    },
     enabled: !!selectedFacility,
   });
 
   // Horarios de la instalación, para detectar franjas sin tarifa
   const { data: schedules } = useQuery({
     queryKey: ["schedules", selectedFacility],
-    queryFn: () => apiClient.get<{ id: string; dayOfWeek: number; openTime: string; closeTime: string; isActive: boolean }[]>(`/facilities/${selectedFacility}/schedules`),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("schedules")
+        .select("id, day_of_week, open_time, close_time, is_active")
+        .eq("facility_id", selectedFacility);
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((r) => camelize(r) as unknown as { id: string; dayOfWeek: number; openTime: string; closeTime: string; isActive: boolean });
+    },
     enabled: !!selectedFacility,
   });
 
@@ -177,10 +193,11 @@ export default function AdminPricingPage() {
     }
     setIsCreating(true);
     const payloadBase = {
-      startTime: form.startTime,
-      endTime: form.endTime,
-      pricePerHour: parsePriceValue(form.pricePerHour),
-      profitPercent: Number(form.profitPercent) || 0,
+      start_time: form.startTime,
+      end_time: form.endTime,
+      price_per_hour: parsePriceValue(form.pricePerHour),
+      profit_percent: Number(form.profitPercent) || 0,
+      currency: "ARS",
     };
     // allDays => una sola tarifa sin dayOfWeek. Si no, una tarifa por cada día específico.
     const targets: (number | null)[] = form.allDays ? [null] : form.days;
@@ -188,10 +205,12 @@ export default function AdminPricingPage() {
     const skipped: string[] = [];
     for (const day of targets) {
       try {
-        await apiClient.post(`/facilities/${selectedFacility}/pricing`, {
+        const { error } = await supabase.from("pricing").insert({
+          facility_id: selectedFacility,
           ...payloadBase,
-          ...(day !== null ? { dayOfWeek: day } : {}),
+          ...(day !== null ? { day_of_week: day } : {}),
         });
+        if (error) throw new Error(error.message);
         created.push(day !== null ? DAYS[day] : "Todos los días");
       } catch {
         skipped.push(day !== null ? DAYS[day] : "Todos los días");
@@ -205,15 +224,27 @@ export default function AdminPricingPage() {
   };
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiClient.delete(`/pricing/${id}`),
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("pricing").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pricing", selectedFacility] }); addToast("Tarifa eliminada correctamente"); },
   });
 
   const editMutation = useMutation({
-    mutationFn: ({ id, ...data }: any) => apiClient.patch(`/pricing/${id}`, data),
+    mutationFn: async ({ id, ...data }: any) => {
+      const { error } = await supabase.from("pricing").update({
+        start_time: data.startTime,
+        end_time: data.endTime,
+        price_per_hour: data.pricePerHour,
+        profit_percent: data.profitPercent,
+        day_of_week: data.dayOfWeek,
+      }).eq("id", id);
+      if (error) throw new Error(error.message);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pricing", selectedFacility] }); onEditClose(); addToast("Tarifa actualizada correctamente"); },
     onError: (error: any) => {
-      const msg = error?.message || error?.response?.data?.message || "No se pudo actualizar la tarifa";
+      const msg = error?.message || "No se pudo actualizar la tarifa";
       addToast(Array.isArray(msg) ? msg[0] : msg);
     },
   });

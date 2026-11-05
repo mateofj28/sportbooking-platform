@@ -6,7 +6,9 @@ import {
 } from "@heroui/react";
 import { Autocomplete, AutocompleteItem } from "@heroui/autocomplete";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { supabase } from "@/lib/supabase";
+import { camelize } from "@/lib/supabase-helpers";
+import { useAllVenues } from "@/hooks/use-venues";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
 import { Plus, Trash2, Pencil, Search } from "lucide-react";
@@ -52,7 +54,7 @@ export default function AdminVenuesPage() {
   const toggleEditAmenity = (a: string) =>
     setEditForm((f) => ({ ...f, amenities: f.amenities.includes(a) ? f.amenities.filter((x) => x !== a) : [...f.amenities, a] }));
 
-  const { data: venues, isLoading } = useQuery({ queryKey: ["venues"], queryFn: () => apiClient.get<Venue[]>("/venues") });
+  const { data: venues, isLoading } = useAllVenues();
   const { data: facilities } = useFacilities();
 
   // Provincias (API Georef). Se cargan una vez y se cachean.
@@ -96,34 +98,43 @@ export default function AdminVenuesPage() {
   }, {} as Record<string, number>);
 
   const createMutation = useMutation({
-    mutationFn: (data: typeof form) => apiClient.post("/venues", {
-      name: data.name,
-      slug: data.slug,
-      address: data.address,
-      state: data.provinceName,
-      city: data.city,
-      country: COUNTRY,
-      description: data.description || undefined,
-      amenities: data.amenities,
-      imageUrl: data.imageUrl || undefined,
-    }),
+    mutationFn: async (data: typeof form) => {
+      const { error } = await supabase.from("venues").insert({
+        name: data.name,
+        slug: data.slug,
+        address: data.address,
+        state: data.provinceName,
+        city: data.city,
+        country: COUNTRY,
+        description: data.description || null,
+        amenities: data.amenities,
+        image_url: data.imageUrl || null,
+      });
+      if (error) throw new Error(error.message);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onClose(); addToast("Complejo creado correctamente"); },
   });
   const editMutation = useMutation({
-    mutationFn: (data: typeof editForm) => apiClient.patch(`/venues/${data.id}`, {
-      name: data.name,
-      address: data.address,
-      state: data.provinceName,
-      city: data.city,
-      country: COUNTRY,
-      description: data.description || undefined,
-      amenities: data.amenities,
-      imageUrl: data.imageUrl || undefined,
-    }),
+    mutationFn: async (data: typeof editForm) => {
+      const { error } = await supabase.from("venues").update({
+        name: data.name,
+        address: data.address,
+        state: data.provinceName,
+        city: data.city,
+        country: COUNTRY,
+        description: data.description || null,
+        amenities: data.amenities,
+        image_url: data.imageUrl || null,
+      }).eq("id", data.id);
+      if (error) throw new Error(error.message);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onEditClose(); addToast("Complejo actualizado"); },
   });
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiClient.delete(`/venues/${id}`),
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("venues").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); addToast("Complejo eliminado"); },
   });
 

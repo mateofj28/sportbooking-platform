@@ -5,19 +5,18 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { resetPasswordSchema, type ResetPasswordFormData } from "@/lib/validations/auth.schema";
 import { useMutation } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { supabase } from "@/lib/supabase";
 import { Trophy, Lock, ArrowLeft, CheckCircle2, Eye, EyeOff } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 
 function ResetPasswordContent() {
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token") || "";
   const [showPassword, setShowPassword] = useState(false);
 
   const mutation = useMutation({
-    mutationFn: (data: { token: string; password: string }) =>
-      apiClient.post("/auth/reset-password", data),
+    mutationFn: async (data: ResetPasswordFormData) => {
+      const { error } = await supabase.auth.updateUser({ password: data.password });
+      if (error) throw new Error(error.message);
+    },
   });
 
   const {
@@ -26,11 +25,10 @@ function ResetPasswordContent() {
     formState: { errors },
   } = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
-    defaultValues: { token },
   });
 
   const onSubmit = (data: ResetPasswordFormData) => {
-    mutation.mutate({ token: data.token, password: data.password });
+    mutation.mutate(data);
   };
 
   return (
@@ -68,8 +66,7 @@ function ResetPasswordContent() {
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-              <input type="hidden" {...register("token")} />
+              <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <Input
                 {...register("password")}
                 label="Nueva Contraseña"

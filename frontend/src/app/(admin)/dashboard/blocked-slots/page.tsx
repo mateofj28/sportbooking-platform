@@ -10,11 +10,13 @@ import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
 // El DatePicker de HeroUI requiere instancias de CalendarDate
 type CalDate = CalendarDate;
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { supabase } from "@/lib/supabase";
+import { camelize } from "@/lib/supabase-helpers";
 import { Plus, Trash2, Ban, Pencil } from "lucide-react";
 import { useState } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
+import { useAuthStore } from "@/stores/auth-store";
 import { VenueFacilityPicker } from "@/components/shared/venue-facility-picker";
 
 interface BlockedSlot {
@@ -65,6 +67,7 @@ function buildBlockRange(dateISO: string, startTime: string, endTime: string) {
 export default function AdminBlockedSlotsPage() {
   const queryClient = useQueryClient();
   const addToast = useToastStore((s) => s.addToast);
+  const { user } = useAuthStore();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
@@ -78,16 +81,38 @@ export default function AdminBlockedSlotsPage() {
 
   const { data: blockedSlots, isLoading } = useQuery({
     queryKey: ["blocked-slots", selectedFacility],
-    queryFn: () => apiClient.get<BlockedSlot[]>(`/facilities/${selectedFacility}/blocked-slots`),
+    queryFn: async (): Promise<BlockedSlot[]> => {
+      const { data, error } = await supabase
+        .from("blocked_slots")
+        .select("id, facility_id, start_datetime, end_datetime, reason")
+        .eq("facility_id", selectedFacility)
+        .order("start_datetime", { ascending: true });
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((r) => camelize(r) as unknown as BlockedSlot);
+    },
     enabled: !!selectedFacility,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiClient.post(`/facilities/${selectedFacility}/blocked-slots`, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] }); onClose(); addToast("Bloqueo creado correctamente"); },
+    mutationFn: async (payload: { startDatetime: string; endDatetime: string; reason?: string }) => {
+      const { error } = await supabase
+        .from("blocked_slots")
+        .insert({
+          facility_id: selectedFacility,
+          start_datetime: payload.startDatetime,
+          end_datetime: payload.endDatetime,
+          reason: payload.reason || null,
+          created_by: user?.id ?? '',
+        });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] });
+      onClose();
+      addToast("Bloqueo creado correctamente");
+    },
     onError: (error: any) => {
-      const msg = error?.message || error?.response?.data?.message || "No se pudo crear el bloqueo";
-      addToast(Array.isArray(msg) ? msg[0] : msg);
+      addToast(error?.message || "No se pudo crear el bloqueo");
     },
   });
 
@@ -105,16 +130,35 @@ export default function AdminBlockedSlotsPage() {
   };
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiClient.delete(`/blocked-slots/${id}`),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] }); addToast("Item eliminado correctamente"); },
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("blocked_slots").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] });
+      addToast("Item eliminado correctamente");
+    },
   });
 
   const editMutation = useMutation({
-    mutationFn: ({ id, ...data }: any) => apiClient.patch(`/blocked-slots/${id}`, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] }); onEditClose(); addToast("Bloqueo actualizado correctamente"); },
+    mutationFn: async ({ id, startDatetime, endDatetime, reason }: { id: string; startDatetime: string; endDatetime: string; reason?: string }) => {
+      const { error } = await supabase
+        .from("blocked_slots")
+        .update({
+          start_datetime: startDatetime,
+          end_datetime: endDatetime,
+          reason: reason || null,
+        })
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] });
+      onEditClose();
+      addToast("Bloqueo actualizado correctamente");
+    },
     onError: (error: any) => {
-      const msg = error?.message || error?.response?.data?.message || "No se pudo actualizar el bloqueo";
-      addToast(Array.isArray(msg) ? msg[0] : msg);
+      addToast(error?.message || "No se pudo actualizar el bloqueo");
     },
   });
 

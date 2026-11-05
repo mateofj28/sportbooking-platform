@@ -19,8 +19,11 @@ import {
     Textarea,
     useDisclosure,
 } from "@heroui/react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
+import { useFacilities } from "@/hooks/use-facilities";
+import { useSports } from "@/hooks/use-sports";
+import { useAllVenues } from "@/hooks/use-venues";
 import { Plus, Trash2, Pencil, Search, Building2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Select, SelectItem } from "@heroui/select";
@@ -75,21 +78,12 @@ export default function AdminFacilitiesPage() {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     // Admin ve todas las instalaciones (activas e inactivas).
     // El admin de sede pasa su venueId como salvaguarda (además del scope del backend).
-    const { data: facilities, isLoading } = useQuery({
-        queryKey: ["facilities", "admin-all", isVenueAdmin ? user?.venueId : "all"],
-        queryFn: () => apiClient.get<Facility[]>("/facilities", {
-            includeInactive: "true",
-            ...(isVenueAdmin && user?.venueId ? { venueId: user.venueId } : {}),
-        }),
+    const { data: facilities, isLoading } = useFacilities({
+        includeInactive: true,
+        ...(isVenueAdmin && user?.venueId ? { venueId: user.venueId } : {}),
     });
-    const { data: sports } = useQuery({
-        queryKey: ["sports"],
-        queryFn: () => apiClient.get<Sport[]>("/sports"),
-    });
-    const { data: venues } = useQuery({
-        queryKey: ["venues"],
-        queryFn: () => apiClient.get<Venue[]>("/venues"),
-    });
+    const { data: sports } = useSports(false); // incluir inactivos para el select de filtro
+    const { data: venues } = useAllVenues();
 
     // Nombre de la sede del admin de sede (para el título)
     const myVenueName = useMemo(
@@ -151,7 +145,21 @@ export default function AdminFacilitiesPage() {
     });
 
     const createMutation = useMutation({
-        mutationFn: (data: any) => apiClient.post("/facilities", data),
+        mutationFn: async (data: any) => {
+            const { error } = await supabase.from("facilities").insert({
+                venue_id: data.venueId,
+                sport_id: data.sportId,
+                name: data.name,
+                description: data.description || null,
+                image_url: data.imageUrl || null,
+                surface_type: data.surfaceType || null,
+                is_indoor: data.isIndoor ?? false,
+                capacity: data.capacity ?? null,
+                min_booking_duration: data.minBookingDuration,
+                max_booking_duration: data.maxBookingDuration,
+            });
+            if (error) throw new Error(error.message);
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["facilities"] });
             onClose();
@@ -160,7 +168,10 @@ export default function AdminFacilitiesPage() {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => apiClient.delete(`/facilities/${id}`),
+        mutationFn: async (id: string) => {
+            const { error } = await supabase.from("facilities").delete().eq("id", id);
+            if (error) throw new Error(error.message);
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["facilities"] });
             addToast("Item eliminado correctamente");
@@ -168,15 +179,13 @@ export default function AdminFacilitiesPage() {
     });
 
     const toggleActiveMutation = useMutation({
-        mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
-            apiClient.patch(`/facilities/${id}`, { isActive }),
+        mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+            const { error } = await supabase.from("facilities").update({ is_active: isActive }).eq("id", id);
+            if (error) throw new Error(error.message);
+        },
         onSuccess: (_data, variables) => {
-            // Actualizar solo la instalación afectada en la caché, por id.
-            // Evita reordenar la lista y confundir filas con nombres repetidos.
-            queryClient.setQueryData<Facility[]>(
-                ["facilities", "admin-all", isVenueAdmin ? user?.venueId : "all"],
-                (prev) => prev?.map((f) => (f.id === variables.id ? { ...f, isActive: variables.isActive } : f)),
-            );
+            // Invalidate to refresh the list
+            queryClient.invalidateQueries({ queryKey: ["facilities"] });
             addToast(variables.isActive ? "Instalación activada" : "Instalación desactivada");
         },
         onError: (error: any) => {
@@ -186,8 +195,18 @@ export default function AdminFacilitiesPage() {
     });
 
     const editMutation = useMutation({
-        mutationFn: ({ id, ...data }: { id: string; name: string; description: string; surfaceType: string; isIndoor: boolean; minBookingDuration: number; maxBookingDuration: number; imageUrl?: string }) =>
-            apiClient.patch(`/facilities/${id}`, data),
+        mutationFn: async ({ id, ...data }: { id: string; name: string; description: string; surfaceType: string; isIndoor: boolean; minBookingDuration: number; maxBookingDuration: number; imageUrl?: string }) => {
+            const { error } = await supabase.from("facilities").update({
+                name: data.name,
+                description: data.description || null,
+                surface_type: data.surfaceType || null,
+                is_indoor: data.isIndoor,
+                min_booking_duration: data.minBookingDuration,
+                max_booking_duration: data.maxBookingDuration,
+                image_url: data.imageUrl || null,
+            }).eq("id", id);
+            if (error) throw new Error(error.message);
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["facilities"] });
             onEditClose();
@@ -196,14 +215,16 @@ export default function AdminFacilitiesPage() {
     });
 
     const venueMutation = useMutation({
-        mutationFn: ({ id, ...data }: typeof venueForm) =>
-            apiClient.patch(`/venues/${id}`, {
+        mutationFn: async ({ id, ...data }: typeof venueForm) => {
+            const { error } = await supabase.from("venues").update({
                 name: data.name,
                 address: data.address,
-                description: data.description || undefined,
+                description: data.description || null,
                 amenities: data.amenities,
-                imageUrl: data.imageUrl || undefined,
-            }),
+                image_url: data.imageUrl || null,
+            }).eq("id", id);
+            if (error) throw new Error(error.message);
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["venues"] });
             onVenueClose();

@@ -5,7 +5,9 @@ import {
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, RadioGroup, Radio, useDisclosure,
 } from "@heroui/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { supabase } from "@/lib/supabase";
+import { camelize } from "@/lib/supabase-helpers";
+import { useSports } from "@/hooks/use-sports";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
 import { Plus, Trash2, Pencil } from "lucide-react";
@@ -21,23 +23,39 @@ export default function AdminSportsPage() {
     const [editForm, setEditForm] = useState({ id: "", name: "", description: "", maxPlayers: "", billingType: "PER_SESSION" });
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
-    const { data: sports, isLoading } = useQuery({
-        queryKey: ["sports"],
-        queryFn: () => apiClient.get<Sport[]>("/sports"),
-    });
+    const { data: sports, isLoading } = useSports(false);
 
     const createMutation = useMutation({
-        mutationFn: (data: any) => apiClient.post("/sports", data),
+        mutationFn: async (data: any) => {
+            const { error } = await supabase.from("sports").insert({
+                name: data.name,
+                description: data.description || null,
+                max_players: data.maxPlayers ?? null,
+                billing_type: data.billingType,
+            });
+            if (error) throw new Error(error.message);
+        },
         onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); onClose(); setForm({ name: "", description: "", maxPlayers: "", billingType: "PER_SESSION" }); addToast("Deporte creado correctamente"); },
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => apiClient.delete(`/sports/${id}`),
+        mutationFn: async (id: string) => {
+            const { error } = await supabase.from("sports").delete().eq("id", id);
+            if (error) throw new Error(error.message);
+        },
         onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); addToast("Deporte eliminado"); },
     });
 
     const editMutation = useMutation({
-        mutationFn: ({ id, ...data }: any) => apiClient.patch(`/sports/${id}`, data),
+        mutationFn: async ({ id, ...data }: any) => {
+            const { error } = await supabase.from("sports").update({
+                name: data.name,
+                description: data.description || null,
+                max_players: data.maxPlayers ?? null,
+                billing_type: data.billingType,
+            }).eq("id", id);
+            if (error) throw new Error(error.message);
+        },
         onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); onEditClose(); addToast("Deporte actualizado"); },
     });
 

@@ -6,7 +6,9 @@ import {
 } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { supabase } from "@/lib/supabase";
+import { camelize, invokeFunction } from "@/lib/supabase-helpers";
+import { useVenues } from "@/hooks/use-venues";
 import { UserX, UserCheck, Pencil, Plus, Search } from "lucide-react";
 import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
@@ -50,13 +52,21 @@ export default function AdminUsersPage() {
 
     const { data, isLoading } = useQuery({
         queryKey: ["admin-users"],
-        queryFn: () => apiClient.get<PaginatedResult<User>>("/users?limit=100"),
+        queryFn: async (): Promise<{ data: User[]; meta: { total: number } }> => {
+            const { data: rows, error } = await supabase
+                .from("profiles")
+                .select("*")
+                .order("created_at", { ascending: false })
+                .limit(100);
+            if (error) throw new Error(error.message);
+            return {
+                data: (rows ?? []).map((r) => camelize(r) as unknown as User),
+                meta: { total: rows?.length ?? 0 },
+            };
+        },
     });
 
-    const { data: venues } = useQuery({
-        queryKey: ["venues"],
-        queryFn: () => apiClient.get<Venue[]>("/venues"),
-    });
+    const { data: venues } = useVenues();
 
     // Filters
     const [search, setSearch] = useState("");
@@ -64,7 +74,10 @@ export default function AdminUsersPage() {
     const [filterVenue, setFilterVenue] = useState("");
 
     const deactivateMutation = useMutation({
-        mutationFn: (id: string) => apiClient.delete(`/users/${id}`),
+        mutationFn: async (id: string) => {
+            const { error } = await supabase.from("profiles").update({ is_active: false }).eq("id", id);
+            if (error) throw new Error(error.message);
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["admin-users"] });
             addToast("Usuario desactivado");
@@ -72,7 +85,10 @@ export default function AdminUsersPage() {
     });
 
     const reactivateMutation = useMutation({
-        mutationFn: (id: string) => apiClient.patch(`/users/${id}/reactivate`, {}),
+        mutationFn: async (id: string) => {
+            const { error } = await supabase.from("profiles").update({ is_active: true }).eq("id", id);
+            if (error) throw new Error(error.message);
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["admin-users"] });
             addToast("Usuario reactivado");
@@ -80,17 +96,38 @@ export default function AdminUsersPage() {
     });
 
     const updateRoleMutation = useMutation({
-        mutationFn: ({ id, role, venueId }: { id: string; role: string; venueId?: string }) =>
-            apiClient.patch(`/users/${id}`, { role, venueId: venueId || null }),
+        mutationFn: async ({ id, role, venueId }: { id: string; role: string; venueId?: string }) => {
+            // Actualizar profiles
+            const { error } = await supabase.from("profiles")
+                .update({ role: role as any, venue_id: venueId || null })
+                .eq("id", id);
+            if (error) throw new Error(error.message);
+            // Actualizar app_metadata para que el JWT refleje el nuevo rol
+            const { error: fnErr } = await invokeFunction('admin-set-role', { user_id: id, role, venue_id: venueId || null });
+            if (fnErr) console.warn("set_user_role:", fnErr); // best-effort
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["admin-users"] });
             onClose();
-            addToast("Rol actualizado correctamente");
+            addToast("Rol actualizado. El usuario debe cerrar sesión para ver el cambio.");
         },
     });
 
     const createUserMutation = useMutation({
-        mutationFn: (data: any) => apiClient.post("/users", data),
+        mutationFn: async (data: any) => {
+            const { data: result, error } = await invokeFunction('admin-create-user', {
+                email: data.email,
+                password: data.password,
+                first_name: data.firstName,
+                last_name: data.lastName,
+                phone: data.phone,
+                dni: data.dni,
+                role: data.role,
+                venue_id: data.venueId || null,
+            });
+            if (error) throw new Error(error);
+            return result;
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["admin-users"] });
             onCreateClose();
@@ -98,7 +135,7 @@ export default function AdminUsersPage() {
             setCreateForm({ email: "", password: "", firstName: "", lastName: "", phone: "", dni: "", role: "CLIENT", venueId: "" });
         },
         onError: (error: any) => {
-            addToast(error?.response?.data?.message || "Error al crear usuario");
+            addToast(error?.message || "Error al crear usuario");
         },
     });
 

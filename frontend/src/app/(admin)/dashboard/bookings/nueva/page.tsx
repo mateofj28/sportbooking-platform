@@ -2,16 +2,18 @@
 
 import { Button, Card, CardBody, CardHeader, Divider, Input, Spinner, Textarea } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { apiClient } from "@/lib/api-client";
+import { supabase } from "@/lib/supabase";
+import { invokeFunction } from "@/lib/supabase-helpers";
 import { useFacilities, useFacility } from "@/hooks/use-facilities";
 import { useCreateRecurringBooking } from "@/hooks/use-bookings";
 import { AvailabilityPicker, type AvailabilitySelection, formatPrice } from "@/components/shared/availability-picker";
 import { useToastStore } from "@/stores/toast-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { ArrowLeft, Search, User, Check, CalendarDays } from "lucide-react";
+import { useState as useReactState } from "react";
 
 interface FoundClient {
     id: string;
@@ -58,6 +60,7 @@ export default function NewManualBookingPage() {
         if (!venueId) return [];
         return (facilities || []).filter((f) => f.venue?.id === venueId);
     }, [facilities, venueId, isVenueAdmin]);
+
     const [userId, setUserId] = useState("");
     const [notes, setNotes] = useState("");
     const [selection, setSelection] = useState<AvailabilitySelection | null>(null);
@@ -81,10 +84,67 @@ export default function NewManualBookingPage() {
         setClientLookupError("");
         setFoundClient(null);
         try {
-            const params: Record<string, string> = clientSearchType === "email" ? { email: value } : { dni: value };
-            const client = await apiClient.get<FoundClient>("/users/lookup", params);
-            setFoundClient(client);
-            setUserId(client.id);
+            // Search profiles by email or DNI using Supabase
+            let query = supabase
+                .from("profiles")
+                .select("id, first_name, last_name, dni");
+
+            if (clientSearchType === "email") {
+                // Join with auth.users for email lookup via RPC or use profiles with email field
+                // Profiles don't store email directly; use a separate approach:
+                // Query auth via admin functions, or use a view. For now we use the or() approach
+                // with the email from auth joined in the select.
+                query = supabase
+                    .from("profiles")
+                    .select("id, first_name, last_name, dni") as any;
+                // We need to look up by email — email lives in auth.users, not profiles.
+                // Use an RPC or invokeFunction to do an admin lookup.
+                const { data: result, error } = await invokeFunction<FoundClient>("admin-lookup-user", {
+                    type: clientSearchType,
+                    value,
+                });
+                if (error || !result) {
+                    setClientLookupError("No se encontró un cliente con esos datos");
+                    setUserId("");
+                } else {
+                    setFoundClient(result);
+                    setUserId(result.id);
+                }
+                return;
+            } else {
+                // Search by DNI directly in profiles
+                const { data, error } = await supabase
+                    .from("profiles")
+                    .select("id, first_name, last_name, dni")
+                    .eq("dni", value)
+                    .maybeSingle();
+                if (error || !data) {
+                    setClientLookupError("No se encontró un cliente con esos datos");
+                    setUserId("");
+                } else {
+                    // Need email — fetch from auth via admin-lookup-user edge function
+                    const { data: fullResult, error: err2 } = await invokeFunction<FoundClient>("admin-lookup-user", {
+                        type: clientSearchType,
+                        value,
+                    });
+                    if (err2 || !fullResult) {
+                        // Fallback: use the partial data
+                        const client: FoundClient = {
+                            id: data.id,
+                            firstName: data.first_name,
+                            lastName: data.last_name,
+                            email: "",
+                            dni: data.dni ?? undefined,
+                        };
+                        setFoundClient(client);
+                        setUserId(client.id);
+                    } else {
+                        setFoundClient(fullResult);
+                        setUserId(fullResult.id);
+                    }
+                }
+                return;
+            }
         } catch (err: any) {
             setClientLookupError(err?.message || "No se encontró un cliente con esos datos");
             setUserId("");
@@ -100,29 +160,29 @@ export default function NewManualBookingPage() {
         return `${y}-${mo}-${d}T${time}:00`;
     };
 
-    const bookingMutation = useMutation({
-        mutationFn: (data: { facilityId: string; userId: string; startDatetime: string; endDatetime: string; notes?: string }) =>
-            apiClient.post("/bookings/manual", data),
-        onSuccess: () => {
+    const [bookingPending, setBookingPending] = useState(false);
+    const [bookingError, setBookingError] = useState("");
+
+    const handleSingleSubmit = async () => {
+        if (!facilityId || !userId || !selection) return;
+        setBookingPending(true);
+        setBookingError("");
+        const { error } = await invokeFunction("create-booking", {
+            facility_id: facilityId,
+            user_id: userId,
+            start_datetime: buildLocalIso(selection.date, selection.startTime),
+            end_datetime: buildLocalIso(selection.date, selection.endTime),
+            notes: notes || undefined,
+        });
+        setBookingPending(false);
+        if (error) {
+            const msg = error || "No se pudo crear la reserva";
+            addToast(Array.isArray(msg) ? msg[0] : msg);
+        } else {
             queryClient.invalidateQueries({ queryKey: ["bookings"] });
             addToast("Reserva creada correctamente");
             router.push("/dashboard/bookings");
-        },
-        onError: (error: any) => {
-            const msg = error?.message || "No se pudo crear la reserva";
-            addToast(Array.isArray(msg) ? msg[0] : msg);
-        },
-    });
-
-    const handleSingleSubmit = () => {
-        if (!facilityId || !userId || !selection) return;
-        bookingMutation.mutate({
-            facilityId,
-            userId,
-            startDatetime: buildLocalIso(selection.date, selection.startTime),
-            endDatetime: buildLocalIso(selection.date, selection.endTime),
-            notes: notes || undefined,
-        });
+        }
     };
 
     const handleRecurringSubmit = () => {
@@ -274,7 +334,7 @@ export default function NewManualBookingPage() {
                                         <div className="mt-2 flex items-center gap-2 rounded-md bg-success/10 px-3 py-2 text-sm">
                                             <User className="h-4 w-4 text-success" />
                                             <span className="font-medium">{foundClient.firstName} {foundClient.lastName}</span>
-                                            <span className="text-default-500">· {foundClient.email}</span>
+                                                    {foundClient.email && <span className="text-default-500">· {foundClient.email}</span>}
                                         </div>
                                     )}
                                     {clientLookupError && <p className="mt-2 text-sm text-danger">{clientLookupError}</p>}
@@ -327,8 +387,9 @@ export default function NewManualBookingPage() {
                                     <p className="text-sm text-default-400">Selecciona día y hora en el panel de la derecha.</p>
                                 )}
                                 <Divider />
+                                        {bookingError && <p className="text-xs text-danger">{bookingError}</p>}
                                 {mode === "single" ? (
-                                    <Button color="primary" size="lg" startContent={<Check className="h-4 w-4" />} isLoading={bookingMutation.isPending} isDisabled={!userId || !selection} onPress={handleSingleSubmit}>
+                                            <Button color="primary" size="lg" startContent={<Check className="h-4 w-4" />} isLoading={bookingPending} isDisabled={!userId || !selection} onPress={handleSingleSubmit}>
                                         Crear reserva {selection ? `· $${formatPrice(selection.price)} ARS` : ""}
                                     </Button>
                                 ) : (

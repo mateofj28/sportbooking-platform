@@ -3,7 +3,8 @@
 import { Button, Chip, Spinner, Card, CardBody, Input } from "@heroui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCancelBooking } from "@/hooks/use-bookings";
-import { apiClient } from "@/lib/api-client";
+import { supabase } from "@/lib/supabase";
+import { camelize, BOOKING_SELECT } from "@/lib/supabase-helpers";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { XCircle, Plus, Calendar, Clock, MapPin, User, DollarSign, Search } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
@@ -40,7 +41,18 @@ export default function AdminBookingsPage() {
 
     const { data: bookingsData, isLoading } = useQuery({
         queryKey: ["bookings"],
-        queryFn: () => apiClient.get<{ data: Booking[]; meta: { total: number; page: number; totalPages: number } }>("/bookings", { limit: "500" }),
+        queryFn: async (): Promise<{ data: Booking[]; meta: { total: number; page: number; totalPages: number } }> => {
+            const { data, error } = await supabase
+                .from("bookings")
+                .select(BOOKING_SELECT)
+                .order("start_datetime", { ascending: false })
+                .limit(500);
+            if (error) throw new Error(error.message);
+            return {
+                data: (data ?? []).map((r) => camelize(r) as unknown as Booking),
+                meta: { total: data?.length ?? 0, page: 1, totalPages: 1 },
+            };
+        },
     });
     const allBookings = bookingsData?.data;
 

@@ -2,17 +2,16 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { Card, CardBody, Chip, Button, Spinner, Input } from "@heroui/react";
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
 import { getBookingStatusChip } from "@/lib/booking-status";
 import { formatTimeAr } from "@/lib/datetime";
 import { PromoCarousel } from "@/components/shared/promo-carousel";
 import { useAuthStore } from "@/stores/auth-store";
 import { useBookings, useMarkBookingPaid } from "@/hooks/use-bookings";
+import { useSports } from "@/hooks/use-sports";
 import { Navbar } from "@/components/layout/navbar";
 import { useRouter } from "next/navigation";
 import { Search, Calendar, Clock, MapPin, ArrowRight, RotateCcw } from "lucide-react";
-import type { Booking, Sport } from "@/types";
+import type { Booking } from "@/types";
 
 /** ⚽ 🎾 etc. según el nombre del deporte */
 function sportEmoji(name?: string): string {
@@ -56,10 +55,7 @@ export default function ClientHomePage() {
     const { data: bookingsResponse, isLoading } = useBookings();
     const bookings = useMemo(() => (Array.isArray(bookingsResponse?.data) ? bookingsResponse.data : []), [bookingsResponse]);
 
-    const { data: sports } = useQuery({
-        queryKey: ["sports"],
-        queryFn: () => apiClient.get<Sport[]>("/sports"),
-    });
+    const { data: sports } = useSports();
 
     // Próximas reservas confirmadas (futuras), ordenadas por fecha
     const upcoming = useMemo(() => {

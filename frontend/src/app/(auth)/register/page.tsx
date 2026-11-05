@@ -39,6 +39,8 @@ export default function RegisterPage() {
     const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [dniError, setDniError] = useState<string | null>(null);
     const [dniChecking, setDniChecking] = useState(false);
+    const [registered, setRegistered] = useState(false);
+    const [registeredEmail, setRegisteredEmail] = useState("");
 
     const {
         register,
@@ -87,9 +89,10 @@ export default function RegisterPage() {
         if (registerData.phone) {
             registerData.phone = `${countryCode} ${registerData.phone}`;
         }
+        setRegisteredEmail(data.email);
         registerMutation.mutate(registerData, {
             onSuccess: () => {
-                router.push("/inicio");
+                setRegistered(true);
             },
         });
     };
@@ -99,8 +102,7 @@ export default function RegisterPage() {
     return (
         <div className="flex min-h-screen">
             {/* Left panel - branding */}
-            <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden bg-gradient-to-br from-secondary via-secondary-600 to-primary items-center justify-center p-12">
-                <div className="absolute inset-0 opacity-10">
+            <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden bg-gradient-to-br from-secondary via-secondary-600 to-primary items-center justify-center p-12">                <div className="absolute inset-0 opacity-10">
                     <div className="absolute top-32 right-10 h-72 w-72 rounded-full bg-white/20 blur-3xl" />
                     <div className="absolute bottom-10 left-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
                 </div>
@@ -136,9 +138,75 @@ export default function RegisterPage() {
               </div>
           </div>
 
-          {/* Right panel - form */}
+            {/* Right panel - form or success */}
           <div className="flex flex-1 flex-col items-center justify-center px-6 py-8 lg:px-12">
               <div className="w-full max-w-md animate-fade-in">
+
+                    {registered ? (
+                        /* ---- Pantalla de éxito ---- */
+                        <div className="flex flex-col items-center text-center gap-6">
+                            {/* Ícono animado */}
+                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-success/10 ring-4 ring-success/20">
+                                <CheckCircle2 className="h-10 w-10 text-success" />
+                            </div>
+
+                            {/* Logo mobile */}
+                            <div className="flex items-center gap-2 lg:hidden">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                                    <Trophy className="h-4 w-4 text-white" />
+                                </div>
+                                <span className="text-lg font-bold">SportBooking</span>
+                            </div>
+
+                            <div>
+                                <h1 className="text-2xl font-bold text-foreground">¡Cuenta creada!</h1>
+                                <p className="mt-2 text-sm text-default-500 leading-relaxed">
+                                    Tu registro fue exitoso. Te enviamos un correo de confirmación a:
+                                </p>
+                                <p className="mt-2 font-semibold text-primary break-all">{registeredEmail}</p>
+                            </div>
+
+                            {/* Tarjeta de instrucciones */}
+                            <div className="w-full rounded-2xl border border-divider bg-default-50 p-5 text-left space-y-3">
+                                <p className="text-sm font-semibold text-foreground">¿Qué hacer ahora?</p>
+                                <div className="flex items-start gap-3">
+                                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-white text-xs font-bold mt-0.5">1</div>
+                                    <p className="text-sm text-default-600">Revisá tu bandeja de entrada (y la carpeta de spam por si acaso).</p>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-white text-xs font-bold mt-0.5">2</div>
+                                    <p className="text-sm text-default-600">Abrí el correo de SportBooking y hacé clic en <span className="font-semibold">Confirmar mi cuenta</span>.</p>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-white text-xs font-bold mt-0.5">3</div>
+                                    <p className="text-sm text-default-600">Una vez confirmado, iniciá sesión y empezá a reservar.</p>
+                                </div>
+                            </div>
+
+                            <Button
+                                as={Link}
+                                href="/login"
+                                color="primary"
+                                size="lg"
+                                className="w-full font-semibold"
+                                endContent={<ArrowRight className="h-4 w-4" />}
+                            >
+                                Ir a Iniciar Sesión
+                            </Button>
+
+                            <p className="text-xs text-default-400">
+                                ¿No recibiste el correo?{" "}
+                                <button
+                                    type="button"
+                                    className="text-primary hover:underline font-medium"
+                                    onClick={() => setRegistered(false)}
+                                >
+                                    Volver al registro
+                                </button>
+                            </p>
+                        </div>
+                    ) : (
+                        <>
                   {/* Mobile logo */}
                   <div className="mb-6 flex items-center gap-2 lg:hidden">
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
@@ -339,6 +407,8 @@ export default function RegisterPage() {
                           Inicia Sesión
                       </Link>
                   </p>
+                        </>
+                    )}
               </div>
           </div>
       </div>

@@ -4,7 +4,10 @@ import { Card, CardBody, CardHeader, Chip, Spinner, Divider, Progress, DatePicke
 import { Select, SelectItem } from "@heroui/select";
 import { today, getLocalTimeZone, type CalendarDate } from "@internationalized/date";
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { callRpc } from "@/lib/supabase-helpers";
+import { supabase } from "@/lib/supabase";
+import { useFacilities } from "@/hooks/use-facilities";
+import { useSports } from "@/hooks/use-sports";
 import { useAuthStore } from "@/stores/auth-store";
 import {
     Calendar, MapPin, TrendingUp, Activity, ArrowUpRight, ArrowDownRight, Users, Filter, CheckCircle2,
@@ -15,7 +18,6 @@ import {
     BookingStatusDonut, BookingsByDayBar, RevenueAreaChart, SportRevenueBar,
     type StatsByStatus, type StatsBySport, type StatsByDay,
 } from "@/components/charts/dashboard-charts";
-import type { Facility, Sport, User, PaginatedResult } from "@/types";
 
 type DateRange = "today" | "yesterday" | "week" | "month" | "custom" | "all";
 type StatusFilter = "ALL" | "CONFIRMED" | "COMPLETED";
@@ -79,39 +81,56 @@ export default function StatisticsPage() {
     // En modo personalizado, solo consultar cuando ambas fechas estén elegidas
     const customReady = dateRange !== "custom" || (!!customFrom && !!customTo);
 
-    // Estadísticas agregadas en el backend (escalable, respeta scope por rol)
+    // Estadísticas via Postgres RPC (corre en la DB, una sola round-trip, respeta scope por rol via RLS)
     const { data: stats, isLoading } = useQuery({
         queryKey: ["stats", dateRange, toISO(customFrom), toISO(customTo), sportFilter, venueFilter, statusFilter],
-        queryFn: () =>
-            apiClient.get<StatsResponse>("/bookings/stats", {
-                range: dateRange,
-                ...(dateRange === "custom" ? { from: toISO(customFrom), to: toISO(customTo) } : {}),
-                ...(sportFilter ? { sportId: sportFilter } : {}),
-                ...(venueFilter ? { venueId: venueFilter } : {}),
-                ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
-            }),
+        queryFn: async () => {
+            const { data, error } = await callRpc<StatsResponse>('get_stats', {
+                p_range: dateRange,
+                ...(dateRange === "custom" ? { p_from: toISO(customFrom), p_to: toISO(customTo) } : {}),
+                ...(sportFilter ? { p_sport_id: sportFilter } : {}),
+                ...(venueFilter ? { p_venue_id: venueFilter } : {}),
+                ...(statusFilter !== "ALL" ? { p_status: statusFilter } : {}),
+            });
+            if (error) throw new Error(error);
+            return data as StatsResponse;
+        },
         enabled: customReady,
     });
 
-    // Catálogos para los filtros
-    const { data: facilities } = useQuery({
-        queryKey: ["admin-facilities"],
-        queryFn: () => apiClient.get<Facility[]>("/facilities"),
-    });
-    const { data: sports } = useQuery({
-        queryKey: ["sports"],
-        queryFn: () => apiClient.get<Sport[]>("/sports"),
-    });
+    // Catálogos para los filtros — hooks directos a Supabase (sin apiClient)
+    const { data: facilitiesData } = useFacilities();
+    const { data: sportsData } = useSports();
+
+    // Conteo y últimos usuarios (solo admin general). El RLS de la migración 007
+    // permite al ADMIN leer todos los perfiles.
     const { data: usersData } = useQuery({
-        queryKey: ["admin-users"],
-        queryFn: () => apiClient.get<PaginatedResult<User>>("/users?limit=100"),
+        queryKey: ["admin-users-stats"],
+        queryFn: async () => {
+            const { data, error, count } = await supabase
+                .from("profiles")
+                .select("id, first_name, last_name, email, role, created_at", { count: "exact" })
+                .order("created_at", { ascending: false })
+                .limit(5);
+            if (error) throw new Error(error.message);
+            return {
+                data: (data ?? []).map((r: any) => ({
+                    id: r.id,
+                    firstName: r.first_name,
+                    lastName: r.last_name,
+                    email: r.email,
+                    role: r.role,
+                    createdAt: r.created_at,
+                })), total: count ?? 0
+            };
+        },
         enabled: !isVenueAdmin,
     });
 
     const venues = (() => {
-        if (!facilities) return [] as { id: string; name: string }[];
+        if (!facilitiesData) return [] as { id: string; name: string }[];
         const map = new Map<string, { id: string; name: string }>();
-        facilities.forEach((f) => {
+        facilitiesData.forEach((f) => {
             if (!map.has(f.venue.id)) map.set(f.venue.id, { id: f.venue.id, name: f.venue.name });
         });
         return Array.from(map.values());
@@ -175,7 +194,7 @@ export default function StatisticsPage() {
                             selectedKeys={sportFilter ? [sportFilter] : []}
                             onSelectionChange={(keys: any) => setSportFilter(Array.from(keys)[0] as string || "")}
                         >
-                            {(sports || []).map((s) => <SelectItem key={s.id}>{s.name}</SelectItem>)}
+                            {(sportsData || []).map((s) => <SelectItem key={s.id}>{s.name}</SelectItem>)}
                         </Select>
                         {!isVenueAdmin && (
                             <Select
@@ -232,11 +251,11 @@ export default function StatisticsPage() {
                     <StatCard icon={<Calendar className="h-5 w-5" />} label="Reservas" value={t.totalAll} color="bg-primary-50 text-primary-600" trend={`${t.cancelled} canceladas`} trendUp={t.cancelled > 0 ? false : undefined} />
                 <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="Completadas" value={t.completed} color="bg-success-50 text-success-600" trend="turnos asistidos" trendUp={t.completed > 0 ? true : undefined} />
                 <StatCard icon={<Activity className="h-5 w-5" />} label="Confirmación" value={`${t.occupancyRate}%`} color="bg-secondary-50 text-secondary-600" trend={`${t.cancelled} canceladas`} trendUp={false} />
-                <StatCard icon={<MapPin className="h-5 w-5" />} label="Instalaciones" value={facilities?.filter((f) => f.isActive).length || 0} color="bg-warning-50 text-warning-600" trend={`${sports?.length || 0} deportes`} />
+                    <StatCard icon={<MapPin className="h-5 w-5" />} label="Instalaciones" value={facilitiesData?.filter((f) => f.isActive).length || 0} color="bg-warning-50 text-warning-600" trend={`${sportsData?.length || 0} deportes`} />
                 {isVenueAdmin ? (
                     <StatCard icon={<Users className="h-5 w-5" />} label="Clientes" value={t.uniqueClients} color="bg-primary-50 text-primary-600" trend="reservaron aquí" trendUp={t.uniqueClients > 0 ? true : undefined} />
                 ) : (
-                        <StatCard icon={<Users className="h-5 w-5" />} label="Usuarios" value={usersData?.meta?.total || usersData?.data?.length || 0} color="bg-primary-50 text-primary-600" trend="registrados" />
+                            <StatCard icon={<Users className="h-5 w-5" />} label="Usuarios" value={usersData?.total || 0} color="bg-primary-50 text-primary-600" trend="registrados" />
                 )}
             </div>
 
@@ -350,7 +369,7 @@ export default function StatisticsPage() {
                         <QuickStat label="Canceladas" value={String(t.cancelled)} sub="reservas canceladas" />
                         {isVenueAdmin
                             ? <QuickStat label="Clientes" value={String(t.uniqueClients)} sub="distintos" />
-                            : <QuickStat label="Total usuarios" value={String(usersData?.meta?.total || usersData?.data?.length || 0)} sub="registrados" />}
+                                : <QuickStat label="Total usuarios" value={String(usersData?.total || 0)} sub="registrados" />}
                     </CardBody>
                 </Card>
 

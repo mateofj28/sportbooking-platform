@@ -9,7 +9,10 @@ import {
 import { parseDate, type CalendarDate } from "@internationalized/date";
 import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { supabase } from "@/lib/supabase";
+import { camelize } from "@/lib/supabase-helpers";
+import { useDashboardBookings } from "@/hooks/use-dashboard-bookings";
+import { useVenues } from "@/hooks/use-venues";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { useState, useEffect, useCallback } from "react";
 import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp, CheckCircle2, ChevronRight, Search } from "lucide-react";
@@ -62,11 +65,7 @@ export default function DashboardPage() {
     const [activeIndex, setActiveIndex] = useState(0);
 
     // Nombre de la sede del admin de sede (para el saludo)
-    const { data: venues } = useQuery({
-        queryKey: ["venues"],
-        queryFn: () => apiClient.get<Venue[]>("/venues"),
-        enabled: isVenueAdmin,
-    });
+    const { data: venues } = useVenues();
     const myVenueName = venues?.find((v) => v.id === user?.venueId)?.name || "";
 
     const nextSlide = useCallback(() => {
@@ -254,17 +253,11 @@ function TodayBookings() {
     const today = argentinaToday();
     const now = Date.now();
 
-    const { data: bookingsData, isLoading } = useQuery({
-        queryKey: ["bookings", "today-list"],
-        queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=100"),
-        refetchOnMount: "always",
-        refetchOnWindowFocus: true,
-        staleTime: 0,
-    });
-
-    const notCancelled = (bookingsData?.data || []).filter((b) => b.status !== "CANCELLED");
+    // Hook compartido: una sola query ["bookings", "dashboard"] para todo el dashboard
+    const { data: allBookings = [], isLoading } = useDashboardBookings();
 
     // Pendientes de uso: EMPIEZAN hoy, pagadas y cuyo turno aún no terminó
+    const notCancelled = allBookings.filter((b) => b.status !== "CANCELLED");
     const pending = notCancelled.filter(
         (b) => argentinaDay(b.startDatetime) === today
             && b.paymentStatus === "PAID"
@@ -343,31 +336,51 @@ function TodaySummary() {
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
     const today = argentinaToday();
 
-    const { data: bookingsData } = useQuery({
-        queryKey: ["bookings", "today-summary"],
-        queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=100"),
-        refetchOnMount: "always",
-        refetchOnWindowFocus: true,
-        staleTime: 0,
-    });
+    // Hook compartido: reutiliza la misma query ["bookings", "dashboard"]
+    const { data: allBookings = [] } = useDashboardBookings();
 
     const { data: usersData } = useQuery({
-        queryKey: ["admin-users-today"],
-        queryFn: () => apiClient.get<PaginatedResult<UserType>>("/users?limit=100"),
+        queryKey: ["admin-users"],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from("profiles")
+                .select("id, created_at")
+                .order("created_at", { ascending: false })
+                .limit(200);
+            if (error) throw new Error(error.message);
+            return (data ?? []).map((r) => camelize(r) as unknown as UserType);
+        },
     });
 
     const { data: facilities } = useQuery({
-        queryKey: ["admin-facilities"],
-        queryFn: () => apiClient.get<Facility[]>("/facilities"),
+        queryKey: ["facilities", {}],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from("facilities")
+                .select("id, name, is_active, min_booking_duration, schedules(day_of_week, open_time, close_time, is_active)")
+                .eq("is_active", true);
+            if (error) throw new Error(error.message);
+            return (data ?? []).map((r) => camelize(r) as unknown as Facility);
+        },
     });
 
     // Bloqueos de hoy (para descontar turnos bloqueados de la capacidad)
     const { data: blockedToday } = useQuery({
         queryKey: ["admin-blocked-today", today],
-        queryFn: () => apiClient.get<{ id: string; facilityId: string; startDatetime: string; endDatetime: string }[]>(`/blocked-slots?date=${today}`),
+        queryFn: async () => {
+            // Ventana de 48h desde medianoche AR para cubrir cruces de medianoche
+            const [y, m, d] = today.split("-").map(Number);
+            const dayStartAR = new Date(Date.UTC(y, m - 1, d, 3, 0, 0)); // 00:00 AR = 03:00 UTC
+            const dayEndAR = new Date(dayStartAR.getTime() + 48 * 60 * 60 * 1000);
+            const { data, error } = await supabase
+                .from("blocked_slots")
+                .select("id, facility_id, start_datetime, end_datetime")
+                .lt("start_datetime", dayEndAR.toISOString())
+                .gt("end_datetime", dayStartAR.toISOString());
+            if (error) throw new Error(error.message);
+            return (data ?? []).map((r) => camelize(r) as unknown as { id: string; facilityId: string; startDatetime: string; endDatetime: string });
+        },
     });
-
-    const allBookings = bookingsData?.data || [];
     const nowMs = Date.now();
     const notCancelled = allBookings.filter((b) => b.status !== "CANCELLED");
 
@@ -402,7 +415,7 @@ function TodaySummary() {
         .reduce((sum, b) => sum + (Number(b.commissionAmount) || 0), 0);
 
     // Usuarios nuevos del sistema hoy (solo relevante para el admin general)
-    const allUsers = usersData?.data || [];
+    const allUsers = usersData || [];
     const newUsersToday = allUsers.filter((u) => {
         if (!u.createdAt) return false;
         return new Date(u.createdAt).toISOString().split("T")[0] === today;
@@ -571,15 +584,8 @@ function RevenueByVenue() {
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
     const [selectedDay, setSelectedDay] = useState<string>(argentinaToday());
 
-    const { data: bookingsData, isLoading } = useQuery({
-        // Prefijo ["bookings"] para que las invalidaciones de pago/creación lo refresquen
-        queryKey: ["bookings", "revenue-by-venue"],
-        queryFn: () => apiClient.get<{ data: Booking[]; meta: any }>("/bookings?limit=1000"),
-        refetchOnMount: "always",
-        staleTime: 0,
-    });
-
-    const allBookings = bookingsData?.data || [];
+    // Hook compartido: reutiliza la misma query ["bookings", "dashboard"]
+    const { data: allBookings = [], isLoading } = useDashboardBookings();
     const now = Date.now();
 
     // Ganancia = turno pagado y YA USADO (su horario de fin ya pasó), por FECHA DE FIN del turno.
@@ -744,7 +750,7 @@ interface OverviewResponse {
 
 const PAGE_SIZE = 10;
 
-/** Modal con tabla paginada + buscador. Escala a muchos registros. */
+/** Modal con tabla paginada + buscador. Filtra en cliente sobre useDashboardBookings. */
 function OverviewModal({
     isOpen, onClose, kind, title,
 }: {
@@ -756,8 +762,9 @@ function OverviewModal({
     const [page, setPage] = useState(1);
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
+    const now = Date.now();
 
-    // Debounce de la búsqueda (evita una request por tecla)
+    // Debounce de la búsqueda (evita un re-render por tecla)
     useEffect(() => {
         const t = setTimeout(() => { setSearch(searchInput.trim()); setPage(1); }, 350);
         return () => clearTimeout(t);
@@ -768,18 +775,28 @@ function OverviewModal({
         if (isOpen) { setPage(1); setSearchInput(""); setSearch(""); }
     }, [isOpen]);
 
-    const { data, isFetching } = useQuery({
-        queryKey: ["bookings", "overview", kind, page, search],
-        queryFn: () => apiClient.get<OverviewResponse>(
-            `/bookings/overview?kind=${kind}&page=${page}&limit=${PAGE_SIZE}&search=${encodeURIComponent(search)}`,
-        ),
-        placeholderData: (prev) => prev,
-        enabled: isOpen,
+    // Reutiliza la query del dashboard (ya cacheada, sin fetch extra)
+    const { data: allBookings = [], isFetching } = useDashboardBookings();
+
+    // Filtrar por tipo
+    const filtered = allBookings.filter((b) => {
+        if (b.status === "CANCELLED") return false;
+        if (b.paymentStatus !== "PAID") return false;
+        const ended = new Date(b.endDatetime).getTime() <= now;
+        if (kind === "realizadas" && ended) return false;
+        if (kind === "completadas" && !ended) return false;
+        if (search) {
+            const q = search.toLowerCase();
+            const name = `${b.user?.firstName ?? ""} ${b.user?.lastName ?? ""}`.toLowerCase();
+            const facility = (b.facility?.name ?? "").toLowerCase();
+            if (!name.includes(q) && !facility.includes(q)) return false;
+        }
+        return true;
     });
 
-    const rows = data?.data ?? [];
-    const total = data?.meta.total ?? 0;
-    const totalPages = data?.meta.totalPages ?? 1;
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    const rows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="4xl" scrollBehavior="inside" placement="center">
@@ -867,13 +884,15 @@ function OverviewCard({
     iconBg: string;
 }) {
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const now = Date.now();
 
-    // Conteo liviano para mostrar el total en la tarjeta
-    const { data: countData } = useQuery({
-        queryKey: ["bookings", "overview-count", kind],
-        queryFn: () => apiClient.get<OverviewResponse>(`/bookings/overview?kind=${kind}&page=1&limit=1`),
-    });
-    const shownTotal = countData?.meta.total ?? 0;
+    // Conteo liviano reutilizando el cache del dashboard (sin fetch extra)
+    const { data: allBookings = [] } = useDashboardBookings();
+    const shownTotal = allBookings.filter((b) => {
+        if (b.status === "CANCELLED" || b.paymentStatus !== "PAID") return false;
+        const ended = new Date(b.endDatetime).getTime() <= now;
+        return kind === "realizadas" ? !ended : ended;
+    }).length;
 
     return (
         <>

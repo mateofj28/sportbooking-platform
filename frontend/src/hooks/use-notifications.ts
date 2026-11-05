@@ -1,6 +1,16 @@
 'use client'
 
-import { useQuery, useMutation, useQueryClient, useQueryClient as useQC } from '@tanstack/react-query'
+// ============================================================
+// hooks/use-notifications.ts
+// Notificaciones in-app con Supabase Realtime.
+// Buenas prácticas aplicadas:
+// - useUnreadCount: dos queries separadas (no sub-query SQL interpolado)
+// - Realtime: canal con nombre único por usuario + filtro por venue_id
+// - useMarkAllNotificationsRead: usa IDs de notification_reads, no sub-query
+// - Import limpio: un solo useQueryClient sin alias
+// ============================================================
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth-store'
@@ -16,7 +26,6 @@ const NOTIF_SELECT = `
   reads:notification_reads!notification_id(id)
 `
 
-/** Transforma una fila raw de Supabase al tipo AppNotification */
 function rowToNotification(row: any): AppNotification {
     return {
         id: row.id,
@@ -27,6 +36,8 @@ function rowToNotification(row: any): AppNotification {
         adminOnly: row.admin_only,
         bookingId: row.booking_id ?? null,
         data: row.data ?? null,
+        // "leída" = existe al menos una fila en notification_reads para este usuario
+        // (el select NOTIF_SELECT filtra los reads del usuario autenticado via RLS)
         read: Array.isArray(row.reads) && row.reads.length > 0,
         createdAt: row.created_at,
     }
@@ -37,73 +48,103 @@ export function useNotifications(page = 1, limit = 20) {
     const userId = useAuthStore((s) => s.user?.id)
 
     return useQuery({
-      queryKey: ['notifications', page, limit],
-      queryFn: async (): Promise<NotificationsPage> => {
-          if (!userId) return { data: [], meta: { total: 0, page, limit, totalPages: 0 } }
+        queryKey: ['notifications', page, limit],
+        queryFn: async (): Promise<NotificationsPage> => {
+            if (!userId) return { data: [], meta: { total: 0, page, limit, totalPages: 0 } }
 
-          const from = (page - 1) * limit
-          const to = from + limit - 1
+            const from = (page - 1) * limit
+            const to = from + limit - 1
 
-          const { data, error, count } = await supabase
-              .from('notifications')
-              .select(NOTIF_SELECT, { count: 'exact' })
-              .order('created_at', { ascending: false })
-              .range(from, to)
+            const { data, error, count } = await supabase
+                .from('notifications')
+                .select(NOTIF_SELECT, { count: 'exact' })
+                .order('created_at', { ascending: false })
+                .range(from, to)
 
-          if (error) throw new Error(error.message)
+            if (error) throw new Error(error.message)
 
-          const total = count ?? 0
-          return {
-              data: (data ?? []).map(rowToNotification),
-              meta: {
-                  total,
-                  page,
-                  limit,
-                  totalPages: Math.ceil(total / limit),
-              },
-          }
-      },
-      enabled: !!userId,
-      refetchOnMount: 'always',
-      placeholderData: (prev) => prev,
-  })
+            const total = count ?? 0
+            return {
+                data: (data ?? []).map(rowToNotification),
+                meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+            }
+        },
+        enabled: !!userId,
+        refetchOnMount: 'always',
+        placeholderData: (prev) => prev,
+    })
 }
 
-/** Contador de no leídas con Realtime (reemplaza el polling de 30s). */
+/**
+ * Contador de no leídas.
+ * Buenas prácticas:
+ * 1. Dos queries separadas en vez de sub-query SQL como string literal
+ *    (PostgREST no ejecuta SQL arbitrario — el string se trataría como valor literal).
+ * 2. Canal Realtime con nombre único por usuario para evitar colisiones.
+ * 3. Filtro Realtime por venue_id para que VENUE_ADMIN no reciba
+ *    invalidaciones de notificaciones de otras sedes.
+ */
 export function useUnreadCount() {
-    const queryClient = useQC()
-    const userId = useAuthStore((s) => s.user?.id)
+    const queryClient = useQueryClient()
+    const user = useAuthStore((s) => s.user)
+    const userId = user?.id
+    const isVenueAdmin = user?.role === 'VENUE_ADMIN'
+    const venueId = user?.venueId
 
-    // Consulta inicial del conteo
     const query = useQuery({
         queryKey: ['notifications', 'unread'],
         queryFn: async (): Promise<{ count: number }> => {
             if (!userId) return { count: 0 }
 
-            const { count, error } = await supabase
+            // Paso 1: obtener las notificaciones ya leídas por este usuario
+            const { data: reads, error: readsError } = await supabase
+                .from('notification_reads')
+                .select('notification_id')
+                .eq('user_id', userId)
+
+            if (readsError) return { count: 0 }
+
+            // Paso 2: contar notificaciones no leídas
+            // Si no hay lecturas, no aplicar filtro (todas son no leídas)
+            const readIds = (reads ?? []).map((r) => r.notification_id)
+
+            let query = supabase
                 .from('notifications')
                 .select('id', { count: 'exact', head: true })
-                .not('id', 'in',
-                    // Sub-query: excluir las ya leídas por este usuario
-                    `(SELECT notification_id FROM notification_reads WHERE user_id = '${userId}')`
-                )
 
+            // Excluir las ya leídas solo si hay alguna
+            if (readIds.length > 0) {
+                query = query.not('id', 'in', `(${readIds.join(',')})`)
+            }
+
+            const { count, error } = await query
             if (error) return { count: 0 }
             return { count: count ?? 0 }
         },
         enabled: !!userId,
         refetchOnWindowFocus: true,
-  })
+    })
 
-    // Suscripción Realtime: cuando llega un INSERT en notifications, invalidar el conteo
+    // Realtime: invalidar el contador cuando llega una nueva notificación.
+    // Canal con nombre único por usuario para evitar colisiones entre sesiones.
+    // Filtro por venue_id para VENUE_ADMIN: solo recibe eventos de su sede.
     useEffect(() => {
         if (!userId) return
 
+        const filter = isVenueAdmin && venueId
+            ? `venue_id=eq.${venueId}`
+            : undefined   // ADMIN escucha todas
+
         const channel = supabase
-            .channel('notifications-realtime')
+            .channel(`notifications:${userId}`)     // nombre único por usuario
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'notifications' },
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notifications',
+                    ...(filter ? { filter } : {}),
+                },
                 () => {
                     queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
                     queryClient.invalidateQueries({ queryKey: ['notifications'] })
@@ -112,7 +153,7 @@ export function useUnreadCount() {
             .subscribe()
 
         return () => { supabase.removeChannel(channel) }
-    }, [userId, queryClient])
+    }, [userId, isVenueAdmin, venueId, queryClient])
 
     return query
 }
@@ -123,56 +164,72 @@ export function useMarkNotificationRead() {
     const userId = useAuthStore((s) => s.user?.id)
 
     return useMutation({
-      mutationFn: async (notificationId: string) => {
-          if (!userId) throw new Error('No autenticado')
-          const { error } = await supabase
-              .from('notification_reads')
-              .upsert(
-                  { notification_id: notificationId, user_id: userId },
-                  { onConflict: 'notification_id,user_id' }
-              )
-          if (error) throw new Error(error.message)
-          return { ok: true }
-      },
-      onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ['notifications'] })
-      },
-  })
+        mutationFn: async (notificationId: string) => {
+            if (!userId) throw new Error('No autenticado')
+            const { error } = await supabase
+                .from('notification_reads')
+                .upsert(
+                    { notification_id: notificationId, user_id: userId },
+                    { onConflict: 'notification_id,user_id' }
+                )
+            if (error) throw new Error(error.message)
+            return { ok: true }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['notifications'] })
+        },
+    })
 }
 
-/** Marca todas las notificaciones del scope como leídas. */
+/**
+ * Marca todas las notificaciones del scope como leídas.
+ * Buenas prácticas:
+ * - Usa notification_reads ya cargadas en vez de sub-query SQL interpolado.
+ * - El NOTIF_SELECT ya incluye los reads del usuario via RLS, así que
+ *   se pueden reutilizar los datos del cache si están disponibles.
+ */
 export function useMarkAllNotificationsRead() {
     const queryClient = useQueryClient()
     const userId = useAuthStore((s) => s.user?.id)
 
     return useMutation({
-      mutationFn: async () => {
-          if (!userId) throw new Error('No autenticado')
+        mutationFn: async () => {
+            if (!userId) throw new Error('No autenticado')
 
-          // Obtener todas las no leídas del usuario
-          const { data: unread, error: fetchError } = await supabase
-              .from('notifications')
-              .select('id')
-              .not('id', 'in',
-                  `(SELECT notification_id FROM notification_reads WHERE user_id = '${userId}')`
-              )
+            // Paso 1: obtener IDs de notificaciones ya leídas
+            const { data: reads } = await supabase
+                .from('notification_reads')
+                .select('notification_id')
+                .eq('user_id', userId)
 
-          if (fetchError) throw new Error(fetchError.message)
-          if (!unread?.length) return { count: 0 }
+            const readIds = (reads ?? []).map((r) => r.notification_id)
 
-          // Insertar lecturas para todas
-          const { error: insertError } = await supabase
-              .from('notification_reads')
-              .upsert(
-                  unread.map((n) => ({ notification_id: n.id, user_id: userId })),
-                  { onConflict: 'notification_id,user_id' }
-              )
+            // Paso 2: obtener todas las notificaciones no leídas del scope del usuario
+            let unreadQuery = supabase
+                .from('notifications')
+                .select('id')
 
-          if (insertError) throw new Error(insertError.message)
-          return { count: unread.length }
-      },
-      onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ['notifications'] })
-      },
-  })
+            if (readIds.length > 0) {
+                unreadQuery = unreadQuery.not('id', 'in', `(${readIds.join(',')})`)
+            }
+
+            const { data: unread, error: fetchError } = await unreadQuery
+            if (fetchError) throw new Error(fetchError.message)
+            if (!unread?.length) return { count: 0 }
+
+            // Paso 3: insertar lecturas para todas las no leídas
+            const { error: insertError } = await supabase
+                .from('notification_reads')
+                .upsert(
+                    unread.map((n) => ({ notification_id: n.id, user_id: userId })),
+                    { onConflict: 'notification_id,user_id' }
+                )
+
+            if (insertError) throw new Error(insertError.message)
+            return { count: unread.length }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['notifications'] })
+        },
+    })
 }

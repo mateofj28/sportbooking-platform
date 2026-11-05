@@ -7,7 +7,7 @@ import {
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { camelize, invokeFunction } from "@/lib/supabase-helpers";
+import { camelize, invokeFunction, Tables } from "@/lib/supabase-helpers";
 import { useVenues } from "@/hooks/use-venues";
 import { UserX, UserCheck, Pencil, Plus, Search } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -60,7 +60,7 @@ export default function AdminUsersPage() {
                 .limit(100);
             if (error) throw new Error(error.message);
             return {
-                data: (rows ?? []).map((r) => camelize(r) as unknown as User),
+                data: (rows ?? []).map((r) => camelize(r as Tables<'profiles'>) as unknown as User),
                 meta: { total: rows?.length ?? 0 },
             };
         },

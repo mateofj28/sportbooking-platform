@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { camelize } from '@/lib/supabase-helpers'
+import type { FacilityRow } from '@/lib/supabase-helpers'
 import type { Facility } from '@/types'
 
 const FACILITY_SELECT = `
@@ -38,7 +39,7 @@ export function useFacilities(filters: FacilityFilters = {}) {
             const { data, error } = await query
             if (error) throw new Error(error.message)
 
-            return (data ?? []).map((f) => camelize(f) as unknown as Facility)
+            return (data ?? []).map((f) => camelize(f as unknown as FacilityRow) as unknown as Facility)
         },
     })
 }
@@ -54,7 +55,7 @@ export function useFacility(id: string) {
                 .eq('id', id)
                 .single()
             if (error) throw new Error(error.message)
-            return camelize(data) as unknown as Facility
+            return camelize(data as unknown as FacilityRow) as unknown as Facility
         },
         enabled: !!id,
     })
@@ -82,7 +83,7 @@ export function useCreateFacility() {
                 .select()
                 .single()
             if (error) throw new Error(error.message)
-            return camelize(result) as unknown as Facility
+            return camelize(result as unknown as FacilityRow) as unknown as Facility
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['facilities'] }),
     })
@@ -110,7 +111,7 @@ export function useUpdateFacility() {
                 .select()
                 .single()
             if (error) throw new Error(error.message)
-            return camelize(result) as unknown as Facility
+            return camelize(result as unknown as FacilityRow) as unknown as Facility
         },
         onSuccess: (_, vars) => {
             queryClient.invalidateQueries({ queryKey: ['facilities'] })

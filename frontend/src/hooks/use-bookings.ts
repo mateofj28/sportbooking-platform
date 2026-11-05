@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { camelize, BOOKING_SELECT, RECURRING_BOOKING_SELECT, invokeFunction } from '@/lib/supabase-helpers'
+import type { BookingRow, RecurringBookingRow } from '@/lib/supabase-helpers'
 import type { Booking, CreateBookingData } from '@/types'
 
 // ---- Tipos ----
@@ -56,25 +57,30 @@ export interface RecurringBookingResult {
 
 // ---- Helpers ----
 
-function rowToBooking(row: any): Booking {
+// ---- Helpers de conversión tipados ----
+// Reciben el tipo Raw (snake_case, forma exacta de Supabase) y devuelven
+// el tipo de la app (camelCase). Sin `as unknown as` — TypeScript puede
+// verificar que la entrada tiene la forma correcta.
+
+function rowToBooking(row: BookingRow): Booking {
     return camelize(row) as unknown as Booking
 }
 
-function rowToRecurring(row: any): RecurringBooking {
+function rowToRecurring(row: RecurringBookingRow): RecurringBooking {
     const c = camelize(row) as any
     return {
         ...c,
         upcomingCount: (row.bookings ?? []).filter(
-            (b: any) => b.status === 'CONFIRMED' && new Date(b.start_datetime) >= new Date()
+            (b) => b.status === 'CONFIRMED' && new Date(b.start_datetime!) >= new Date()
         ).length,
         totalCount: (row.bookings ?? []).length,
-        bookings: (row.bookings ?? []).map((b: any) => ({
+        bookings: (row.bookings ?? []).map((b) => ({
             id: b.id,
-            startDatetime: b.start_datetime,
-            endDatetime: b.end_datetime,
+            startDatetime: b.start_datetime!,
+            endDatetime: b.end_datetime!,
             status: b.status,
-            paymentStatus: b.payment_status,
-            totalPrice: b.total_price,
+            paymentStatus: b.payment_status ?? undefined,
+            totalPrice: b.total_price ? Number(b.total_price) : undefined,
         })),
     }
 }
@@ -106,7 +112,7 @@ export function useBookings(status?: string) {
           if (error) throw new Error(error.message)
 
             return {
-                data: (data ?? []).map(rowToBooking),
+                data: (data ?? []).map((row) => rowToBooking(row as unknown as BookingRow)),
                 meta: { total: count ?? 0 },
             }
         },
@@ -124,7 +130,7 @@ export function useBooking(id: string) {
                 .eq('id', id)
                 .single()
             if (error) throw new Error(error.message)
-            return rowToBooking(data)
+            return rowToBooking(data as unknown as BookingRow)
         },
         enabled: !!id,
     })
@@ -141,7 +147,7 @@ export function useRecurringBookings() {
                 .order('created_at', { ascending: false })
 
             if (error) throw new Error(error.message)
-            return (data ?? []).map(rowToRecurring)
+            return (data ?? []).map((row) => rowToRecurring(row as unknown as RecurringBookingRow))
         },
     })
 }

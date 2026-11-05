@@ -10,7 +10,7 @@ import { parseDate, type CalendarDate } from "@internationalized/date";
 import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { camelize } from "@/lib/supabase-helpers";
+import { camelize, Tables } from "@/lib/supabase-helpers";
 import { useDashboardBookings } from "@/hooks/use-dashboard-bookings";
 import { useVenues } from "@/hooks/use-venues";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
@@ -348,7 +348,7 @@ function TodaySummary() {
                 .order("created_at", { ascending: false })
                 .limit(200);
             if (error) throw new Error(error.message);
-            return (data ?? []).map((r) => camelize(r) as unknown as UserType);
+            return (data ?? []).map((r) => camelize(r as Tables<'profiles'>) as unknown as UserType);
         },
     });
 
@@ -360,7 +360,7 @@ function TodaySummary() {
                 .select("id, name, is_active, min_booking_duration, schedules(day_of_week, open_time, close_time, is_active)")
                 .eq("is_active", true);
             if (error) throw new Error(error.message);
-            return (data ?? []).map((r) => camelize(r) as unknown as Facility);
+            return (data ?? []).map((r) => camelize(r as Pick<Tables<'facilities'>, 'id' | 'name' | 'is_active' | 'min_booking_duration'> & { schedules?: Tables<'schedules'>[] }) as unknown as Facility);
         },
     });
 
@@ -378,7 +378,7 @@ function TodaySummary() {
                 .lt("start_datetime", dayEndAR.toISOString())
                 .gt("end_datetime", dayStartAR.toISOString());
             if (error) throw new Error(error.message);
-            return (data ?? []).map((r) => camelize(r) as unknown as { id: string; facilityId: string; startDatetime: string; endDatetime: string });
+            return (data ?? []).map((r) => camelize(r as Tables<'blocked_slots'>) as unknown as { id: string; facilityId: string; startDatetime: string; endDatetime: string });
         },
     });
     const nowMs = Date.now();

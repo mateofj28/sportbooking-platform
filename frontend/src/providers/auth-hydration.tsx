@@ -4,11 +4,22 @@
 // providers/auth-hydration.tsx
 // Sincroniza el AuthStore con la sesión de Supabase Auth.
 //
-// onAuthStateChange maneja todos los casos:
-// - Carga inicial (INITIAL_SESSION)
-// - Login / Logout
-// - Refresco de token automático (TOKEN_REFRESHED)
-// - Logout en otra pestaña (SIGNED_OUT)
+// Buena práctica Supabase: usar SOLO onAuthStateChange.
+// El evento INITIAL_SESSION ya incluye la sesión inicial,
+// por lo que NO hay que llamar getSession() por separado.
+//
+// El anti-patrón anterior era:
+//   getSession().then(setSession)        ← round-trip extra
+//   + onAuthStateChange(setSession)      ← puede correr antes que getSession
+// Eso crea una condición de carrera: onAuthStateChange puede disparar
+// SIGNED_IN antes de que getSession resuelva, dejando el store en
+// estado inconsistente durante el SSR/hydration.
+//
+// Con INITIAL_SESSION, onAuthStateChange maneja todos los casos:
+//   INITIAL_SESSION  → carga inicial (reemplaza getSession)
+//   SIGNED_IN        → login
+//   SIGNED_OUT       → logout / otra pestaña
+//   TOKEN_REFRESHED  → refresco automático
 // ============================================================
 
 import { useEffect } from 'react'
@@ -20,23 +31,20 @@ export function AuthHydration({ children }: { children: React.ReactNode }) {
     const setHydrated = useAuthStore((s) => s._setHydrated)
 
     useEffect(() => {
-      // 1. Obtener la sesión existente al montar (primera carga)
-      supabase.auth.getSession().then(({ data: { session } }) => {
-          setSession(session)
-          setHydrated()
-      })
+        // Un solo listener maneja la sesión inicial + todos los cambios futuros.
+        // INITIAL_SESSION es el primer evento que dispara Supabase al montar.
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            (event, session) => {
+                setSession(session)
+                // Marcar como hidratado en cuanto Supabase resuelve el estado inicial
+                if (event === 'INITIAL_SESSION') {
+                    setHydrated()
+                }
+            }
+        )
 
-      // 2. Escuchar cambios de sesión en tiempo real
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          (_event, session) => {
-              setSession(session)
-              // isHydrated ya está en true después del getSession inicial
-          }
-      )
-
-      // Limpiar suscripción al desmontar
-      return () => subscription.unsubscribe()
-  }, [setSession, setHydrated])
+        return () => subscription.unsubscribe()
+    }, [setSession, setHydrated])
 
     return <>{children}</>
 }

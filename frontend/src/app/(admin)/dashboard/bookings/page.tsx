@@ -4,7 +4,7 @@ import { Button, Chip, Spinner, Card, CardBody, Input } from "@heroui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCancelBooking } from "@/hooks/use-bookings";
 import { supabase } from "@/lib/supabase";
-import { camelize, BOOKING_SELECT } from "@/lib/supabase-helpers";
+import { camelize, BOOKING_SELECT, BookingRow } from "@/lib/supabase-helpers";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { XCircle, Plus, Calendar, Clock, MapPin, User, DollarSign, Search } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
@@ -49,7 +49,7 @@ export default function AdminBookingsPage() {
                 .limit(500);
             if (error) throw new Error(error.message);
             return {
-                data: (data ?? []).map((r) => camelize(r) as unknown as Booking),
+                data: (data ?? []).map((r) => camelize(r as unknown as BookingRow) as unknown as Booking),
                 meta: { total: data?.length ?? 0, page: 1, totalPages: 1 },
             };
         },

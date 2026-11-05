@@ -13,6 +13,10 @@
 import { supabase } from './supabase'
 import type { Tables } from './supabase'
 
+// Re-exportar Tables para que las páginas puedan tipar sus queries inline
+// sin importar directamente desde supabase.ts
+export type { Tables }
+
 // ---- Tipos de resultado genérico ----
 
 export interface QueryResult<T> {
@@ -111,6 +115,21 @@ export async function callRpc<T>(
 
 // ---- Helpers por dominio ----
 
+// ============================================================
+// Tipos Raw (snake_case) — forma exacta que devuelve Supabase
+//
+// Propósito: eliminar el patrón `camelize(row) as unknown as Tipo`
+// que silencia errores de TypeScript. El flujo correcto es:
+//   1. Tipar la respuesta de Supabase como RawXxx (snake_case)
+//   2. Pasar al camelize con ese tipo conocido
+//   3. El resultado es el tipo camelCase de la app
+//
+// La función camelize() tiene firma genérica:
+//   camelize<T extends Record<string, unknown>>(obj: T): CamelizeKeys<T>
+// por lo que `camelize(row as BookingRow)` produce un tipo inferido
+// automáticamente — sin necesidad de `as unknown as Booking`.
+// ============================================================
+
 /** Tipos raw de Supabase (snake_case) para bookings con relaciones */
 export type BookingRow = Tables<'bookings'> & {
   facility?: (Tables<'facilities'> & {
@@ -122,9 +141,10 @@ export type BookingRow = Tables<'bookings'> & {
   user?: Pick<Tables<'profiles'>, 'id' | 'first_name' | 'last_name'>
 }
 
-/** Tipo raw de Supabase para notificaciones con estado de lectura */
+/** Tipo raw de Supabase para notificaciones con reads anidados */
 export type NotificationRow = Tables<'notifications'> & {
-  read?: boolean  // derivado de notification_reads
+  /** Filas de notification_reads del usuario autenticado (via RLS) */
+  reads?: Pick<Tables<'notification_reads'>, 'id'>[]
 }
 
 /** Tipo raw para recurring_bookings con relaciones */
@@ -134,6 +154,28 @@ export type RecurringBookingRow = Tables<'recurring_bookings'> & {
     venue?: Pick<Tables<'venues'>, 'id' | 'name' | 'city'>
   }
   bookings?: Pick<Tables<'bookings'>, 'id' | 'start_datetime' | 'end_datetime' | 'status' | 'payment_status' | 'total_price'>[]
+}
+
+/** Tipo raw para venues */
+export type VenueRow = Pick<
+  Tables<'venues'>,
+  'id' | 'name' | 'slug' | 'description' | 'address' | 'city' | 'state' |
+  'country' | 'latitude' | 'longitude' | 'phone' | 'email' | 'image_url' |
+  'amenities' | 'is_active' | 'created_at' | 'updated_at'
+>
+
+/** Tipo raw para sports */
+export type SportRow = Pick<
+  Tables<'sports'>,
+  'id' | 'name' | 'description' | 'max_players' | 'billing_type' | 'is_active'
+>
+
+/** Tipo raw para facilities con relaciones */
+export type FacilityRow = Tables<'facilities'> & {
+  sport?: Pick<Tables<'sports'>, 'id' | 'name' | 'description' | 'max_players' | 'billing_type' | 'is_active'>
+  venue?: Pick<Tables<'venues'>, 'id' | 'name' | 'city' | 'address'>
+  schedules?: Tables<'schedules'>[]
+  pricing?: Tables<'pricing'>[]
 }
 
 /** Select string estándar para bookings con relaciones */

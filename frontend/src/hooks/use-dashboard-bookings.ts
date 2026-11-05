@@ -19,6 +19,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { camelize, BOOKING_SELECT } from '@/lib/supabase-helpers'
+import type { BookingRow } from '@/lib/supabase-helpers'
 import type { Booking } from '@/types'
 
 /** Carga las últimas 1000 reservas para el dashboard de administración.
@@ -34,7 +35,7 @@ export function useDashboardBookings() {
                 .limit(1000)
 
             if (error) throw new Error(error.message)
-            return (data ?? []).map((r) => camelize(r) as unknown as Booking)
+            return (data ?? []).map((row) => camelize(row as unknown as BookingRow) as unknown as Booking)
         },
         refetchOnMount: 'always',
         refetchOnWindowFocus: true,

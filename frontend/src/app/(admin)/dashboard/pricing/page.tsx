@@ -7,7 +7,7 @@ import {
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { camelize } from "@/lib/supabase-helpers";
+import { camelize, Tables } from "@/lib/supabase-helpers";
 import { Plus, Trash2, DollarSign, Percent, Pencil, AlertTriangle } from "lucide-react";
 import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
@@ -106,7 +106,7 @@ export default function AdminPricingPage() {
         .eq("facility_id", selectedFacility)
         .order("day_of_week", { ascending: true });
       if (error) throw new Error(error.message);
-      return (data ?? []).map((r) => camelize(r) as unknown as Pricing);
+      return (data ?? []).map((r) => camelize(r as Tables<'pricing'>) as unknown as Pricing);
     },
     enabled: !!selectedFacility,
   });
@@ -120,7 +120,7 @@ export default function AdminPricingPage() {
         .select("id, day_of_week, open_time, close_time, is_active")
         .eq("facility_id", selectedFacility);
       if (error) throw new Error(error.message);
-      return (data ?? []).map((r) => camelize(r) as unknown as { id: string; dayOfWeek: number; openTime: string; closeTime: string; isActive: boolean });
+      return (data ?? []).map((r) => camelize(r as Tables<'schedules'>) as unknown as { id: string; dayOfWeek: number; openTime: string; closeTime: string; isActive: boolean });
     },
     enabled: !!selectedFacility,
   });

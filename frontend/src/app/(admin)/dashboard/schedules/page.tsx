@@ -7,7 +7,7 @@ import {
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { camelize } from "@/lib/supabase-helpers";
+import { camelize, Tables } from "@/lib/supabase-helpers";
 import { useAuthStore } from "@/stores/auth-store";
 import { Plus, Trash2, Clock, Pencil } from "lucide-react";
 import { useState } from "react";
@@ -57,7 +57,7 @@ export default function AdminSchedulesPage() {
         .eq("facility_id", selectedFacility)
         .order("day_of_week", { ascending: true });
       if (error) throw new Error(error.message);
-      return (data ?? []).map((r) => camelize(r) as unknown as Schedule);
+      return (data ?? []).map((r) => camelize(r as Tables<'schedules'>) as unknown as Schedule);
     },
     enabled: !!selectedFacility,
   });

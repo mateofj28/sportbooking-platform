@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { camelize } from '@/lib/supabase-helpers'
+import type { SportRow } from '@/lib/supabase-helpers'
 import type { Sport } from '@/types'
 
 /** Lista todos los deportes activos (acceso público via RLS). */
@@ -19,7 +20,7 @@ export function useSports(activeOnly = true) {
 
       const { data, error } = await query
       if (error) throw new Error(error.message)
-      return (data ?? []).map((s) => camelize(s) as unknown as Sport)
+      return (data ?? []).map((s) => camelize(s as SportRow) as unknown as Sport)
     },
   })
 }

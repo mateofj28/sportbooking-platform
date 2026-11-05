@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth-store'
+import type { NotificationRow } from '@/lib/supabase-helpers'
 import type { AppNotification } from '@/types'
 
 interface NotificationsPage {
@@ -26,16 +27,16 @@ const NOTIF_SELECT = `
   reads:notification_reads!notification_id(id)
 `
 
-function rowToNotification(row: any): AppNotification {
+function rowToNotification(row: NotificationRow): AppNotification {
     return {
         id: row.id,
-        type: row.type,
+        type: row.type as AppNotification['type'],
         title: row.title,
         body: row.body,
         venueId: row.venue_id ?? null,
-        adminOnly: row.admin_only,
+        adminOnly: row.admin_only ?? false,
         bookingId: row.booking_id ?? null,
-        data: row.data ?? null,
+        data: (row.data as Record<string, unknown> | null) ?? null,
         // "leída" = existe al menos una fila en notification_reads para este usuario
         // (el select NOTIF_SELECT filtra los reads del usuario autenticado via RLS)
         read: Array.isArray(row.reads) && row.reads.length > 0,
@@ -65,7 +66,7 @@ export function useNotifications(page = 1, limit = 20) {
 
             const total = count ?? 0
             return {
-                data: (data ?? []).map(rowToNotification),
+                data: (data ?? []).map((row) => rowToNotification(row as unknown as NotificationRow)),
                 meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
             }
         },

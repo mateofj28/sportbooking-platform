@@ -11,7 +11,7 @@ import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
 type CalDate = CalendarDate;
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { camelize } from "@/lib/supabase-helpers";
+import { camelize, Tables } from "@/lib/supabase-helpers";
 import { Plus, Trash2, Ban, Pencil } from "lucide-react";
 import { useState } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
@@ -88,7 +88,7 @@ export default function AdminBlockedSlotsPage() {
         .eq("facility_id", selectedFacility)
         .order("start_datetime", { ascending: true });
       if (error) throw new Error(error.message);
-      return (data ?? []).map((r) => camelize(r) as unknown as BlockedSlot);
+      return (data ?? []).map((r) => camelize(r as Tables<'blocked_slots'>) as unknown as BlockedSlot);
     },
     enabled: !!selectedFacility,
   });

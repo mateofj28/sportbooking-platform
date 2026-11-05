@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { camelize } from '@/lib/supabase-helpers'
+import type { VenueRow } from '@/lib/supabase-helpers'
 import type { Venue } from '@/types'
 
 const VENUE_SELECT = `
@@ -22,7 +23,7 @@ export function useVenues() {
         .eq('is_active', true)
         .order('name')
       if (error) throw new Error(error.message)
-      return (data ?? []).map((v) => camelize(v) as unknown as Venue)
+      return (data ?? []).map((v) => camelize(v as VenueRow) as unknown as Venue)
     },
   })
 }
@@ -37,7 +38,7 @@ export function useAllVenues() {
         .select(VENUE_SELECT)
         .order('name')
       if (error) throw new Error(error.message)
-      return (data ?? []).map((v) => camelize(v) as unknown as Venue)
+      return (data ?? []).map((v) => camelize(v as VenueRow) as unknown as Venue)
     },
   })
 }
@@ -53,7 +54,7 @@ export function useVenue(id: string) {
         .eq('id', id)
         .single()
       if (error) throw new Error(error.message)
-      return camelize(data) as unknown as Venue
+      return camelize(data as VenueRow) as unknown as Venue
     },
     enabled: !!id,
   })
@@ -81,7 +82,7 @@ export function useCreateVenue() {
         .select()
         .single()
       if (error) throw new Error(error.message)
-      return camelize(result) as unknown as Venue
+      return camelize(result as VenueRow) as unknown as Venue
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['venues'] }),
   })
@@ -108,7 +109,7 @@ export function useUpdateVenue() {
         .select()
         .single()
       if (error) throw new Error(error.message)
-      return camelize(result) as unknown as Venue
+      return camelize(result as VenueRow) as unknown as Venue
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['venues'] })

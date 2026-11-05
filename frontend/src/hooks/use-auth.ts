@@ -41,9 +41,9 @@ export function useAuth() {
                 email: data.email,
                 password: data.password,
                 options: {
+                    // Después de confirmar el email, Supabase redirige aquí
+                    emailRedirectTo: `${window.location.origin}/login`,
                     data: {
-                        // Se guardan en user_metadata y el trigger handle_new_user
-                        // los usa para crear la fila en profiles
                         first_name: data.firstName,
                         last_name: data.lastName,
                         phone: data.phone,

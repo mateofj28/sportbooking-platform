@@ -17,15 +17,12 @@ import {
     ModalFooter,
     useDisclosure,
 } from "@heroui/react";
-import { useFacility } from "@/hooks/use-facilities";
+import { useFacility, useFacilities } from "@/hooks/use-facilities";
 import { useCreateBooking, useCreateRecurringBooking } from "@/hooks/use-bookings";
 import { durationOptionsForSport } from "@/components/shared/availability-picker";
 import { finalPricePerTurn } from "@/lib/pricing";
-import { useFacilities } from "@/hooks/use-facilities";
-import { useAvailabilitySummary } from "@/hooks/use-availability";
-import { useQueries } from "@tanstack/react-query";
+import { useFacilityAvailability, useAvailabilitySummary } from "@/hooks/use-availability";
 import type { Facility } from "@/types";
-import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
 import {
@@ -160,57 +157,31 @@ export default function FacilityDetailPage({
     const dayOfWeek = useMemo(() => (selectedDate.getDay() + 6) % 7, [selectedDate]);
     const schedule = facility?.schedules?.find((s) => s.dayOfWeek === dayOfWeek && s.isActive);
 
-    // Precargar disponibilidad de todos los días con horario activo, para que la
-    // habilitación del día y las horas usen la misma fuente (el backend).
-    const dayInfos = useMemo(
-        () =>
-            days.map((day) => {
-                const dow = (day.getDay() + 6) % 7;
-                const hasSchedule = !!facility?.schedules?.find((s) => s.dayOfWeek === dow && s.isActive);
-                return { dateStr: toLocalDateStr(day), hasSchedule };
-            }),
-        [days, facility?.schedules],
+    // Disponibilidad del día seleccionado — una sola RPC, caché de 1 min.
+    // Antes: useQueries con N queries paralelas (una por cada día del mes via apiClient
+    // apuntando al backend NestJS que ya no existe). Ahora: una query on-demand
+    // por el día visible, usando supabase.rpc directamente.
+    const dateStr = toLocalDateStr(selectedDate);
+    const { data: availability, isLoading: loadingAvailability } = useFacilityAvailability(
+        id,
+        dateStr,
+        !!facility,
     );
 
-    const availabilityQueries = useQueries({
-        queries: dayInfos.map((info) => ({
-            queryKey: ["availability", id, info.dateStr],
-            queryFn: () => apiClient.get<{ available: boolean; slots: { time: string; available: boolean }[]; message?: string }>(`/facilities/${id}/availability`, { date: info.dateStr }),
-            enabled: !!facility && info.hasSchedule,
-            staleTime: 60_000,
-        })),
-    });
-
-    const availabilityByDate = useMemo(() => {
-        const map: Record<string, { available: boolean; slots: { time: string; available: boolean }[] } | undefined> = {};
-        dayInfos.forEach((info, i) => {
-            map[info.dateStr] = availabilityQueries[i]?.data as any;
-        });
-        return map;
-    }, [dayInfos, availabilityQueries]);
-
-    const loadingByDate = useMemo(() => {
-        const map: Record<string, boolean> = {};
-        dayInfos.forEach((info, i) => { map[info.dateStr] = !!availabilityQueries[i]?.isLoading; });
-        return map;
-    }, [dayInfos, availabilityQueries]);
-
-    /** ¿El día tiene al menos un slot disponible? (misma fuente que las horas) */
+    /** ¿El día tiene al menos un slot disponible? Se evalúa localmente
+     *  a partir del horario del día (sin fetch adicional por cada día del calendario). */
     const dayHasAvailableSlots = (day: Date): boolean => {
         const dow = (day.getDay() + 6) % 7;
         const daySchedule = facility?.schedules?.find((s) => s.dayOfWeek === dow && s.isActive);
         if (!daySchedule || !facility) return false;
-        const ds = toLocalDateStr(day);
-        const resp = availabilityByDate[ds];
-        if (loadingByDate[ds] || !resp) {
-            const isDayToday = day.toDateString() === new Date().toDateString();
-            return generateTimeSlots(daySchedule.openTime, daySchedule.closeTime, facility.minBookingDuration, isDayToday).length > 0;
+        // Si es el día seleccionado y ya tenemos la respuesta del backend, usarla
+        if (toLocalDateStr(day) === dateStr && availability) {
+            return availability.slots.some((s) => s.available);
         }
-        return resp.slots.some((s) => s.available);
+        // Para los demás días: estimación local a partir del horario (no fetch por cada día)
+        const isDayToday = day.toDateString() === new Date().toDateString();
+        return generateTimeSlots(daySchedule.openTime, daySchedule.closeTime, facility.minBookingDuration, isDayToday).length > 0;
     };
-
-    const dateStr = toLocalDateStr(selectedDate);
-    const availability = availabilityByDate[dateStr];
 
     const isToday = selectedDate.toDateString() === new Date().toDateString();
     const timeSlots = useMemo(() => {

@@ -41,6 +41,7 @@ export function useFacilities(filters: FacilityFilters = {}) {
 
             return (data ?? []).map((f) => camelize(f as unknown as FacilityRow) as unknown as Facility)
         },
+        staleTime: 10 * 60 * 1000,  // 10 minutos — las canchas (precios, horarios) cambian poco
     })
 }
 

@@ -25,6 +25,7 @@ export function useVenues() {
       if (error) throw new Error(error.message)
       return (data ?? []).map((v) => camelize(v as VenueRow) as unknown as Venue)
     },
+    staleTime: 10 * 60 * 1000,  // 10 minutos — los complejos cambian con poca frecuencia
   })
 }
 
@@ -40,6 +41,7 @@ export function useAllVenues() {
       if (error) throw new Error(error.message)
       return (data ?? []).map((v) => camelize(v as VenueRow) as unknown as Venue)
     },
+    staleTime: 10 * 60 * 1000,
   })
 }
 

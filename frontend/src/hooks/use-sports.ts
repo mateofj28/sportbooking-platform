@@ -22,5 +22,7 @@ export function useSports(activeOnly = true) {
       if (error) throw new Error(error.message)
       return (data ?? []).map((s) => camelize(s as SportRow) as unknown as Sport)
     },
+    staleTime: 30 * 60 * 1000,  // 30 minutos — los deportes cambian en semanas, no en minutos
+    gcTime: 60 * 60 * 1000,     // 1 hora en memoria
   })
 }

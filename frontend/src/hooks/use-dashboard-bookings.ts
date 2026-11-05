@@ -23,7 +23,13 @@ import type { BookingRow } from '@/lib/supabase-helpers'
 import type { Booking } from '@/types'
 
 /** Carga las últimas 1000 reservas para el dashboard de administración.
- *  El RLS garantiza el scope: VENUE_ADMIN solo ve las de su sede. */
+ *  El RLS garantiza el scope: VENUE_ADMIN solo ve las de su sede.
+ *
+ *  staleTime: 2min — los datos del dashboard son operacionales pero no necesitan
+ *  ser frescos al milisegundo. Las mutaciones (pago, cancelación, creación) ya
+ *  llaman a queryClient.invalidateQueries(['bookings']) en onSuccess, lo que
+ *  invalida esta query por prefijo — no hace falta refetch en windowFocus.
+ */
 export function useDashboardBookings() {
     return useQuery({
         queryKey: ['bookings', 'dashboard'],
@@ -37,8 +43,8 @@ export function useDashboardBookings() {
             if (error) throw new Error(error.message)
             return (data ?? []).map((row) => camelize(row as unknown as BookingRow) as unknown as Booking)
         },
-        refetchOnMount: 'always',
-        refetchOnWindowFocus: true,
-        staleTime: 0,
+        staleTime: 2 * 60 * 1000,    // 2 minutos
+        refetchOnMount: true,         // refetch solo si los datos están stale
+        refetchOnWindowFocus: false,  // las mutaciones invalidan el caché — no necesitamos windowFocus
     })
 }

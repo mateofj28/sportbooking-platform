@@ -2,7 +2,7 @@
 
 import {
     Button, Chip, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-    Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, useDisclosure,
+    Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, useDisclosure, Pagination,
 } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -50,28 +50,50 @@ export default function AdminUsersPage() {
         venueId: "",
     });
 
-    const { data, isLoading } = useQuery({
-        queryKey: ["admin-users"],
-        queryFn: async (): Promise<{ data: User[]; meta: { total: number } }> => {
-            const { data: rows, error } = await supabase
-                .from("profiles")
-                .select("*")
-                .order("created_at", { ascending: false })
-                .limit(100);
-            if (error) throw new Error(error.message);
-            return {
-                data: (rows ?? []).map((r) => camelize(r as Tables<'profiles'>) as unknown as User),
-                meta: { total: rows?.length ?? 0 },
-            };
-        },
-    });
-
-    const { data: venues } = useVenues();
-
-    // Filters
+    const PAGE_SIZE = 20;
+    const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
     const [filterRole, setFilterRole] = useState("");
     const [filterVenue, setFilterVenue] = useState("");
+
+    // Reset a página 1 cuando cambian los filtros
+    const handleSearch = (v: string) => { setSearch(v); setPage(1); };
+    const handleFilterRole = (v: string) => { setFilterRole(v); setPage(1); };
+    const handleFilterVenue = (v: string) => { setFilterVenue(v); setPage(1); };
+
+    const { data, isLoading } = useQuery({
+        queryKey: ["admin-users", page, search, filterRole, filterVenue],
+        queryFn: async (): Promise<{ data: User[]; meta: { total: number } }> => {
+            const from = (page - 1) * PAGE_SIZE;
+            const to = from + PAGE_SIZE - 1;
+
+            let query = supabase
+                .from("profiles")
+                .select("*", { count: "exact" })
+                .order("created_at", { ascending: false })
+                .range(from, to);
+
+            // Filtros aplicados en el servidor — sin traer todos los registros al cliente
+            if (filterRole) query = query.eq("role", filterRole as any);
+            if (filterVenue) query = query.eq("venue_id", filterVenue);
+            if (search) {
+                // Búsqueda por nombre completo, email o DNI (ilike = case-insensitive)
+                query = query.or(
+                    `first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%,dni.ilike.%${search}%`
+                );
+            }
+
+            const { data: rows, error, count } = await query;
+            if (error) throw new Error(error.message);
+            return {
+                data: (rows ?? []).map((r) => camelize(r as Tables<'profiles'>) as unknown as User),
+                meta: { total: count ?? 0 },
+            };
+        },
+        placeholderData: (prev) => prev, // mantiene los datos anteriores al paginar
+    });
+
+    const { data: venues } = useVenues();
 
     const deactivateMutation = useMutation({
         mutationFn: async (id: string) => {
@@ -169,23 +191,11 @@ export default function AdminUsersPage() {
     };
 
     const allUsers = data?.data || [];
+    const totalUsers = data?.meta.total ?? 0;
+    const totalPages = Math.max(1, Math.ceil(totalUsers / PAGE_SIZE));
 
-    const users = useMemo(() => {
-        return allUsers.filter((u) => {
-            if (filterRole && u.role !== filterRole) return false;
-            if (filterVenue && u.venueId !== filterVenue) return false;
-            if (search) {
-                const q = search.toLowerCase();
-                const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
-                const matches =
-                    fullName.includes(q) ||
-                    (u.email?.toLowerCase().includes(q)) ||
-                    (u.dni?.toLowerCase().includes(q));
-                if (!matches) return false;
-            }
-            return true;
-        });
-    }, [allUsers, search, filterRole, filterVenue]);
+    // Con paginación server-side, data?.data ya viene filtrada
+    const users = allUsers;
 
     if (isLoading) {
         return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;
@@ -196,7 +206,9 @@ export default function AdminUsersPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold">Usuarios</h1>
-                    <p className="text-sm text-default-500 mt-1">Gestiona los usuarios de la plataforma</p>
+                    <p className="text-sm text-default-500 mt-1">
+                        {totalUsers > 0 ? `${totalUsers} usuario${totalUsers !== 1 ? "s" : ""} en el sistema` : "Gestiona los usuarios de la plataforma"}
+                    </p>
                 </div>
                 <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={onCreateOpen}>
                     Nuevo Usuario
@@ -210,17 +222,17 @@ export default function AdminUsersPage() {
                     variant="bordered"
                     size="sm"
                     value={search}
-                    onValueChange={setSearch}
+                    onValueChange={handleSearch}
                     startContent={<Search className="h-4 w-4 text-default-400" />}
                     isClearable
-                    onClear={() => setSearch("")}
+                    onClear={() => handleSearch("")}
                 />
                 <Select
                     placeholder="Filtrar por rol"
                     variant="bordered"
                     size="sm"
                     selectedKeys={filterRole ? [filterRole] : []}
-                    onSelectionChange={(keys: any) => setFilterRole(Array.from(keys)[0] as string || "")}
+                    onSelectionChange={(keys: any) => handleFilterRole(Array.from(keys)[0] as string || "")}
                 >
                     <SelectItem key="CLIENT">Cliente</SelectItem>
                     <SelectItem key="VENUE_ADMIN">Admin Complejo</SelectItem>
@@ -231,7 +243,7 @@ export default function AdminUsersPage() {
                     variant="bordered"
                     size="sm"
                     selectedKeys={filterVenue ? [filterVenue] : []}
-                    onSelectionChange={(keys: any) => setFilterVenue(Array.from(keys)[0] as string || "")}
+                    onSelectionChange={(keys: any) => handleFilterVenue(Array.from(keys)[0] as string || "")}
                 >
                     {(venues || []).map((v) => (
                         <SelectItem key={v.id}>{v.name}</SelectItem>
@@ -242,9 +254,9 @@ export default function AdminUsersPage() {
             {(search || filterRole || filterVenue) && (
                 <div className="flex items-center gap-2">
                     <span className="text-xs text-default-500">
-                        {users.length} resultado{users.length !== 1 ? "s" : ""}
+                        {totalUsers} resultado{totalUsers !== 1 ? "s" : ""}
                     </span>
-                    <Button size="sm" variant="light" color="danger" onPress={() => { setSearch(""); setFilterRole(""); setFilterVenue(""); }}>
+                    <Button size="sm" variant="light" color="danger" onPress={() => { handleSearch(""); handleFilterRole(""); handleFilterVenue(""); }}>
                         Limpiar filtros
                     </Button>
                 </div>
@@ -306,6 +318,19 @@ export default function AdminUsersPage() {
                     ))}
                 </TableBody>
             </Table>
+
+            {/* Paginación */}
+            {totalPages > 1 && (
+                <div className="flex justify-center">
+                    <Pagination
+                        showControls
+                        total={totalPages}
+                        page={page}
+                        onChange={setPage}
+                        size="sm"
+                    />
+                </div>
+            )}
 
             {/* Create User Modal */}
             <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="2xl">

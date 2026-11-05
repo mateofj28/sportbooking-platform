@@ -73,15 +73,13 @@ export default function RegisterPage() {
 
     const onSubmit = async (data: RegisterFormData) => {
         // Validación de DNI único antes de registrar
-        if (data.dni) {
-            const { count } = await supabase
-                .from("profiles")
-                .select("id", { count: "exact", head: true })
-                .eq("dni", data.dni);
-            if ((count ?? 0) > 0) {
-                setDniError("Este DNI ya está registrado en la plataforma");
-                return;
-            }
+        const { count } = await supabase
+            .from("profiles")
+            .select("id", { count: "exact", head: true })
+            .eq("dni", data.dni);
+        if ((count ?? 0) > 0) {
+            setDniError("Este DNI ya está registrado en la plataforma");
+            return;
         }
         setDniError(null);
 
@@ -195,7 +193,7 @@ export default function RegisterPage() {
                             {...register("dni", {
                                 onBlur: (e) => checkDniUnique(e.target.value),
                             })}
-                            label="DNI (opcional)"
+                            label="DNI"
                             placeholder="12345678"
                             type="text"
                             inputMode="numeric"

@@ -32,7 +32,7 @@ export interface RegisterData {
     firstName: string;
     lastName: string;
     phone?: string;
-    dni?: string;
+    dni: string;
 }
 
 // Sport types

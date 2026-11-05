@@ -12,9 +12,9 @@ export const registerSchema = z
         email: z.string().email("Email inválido"),
         dni: z
             .string()
-            .optional()
+            .min(1, "El DNI es requerido")
             .refine(
-                (v) => !v || /^[0-9]{1,15}$/.test(v),
+                (v) => /^[0-9]{1,15}$/.test(v),
                 "El DNI solo puede contener números (máximo 15 dígitos)",
             ),
         password: z.string()

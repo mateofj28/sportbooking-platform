@@ -27,14 +27,28 @@ function FacilitiesContent() {
     const { data: venues, isLoading: venuesLoading } = useVenues();
     const { data: sports } = useSports();
 
+    // Canchas bookeable de TODOS los complejos (para saber qué complejos mostrar).
+    // Sin venueId/sportId para obtener el universo completo.
+    // bookableOnly filtra las que tienen schedule + pricing activos.
+    const { data: allBookableFacilities, isLoading: bookableLoading } = useFacilities({
+        bookableOnly: true,
+    });
+
+    // IDs de complejos que tienen al menos una cancha bookeable
+    const venueIdsWithBookable = useMemo(() => {
+        const ids = new Set<string>();
+        (allBookableFacilities ?? []).forEach((f) => ids.add(f.venueId));
+        return ids;
+    }, [allBookableFacilities]);
+
     const selectedVenue = useMemo(
         () => venues?.find((v) => v.id === venueId),
         [venues, venueId],
     );
 
-    // Complejos filtrados por el buscador (nivel 1)
+    // Complejos filtrados: solo los que tienen canchas bookeable + buscador de texto
     const filteredVenues = useMemo(() => {
-        const list = venues || [];
+        const list = (venues || []).filter((v) => venueIdsWithBookable.has(v.id));
         const q = venueSearch.trim().toLowerCase();
         if (!q) return list;
         return list.filter(
@@ -42,7 +56,7 @@ function FacilitiesContent() {
                 v.name.toLowerCase().includes(q) ||
                 v.city?.toLowerCase().includes(q),
         );
-    }, [venues, venueSearch]);
+    }, [venues, venueSearch, venueIdsWithBookable]);
 
     // Canchas del complejo seleccionado (nivel 2)
     const { data: facilities, isLoading: facilitiesLoading } = useFacilities({
@@ -94,7 +108,7 @@ function FacilitiesContent() {
                         </div>
 
                         <div className="mt-8">
-                            {venuesLoading ? (
+                            {venuesLoading || bookableLoading ? (
                                 <div className="flex justify-center py-12">
                                     <Spinner size="lg" />
                                 </div>
@@ -157,10 +171,10 @@ function FacilitiesContent() {
                                 <div className="py-12 text-center">
                                     <Building2 className="mx-auto h-10 w-10 text-default-200" />
                                     <p className="mt-3 text-lg text-default-500">
-                                        No se encontraron complejos
+                                                {venueSearch ? "No se encontraron complejos" : "No hay complejos disponibles por el momento"}
                                     </p>
                                     <p className="text-sm text-default-400">
-                                        Intenta con otro nombre
+                                                {venueSearch ? "Intenta con otro nombre" : "Vuelve más tarde"}
                                     </p>
                                 </div>
                             )}

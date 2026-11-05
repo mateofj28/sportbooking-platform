@@ -39,9 +39,25 @@ export function useFacilities(filters: FacilityFilters = {}) {
             const { data, error } = await query
             if (error) throw new Error(error.message)
 
-            return (data ?? []).map((f) => camelize(f as unknown as FacilityRow) as unknown as Facility)
+            let facilities = (data ?? []).map((f) => camelize(f as unknown as FacilityRow) as unknown as Facility)
+
+            // bookableOnly: filtrar en cliente las canchas sin horarios ni tarifas.
+            // Supabase-first: los datos de schedules y pricing ya vienen embebidos
+            // en el SELECT — no necesitamos una query extra. Simplemente descartamos
+            // las canchas que no tengan al menos un schedule activo Y al menos una
+            // tarifa activa. Esto es consistente con la RPC is_facility_bookable()
+            // desplegada en la DB (misma lógica).
+            if (filters.bookableOnly) {
+                facilities = facilities.filter((f) => {
+                    const hasActiveSchedule = (f.schedules ?? []).some((s) => s.isActive)
+                    const hasActivePricing = (f.pricing ?? []).some((p) => p.isActive)
+                    return hasActiveSchedule && hasActivePricing
+                })
+            }
+
+            return facilities
         },
-        staleTime: 10 * 60 * 1000,  // 10 minutos — las canchas (precios, horarios) cambian poco
+        staleTime: 10 * 60 * 1000,
     })
 }
 

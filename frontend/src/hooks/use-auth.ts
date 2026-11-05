@@ -47,6 +47,7 @@ export function useAuth() {
                         first_name: data.firstName,
                         last_name: data.lastName,
                         phone: data.phone,
+                        dni: data.dni || null,
                     },
                 },
             })
@@ -54,7 +55,7 @@ export function useAuth() {
             if (!result.user) throw new Error('No se pudo crear el usuario')
             return result
         },
-  })
+    })
 
     // ---- LOGOUT ----
     const logout = async () => {

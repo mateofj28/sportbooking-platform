@@ -10,6 +10,13 @@ export const registerSchema = z
         firstName: z.string().min(2, "Mínimo 2 caracteres"),
         lastName: z.string().min(2, "Mínimo 2 caracteres"),
         email: z.string().email("Email inválido"),
+        dni: z
+            .string()
+            .optional()
+            .refine(
+                (v) => !v || /^[0-9]{1,15}$/.test(v),
+                "El DNI solo puede contener números (máximo 15 dígitos)",
+            ),
         password: z.string()
             .min(8, "Mínimo 8 caracteres")
             .regex(/[A-Z]/, "Debe tener al menos una mayúscula")

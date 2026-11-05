@@ -9,12 +9,13 @@ import {
 } from "@/lib/validations/auth.schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
-import { Trophy, Mail, Lock, User, Phone, ArrowRight, CheckCircle2, Eye, EyeOff, Globe } from "lucide-react";
+import { Trophy, Mail, Lock, User, Phone, ArrowRight, CheckCircle2, Eye, EyeOff, CreditCard } from "lucide-react";
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 const COUNTRY_CODES = [
-    { code: "+57", country: "CO", flag: "🇨🇴" },
     { code: "+54", country: "AR", flag: "🇦🇷" },
+    { code: "+57", country: "CO", flag: "🇨🇴" },
     { code: "+56", country: "CL", flag: "🇨🇱" },
     { code: "+52", country: "MX", flag: "🇲🇽" },
     { code: "+51", country: "PE", flag: "🇵🇪" },
@@ -33,37 +34,67 @@ export default function RegisterPage() {
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [countryCode, setCountryCode] = useState("+57");
+    const [countryCode, setCountryCode] = useState("+54"); // Argentina por defecto
     const [showCodes, setShowCodes] = useState(false);
     const [acceptedTerms, setAcceptedTerms] = useState(false);
+    const [dniError, setDniError] = useState<string | null>(null);
+    const [dniChecking, setDniChecking] = useState(false);
 
     const {
         register,
         handleSubmit,
-      watch,
-      formState: { errors },
-  } = useForm<RegisterFormData>({
-      resolver: zodResolver(registerSchema),
-      mode: "onChange",
-  });
+        watch,
+        formState: { errors },
+    } = useForm<RegisterFormData>({
+        resolver: zodResolver(registerSchema),
+        mode: "onChange",
+    });
 
     const password = watch("password");
     const confirmPassword = watch("confirmPassword");
+    const dniValue = watch("dni");
     const passwordsMatch = password && confirmPassword && password === confirmPassword;
     const passwordsDontMatch = password && confirmPassword && password !== confirmPassword;
 
-    const onSubmit = (data: RegisterFormData) => {
-        const { confirmPassword, ...registerData } = data;
-      if (registerData.phone) {
-          registerData.phone = `${countryCode} ${registerData.phone}`;
-      }
+    /** Verifica en tiempo real si el DNI ya existe en profiles */
+    const checkDniUnique = async (dni: string) => {
+        if (!dni || !/^[0-9]{1,15}$/.test(dni)) return;
+        setDniChecking(true);
+        setDniError(null);
+        const { count } = await supabase
+            .from("profiles")
+            .select("id", { count: "exact", head: true })
+            .eq("dni", dni);
+        setDniChecking(false);
+        if ((count ?? 0) > 0) {
+            setDniError("Este DNI ya está registrado en la plataforma");
+        }
+    };
+
+    const onSubmit = async (data: RegisterFormData) => {
+        // Validación de DNI único antes de registrar
+        if (data.dni) {
+            const { count } = await supabase
+                .from("profiles")
+                .select("id", { count: "exact", head: true })
+                .eq("dni", data.dni);
+            if ((count ?? 0) > 0) {
+                setDniError("Este DNI ya está registrado en la plataforma");
+                return;
+            }
+        }
+        setDniError(null);
+
+        const { confirmPassword: _, ...registerData } = data;
+        if (registerData.phone) {
+            registerData.phone = `${countryCode} ${registerData.phone}`;
+        }
         registerMutation.mutate(registerData, {
             onSuccess: () => {
-                // Los nuevos usuarios siempre son CLIENT al registrarse
                 router.push("/inicio");
             },
         });
-  };
+    };
 
     const selectedCountry = COUNTRY_CODES.find((c) => c.code === countryCode);
 
@@ -158,6 +189,26 @@ export default function RegisterPage() {
                           errorMessage={errors.email?.message}
                           classNames={{ inputWrapper: "bg-default-50" }}
                       />
+
+                        {/* DNI */}
+                        <Input
+                            {...register("dni", {
+                                onBlur: (e) => checkDniUnique(e.target.value),
+                            })}
+                            label="DNI (opcional)"
+                            placeholder="12345678"
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={15}
+                            variant="bordered"
+                            startContent={<CreditCard className="h-4 w-4 text-default-400" />}
+                            isInvalid={!!errors.dni || !!dniError}
+                            errorMessage={errors.dni?.message || dniError || undefined}
+                            isDisabled={dniChecking}
+                            description={dniChecking ? "Verificando DNI..." : undefined}
+                            classNames={{ inputWrapper: "bg-default-50" }}
+                            onKeyPress={(e) => { if (!/[0-9]/.test(e.key)) e.preventDefault(); }}
+                        />
 
                       {/* Phone with country code selector */}
                       <div className="relative">

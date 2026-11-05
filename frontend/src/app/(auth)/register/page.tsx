@@ -183,26 +183,8 @@ export default function RegisterPage() {
                                 </div>
                             </div>
 
-                            <Button
-                                as={Link}
-                                href="/login"
-                                color="primary"
-                                size="lg"
-                                className="w-full font-semibold"
-                                endContent={<ArrowRight className="h-4 w-4" />}
-                            >
-                                Ir a Iniciar Sesión
-                            </Button>
-
-                            <p className="text-xs text-default-400">
-                                ¿No recibiste el correo?{" "}
-                                <button
-                                    type="button"
-                                    className="text-primary hover:underline font-medium"
-                                    onClick={() => setRegistered(false)}
-                                >
-                                    Volver al registro
-                                </button>
+                            <p className="text-sm text-default-400 font-medium">
+                                Ya podés cerrar esta pestaña.
                             </p>
                         </div>
                     ) : (

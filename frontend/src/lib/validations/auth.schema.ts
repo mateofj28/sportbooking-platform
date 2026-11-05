@@ -26,10 +26,9 @@ export const registerSchema = z
             .string()
             .optional()
             .refine(
-                (v) => !v || /^[\d\s\-]{6,15}$/.test(v.replace(/\s/g, "").replace(/-/g, "")),
-                "El teléfono debe tener entre 6 y 15 dígitos",
-            )
-            .transform((v) => v?.trim() || undefined),
+                (v) => !v || /^[\d\s\-]+$/.test(v),
+                "El teléfono solo puede contener números",
+            ),
     })
     .refine((data) => data.password === data.confirmPassword, {
         message: "Las contraseñas no coinciden",

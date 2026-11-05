@@ -113,6 +113,7 @@ export default function AdminVenuesPage() {
       if (error) throw new Error(error.message);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onClose(); addToast("Complejo creado correctamente"); },
+    onError: (error: any) => { addToast(error?.message || "No se pudo crear el complejo"); },
   });
   const editMutation = useMutation({
     mutationFn: async (data: typeof editForm) => {
@@ -129,6 +130,7 @@ export default function AdminVenuesPage() {
       if (error) throw new Error(error.message);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onEditClose(); addToast("Complejo actualizado"); },
+    onError: (error: any) => { addToast(error?.message || "No se pudo actualizar el complejo"); },
   });
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -210,7 +212,7 @@ export default function AdminVenuesPage() {
         </TableBody>
       </Table>
 
-      <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+      <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside" placement="center">
         <ModalContent>
           <ModalHeader>Nuevo Complejo</ModalHeader>
           <ModalBody className="gap-4">
@@ -271,7 +273,7 @@ export default function AdminVenuesPage() {
         </ModalContent>
       </Modal>
 
-      <Modal isOpen={isEditOpen} onClose={onEditClose} size="2xl">
+      <Modal isOpen={isEditOpen} onClose={onEditClose} size="2xl" scrollBehavior="inside" placement="center">
         <ModalContent>
           <ModalHeader>Editar Complejo</ModalHeader>
           <ModalBody className="gap-4">

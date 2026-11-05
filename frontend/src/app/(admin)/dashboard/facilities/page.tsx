@@ -165,6 +165,9 @@ export default function AdminFacilitiesPage() {
             onClose();
             addToast("Item creado correctamente");
         },
+        onError: (error: any) => {
+            addToast(error?.message || "No se pudo crear la instalación");
+        },
     });
 
     const deleteMutation = useMutation({
@@ -483,7 +486,7 @@ export default function AdminFacilitiesPage() {
                 </TableBody>
             </Table>
 
-            <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+            <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside" placement="center">
                 <ModalContent>
                     <ModalHeader>Nueva Instalación</ModalHeader>
                     <ModalBody className="gap-4">
@@ -605,7 +608,7 @@ export default function AdminFacilitiesPage() {
                 </ModalContent>
             </Modal>
 
-            <Modal isOpen={isEditOpen} onClose={onEditClose} size="2xl">
+            <Modal isOpen={isEditOpen} onClose={onEditClose} size="2xl" scrollBehavior="inside" placement="center">
                 <ModalContent>
                     <ModalHeader>Editar Instalación</ModalHeader>
                     <ModalBody className="gap-4">
@@ -676,7 +679,7 @@ export default function AdminFacilitiesPage() {
             </Modal>
 
             {/* Modal: editar información del complejo (venue admin) */}
-            <Modal isOpen={isVenueOpen} onClose={onVenueClose} size="2xl">
+            <Modal isOpen={isVenueOpen} onClose={onVenueClose} size="2xl" scrollBehavior="inside" placement="center">
                 <ModalContent>
                     <ModalHeader>Editar complejo</ModalHeader>
                     <ModalBody className="gap-4">

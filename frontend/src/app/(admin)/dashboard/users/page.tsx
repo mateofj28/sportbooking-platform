@@ -9,11 +9,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize, invokeFunction, Tables } from "@/lib/supabase-helpers";
 import { useVenues } from "@/hooks/use-venues";
-import { UserX, UserCheck, Pencil, Plus, Search } from "lucide-react";
+import { UserX, UserCheck, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
-import type { User, PaginatedResult, Venue } from "@/types";
+import type { User, Venue } from "@/types";
 
 const ROLE_COLORS: Record<string, "secondary" | "warning" | "default"> = {
     ADMIN: "secondary",
@@ -37,6 +37,13 @@ export default function AdminUsersPage() {
     const [editUser, setEditUser] = useState<User | null>(null);
     const [editRole, setEditRole] = useState("");
     const [editVenueId, setEditVenueId] = useState("");
+    const [editForm, setEditForm] = useState({
+        firstName: "",
+        lastName: "",
+        dni: "",
+        phone: "",
+    });
+    const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
 
     // Create form state
     const [createForm, setCreateForm] = useState({
@@ -161,17 +168,71 @@ export default function AdminUsersPage() {
         },
     });
 
+    const updateProfileMutation = useMutation({
+        mutationFn: async ({ id, firstName, lastName, dni, phone, role, venueId }: {
+            id: string; firstName: string; lastName: string; dni: string; phone: string; role: string; venueId?: string;
+        }) => {
+            const { error } = await supabase.from("profiles").update({
+                first_name: firstName,
+                last_name: lastName,
+                dni: dni || null,
+                phone: phone || null,
+                role: role as any,
+                venue_id: venueId || null,
+            }).eq("id", id);
+            if (error) throw new Error(error.message);
+            // Sincronizar rol en app_metadata del JWT
+            const { error: fnErr } = await invokeFunction('admin-set-role', { user_id: id, role, venue_id: venueId || null });
+            if (fnErr) console.warn("set_user_role:", fnErr);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+            onClose();
+            addToast("Usuario actualizado correctamente");
+        },
+        onError: (error: any) => {
+            addToast(error?.message || "Error al actualizar el usuario");
+        },
+    });
+
+    const deleteUserMutation = useMutation({
+        mutationFn: async (id: string) => {
+            // Eliminar perfil (CASCADE elimina el usuario de auth.users si está configurado)
+            const { error } = await supabase.from("profiles").delete().eq("id", id);
+            if (error) throw new Error(error.message);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+            setDeleteUserId(null);
+            onClose();
+            addToast("Usuario eliminado del sistema");
+        },
+        onError: (error: any) => {
+            addToast(error?.message || "Error al eliminar el usuario");
+        },
+    });
+
     const handleEditRole = (user: User) => {
         setEditUser(user);
         setEditRole(user.role);
         setEditVenueId(user.venueId || "");
+        setEditForm({
+            firstName: user.firstName || "",
+            lastName: user.lastName || "",
+            dni: user.dni || "",
+            phone: user.phone || "",
+        });
         onOpen();
     };
 
-    const handleSaveRole = () => {
+    const handleSaveEdit = () => {
         if (!editUser) return;
-        updateRoleMutation.mutate({
+        updateProfileMutation.mutate({
             id: editUser.id,
+            firstName: editForm.firstName,
+            lastName: editForm.lastName,
+            dni: editForm.dni,
+            phone: editForm.phone,
             role: editRole,
             venueId: editRole === "VENUE_ADMIN" ? editVenueId : undefined,
         });
@@ -267,6 +328,7 @@ export default function AdminUsersPage() {
                     <TableColumn>NOMBRE</TableColumn>
                     <TableColumn>DNI</TableColumn>
                     <TableColumn>EMAIL</TableColumn>
+                    <TableColumn>TELÉFONO</TableColumn>
                     <TableColumn>ROL</TableColumn>
                     <TableColumn>COMPLEJO</TableColumn>
                     <TableColumn>ESTADO</TableColumn>
@@ -278,6 +340,7 @@ export default function AdminUsersPage() {
                             <TableCell className="font-medium">{user.firstName} {user.lastName}</TableCell>
                             <TableCell className="text-sm text-default-500">{user.dni || "—"}</TableCell>
                             <TableCell className="text-sm text-default-500">{user.email}</TableCell>
+                            <TableCell className="text-sm text-default-500">{user.phone || "—"}</TableCell>
                             <TableCell>
                                 <Chip color={ROLE_COLORS[user.role] || "default"} size="sm" variant="flat">
                                     {ROLE_LABELS[user.role] || user.role}
@@ -299,16 +362,16 @@ export default function AdminUsersPage() {
                             </TableCell>
                             <TableCell>
                                 <div className="flex gap-1">
-                                    <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEditRole(user)}>
+                                    <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEditRole(user)} title="Editar">
                                         <Pencil className="h-4 w-4" />
                                     </Button>
                                     {user.isActive && user.role !== "ADMIN" && (
-                                        <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(user.id)}>
+                                        <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(user.id)} title="Desactivar">
                                             <UserX className="h-4 w-4" />
                                         </Button>
                                     )}
                                     {!user.isActive && (
-                                        <Button size="sm" color="success" variant="light" isIconOnly onPress={() => setReactivateId(user.id)}>
+                                        <Button size="sm" color="success" variant="light" isIconOnly onPress={() => setReactivateId(user.id)} title="Reactivar">
                                             <UserCheck className="h-4 w-4" />
                                         </Button>
                                     )}
@@ -387,17 +450,56 @@ export default function AdminUsersPage() {
                 </ModalContent>
             </Modal>
 
-            {/* Edit Role Modal */}
-            <Modal isOpen={isOpen} onClose={onClose}>
+            {/* Edit User Modal */}
+            <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside" placement="center">
                 <ModalContent>
-                    <ModalHeader>Editar Rol de Usuario</ModalHeader>
+                    <ModalHeader className="flex items-center justify-between pr-10">
+                        <span>Editar Usuario</span>
+                    </ModalHeader>
                     <ModalBody className="gap-4">
                         {editUser && (
-                            <div className="rounded-lg bg-default-50 p-3 mb-2">
-                                <p className="font-semibold text-sm">{editUser.firstName} {editUser.lastName}</p>
-                                <p className="text-xs text-default-500">{editUser.email}</p>
+                            <div className="rounded-lg bg-default-50 px-4 py-3 text-sm">
+                                <p className="font-semibold">{editUser.firstName} {editUser.lastName}</p>
+                                <p className="text-default-500 text-xs mt-0.5">{editUser.email}</p>
                             </div>
                         )}
+
+                        {/* Datos personales */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <Input
+                                label="Nombre"
+                                variant="bordered"
+                                value={editForm.firstName}
+                                onValueChange={(v) => setEditForm({ ...editForm, firstName: v })}
+                                isRequired
+                            />
+                            <Input
+                                label="Apellido"
+                                variant="bordered"
+                                value={editForm.lastName}
+                                onValueChange={(v) => setEditForm({ ...editForm, lastName: v })}
+                                isRequired
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Input
+                                label="DNI"
+                                variant="bordered"
+                                value={editForm.dni}
+                                onValueChange={(v) => setEditForm({ ...editForm, dni: v.replace(/\D/g, "").slice(0, 15) })}
+                                inputMode="numeric"
+                                maxLength={15}
+                            />
+                            <Input
+                                label="Teléfono"
+                                variant="bordered"
+                                value={editForm.phone}
+                                onValueChange={(v) => setEditForm({ ...editForm, phone: v.replace(/[^\d\s\-]/g, "").slice(0, 19) })}
+                                inputMode="numeric"
+                            />
+                        </div>
+
+                        {/* Rol */}
                         <Select
                             label="Rol"
                             variant="bordered"
@@ -422,20 +524,50 @@ export default function AdminUsersPage() {
                                 ))}
                             </Select>
                         )}
+
+                        {/* Zona peligrosa */}
+                        {editUser?.role !== "ADMIN" && (
+                            <div className="rounded-lg border border-danger-200 bg-danger-50 dark:bg-danger-500/10 px-4 py-3">
+                                <p className="text-sm font-semibold text-danger mb-1">Zona peligrosa</p>
+                                <p className="text-xs text-danger/70 mb-3">
+                                    Eliminar el usuario borra permanentemente su cuenta y todos sus datos. Esta acción no se puede deshacer.
+                                </p>
+                                <Button
+                                    size="sm"
+                                    color="danger"
+                                    variant="flat"
+                                    startContent={<Trash2 className="h-3.5 w-3.5" />}
+                                    onPress={() => setDeleteUserId(editUser!.id)}
+                                    isLoading={deleteUserMutation.isPending}
+                                >
+                                    Eliminar usuario
+                                </Button>
+                            </div>
+                        )}
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="light" onPress={onClose}>Cancelar</Button>
                         <Button
                             color="primary"
-                            onPress={handleSaveRole}
-                            isLoading={updateRoleMutation.isPending}
-                            isDisabled={editRole === "VENUE_ADMIN" && !editVenueId}
+                            onPress={handleSaveEdit}
+                            isLoading={updateProfileMutation.isPending}
+                            isDisabled={!editForm.firstName || !editForm.lastName || (editRole === "VENUE_ADMIN" && !editVenueId)}
                         >
-                            Guardar
+                            Guardar cambios
                         </Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
+
+            {/* Confirm delete user */}
+            <ConfirmModal
+                isOpen={!!deleteUserId}
+                onClose={() => setDeleteUserId(null)}
+                onConfirm={() => { deleteUserMutation.mutate(deleteUserId!); }}
+                title="Eliminar usuario"
+                message="¿Estás seguro? Esta acción eliminará permanentemente la cuenta y no se puede deshacer."
+                confirmLabel="Eliminar"
+            />
 
             {/* Deactivate Confirm */}
             <ConfirmModal

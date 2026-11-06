@@ -4,26 +4,22 @@
 // providers/auth-hydration.tsx
 // Sincroniza el AuthStore con la sesión de Supabase Auth.
 //
-// Problema conocido: cuando un admin asigna el rol VENUE_ADMIN
-// o ADMIN a un usuario via admin-set-role, el JWT del usuario
-// todavía tiene el rol viejo hasta que su sesión se refresca.
-// mapSupabaseUser lee el rol desde app_metadata del JWT, así
-// que si el JWT dice CLIENT pero profiles dice VENUE_ADMIN,
-// el usuario ve la vista de cliente en vez del dashboard.
-//
-// Solución: al recibir INITIAL_SESSION, comparar el rol del JWT
-// con el de profiles. Si difieren → refrescar la sesión con
-// supabase.auth.refreshSession(), lo que emite TOKEN_REFRESHED
-// con el JWT actualizado que incluye el rol correcto.
+// Fix MaxListenersExceededWarning:
+// Se usa un ref para garantizar que la verificación de rol
+// contra profiles ocurra una sola vez por montaje, evitando
+// que múltiples ciclos de onAuthStateChange acumulen listeners
+// en el EventEmitter interno de @supabase/supabase-js.
 // ============================================================
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth-store'
 
 export function AuthHydration({ children }: { children: React.ReactNode }) {
     const setSession = useAuthStore((s) => s._setSession)
     const setHydrated = useAuthStore((s) => s._setHydrated)
+    // Evitar múltiples verificaciones de rol simultáneas (causa MaxListeners warning)
+    const roleCheckDone = useRef(false)
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -31,39 +27,42 @@ export function AuthHydration({ children }: { children: React.ReactNode }) {
                 setSession(session)
 
                 if (event === 'INITIAL_SESSION') {
-                    // Si hay sesión activa, verificar que el rol del JWT
-                    // coincida con el de profiles (puede diferir si el admin
-                    // cambió el rol sin que el usuario cerrara sesión).
-                    if (session?.user) {
+                    if (session?.user && !roleCheckDone.current) {
+                        roleCheckDone.current = true
                         const jwtRole = session.user.app_metadata?.role ?? 'CLIENT'
 
-                        const { data: profile } = await supabase
-                            .from('profiles')
-                            .select('role')
-                            .eq('id', session.user.id)
-                            .single()
+                        try {
+                            const { data: profile } = await supabase
+                                .from('profiles')
+                                .select('role')
+                                .eq('id', session.user.id)
+                                .single()
 
-                        const profileRole = profile?.role ?? 'CLIENT'
+                            const profileRole = profile?.role ?? 'CLIENT'
 
-                        if (profileRole !== jwtRole) {
-                            // Roles desincronizados → refrescar para obtener JWT actualizado.
-                            // refreshSession() dispara TOKEN_REFRESHED con el nuevo token.
-                            await supabase.auth.refreshSession()
-                            // setHydrated se llama abajo después del refresh (en TOKEN_REFRESHED)
-                            return
+                            if (profileRole !== jwtRole) {
+                                // Roles desincronizados — refrescar JWT una sola vez
+                                await supabase.auth.refreshSession()
+                                // setHydrated se llama en TOKEN_REFRESHED
+                                return
+                            }
+                        } catch {
+                        // Si falla la consulta, continuar con el rol del JWT
                         }
                     }
                     setHydrated()
                 }
 
                 if (event === 'TOKEN_REFRESHED') {
-                // El refresh completó — el nuevo JWT ya tiene el rol correcto.
                     setHydrated()
                 }
             }
         )
 
-        return () => subscription.unsubscribe()
+        return () => {
+            subscription.unsubscribe()
+            roleCheckDone.current = false
+        }
     }, [setSession, setHydrated])
 
     return <>{children}</>

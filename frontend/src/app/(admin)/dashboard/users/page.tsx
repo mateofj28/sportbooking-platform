@@ -208,8 +208,10 @@ export default function AdminUsersPage() {
 
     const deleteUserMutation = useMutation({
         mutationFn: async (id: string) => {
-            const { error } = await supabase.from("profiles").delete().eq("id", id);
-            if (error) throw new Error(error.message);
+            // Usar Edge Function que elimina de auth.users con service_role.
+            // La eliminación en auth.users propaga en cascada a profiles.
+            const { error } = await invokeFunction('admin-delete-user', { user_id: id });
+            if (error) throw new Error(error);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["admin-users"] });

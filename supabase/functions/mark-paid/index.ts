@@ -2,7 +2,7 @@
 // Marca una reserva como pagada. Idempotente si ya está PAID.
 
 import { createAdminClient, ok, err } from '../_shared/db.ts'
-import { createBrowserClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { notifyBookingPaid } from '../_shared/notifications.ts'
 
 Deno.serve(async (req) => {
@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return err('No autorizado', 401)
 
-    const userClient = createBrowserClient(
+    const userClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_PUBLISHABLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY')!,
       { global: { headers: { Authorization: authHeader } } }

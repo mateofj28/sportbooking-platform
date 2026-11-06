@@ -2,7 +2,7 @@
 // Crea un turno fijo (8 ocurrencias semanales). PENDING hasta que el cliente pague.
 
 import { createAdminClient, ok, err } from '../_shared/db.ts'
-import { createBrowserClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { sendBookingConfirmation } from '../_shared/email.ts'
 import { notifyRecurringCreated } from '../_shared/notifications.ts'
 import { arMidnightUtc } from '../_shared/ar-time.ts'
@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return err('No autorizado', 401)
 
-    const userClient = createBrowserClient(
+    const userClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_PUBLISHABLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY')!,
       { global: { headers: { Authorization: authHeader } } }

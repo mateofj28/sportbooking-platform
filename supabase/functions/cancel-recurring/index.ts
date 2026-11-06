@@ -2,14 +2,14 @@
 // Cancela todas las reservas futuras de un turno fijo y lo desactiva.
 
 import { createAdminClient, ok, err } from '../_shared/db.ts'
-import { createBrowserClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return err('No autorizado', 401)
 
-    const userClient = createBrowserClient(
+    const userClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_PUBLISHABLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY')!,
       { global: { headers: { Authorization: authHeader } } }

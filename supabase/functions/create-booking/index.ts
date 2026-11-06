@@ -5,7 +5,7 @@
 // ============================================================
 
 import { createAdminClient, ok, err } from '../_shared/db.ts'
-import { createBrowserClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { bookingToEmailData, sendBookingConfirmation } from '../_shared/email.ts'
 import { notifyBookingCreated } from '../_shared/notifications.ts'
 
@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseAnonKey = Deno.env.get('SUPABASE_PUBLISHABLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY')!
-    const userClient = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     })
     const { data: { user }, error: authError } = await userClient.auth.getUser()

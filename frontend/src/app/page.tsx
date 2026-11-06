@@ -223,16 +223,17 @@ export default function HomePage() {
                 </section>
 
                 {/* ===== CTA FOR OWNERS ===== */}
-                <section className="px-6 py-20 bg-background">
+                <section className="px-6 py-20 bg-default-50 dark:bg-[#0d0d14]">
                     <div className="mx-auto max-w-4xl">
-                        <Card className="overflow-hidden border border-divider bg-gradient-to-br from-primary-600 to-secondary-700">
+                        <Card className="overflow-hidden border-0 bg-gradient-to-br from-primary-500 via-secondary-500 to-violet-600 dark:from-blue-700 dark:via-indigo-700 dark:to-violet-800 shadow-2xl dark:shadow-indigo-950/50">
                             <CardBody className="relative p-10 md:p-14">
-                                <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-white/5 blur-2xl" />
+                                <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
+                                <div className="absolute bottom-0 left-0 h-48 w-48 rounded-full bg-white/5 blur-2xl" />
                                 <div className="relative z-10 max-w-lg">
                                     <h2 className="text-2xl font-bold text-white md:text-3xl">
                                         ¿Tienes un complejo deportivo?
                                     </h2>
-                                    <p className="mt-4 text-white/70 leading-relaxed">
+                                    <p className="mt-4 text-white/80 leading-relaxed">
                                         Digitaliza tu negocio. Recibe reservas online 24/7, reduce cancelaciones
                                         y aumenta la ocupación de tus canchas con nuestro panel de gestión.
                                     </p>
@@ -242,7 +243,7 @@ export default function HomePage() {
                                             href="/register"
                                             size="lg"
                                             radius="full"
-                                            className="font-semibold bg-white text-primary-600 hover:bg-white/90"
+                                            className="font-semibold bg-white text-primary-700 hover:bg-white/90"
                                         >
                                             Registra tu complejo
                                         </Button>
@@ -252,7 +253,7 @@ export default function HomePage() {
                                             variant="bordered"
                                             size="lg"
                                             radius="full"
-                                            className="font-semibold border-white/40 text-white hover:bg-white/10"
+                                            className="font-semibold border-white/50 text-white hover:bg-white/10"
                                         >
                                             Ver demo
                                         </Button>

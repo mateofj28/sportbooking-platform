@@ -156,7 +156,7 @@ export default function StatisticsPage() {
     const activeCount = t ? t.total - t.cancelled : 0;
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6 animate-fade-in min-w-0">
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold">Estadísticas</h1>
@@ -333,12 +333,12 @@ export default function StatisticsPage() {
 
             {/* Charts */}
             <div className="grid gap-6 md:grid-cols-2">
-                <BookingStatusDonut byStatus={stats.byStatus} />
-                <BookingsByDayBar byWeekday={stats.byWeekday} />
+                    <div className="min-w-0 overflow-hidden"><BookingStatusDonut byStatus={stats.byStatus} /></div>
+                    <div className="min-w-0 overflow-hidden"><BookingsByDayBar byWeekday={stats.byWeekday} /></div>
             </div>
             <div className="grid gap-6 md:grid-cols-2">
-                <RevenueAreaChart byDay={stats.byDay} />
-                <SportRevenueBar bySport={stats.bySport} />
+                    <div className="min-w-0 overflow-hidden"><RevenueAreaChart byDay={stats.byDay} /></div>
+                    <div className="min-w-0 overflow-hidden"><SportRevenueBar bySport={stats.bySport} /></div>
             </div>
 
             {/* Detailed Breakdown */}

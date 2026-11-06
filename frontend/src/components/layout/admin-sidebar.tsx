@@ -131,9 +131,9 @@ export function AdminSidebar() {
             )}
 
             {/* Desktop sidebar */}
-            <aside className="fixed top-[65px] left-0 hidden h-[calc(100vh-65px)] w-64 flex-shrink-0 border-r border-divider bg-content1 p-4 lg:block overflow-y-auto scrollbar-hide">
+            <aside className="hidden lg:block sticky top-0 h-full w-64 flex-shrink-0 border-r border-divider bg-content1 p-4 overflow-y-auto scrollbar-hide">
                 <SidebarContent />
-          </aside>
+            </aside>
       </>
   );
 }

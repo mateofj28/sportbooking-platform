@@ -34,11 +34,11 @@ export default function DashboardLayout({
     }
 
     return (
-        <div className="flex min-h-screen flex-col">
+        <div className="h-screen overflow-hidden flex flex-col">
             <Navbar />
-            <div className="flex flex-1">
+            <div className="flex flex-1 overflow-hidden">
                 <AdminSidebar />
-                <main className="flex-1 overflow-y-auto overflow-x-hidden bg-default-50 p-6 lg:p-8 lg:ml-64">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden bg-default-50 p-6 lg:p-8">
                     {children}
                 </main>
             </div>

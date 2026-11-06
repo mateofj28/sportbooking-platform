@@ -93,7 +93,21 @@ export default function StatisticsPage() {
                 ...(statusFilter !== "ALL" ? { p_status: statusFilter } : {}),
             });
             if (error) throw new Error(error);
-            return data as StatsResponse;
+            // Normalizar campos que pueden venir null de la RPC
+            const raw = data as any;
+            return {
+                totals: raw?.totals ?? {
+                    total: 0, totalAll: 0, confirmed: 0, cancelled: 0, completed: 0,
+                    pending: 0, totalRevenue: 0, totalCommission: 0, totalBase: 0,
+                    occupancyRate: 0, avgPrice: 0, uniqueClients: 0,
+                },
+                byStatus: raw?.byStatus ?? { PENDING: 0, CONFIRMED: 0, CANCELLED: 0, COMPLETED: 0 },
+                byWeekday: Array.isArray(raw?.byWeekday) ? raw.byWeekday : [0, 0, 0, 0, 0, 0, 0],
+                byDay: Array.isArray(raw?.byDay) ? raw.byDay : [],
+                bySport: Array.isArray(raw?.bySport) ? raw.bySport : [],
+                byVenue: Array.isArray(raw?.byVenue) ? raw.byVenue : [],
+                recentClients: Array.isArray(raw?.recentClients) ? raw.recentClients : [],
+            } as StatsResponse;
         },
         enabled: customReady,
     });

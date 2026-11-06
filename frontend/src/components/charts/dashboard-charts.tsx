@@ -133,7 +133,8 @@ export function BookingStatusDonut({ byStatus }: { byStatus: StatsByStatus }) {
 
 export function BookingsByDayBar({ byWeekday }: { byWeekday: number[] }) {
     const colors = useChartColors();
-    const data = DAY_NAMES.map((name, i) => ({ name, reservas: byWeekday[i] ?? 0 }));
+    const safeWeekday = Array.isArray(byWeekday) ? byWeekday : [];
+    const data = DAY_NAMES.map((name, i) => ({ name, reservas: safeWeekday[i] ?? 0 }));
 
     return (
         <Card>
@@ -169,8 +170,8 @@ export function BookingsByDayBar({ byWeekday }: { byWeekday: number[] }) {
 
 export function RevenueAreaChart({ byDay }: { byDay: StatsByDay[] }) {
     const colors = useChartColors();
-    // Últimos 7 días (en hora local), tomando el revenue de byDay si existe.
-    const revenueByDate = new Map(byDay.map((d) => [d.date, d.revenue]));
+    const safeByDay = Array.isArray(byDay) ? byDay : [];
+    const revenueByDate = new Map(safeByDay.map((d) => [d.date, d.revenue]));
     const today = new Date();
     const last7 = Array.from({ length: 7 }, (_, i) => {
         const d = new Date(today);

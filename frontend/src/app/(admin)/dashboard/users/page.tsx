@@ -208,7 +208,6 @@ export default function AdminUsersPage() {
 
     const deleteUserMutation = useMutation({
         mutationFn: async (id: string) => {
-            // Eliminar perfil (CASCADE elimina el usuario de auth.users si está configurado)
             const { error } = await supabase.from("profiles").delete().eq("id", id);
             if (error) throw new Error(error.message);
         },
@@ -219,6 +218,7 @@ export default function AdminUsersPage() {
             addToast("Usuario eliminado del sistema");
         },
         onError: (error: any) => {
+            setDeleteUserId(null);
             addToast(error?.message || "Error al eliminar el usuario");
         },
     });

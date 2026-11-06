@@ -590,8 +590,8 @@ export default function AdminUsersPage() {
                 onClose={() => setDeleteUserId(null)}
                 onConfirm={() => { deleteUserMutation.mutate(deleteUserId!); }}
                 title="Eliminar usuario"
-                message="¿Estás seguro? Esta acción eliminará permanentemente la cuenta y no se puede deshacer."
-                confirmLabel="Eliminar"
+                message={`¿Estás seguro que querés eliminar a ${editUser?.firstName} ${editUser?.lastName}? Esta acción borrará permanentemente su cuenta y todos sus datos. No se puede deshacer.`}
+                confirmLabel="Sí, eliminar"
             />
 
             {/* Deactivate Confirm */}

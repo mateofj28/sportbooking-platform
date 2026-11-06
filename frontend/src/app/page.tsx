@@ -243,7 +243,7 @@ export default function HomePage() {
                                             href="/register"
                                             size="lg"
                                             radius="full"
-                                            className="font-semibold bg-white text-primary-700 hover:bg-white/90"
+                                            className="font-semibold bg-white text-indigo-700 hover:bg-white/90 shadow-md"
                                         >
                                             Registra tu complejo
                                         </Button>

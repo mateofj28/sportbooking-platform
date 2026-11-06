@@ -4,22 +4,17 @@
 // providers/auth-hydration.tsx
 // Sincroniza el AuthStore con la sesión de Supabase Auth.
 //
-// Buena práctica Supabase: usar SOLO onAuthStateChange.
-// El evento INITIAL_SESSION ya incluye la sesión inicial,
-// por lo que NO hay que llamar getSession() por separado.
+// Problema conocido: cuando un admin asigna el rol VENUE_ADMIN
+// o ADMIN a un usuario via admin-set-role, el JWT del usuario
+// todavía tiene el rol viejo hasta que su sesión se refresca.
+// mapSupabaseUser lee el rol desde app_metadata del JWT, así
+// que si el JWT dice CLIENT pero profiles dice VENUE_ADMIN,
+// el usuario ve la vista de cliente en vez del dashboard.
 //
-// El anti-patrón anterior era:
-//   getSession().then(setSession)        ← round-trip extra
-//   + onAuthStateChange(setSession)      ← puede correr antes que getSession
-// Eso crea una condición de carrera: onAuthStateChange puede disparar
-// SIGNED_IN antes de que getSession resuelva, dejando el store en
-// estado inconsistente durante el SSR/hydration.
-//
-// Con INITIAL_SESSION, onAuthStateChange maneja todos los casos:
-//   INITIAL_SESSION  → carga inicial (reemplaza getSession)
-//   SIGNED_IN        → login
-//   SIGNED_OUT       → logout / otra pestaña
-//   TOKEN_REFRESHED  → refresco automático
+// Solución: al recibir INITIAL_SESSION, comparar el rol del JWT
+// con el de profiles. Si difieren → refrescar la sesión con
+// supabase.auth.refreshSession(), lo que emite TOKEN_REFRESHED
+// con el JWT actualizado que incluye el rol correcto.
 // ============================================================
 
 import { useEffect } from 'react'
@@ -31,13 +26,38 @@ export function AuthHydration({ children }: { children: React.ReactNode }) {
     const setHydrated = useAuthStore((s) => s._setHydrated)
 
     useEffect(() => {
-        // Un solo listener maneja la sesión inicial + todos los cambios futuros.
-        // INITIAL_SESSION es el primer evento que dispara Supabase al montar.
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            (event, session) => {
+            async (event, session) => {
                 setSession(session)
-                // Marcar como hidratado en cuanto Supabase resuelve el estado inicial
+
                 if (event === 'INITIAL_SESSION') {
+                    // Si hay sesión activa, verificar que el rol del JWT
+                    // coincida con el de profiles (puede diferir si el admin
+                    // cambió el rol sin que el usuario cerrara sesión).
+                    if (session?.user) {
+                        const jwtRole = session.user.app_metadata?.role ?? 'CLIENT'
+
+                        const { data: profile } = await supabase
+                            .from('profiles')
+                            .select('role')
+                            .eq('id', session.user.id)
+                            .single()
+
+                        const profileRole = profile?.role ?? 'CLIENT'
+
+                        if (profileRole !== jwtRole) {
+                            // Roles desincronizados → refrescar para obtener JWT actualizado.
+                            // refreshSession() dispara TOKEN_REFRESHED con el nuevo token.
+                            await supabase.auth.refreshSession()
+                            // setHydrated se llama abajo después del refresh (en TOKEN_REFRESHED)
+                            return
+                        }
+                    }
+                    setHydrated()
+                }
+
+                if (event === 'TOKEN_REFRESHED') {
+                // El refresh completó — el nuevo JWT ya tiene el rol correcto.
                     setHydrated()
                 }
             }

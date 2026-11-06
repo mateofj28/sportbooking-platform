@@ -9,119 +9,21 @@ import {
 } from "@/lib/validations/auth.schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
-import { Trophy, Mail, Lock, User, Phone, ArrowRight, CheckCircle2, Eye, EyeOff, CreditCard } from "lucide-react";
+import { Trophy, Mail, Lock, User, ArrowRight, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { PhoneInput, COUNTRY_CODES, validatePhoneNumber } from "@/components/shared/phone-input";
+import { DniInput } from "@/components/shared/dni-input";
 
-// Reglas de teléfono por país:
-// - digits: cantidad exacta de dígitos (sin el código de país)
-// - starts: prefijos válidos con los que debe comenzar el número local
-// - placeholder: ejemplo de formato
-// - label: descripción del formato para el error
-const COUNTRY_CODES = [
-    {
-        code: "+54", country: "AR", flag: "🇦🇷",
-        digits: 10,
-        starts: ["11", "2", "3", "4", "9"],
-        placeholder: "11 2345-6789",
-        label: "10 dígitos, ej: 11 2345-6789",
-    },
-    {
-        code: "+57", country: "CO", flag: "🇨🇴",
-        digits: 10,
-        starts: ["3"],
-        placeholder: "300 123 4567",
-        label: "10 dígitos, comienza con 3",
-    },
-    {
-        code: "+56", country: "CL", flag: "🇨🇱",
-        digits: 9,
-        starts: ["9", "2", "3", "4", "5", "6", "7"],
-        placeholder: "9 1234 5678",
-        label: "9 dígitos, ej: 9 1234 5678",
-    },
-    {
-        code: "+52", country: "MX", flag: "🇲🇽",
-        digits: 10,
-        starts: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
-        placeholder: "55 1234 5678",
-        label: "10 dígitos",
-    },
-    {
-        code: "+51", country: "PE", flag: "🇵🇪",
-        digits: 9,
-        starts: ["9"],
-        placeholder: "912 345 678",
-        label: "9 dígitos, comienza con 9",
-    },
-    {
-        code: "+593", country: "EC", flag: "🇪🇨",
-        digits: 9,
-        starts: ["9"],
-        placeholder: "98 765 4321",
-        label: "9 dígitos, comienza con 9",
-    },
-    {
-        code: "+598", country: "UY", flag: "🇺🇾",
-        digits: 8,
-        starts: ["09", "2", "4"],
-        placeholder: "094 123 456",
-        label: "8 dígitos",
-    },
-    {
-        code: "+591", country: "BO", flag: "🇧🇴",
-        digits: 8,
-        starts: ["6", "7"],
-        placeholder: "71 234 567",
-        label: "8 dígitos, comienza con 6 o 7",
-    },
-    {
-        code: "+595", country: "PY", flag: "🇵🇾",
-        digits: 9,
-        starts: ["09"],
-        placeholder: "0981 234 567",
-        label: "9 dígitos, comienza con 09",
-    },
-    {
-        code: "+58", country: "VE", flag: "🇻🇪",
-        digits: 10,
-        starts: ["04", "02"],
-        placeholder: "0414 123 4567",
-        label: "10 dígitos, comienza con 04 o 02",
-    },
-    {
-        code: "+1", country: "US", flag: "🇺🇸",
-        digits: 10,
-        starts: ["2", "3", "4", "5", "6", "7", "8", "9"],
-        placeholder: "212 555 1234",
-        label: "10 dígitos",
-    },
-    {
-        code: "+34", country: "ES", flag: "🇪🇸",
-        digits: 9,
-        starts: ["6", "7", "9"],
-        placeholder: "612 345 678",
-        label: "9 dígitos, comienza con 6, 7 o 9",
-    },
-    {
-        code: "+55", country: "BR", flag: "🇧🇷",
-        digits: 11,
-        starts: ["9"],
-        placeholder: "11 91234 5678",
-        label: "11 dígitos, comienza con 9",
-    },
-];
 
 export default function RegisterPage() {
     const { register: registerMutation } = useAuth();
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [countryCode, setCountryCode] = useState("+54"); // Argentina por defecto
-    const [showCodes, setShowCodes] = useState(false);
+    const [countryCode, setCountryCode] = useState("+54");
     const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [dniError, setDniError] = useState<string | null>(null);
-    const [dniChecking, setDniChecking] = useState(false);
     const [phoneError, setPhoneError] = useState<string | null>(null);
     const [registered, setRegistered] = useState(false);
     const [registeredEmail, setRegisteredEmail] = useState("");
@@ -130,6 +32,7 @@ export default function RegisterPage() {
         register,
         handleSubmit,
         watch,
+        setValue,
         formState: { errors },
     } = useForm<RegisterFormData>({
         resolver: zodResolver(registerSchema),
@@ -138,47 +41,14 @@ export default function RegisterPage() {
 
     const password = watch("password");
     const confirmPassword = watch("confirmPassword");
-    const dniValue = watch("dni");
     const passwordsMatch = password && confirmPassword && password === confirmPassword;
     const passwordsDontMatch = password && confirmPassword && password !== confirmPassword;
 
-    /** Verifica en tiempo real si el DNI ya existe en profiles */
-    const checkDniUnique = async (dni: string) => {
-        if (!dni || !/^[0-9]{1,15}$/.test(dni)) return;
-        setDniChecking(true);
-        setDniError(null);
-        const { count } = await supabase
-            .from("profiles")
-            .select("id", { count: "exact", head: true })
-            .eq("dni", dni);
-        setDniChecking(false);
-        if ((count ?? 0) > 0) {
-            setDniError("Este DNI ya está registrado en la plataforma");
-        }
-    };
-
     /** Valida el número ingresado contra las reglas del país seleccionado */
     const validatePhone = (value: string, code: string) => {
-        if (!value) { setPhoneError(null); return true; }
-        const digits = value.replace(/[\s\-]/g, "");
-        const rule = COUNTRY_CODES.find((c) => c.code === code);
-        if (!rule) { setPhoneError(null); return true; }
-
-        if (!/^\d+$/.test(digits)) {
-            setPhoneError("Solo se permiten números");
-            return false;
-        }
-        if (digits.length !== rule.digits) {
-            setPhoneError(`Debe tener ${rule.digits} dígitos (${rule.label})`);
-            return false;
-        }
-        const validStart = rule.starts.some((s) => digits.startsWith(s));
-        if (!validStart) {
-            setPhoneError(`Para ${rule.country} debe comenzar con: ${rule.starts.join(", ")} — ${rule.label}`);
-            return false;
-        }
-        setPhoneError(null);
-        return true;
+        const error = validatePhoneNumber(value, code);
+        setPhoneError(error);
+        return error === null;
     };
 
     const onSubmit = async (data: RegisterFormData) => {
@@ -194,7 +64,11 @@ export default function RegisterPage() {
         setDniError(null);
 
         // Validar teléfono contra reglas del país antes de enviar
-        if (data.phone && !validatePhone(data.phone, countryCode)) return;
+        if (data.phone) {
+            const phoneErr = validatePhoneNumber(data.phone, countryCode);
+            if (phoneErr) { setPhoneError(phoneErr); return; }
+        }
+        setPhoneError(null);
 
         const { confirmPassword: _, ...registerData } = data;
         if (registerData.phone) {
@@ -350,74 +224,25 @@ export default function RegisterPage() {
                       />
 
                         {/* DNI */}
-                        <Input
-                            {...register("dni", {
-                                onBlur: (e) => checkDniUnique(e.target.value),
-                            })}
-                            label="DNI"
-                            placeholder="12345678"
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={15}
-                            variant="bordered"
-                            startContent={<CreditCard className="h-4 w-4 text-default-400" />}
+                                    <DniInput
+                                        value={watch("dni") || ""}
+                                        onChange={(v) => { setValue("dni", v); if (dniError) setDniError(null); }}
+                                        onError={setDniError}
+                                        error={dniError}
                             isInvalid={!!errors.dni || !!dniError}
                             errorMessage={errors.dni?.message || dniError || undefined}
-                            isDisabled={dniChecking}
-                            description={dniChecking ? "Verificando DNI..." : undefined}
-                            classNames={{ inputWrapper: "bg-default-50" }}
-                            onKeyPress={(e) => { if (!/[0-9]/.test(e.key)) e.preventDefault(); }}
+                                        isRequired
                         />
 
-                      {/* Phone with country code selector */}
-                      <div className="relative">
-                          <Input
-                                            {...register("phone", {
-                                                onBlur: (e) => validatePhone(e.target.value, countryCode),
-                                            })}
-                              label="Teléfono (opcional)"
-                                            placeholder={selectedCountry?.placeholder ?? "300 123 4567"}
-                              type="tel"
-                                            inputMode="numeric"
-                                            maxLength={(selectedCountry?.digits ?? 15) + 4} // +4 para espacios/guiones
-                              variant="bordered"
-                              classNames={{ inputWrapper: "bg-default-50" }}
-                                            isInvalid={!!errors.phone || !!phoneError}
-                                            errorMessage={errors.phone?.message || phoneError || undefined}
-                                            description={selectedCountry ? `${selectedCountry.label}` : undefined}
-                                            onKeyPress={(e) => {
-                                  if (!/[\d\s\-]/.test(e.key)) e.preventDefault();
-                              }}
-                              startContent={
-                                  <div className="relative">
-                                      <button
-                                          type="button"
-                                          onClick={() => setShowCodes(!showCodes)}
-                                          className="flex items-center gap-1 text-sm font-medium text-default-600 hover:text-primary transition-colors pr-2 border-r border-default-200 mr-2"
-                                      >
-                                          <span>{selectedCountry?.flag}</span>
-                                          <span className="text-xs">{countryCode}</span>
-                                      </button>
-                                  </div>
-                              }
-                          />
-                          {showCodes && (
-                              <div className="absolute top-full left-0 z-50 mt-1 w-56 max-h-48 overflow-y-auto rounded-xl border border-divider bg-background shadow-xl">
-                                  {COUNTRY_CODES.map((c) => (
-                                      <button
-                                          key={c.code}
-                                          type="button"
-                                          onClick={() => { setCountryCode(c.code); setPhoneError(null); setShowCodes(false); }}
-                                          className={`flex w-full items-center gap-3 px-3 py-2 text-sm hover:bg-default-100 transition-colors ${countryCode === c.code ? "bg-primary-50 text-primary" : ""}`}
-                                      >
-                                          <span className="text-base">{c.flag}</span>
-                                          <span className="font-medium">{c.country}</span>
-                                          <span className="text-default-400 ml-auto">{c.code}</span>
-                                      </button>
-                                  ))}
-                              </div>
-                          )}
-                      </div>
+                                    {/* Teléfono */}
+                                    <PhoneInput
+                                        value={watch("phone") || ""}
+                                        onChange={(v) => setValue("phone", v)}
+                                        countryCode={countryCode}
+                                        onCountryCodeChange={(c) => { setCountryCode(c); setPhoneError(null); }}
+                                        error={phoneError}
+                                        onError={setPhoneError}
+                                    />
 
                       {/* Password with toggle visibility */}
                       <Input

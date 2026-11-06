@@ -12,6 +12,8 @@ import { useVenues } from "@/hooks/use-venues";
 import { UserX, UserCheck, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { PhoneInput } from "@/components/shared/phone-input";
+import { DniInput } from "@/components/shared/dni-input";
 import { useToastStore } from "@/stores/toast-store";
 import type { User, Venue } from "@/types";
 
@@ -43,6 +45,9 @@ export default function AdminUsersPage() {
         dni: "",
         phone: "",
     });
+    const [editPhoneCountryCode, setEditPhoneCountryCode] = useState("+54");
+    const [editPhoneError, setEditPhoneError] = useState<string | null>(null);
+    const [editDniError, setEditDniError] = useState<string | null>(null);
     const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
 
     // Create form state
@@ -216,23 +221,43 @@ export default function AdminUsersPage() {
         setEditUser(user);
         setEditRole(user.role);
         setEditVenueId(user.venueId || "");
-        setEditForm({
-            firstName: user.firstName || "",
-            lastName: user.lastName || "",
-            dni: user.dni || "",
-            phone: user.phone || "",
-        });
+        setEditPhoneError(null);
+        setEditDniError(null);
+        // Detectar el código de país del teléfono guardado (ej: "+54 11 2345-6789")
+        const savedPhone = user.phone || "";
+        const matchedCode = ["+593", "+598", "+591", "+595", "+54", "+57", "+56", "+52", "+51", "+58", "+34", "+55", "+1"]
+            .find((c) => savedPhone.startsWith(c));
+        if (matchedCode) {
+            setEditPhoneCountryCode(matchedCode);
+            setEditForm({
+                firstName: user.firstName || "",
+                lastName: user.lastName || "",
+                dni: user.dni || "",
+                phone: savedPhone.slice(matchedCode.length).trim(),
+            });
+        } else {
+            setEditPhoneCountryCode("+54");
+            setEditForm({
+                firstName: user.firstName || "",
+                lastName: user.lastName || "",
+                dni: user.dni || "",
+                phone: savedPhone,
+            });
+        }
         onOpen();
     };
 
     const handleSaveEdit = () => {
         if (!editUser) return;
+        // Bloquear si hay errores de validación
+        if (editDniError || editPhoneError) return;
         updateProfileMutation.mutate({
             id: editUser.id,
             firstName: editForm.firstName,
             lastName: editForm.lastName,
             dni: editForm.dni,
-            phone: editForm.phone,
+            // Guardar teléfono con el código de país prefijado
+            phone: editForm.phone ? `${editPhoneCountryCode} ${editForm.phone}` : "",
             role: editRole,
             venueId: editRole === "VENUE_ADMIN" ? editVenueId : undefined,
         });
@@ -482,20 +507,20 @@ export default function AdminUsersPage() {
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                            <Input
-                                label="DNI"
-                                variant="bordered"
+                            <DniInput
                                 value={editForm.dni}
-                                onValueChange={(v) => setEditForm({ ...editForm, dni: v.replace(/\D/g, "").slice(0, 15) })}
-                                inputMode="numeric"
-                                maxLength={15}
+                                onChange={(v) => { setEditForm({ ...editForm, dni: v }); }}
+                                excludeUserId={editUser?.id}
+                                error={editDniError}
+                                onError={setEditDniError}
                             />
-                            <Input
-                                label="Teléfono"
-                                variant="bordered"
+                            <PhoneInput
                                 value={editForm.phone}
-                                onValueChange={(v) => setEditForm({ ...editForm, phone: v.replace(/[^\d\s\-]/g, "").slice(0, 19) })}
-                                inputMode="numeric"
+                                onChange={(v) => setEditForm({ ...editForm, phone: v })}
+                                countryCode={editPhoneCountryCode}
+                                onCountryCodeChange={setEditPhoneCountryCode}
+                                error={editPhoneError}
+                                onError={setEditPhoneError}
                             />
                         </div>
 

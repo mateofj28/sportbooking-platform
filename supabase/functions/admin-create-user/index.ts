@@ -1,10 +1,11 @@
 // admin-create-user/index.ts
 // Crea un usuario con rol y perfil. Solo accesible para ADMIN.
 
-import { createAdminClient, ok, err } from '../_shared/db.ts'
+import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return err('No autorizado', 401)

@@ -4,12 +4,13 @@
 // POST body: { facility_id, start_datetime, end_datetime, notes? }
 // ============================================================
 
-import { createAdminClient, ok, err } from '../_shared/db.ts'
+import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { bookingToEmailData, sendBookingConfirmation } from '../_shared/email.ts'
 import { notifyBookingCreated } from '../_shared/notifications.ts'
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
     // 1. Autenticar al usuario que llama
     const authHeader = req.headers.get('Authorization')

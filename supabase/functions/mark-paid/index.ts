@@ -1,11 +1,12 @@
 // mark-paid/index.ts
 // Marca una reserva como pagada. Idempotente si ya está PAID.
 
-import { createAdminClient, ok, err } from '../_shared/db.ts'
+import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { notifyBookingPaid } from '../_shared/notifications.ts'
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return err('No autorizado', 401)

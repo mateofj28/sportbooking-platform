@@ -1,12 +1,13 @@
 // cancel-booking/index.ts
 // Cancela una reserva. CLIENT: valida regla 24h. Admins: sin límite.
 
-import { createAdminClient, ok, err } from '../_shared/db.ts'
+import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { bookingToEmailData, sendBookingCancellation } from '../_shared/email.ts'
 import { notifyBookingCancelled } from '../_shared/notifications.ts'
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return err('No autorizado', 401)

@@ -1,22 +1,21 @@
 // admin-set-role/index.ts
 // Actualiza el rol y venue_id de un usuario via set_user_role (RPC).
-// La autorización se verifica en la DB: solo ADMIN puede cambiar roles.
 
-import { createAdminClient, ok, err } from '../_shared/db.ts'
+import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
 
 Deno.serve(async (req) => {
+  // Responder al preflight CORS que envía el browser antes de cada POST
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   try {
-    // Verificar que viene un JWT (usuario autenticado)
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return err('No autorizado', 401)
 
     const { user_id, role, venue_id } = await req.json()
     if (!user_id || !role) return err('user_id y role son requeridos')
 
-    // Usar service_role para llamar a set_user_role.
-    // La función SQL set_user_role no tiene restricción de rol —
-    // la restricción está en el RLS de profiles + el layout del dashboard
-    // que solo permite acceder a ADMIN.
     const supabase = createAdminClient()
 
     const { data, error } = await (supabase.rpc as any)('set_user_role', {

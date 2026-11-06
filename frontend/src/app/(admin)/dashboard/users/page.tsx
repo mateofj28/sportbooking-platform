@@ -177,23 +177,29 @@ export default function AdminUsersPage() {
         mutationFn: async ({ id, firstName, lastName, dni, phone, role, venueId }: {
             id: string; firstName: string; lastName: string; dni: string; phone: string; role: string; venueId?: string;
         }) => {
-            const { error } = await supabase.from("profiles").update({
+            // Paso 1: actualizar datos personales en profiles (nombre, DNI, teléfono)
+            const { error: profileErr } = await supabase.from("profiles").update({
                 first_name: firstName,
                 last_name: lastName,
                 dni: dni || null,
                 phone: phone || null,
-                role: role as any,
-                venue_id: venueId || null,
             }).eq("id", id);
-            if (error) throw new Error(error.message);
-            // Sincronizar rol en app_metadata del JWT
-            const { error: fnErr } = await invokeFunction('admin-set-role', { user_id: id, role, venue_id: venueId || null });
-            if (fnErr) console.warn("set_user_role:", fnErr);
+            if (profileErr) throw new Error(profileErr.message);
+
+            // Paso 2: sincronizar rol + venue_id en profiles Y en app_metadata del JWT.
+            // Siempre a través de admin-set-role para garantizar consistencia.
+            // Si esto falla, el error se propaga y se muestra al admin (no silencioso).
+            const { error: roleErr } = await invokeFunction('admin-set-role', {
+                user_id: id,
+                role,
+                venue_id: venueId || null,
+            });
+            if (roleErr) throw new Error(`Error al asignar rol: ${roleErr}`);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["admin-users"] });
             onClose();
-            addToast("Usuario actualizado correctamente");
+            addToast("Usuario actualizado. Si cambió el rol, el usuario debe cerrar sesión para verlo.");
         },
         onError: (error: any) => {
             addToast(error?.message || "Error al actualizar el usuario");

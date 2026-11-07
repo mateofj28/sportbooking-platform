@@ -131,7 +131,16 @@ export function Navbar() {
                         <div className="h-8 w-8 animate-pulse rounded-full bg-default-200" />
                     </NavbarItem>
                 ) : isAuthenticated ? (
-                        <Popover placement="bottom-end" onOpenChange={(open) => { if (!open) setDropdownView("main"); }}>
+                        <Popover
+                            placement="bottom-end"
+                            onOpenChange={(open) => { if (!open) setDropdownView("main"); }}
+                            motionProps={{
+                                variants: {
+                                    enter: { opacity: 1, scale: 1, transition: { duration: 0 } },
+                                    exit: { opacity: 0, scale: 1, transition: { duration: 0 } },
+                                },
+                            }}
+                        >
                             <PopoverTrigger>
                             <Avatar
                                 isBordered

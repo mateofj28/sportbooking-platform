@@ -3,16 +3,10 @@
 // ============================================================
 // components/shared/data-table.tsx
 // Componente tabla reutilizable con estilos consistentes:
-// - Filas compactas (py-2 en lugar del default py-3)
-// - Header con fondo ligeramente diferenciado del body
-// - Columnas con whitespace-nowrap para evitar quiebre de texto
-// - removeWrapper por defecto para integrarse con cualquier layout
-//
-// USO:
-//   <DataTable aria-label="Usuarios">
-//     <TableHeader>...</TableHeader>
-//     <TableBody>...</TableBody>
-//   </DataTable>
+// - Filas compactas (py-2)
+// - Header con fondo diferenciado
+// - Scroll horizontal automático si hay overflow (responsive)
+// - whitespace-nowrap para evitar quiebre de texto en celdas
 // ============================================================
 
 import {
@@ -20,20 +14,26 @@ import {
     type TableProps,
 } from "@heroui/react";
 
-/** Tabla estándar del panel admin con estilos consistentes. */
+/** Tabla estándar del panel admin con estilos consistentes.
+ *  El contenedor tiene overflow-x-auto para que en zoom alto
+ *  o pantallas estrechas se pueda hacer scroll horizontal
+ *  en vez de cortar las columnas. */
 export function DataTable({ children, ...props }: TableProps) {
     return (
-        <Table
-            removeWrapper
-            isStriped
-            classNames={{
-                th: "bg-default-100 text-default-600 text-xs font-semibold uppercase tracking-wide py-2.5 first:rounded-l-lg last:rounded-r-lg whitespace-nowrap",
-                td: "py-2 text-sm whitespace-nowrap",
-                tr: "hover:bg-default-50 transition-colors",
-            }}
-            {...props}
-        >
-            {children}
-        </Table>
+        <div className="w-full overflow-x-auto rounded-lg">
+            <Table
+                removeWrapper
+                isStriped
+                classNames={{
+                    th: "bg-default-100 text-default-600 text-xs font-semibold uppercase tracking-wide py-2.5 first:rounded-l-lg last:rounded-r-lg whitespace-nowrap",
+                    td: "py-2 text-sm whitespace-nowrap",
+                    tr: "hover:bg-default-50 transition-colors",
+                    table: "min-w-full",
+                }}
+                {...props}
+            >
+                {children}
+            </Table>
+        </div>
     );
 }

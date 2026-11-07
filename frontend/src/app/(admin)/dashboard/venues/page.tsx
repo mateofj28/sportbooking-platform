@@ -201,7 +201,7 @@ export default function AdminVenuesPage() {
                   {facilitiesCountByVenue[v.id] || 0}
                 </Chip>
               </TableCell>
-              <TableCell><Chip color={v.isActive ? "success" : "danger"} size="sm" variant="dot">{v.isActive ? "Activa" : "Inactiva"}</Chip></TableCell>
+              <TableCell><Chip color={v.isActive ? "success" : "danger"} size="sm" variant="flat">{v.isActive ? "Activa" : "Inactiva"}</Chip></TableCell>
               <TableCell>
                 <div className="flex gap-1">
                   <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(v)}><Pencil className="h-4 w-4" /></Button>

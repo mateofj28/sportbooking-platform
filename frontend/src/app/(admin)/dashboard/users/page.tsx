@@ -390,7 +390,7 @@ export default function AdminUsersPage() {
                                 )}
                             </TableCell>
                             <TableCell>
-                                <Chip color={user.isActive ? "success" : "danger"} size="sm" variant="dot">
+                                <Chip color={user.isActive ? "success" : "danger"} size="sm" variant="flat">
                                     {user.isActive ? "Activo" : "Inactivo"}
                                 </Chip>
                             </TableCell>

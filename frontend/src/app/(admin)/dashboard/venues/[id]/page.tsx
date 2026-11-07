@@ -203,7 +203,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
                     </div>
                     <span className="text-xs font-semibold text-primary">{facility.sport.name}</span>
                   </div>
-                  <Chip size="sm" color={facility.isActive ? "success" : "danger"} variant="dot" className="text-[10px]">
+                  <Chip size="sm" color={facility.isActive ? "success" : "danger"} variant="flat" className="text-[10px]">
                     {facility.isActive ? "Activa" : "Inactiva"}
                   </Chip>
                 </div>

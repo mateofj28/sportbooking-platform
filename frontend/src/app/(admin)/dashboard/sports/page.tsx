@@ -104,7 +104,7 @@ export default function AdminSportsPage() {
                                     {sport.billingType === "MONTHLY" ? "Mensualidad" : "Por turno"}
                                 </Chip>
                             </TableCell>
-                            <TableCell><Chip color={sport.isActive ? "success" : "danger"} size="sm" variant="dot">{sport.isActive ? "Activo" : "Inactivo"}</Chip></TableCell>
+                            <TableCell><Chip color={sport.isActive ? "success" : "danger"} size="sm" variant="flat">{sport.isActive ? "Activo" : "Inactivo"}</Chip></TableCell>
                             <TableCell>
                                 <div className="flex gap-1">
                                     <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(sport)}><Pencil className="h-4 w-4" /></Button>

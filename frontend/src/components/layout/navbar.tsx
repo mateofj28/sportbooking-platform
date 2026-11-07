@@ -16,6 +16,9 @@ import {
     DropdownItem,
     DropdownSection,
     Avatar,
+    Popover,
+    PopoverTrigger,
+    PopoverContent,
 } from "@heroui/react";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
@@ -124,11 +127,8 @@ export function Navbar() {
                         <div className="h-8 w-8 animate-pulse rounded-full bg-default-200" />
                     </NavbarItem>
                 ) : isAuthenticated ? (
-                        <Dropdown
-                            placement="bottom-end"
-                            onOpenChange={(open) => { if (!open) setDropdownView("main"); }}
-                        >
-                        <DropdownTrigger>
+                        <Popover placement="bottom-end" onOpenChange={(open) => { if (!open) setDropdownView("main"); }}>
+                            <PopoverTrigger>
                             <Avatar
                                 isBordered
                                 as="button"
@@ -138,69 +138,84 @@ export function Navbar() {
                                 size="sm"
                                     src={user?.avatarUrl ?? undefined}
                             />
-                        </DropdownTrigger>
-
+                            </PopoverTrigger>
+                            <PopoverContent className="p-0 w-56 overflow-hidden rounded-xl shadow-xl border border-divider bg-content1">
                             {dropdownView === "main" ? (
-                                <DropdownMenu aria-label="Menú de usuario" variant="flat" closeOnSelect={false}>
-                                    <DropdownItem key="profile-info" className="h-14 gap-2" textValue="Info">
-                                        <p className="font-semibold">{user?.firstName} {user?.lastName}</p>
-                                        <p className="text-sm text-default-500">{user?.email}</p>
-                                    </DropdownItem>
-                                    <DropdownItem key="my-profile" href="/profile" startContent={<User className="h-4 w-4" />}>
-                                        Mi Perfil
-                                    </DropdownItem>
-                                    <DropdownItem key="my-bookings" href="/bookings" startContent={<Calendar className="h-4 w-4" />}>
-                                        Mis Reservas
-                                    </DropdownItem>
-                                    {(user?.role === "ADMIN" || user?.role === "VENUE_ADMIN") ? (
-                                        <DropdownItem key="dashboard" href="/dashboard" startContent={<LayoutDashboard className="h-4 w-4" />}>
-                                            Dashboard Admin
-                                        </DropdownItem>
-                                    ) : (
-                                        <DropdownItem key="ph" className="hidden" textValue="hidden">{" "}</DropdownItem>
-                                    )}
-                                <DropdownItem
-                                        key="theme"
-                                        startContent={isDark ? <Moon className="h-4 w-4 text-blue-400" /> : <Sun className="h-4 w-4 text-yellow-400" />}
-                                        endContent={<ChevronLeft className="h-3.5 w-3.5 rotate-180 text-default-400" />}
-                                        onPress={() => setDropdownView("theme")}
-                                >
-                                        Tema
-                                </DropdownItem>
-                                    <DropdownItem key="logout" color="danger" onPress={logout} startContent={<LogOut className="h-4 w-4" />}>
-                                        Cerrar Sesión
-                                    </DropdownItem>
-                                </DropdownMenu>
+                                    <div className="w-full">
+                                        {/* Info */}
+                                        <div className="px-4 py-3 border-b border-divider">
+                                            <p className="font-semibold text-sm">{user?.firstName} {user?.lastName}</p>
+                                            <p className="text-xs text-default-500 truncate">{user?.email}</p>
+                                        </div>
+                                        {/* Items */}
+                                        <div className="py-1">
+                                            <MenuItem href="/profile" icon={<User className="h-4 w-4" />} label="Mi Perfil" />
+                                            <MenuItem href="/bookings" icon={<Calendar className="h-4 w-4" />} label="Mis Reservas" />
+                                            {(user?.role === "ADMIN" || user?.role === "VENUE_ADMIN") && (
+                                                <MenuItem href="/dashboard" icon={<LayoutDashboard className="h-4 w-4" />} label="Dashboard Admin" />
+                                            )}
+                                            {/* Tema con flecha */}
+                                            <button
+                                                type="button"
+                                                onClick={() => setDropdownView("theme")}
+                                                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-default-100 transition-colors text-left"
+                                            >
+                                                {isDark
+                                                    ? <Moon className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                                                    : <Sun className="h-4 w-4 text-yellow-400 flex-shrink-0" />
+                                                }
+                                                <span className="flex-1">Tema</span>
+                                                <ChevronLeft className="h-3.5 w-3.5 rotate-180 text-default-400 flex-shrink-0" />
+                                            </button>
+                                        </div>
+                                        {/* Cerrar sesión */}
+                                        <div className="border-t border-divider py-1">
+                                            <button
+                                                type="button"
+                                                onClick={logout}
+                                                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-danger/10 transition-colors text-left"
+                                            >
+                                                <LogOut className="h-4 w-4 flex-shrink-0" />
+                                                Cerrar Sesión
+                                            </button>
+                                        </div>
+                                    </div>
                             ) : (
-                                    <DropdownMenu aria-label="Seleccionar tema" variant="flat">
-                                <DropdownItem
-                                            key="back"
-                                            startContent={<ChevronLeft className="h-4 w-4" />}
-                                            onPress={() => setDropdownView("main")}
-                                            className="font-medium"
-                                            textValue="Tema"
-                                >
-                                            Tema
-                                        </DropdownItem>
-                                        <DropdownItem
-                                            key="light"
-                                            startContent={<Sun className="h-4 w-4 text-yellow-400" />}
-                                            endContent={!isDark ? <Check className="h-3.5 w-3.5 text-primary" /> : null}
-                                            onPress={() => { if (isDark) toggleTheme(); setDropdownView("main"); }}
+                                        <div className="w-full">
+                                            {/* Header con botón volver */}
+                                            <button
+                                                type="button"
+                                                onClick={() => setDropdownView("main")}
+                                                className="flex w-full items-center gap-2 px-4 py-3 text-sm font-semibold hover:bg-default-100 transition-colors border-b border-divider text-left"
+                                            >
+                                                <ChevronLeft className="h-4 w-4 text-default-500 flex-shrink-0" />
+                                                Tema
+                                            </button>
+                                            {/* Opciones */}
+                                            <div className="py-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { if (isDark) toggleTheme(); }}
+                                                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-default-100 transition-colors text-left"
                                         >
-                                            Claro
-                                        </DropdownItem>
-                                        <DropdownItem
-                                            key="dark"
-                                            startContent={<Moon className="h-4 w-4 text-blue-400" />}
-                                            endContent={isDark ? <Check className="h-3.5 w-3.5 text-primary" /> : null}
-                                            onPress={() => { if (!isDark) toggleTheme(); setDropdownView("main"); }}
+                                                    <Sun className="h-4 w-4 text-yellow-400 flex-shrink-0" />
+                                                    <span className="flex-1">Claro</span>
+                                                    {!isDark && <Check className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { if (!isDark) toggleTheme(); }}
+                                                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-default-100 transition-colors text-left"
                                         >
-                                            Oscuro
-                                        </DropdownItem>
-                                    </DropdownMenu>
+                                                    <Moon className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                                                    <span className="flex-1">Oscuro</span>
+                                                    {isDark && <Check className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
+                                                </button>
+                                            </div>
+                                        </div>
                             )}
-                    </Dropdown>
+                            </PopoverContent>
+                        </Popover>
                 ) : (
                     <>
                         <NavbarItem className="hidden sm:flex">
@@ -271,5 +286,18 @@ export function Navbar() {
                 </>}
             </NavbarMenu>
         </HeroNavbar>
+    );
+}
+
+/** Item de menú reutilizable para el popover del usuario */
+function MenuItem({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
+    return (
+        <a
+            href={href}
+            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-default-100 transition-colors text-left text-foreground"
+        >
+            <span className="flex-shrink-0 text-default-500">{icon}</span>
+            {label}
+        </a>
     );
 }

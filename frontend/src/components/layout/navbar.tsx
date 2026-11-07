@@ -141,7 +141,7 @@ export function Navbar() {
                         </DropdownTrigger>
 
                             {dropdownView === "main" ? (
-                                <DropdownMenu aria-label="Menú de usuario" variant="flat">
+                                <DropdownMenu aria-label="Menú de usuario" variant="flat" closeOnSelect={false}>
                                     <DropdownItem key="profile-info" className="h-14 gap-2" textValue="Info">
                                         <p className="font-semibold">{user?.firstName} {user?.lastName}</p>
                                         <p className="text-sm text-default-500">{user?.email}</p>

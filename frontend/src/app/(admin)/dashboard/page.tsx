@@ -6,6 +6,7 @@ import {
     Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
     Pagination, Input,
 } from "@heroui/react";
+import { DataTable } from "@/components/shared/data-table";
 import { parseDate, type CalendarDate } from "@internationalized/date";
 import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
@@ -828,7 +829,7 @@ function OverviewModal({
                                 </p>
                             </div>
                     ) : (
-                        <Table aria-label={title} removeWrapper isStriped>
+                                <DataTable aria-label={title}>
                             <TableHeader>
                                 <TableColumn>CANCHA</TableColumn>
                                 <TableColumn>CLIENTE</TableColumn>
@@ -853,7 +854,7 @@ function OverviewModal({
                                     </TableRow>
                                 ))}
                             </TableBody>
-                        </Table>
+                                </DataTable>
                     )}
 
                     {totalPages > 1 && (

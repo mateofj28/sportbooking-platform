@@ -4,6 +4,7 @@ import {
     Button, Chip, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, RadioGroup, Radio, useDisclosure,
 } from "@heroui/react";
+import { DataTable } from "@/components/shared/data-table";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize } from "@/lib/supabase-helpers";
@@ -83,7 +84,7 @@ export default function AdminSportsPage() {
                 <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={onOpen}>Nuevo Deporte</Button>
             </div>
 
-            <Table aria-label="Deportes">
+            <DataTable aria-label="Deportes">
                 <TableHeader>
                     <TableColumn>NOMBRE</TableColumn>
                     <TableColumn>DESCRIPCIÓN</TableColumn>
@@ -113,7 +114,7 @@ export default function AdminSportsPage() {
                         </TableRow>
                     ))}
                 </TableBody>
-            </Table>
+            </DataTable>
 
             {/* Create Modal */}
             <Modal isOpen={isOpen} onClose={onClose}>

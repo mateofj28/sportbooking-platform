@@ -4,6 +4,7 @@ import {
     Button, Chip, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, useDisclosure, Pagination,
 } from "@heroui/react";
+import { DataTable } from "@/components/shared/data-table";
 import { Select, SelectItem } from "@heroui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -356,7 +357,7 @@ export default function AdminUsersPage() {
                 </div>
             )}
 
-            <Table aria-label="Usuarios">
+            <DataTable aria-label="Usuarios">
                 <TableHeader>
                     <TableColumn>NOMBRE</TableColumn>
                     <TableColumn>DNI</TableColumn>
@@ -413,7 +414,7 @@ export default function AdminUsersPage() {
                         </TableRow>
                     ))}
                 </TableBody>
-            </Table>
+            </DataTable>
 
             {/* Paginación */}
             {totalPages > 1 && (

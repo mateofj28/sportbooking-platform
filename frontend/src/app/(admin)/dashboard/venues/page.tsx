@@ -4,6 +4,7 @@ import {
   Button, Chip, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, useDisclosure, Link,
 } from "@heroui/react";
+import { DataTable } from "@/components/shared/data-table";
 import { Autocomplete, AutocompleteItem } from "@heroui/autocomplete";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -185,7 +186,7 @@ export default function AdminVenuesPage() {
         )}
       </div>
 
-      <Table aria-label="Complejos">
+      <DataTable aria-label="Complejos">
         <TableHeader>
           <TableColumn>NOMBRE</TableColumn><TableColumn>DIRECCIÓN</TableColumn><TableColumn>CIUDAD</TableColumn><TableColumn>INSTALACIONES</TableColumn><TableColumn>ESTADO</TableColumn><TableColumn>ACCIONES</TableColumn>
         </TableHeader>
@@ -210,7 +211,7 @@ export default function AdminVenuesPage() {
             </TableRow>
           ))}
         </TableBody>
-      </Table>
+      </DataTable>
 
       <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside" placement="center">
         <ModalContent>

@@ -19,6 +19,7 @@ import {
     Textarea,
     useDisclosure,
 } from "@heroui/react";
+import { DataTable } from "@/components/shared/data-table";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useFacilities } from "@/hooks/use-facilities";
@@ -416,7 +417,7 @@ export default function AdminFacilitiesPage() {
                 </div>
             )}
 
-            <Table aria-label="Instalaciones">
+            <DataTable aria-label="Instalaciones">
                 <TableHeader>
                     {[
                         <TableColumn key="nombre">NOMBRE</TableColumn>,
@@ -484,7 +485,7 @@ export default function AdminFacilitiesPage() {
                         </TableRow>
                     ))}
                 </TableBody>
-            </Table>
+            </DataTable>
 
             <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside" placement="center">
                 <ModalContent>

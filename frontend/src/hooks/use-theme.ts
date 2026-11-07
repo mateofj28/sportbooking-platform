@@ -4,24 +4,35 @@ import { useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
-export function useTheme() {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
+/** Lee el tema desde localStorage o la preferencia del sistema.
+ *  Se ejecuta en el cliente — no en SSR. */
+function getInitialTheme(): Theme {
+  if (typeof window === "undefined") return "light";
     const stored = localStorage.getItem("theme") as Theme | null;
-    const systemPrefers = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    const initial = stored || systemPrefers;
-    setTheme(initial);
-    applyTheme(initial);
-  }, []);
+  if (stored === "light" || stored === "dark") return stored;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
 
-  const applyTheme = (t: Theme) => {
+function applyTheme(t: Theme) {
     const root = document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(t);
-  };
+}
+
+export function useTheme() {
+  // Inicialización lazy: lee localStorage en el primer render del cliente.
+  // Evita el ciclo mounted:false→true que causaba parpadeo en el Popover.
+  const [theme, setTheme] = useState<Theme>(() => {
+    const t = getInitialTheme();
+    // Aplicar inmediatamente para evitar flash de tema incorrecto
+    if (typeof window !== "undefined") applyTheme(t);
+    return t;
+  });
+
+  // Sincronizar con el DOM al montar (por si el HTML del servidor difiere)
+  useEffect(() => {
+    applyTheme(theme);
+  }, []);
 
   const toggleTheme = () => {
     const next = theme === "light" ? "dark" : "light";
@@ -30,5 +41,6 @@ export function useTheme() {
     applyTheme(next);
   };
 
-  return { theme, toggleTheme, isDark: theme === "dark", mounted };
+  // mounted siempre true — ya no hay estado de carga pendiente
+  return { theme, toggleTheme, isDark: theme === "dark", mounted: true };
 }

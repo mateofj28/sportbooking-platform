@@ -185,6 +185,20 @@ export function Navbar() {
                                     {" "}
                                 </DropdownItem>
                             )}
+                                {mounted ? (
+                                    <DropdownItem
+                                        key="theme"
+                                        onPress={toggleTheme}
+                                        startContent={isDark
+                                            ? <Sun className="h-4 w-4 text-yellow-400" />
+                                            : <Moon className="h-4 w-4" />
+                                        }
+                                    >
+                                        {isDark ? "Modo claro" : "Modo oscuro"}
+                                    </DropdownItem>
+                                ) : (
+                                    <DropdownItem key="theme-placeholder" className="hidden" textValue="hidden">{" "}</DropdownItem>
+                                )}
                             <DropdownItem
                                 key="logout"
                                 color="danger"

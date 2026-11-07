@@ -14,6 +14,7 @@ import {
     DropdownTrigger,
     DropdownMenu,
     DropdownItem,
+    DropdownSection,
     Avatar,
 } from "@heroui/react";
 import { useState } from "react";
@@ -23,10 +24,11 @@ import { useSidebarStore } from "@/stores/sidebar-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { NotificationBell } from "@/components/layout/notification-bell";
-import { Trophy, LogOut, User, Calendar, LayoutDashboard, Sun, Moon, Menu } from "lucide-react";
+import { Trophy, LogOut, User, Calendar, LayoutDashboard, Sun, Moon, Menu, ChevronLeft, Monitor, Check } from "lucide-react";
 
 export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [dropdownView, setDropdownView] = useState<"main" | "theme">("main");
     const { user, isAuthenticated, isHydrated } = useAuthStore();
     const { logout } = useAuth();
     const { isDark, toggleTheme, mounted } = useTheme();
@@ -109,20 +111,11 @@ export function Navbar() {
                         <NotificationBell />
                     </NavbarItem>
                 )}
-                {/* Theme toggle */}
-                {mounted && (
+                {/* Botón de tema: solo visible cuando NO está autenticado */}
+                {mounted && !isAuthenticated && (
                     <NavbarItem>
-                        <Button
-                            isIconOnly
-                            variant="light"
-                            size="sm"
-                            onPress={toggleTheme}
-                            aria-label="Cambiar tema"
-                        >
-                            {isDark
-                                ? <Sun className="h-4 w-4 text-yellow-300" />
-                                : <Moon className="h-4 w-4 text-white/80" />
-                            }
+                        <Button isIconOnly variant="light" size="sm" onPress={toggleTheme} aria-label="Cambiar tema">
+                            {isDark ? <Sun className="h-4 w-4 text-yellow-300" /> : <Moon className="h-4 w-4 text-white/80" />}
                         </Button>
                     </NavbarItem>
                 )}
@@ -131,7 +124,10 @@ export function Navbar() {
                         <div className="h-8 w-8 animate-pulse rounded-full bg-default-200" />
                     </NavbarItem>
                 ) : isAuthenticated ? (
-                    <Dropdown placement="bottom-end">
+                        <Dropdown
+                            placement="bottom-end"
+                            onOpenChange={(open) => { if (!open) setDropdownView("main"); }}
+                        >
                         <DropdownTrigger>
                             <Avatar
                                 isBordered
@@ -143,71 +139,67 @@ export function Navbar() {
                                     src={user?.avatarUrl ?? undefined}
                             />
                         </DropdownTrigger>
-                        <DropdownMenu aria-label="Acciones de usuario" variant="flat">
-                            <DropdownItem
-                                key="profile-info"
-                                className="h-14 gap-2"
-                                textValue="Info"
-                            >
-                                <p className="font-semibold">
-                                    {user?.firstName} {user?.lastName}
-                                </p>
-                                <p className="text-sm text-default-500">{user?.email}</p>
-                            </DropdownItem>
-                            <DropdownItem
-                                key="my-profile"
-                                href="/profile"
-                                startContent={<User className="h-4 w-4" />}
-                            >
-                                Mi Perfil
-                            </DropdownItem>
-                            <DropdownItem
-                                key="my-bookings"
-                                href="/bookings"
-                                startContent={<Calendar className="h-4 w-4" />}
-                            >
-                                Mis Reservas
-                            </DropdownItem>
-                            {(user?.role === "ADMIN" || user?.role === "VENUE_ADMIN") ? (
-                                <DropdownItem
-                                    key="dashboard"
-                                    href="/dashboard"
-                                    startContent={<LayoutDashboard className="h-4 w-4" />}
-                                >
-                                    Dashboard Admin
-                                </DropdownItem>
-                            ) : (
-                                <DropdownItem
-                                    key="placeholder"
-                                    className="hidden"
-                                    textValue="hidden"
-                                >
-                                    {" "}
-                                </DropdownItem>
-                            )}
-                                {mounted ? (
-                                    <DropdownItem
-                                        key="theme"
-                                        onPress={toggleTheme}
-                                        startContent={isDark
-                                            ? <Sun className="h-4 w-4 text-yellow-400" />
-                                            : <Moon className="h-4 w-4" />
-                                        }
-                                    >
-                                        {isDark ? "Modo claro" : "Modo oscuro"}
+
+                            {dropdownView === "main" ? (
+                                <DropdownMenu aria-label="Menú de usuario" variant="flat">
+                                    <DropdownItem key="profile-info" className="h-14 gap-2" textValue="Info">
+                                        <p className="font-semibold">{user?.firstName} {user?.lastName}</p>
+                                        <p className="text-sm text-default-500">{user?.email}</p>
                                     </DropdownItem>
-                                ) : (
-                                    <DropdownItem key="theme-placeholder" className="hidden" textValue="hidden">{" "}</DropdownItem>
-                                )}
-                            <DropdownItem
-                                key="logout"
-                                color="danger"
-                                onPress={logout}
-                                startContent={<LogOut className="h-4 w-4" />}
-                            >
-                                Cerrar Sesión
-                            </DropdownItem>
-                        </DropdownMenu>
+                                    <DropdownItem key="my-profile" href="/profile" startContent={<User className="h-4 w-4" />}>
+                                        Mi Perfil
+                                    </DropdownItem>
+                                    <DropdownItem key="my-bookings" href="/bookings" startContent={<Calendar className="h-4 w-4" />}>
+                                        Mis Reservas
+                                    </DropdownItem>
+                                    {(user?.role === "ADMIN" || user?.role === "VENUE_ADMIN") ? (
+                                        <DropdownItem key="dashboard" href="/dashboard" startContent={<LayoutDashboard className="h-4 w-4" />}>
+                                            Dashboard Admin
+                                        </DropdownItem>
+                                    ) : (
+                                        <DropdownItem key="ph" className="hidden" textValue="hidden">{" "}</DropdownItem>
+                                    )}
+                                <DropdownItem
+                                        key="theme"
+                                        startContent={isDark ? <Moon className="h-4 w-4 text-blue-400" /> : <Sun className="h-4 w-4 text-yellow-400" />}
+                                        endContent={<ChevronLeft className="h-3.5 w-3.5 rotate-180 text-default-400" />}
+                                        onPress={() => setDropdownView("theme")}
+                                >
+                                        Tema
+                                </DropdownItem>
+                                    <DropdownItem key="logout" color="danger" onPress={logout} startContent={<LogOut className="h-4 w-4" />}>
+                                        Cerrar Sesión
+                                    </DropdownItem>
+                                </DropdownMenu>
+                            ) : (
+                                    <DropdownMenu aria-label="Seleccionar tema" variant="flat">
+                                <DropdownItem
+                                            key="back"
+                                            startContent={<ChevronLeft className="h-4 w-4" />}
+                                            onPress={() => setDropdownView("main")}
+                                            className="font-medium"
+                                            textValue="Tema"
+                                >
+                                            Tema
+                                        </DropdownItem>
+                                        <DropdownItem
+                                            key="light"
+                                            startContent={<Sun className="h-4 w-4 text-yellow-400" />}
+                                            endContent={!isDark ? <Check className="h-3.5 w-3.5 text-primary" /> : null}
+                                            onPress={() => { if (isDark) toggleTheme(); setDropdownView("main"); }}
+                                        >
+                                            Claro
+                                        </DropdownItem>
+                                        <DropdownItem
+                                            key="dark"
+                                            startContent={<Moon className="h-4 w-4 text-blue-400" />}
+                                            endContent={isDark ? <Check className="h-3.5 w-3.5 text-primary" /> : null}
+                                            onPress={() => { if (!isDark) toggleTheme(); setDropdownView("main"); }}
+                                        >
+                                            Oscuro
+                                        </DropdownItem>
+                                    </DropdownMenu>
+                            )}
                     </Dropdown>
                 ) : (
                     <>

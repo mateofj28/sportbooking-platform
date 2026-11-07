@@ -12,7 +12,6 @@ export interface User {
     isActive?: boolean;
     createdAt?: string;
 }
-
 // Ya no se usa — Supabase Auth no devuelve tokens manuales.
 // Se mantiene para compatibilidad durante la migración gradual.
 export interface AuthResponse {

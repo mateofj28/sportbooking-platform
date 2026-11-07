@@ -1,6 +1,23 @@
 @import "tailwindcss";
 @config "../../tailwind.config.ts";
 
+/* ============================================================
+ * Quitar hover/press de todas las Cards de HeroUI.
+ * isPressable agrega data-hover y data-pressed que modifican
+ * la opacidad — los neutralizamos globalmente.
+ * ============================================================ */
+[data-slot="base"].group\/card[data-hover="true"],
+[data-slot="base"].group\/card[data-pressed="true"] {
+    opacity: 1 !important;
+    scale: 1 !important;
+    transform: none !important;
+}
+
+/* También neutralizar el cursor pointer en cards no interactivas */
+[data-slot="base"].group\/card:not([role="button"]) {
+    cursor: default;
+}
+
 h1,
 h2,
 h3,

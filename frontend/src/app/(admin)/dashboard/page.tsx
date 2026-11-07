@@ -542,7 +542,7 @@ function TodaySummary() {
             <h2 className="text-lg font-bold mb-4">Resumen del día</h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 {stats.map((stat, i) => (
-                    <Card key={i} className="border border-divider transition-shadow hover:shadow-sm">
+                    <Card key={i} className="border border-divider">
                         <CardBody className="flex-col items-start gap-3 p-5">
                             <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl ${stat.bg}`}>
                                 {stat.icon}
@@ -900,7 +900,7 @@ function OverviewCard({
             <Card
                 isPressable
                 onPress={onOpen}
-                className="w-full border border-divider transition-shadow hover:shadow-sm"
+                className="w-full border border-divider"
             >
                 <CardBody className="flex-row items-center gap-4 p-5">
                     <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl ${iconBg}`}>

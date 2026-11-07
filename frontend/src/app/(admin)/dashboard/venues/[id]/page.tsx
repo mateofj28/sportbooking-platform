@@ -194,7 +194,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
         {facilities.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {facilities.map((facility) => (
-              <Card key={facility.id} className="border border-divider overflow-hidden hover:shadow-lg transition-shadow">
+              <Card key={facility.id} className="border border-divider overflow-hidden">
                 {/* Colored header bar */}
                 <div className="flex items-center justify-between bg-primary/5 px-4 py-2.5 border-b border-divider">
                   <div className="flex items-center gap-2">

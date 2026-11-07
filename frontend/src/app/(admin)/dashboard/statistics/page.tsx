@@ -454,7 +454,7 @@ function StatCard({ icon, label, value, color, trend, trendUp }: {
     icon: React.ReactNode; label: string; value: number | string; color: string; trend?: string; trendUp?: boolean;
 }) {
     return (
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="transition-none">
             <CardBody className="gap-3 p-5">
                 <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl ${color}`}>{icon}</div>
                 <div className="min-w-0">

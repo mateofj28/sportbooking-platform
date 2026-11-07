@@ -32,7 +32,7 @@ export default function HomePage() {
 
             <main className="flex-1">
                 {/* ===== HERO ===== */}
-                <section className="relative overflow-hidden bg-gradient-to-r from-blue-400 to-blue-900 dark:from-[#0a0a0f] dark:to-[#111827]">
+                <section className="relative overflow-hidden bg-gradient-to-r from-blue-400 to-blue-900 dark:from-[#1f1f21] dark:to-[#1a1a2e]">
                     <div className="absolute top-0 right-0 -z-0 h-[500px] w-[500px] rounded-full bg-white/5 blur-[100px]" />
                     <div className="absolute bottom-0 left-0 -z-0 h-[400px] w-[400px] rounded-full bg-blue-500/10 dark:bg-blue-500/5 blur-[100px]" />
 
@@ -223,7 +223,7 @@ export default function HomePage() {
                 </section>
 
                 {/* ===== CTA FOR OWNERS ===== */}
-                <section className="px-6 py-20 bg-default-50 dark:bg-[#0d0d14]">
+                <section className="px-6 py-20 bg-default-50 dark:bg-[#1f1f21]">
                     <div className="mx-auto max-w-4xl">
                         <Card className="overflow-hidden border-0 bg-gradient-to-br from-primary-500 via-secondary-500 to-violet-600 dark:from-blue-700 dark:via-indigo-700 dark:to-violet-800 shadow-2xl dark:shadow-indigo-950/50">
                             <CardBody className="relative p-10 md:p-14">

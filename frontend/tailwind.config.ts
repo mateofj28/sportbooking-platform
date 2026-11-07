@@ -142,15 +142,15 @@ const config: Config = {
                 },
                 dark: {
                     colors: {
-                        background: "#0F1117",
+                        background: "#1f1f21",
                         foreground: "#E8EAED",
                         primary: {
                             DEFAULT: "#60A5FA",
-                            foreground: "#0F1117",
+                            foreground: "#1f1f21",
                         },
                         secondary: {
                             DEFAULT: "#A78BFA",
-                            foreground: "#0F1117",
+                            foreground: "#1f1f21",
                         },
                     },
                 },

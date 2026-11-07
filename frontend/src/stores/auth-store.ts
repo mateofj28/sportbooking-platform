@@ -35,6 +35,8 @@ interface AuthState {
     // Acciones — solo las usa AuthHydration, no los componentes directamente
     _setSession: (session: Session | null) => void
     _setHydrated: () => void
+    // Acción atómica: setSession + setHydrated en un solo set() → un solo re-render
+    _setSessionAndHydrate: (session: Session | null) => void
     _updateUser: (partial: Partial<AppUser>) => void
     logout: () => void
 }
@@ -74,6 +76,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     _setHydrated: () => set({ isHydrated: true }),
+
+    // Acción atómica — un solo set() en vez de _setSession + _setHydrated separados.
+    // Reduce de 2 renders a 1 en el flujo feliz de AuthHydration.
+    _setSessionAndHydrate: (session) => {
+        set({
+            session,
+            user: mapSupabaseUser(session?.user ?? null),
+            isAuthenticated: !!session,
+            isHydrated: true,
+        })
+    },
 
     _updateUser: (partial) => {
         const current = get().user

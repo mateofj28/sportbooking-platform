@@ -17,7 +17,10 @@ import { useAuthStore } from '@/stores/auth-store'
 import type { LoginCredentials, RegisterData } from '@/types'
 
 export function useAuth() {
-    const { user, isAuthenticated, logout: storeLogout } = useAuthStore()
+    // Selectores granulares para evitar re-renders innecesarios del componente consumidor
+    const user = useAuthStore((s) => s.user)
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+    const storeLogout = useAuthStore((s) => s.logout)
 
     // ---- LOGIN ----
     const login = useMutation({

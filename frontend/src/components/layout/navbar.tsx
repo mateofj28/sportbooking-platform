@@ -32,7 +32,11 @@ import { Trophy, LogOut, User, Calendar, LayoutDashboard, Sun, Moon, Menu, Chevr
 export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [dropdownView, setDropdownView] = useState<"main" | "theme">("main");
-    const { user, isAuthenticated, isHydrated } = useAuthStore();
+    // Selectores granulares: el Navbar solo re-renderiza cuando cambia
+    // el campo exacto que necesita, no en cada escritura al store
+    const user = useAuthStore((s) => s.user);
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const isHydrated = useAuthStore((s) => s.isHydrated);
     const { logout } = useAuth();
     const { isDark, toggleTheme, mounted } = useTheme();
     const pathname = usePathname();

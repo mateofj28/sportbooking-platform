@@ -4,11 +4,12 @@
 // providers/auth-hydration.tsx
 // Sincroniza el AuthStore con la sesión de Supabase Auth.
 //
-// Fix MaxListenersExceededWarning:
-// Se usa un ref para garantizar que la verificación de rol
-// contra profiles ocurra una sola vez por montaje, evitando
-// que múltiples ciclos de onAuthStateChange acumulen listeners
-// en el EventEmitter interno de @supabase/supabase-js.
+// Fix parpadeo del Navbar:
+// - Flujo normal: _setSessionAndHydrate() en un solo set() atómico
+//   → 1 re-render en vez de 2 (_setSession + _setHydrated separados)
+// - Flujo con refresh: _setSession() + _setHydrated() separados (necesario
+//   porque el refresh es asíncrono y ocurre entre los dos eventos)
+// - roleCheckDone ref: evita múltiples verificaciones de rol
 // ============================================================
 
 import { useEffect, useRef } from 'react'
@@ -18,14 +19,12 @@ import { useAuthStore } from '@/stores/auth-store'
 export function AuthHydration({ children }: { children: React.ReactNode }) {
     const setSession = useAuthStore((s) => s._setSession)
     const setHydrated = useAuthStore((s) => s._setHydrated)
-    // Evitar múltiples verificaciones de rol simultáneas (causa MaxListeners warning)
+    const setSessionAndHydrate = useAuthStore((s) => s._setSessionAndHydrate)
     const roleCheckDone = useRef(false)
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
-                setSession(session)
-
                 if (event === 'INITIAL_SESSION') {
                     if (session?.user && !roleCheckDone.current) {
                         roleCheckDone.current = true
@@ -41,19 +40,30 @@ export function AuthHydration({ children }: { children: React.ReactNode }) {
                             const profileRole = profile?.role ?? 'CLIENT'
 
                             if (profileRole !== jwtRole) {
-                                // Roles desincronizados — refrescar JWT una sola vez
+                                // Roles desincronizados: primero actualizamos la sesión,
+                                // luego refresheamos (TOKEN_REFRESHED llamará setSessionAndHydrate)
+                                setSession(session)
                                 await supabase.auth.refreshSession()
-                                // setHydrated se llama en TOKEN_REFRESHED
                                 return
                             }
                         } catch {
-                        // Si falla la consulta, continuar con el rol del JWT
+                            // Si falla la consulta, continuar con el rol del JWT
                         }
                     }
-                    setHydrated()
+                    // Flujo normal: una sola escritura atómica al store → 1 re-render
+                    setSessionAndHydrate(session)
+                    return
                 }
 
                 if (event === 'TOKEN_REFRESHED') {
+                    // El refresh completó — JWT actualizado con rol correcto
+                    setSessionAndHydrate(session)
+                    return
+                }
+
+                // SIGNED_IN, SIGNED_OUT, etc.
+                setSession(session)
+                if (event === 'SIGNED_OUT') {
                     setHydrated()
                 }
             }
@@ -63,7 +73,7 @@ export function AuthHydration({ children }: { children: React.ReactNode }) {
             subscription.unsubscribe()
             roleCheckDone.current = false
         }
-    }, [setSession, setHydrated])
+    }, [setSession, setHydrated, setSessionAndHydrate])
 
     return <>{children}</>
 }

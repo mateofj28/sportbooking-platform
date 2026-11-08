@@ -142,8 +142,7 @@ export function Navbar() {
                             }}
                         >
                             <PopoverTrigger>
-                            <Avatar
-                                isBordered
+                                <Avatar
                                 as="button"
                                 className="transition-transform"
                                 color="primary"

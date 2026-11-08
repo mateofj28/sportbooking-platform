@@ -126,7 +126,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                                 <Divider />
                                 <DetailRow icon={<Clock className="h-4 w-4" />} label="Horario" value={`${formatTime(booking.startDatetime)} — ${formatTime(booking.endDatetime)} · ${mins} min`} />
                                 <Divider />
-                                <DetailRow icon={<User className="h-4 w-4" />} label="Cliente" value={`${booking.user.firstName} ${booking.user.lastName}`} />
+                                <DetailRow icon={<User className="h-4 w-4" />} label="Cliente" value={booking.user ? `${booking.user.firstName} ${booking.user.lastName}` : "Cliente"} />
                             </CardBody>
                         </Card>
 

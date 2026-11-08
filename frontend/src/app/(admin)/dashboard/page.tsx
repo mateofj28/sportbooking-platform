@@ -214,7 +214,7 @@ function BookingRow({ booking }: { booking: Booking }) {
                         <div className="mt-1 flex flex-col gap-1 text-xs text-default-500 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
                             <span className="flex items-center gap-1.5 min-w-0">
                                 <User className="h-3.5 w-3.5 flex-shrink-0" />
-                                <span className="truncate">{booking.user.firstName} {booking.user.lastName}</span>
+                                <span className="truncate">{booking.user ? `${booking.user.firstName} ${booking.user.lastName}` : "Cliente"}</span>
                             </span>
                             <span className="flex items-center gap-1.5">
                                 <Clock className="h-3.5 w-3.5 flex-shrink-0" />
@@ -842,7 +842,7 @@ function OverviewModal({
                                 {rows.map((b) => (
                                     <TableRow key={b.id}>
                                         <TableCell className="font-medium">{b.facility.name}</TableCell>
-                                        <TableCell className="whitespace-nowrap">{b.user.firstName} {b.user.lastName}</TableCell>
+                                        <TableCell className="whitespace-nowrap">{b.user ? `${b.user.firstName} ${b.user.lastName}` : "Cliente"}</TableCell>
                                         <TableCell className="whitespace-nowrap">{formatDateAr(b.startDatetime, { day: "numeric", month: "short", year: "numeric" })}</TableCell>
                                         <TableCell className="whitespace-nowrap">{formatTime12h(b.startDatetime)} — {formatTime12h(b.endDatetime)}</TableCell>
                                         <TableCell className="whitespace-nowrap font-semibold text-success">${formatPrice(basePriceOf(b))}</TableCell>

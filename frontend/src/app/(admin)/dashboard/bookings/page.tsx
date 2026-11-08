@@ -171,7 +171,7 @@ export default function AdminBookingsPage() {
                                     <div className="space-y-2 text-sm">
                                         <div className="flex items-center gap-2 text-default-600">
                                             <User className="h-3.5 w-3.5 text-default-400" />
-                                            <span>{booking.user.firstName} {booking.user.lastName}</span>
+                                            <span>{booking.user ? `${booking.user.firstName} ${booking.user.lastName}` : "Cliente"}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-default-600">
                                             <Calendar className="h-3.5 w-3.5 text-default-400" />
@@ -231,7 +231,7 @@ export default function AdminBookingsPage() {
                 onConfirm={handleConfirmCancel}
                 title="Cancelar reserva"
                 message={bookingToCancel
-                    ? `¿Seguro que deseas cancelar la reserva de ${bookingToCancel.user.firstName} ${bookingToCancel.user.lastName} en ${bookingToCancel.facility.name}? Esta acción no se puede deshacer.`
+                    ? `¿Seguro que deseas cancelar la reserva de ${bookingToCancel.user ? `${bookingToCancel.user.firstName} ${bookingToCancel.user.lastName}` : "este cliente"} en ${bookingToCancel.facility.name}? Esta acción no se puede deshacer.`
                     : "Esta acción no se puede deshacer."}
                 confirmLabel="Sí, cancelar reserva"
                 isLoading={cancelBooking.isPending}

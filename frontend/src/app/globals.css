@@ -2,17 +2,19 @@
 @config "../../tailwind.config.ts";
 
 /* ============================================================
- * Quitar sombra y hover de todas las Cards de HeroUI.
+ * Quitar sombra de todas las Cards — flat design. * HeroUI aplica shadow-md/sm/lg via clases Tailwind en el * elemento. Anulamos las variables CSS de Tailwind shadow.
  * ============================================================ */
-[data-slot="base"].group\/card {
-    box-shadow: none !important;
-}
+[data-slot="base"].group\/card,
 [data-slot="base"].group\/card[data-hover="true"],
 [data-slot="base"].group\/card[data-pressed="true"] {
+    --tw-shadow: 0 0 #0000 !important;
+        --tw-shadow-colored: 0 0 #0000 !important;
+        box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),
+            var(--tw-ring-shadow, 0 0 #0000),
+            0 0 #0000 !important;
     opacity: 1 !important;
     scale: 1 !important;
     transform: none !important;
-    box-shadow: none !important;
 }
 
 [data-slot="base"].group\/card:not([role="button"]) {

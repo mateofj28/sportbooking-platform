@@ -59,6 +59,13 @@ const config: Config = {
         heroui({
             themes: {
                 light: {
+                    layout: {
+                        boxShadow: {
+                            small: "none",
+                            medium: "none",
+                            large: "none",
+                        },
+                    },
                     colors: {
                         background: "#FAFBFC",
                         foreground: "#1e3a5f",
@@ -141,6 +148,13 @@ const config: Config = {
                     },
                 },
                 dark: {
+                    layout: {
+                        boxShadow: {
+                            small: "none",
+                            medium: "none",
+                            large: "none",
+                        },
+                    },
                     colors: {
                         background: "#1f1f21",
                         foreground: "#E8EAED",

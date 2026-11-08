@@ -62,6 +62,23 @@ interface StatsResponse {
 
 const fmt = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** Valor de la opción "Todos" en los selects de deporte y complejo. */
+const ALL_KEY = "ALL";
+
+/** Colores de los items del desplegable: hover/foco suaves en lugar del gris oscuro por defecto. */
+const LISTBOX_PROPS = {
+    itemClasses: {
+        base: [
+            "data-[hover=true]:bg-default-100",
+            "data-[focus=true]:bg-default-100",
+            "data-[selectable=true]:focus:bg-default-100",
+            "data-[selected=true]:bg-default-100",
+            "data-[hover=true]:text-foreground",
+            "data-[focus=true]:text-foreground",
+        ],
+    },
+};
+
 export default function StatisticsPage() {
     const { user } = useAuthStore();
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
@@ -177,6 +194,7 @@ export default function StatisticsPage() {
                     <div className={`grid gap-3 sm:grid-cols-2 ${isVenueAdmin ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
                         <Select
                             label="Período" size="sm" variant="bordered"
+                            listboxProps={LISTBOX_PROPS}
                             selectedKeys={[dateRange]}
                             onSelectionChange={(keys: any) => setDateRange(Array.from(keys)[0] as DateRange || "month")}
                         >
@@ -207,22 +225,39 @@ export default function StatisticsPage() {
                         )}
                         <Select
                             label="Deporte" size="sm" variant="bordered"
-                            selectedKeys={sportFilter ? [sportFilter] : []}
-                            onSelectionChange={(keys: any) => setSportFilter(Array.from(keys)[0] as string || "")}
+                            disallowEmptySelection
+                            listboxProps={LISTBOX_PROPS}
+                            selectedKeys={[sportFilter || ALL_KEY]}
+                            onSelectionChange={(keys: any) => {
+                                const k = Array.from(keys)[0] as string | undefined;
+                                setSportFilter(!k || k === ALL_KEY ? "" : k);
+                            }}
                         >
-                            {(sportsData || []).map((s) => <SelectItem key={s.id}>{s.name}</SelectItem>)}
+                            {[
+                                <SelectItem key={ALL_KEY}>Todos los deportes</SelectItem>,
+                                ...(sportsData || []).map((s) => <SelectItem key={s.id}>{s.name}</SelectItem>),
+                            ]}
                         </Select>
                         {!isVenueAdmin && (
                             <Select
                                 label="Complejo" size="sm" variant="bordered"
-                                selectedKeys={venueFilter ? [venueFilter] : []}
-                                onSelectionChange={(keys: any) => setVenueFilter(Array.from(keys)[0] as string || "")}
+                                disallowEmptySelection
+                                listboxProps={LISTBOX_PROPS}
+                                selectedKeys={[venueFilter || ALL_KEY]}
+                                onSelectionChange={(keys: any) => {
+                                    const k = Array.from(keys)[0] as string | undefined;
+                                    setVenueFilter(!k || k === ALL_KEY ? "" : k);
+                                }}
                             >
-                                {venues.map((v) => <SelectItem key={v.id}>{v.name}</SelectItem>)}
+                                {[
+                                    <SelectItem key={ALL_KEY}>Todos los complejos</SelectItem>,
+                                    ...venues.map((v) => <SelectItem key={v.id}>{v.name}</SelectItem>),
+                                ]}
                             </Select>
                         )}
                         <Select
                             label="Estado" size="sm" variant="bordered"
+                            listboxProps={LISTBOX_PROPS}
                             selectedKeys={[statusFilter]}
                             onSelectionChange={(keys: any) => setStatusFilter(Array.from(keys)[0] as StatusFilter || "ALL")}
                         >

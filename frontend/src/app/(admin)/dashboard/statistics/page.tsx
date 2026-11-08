@@ -82,7 +82,7 @@ export default function StatisticsPage() {
     const customReady = dateRange !== "custom" || (!!customFrom && !!customTo);
 
     // Estadísticas via Postgres RPC (corre en la DB, una sola round-trip, respeta scope por rol via RLS)
-    const { data: stats, isLoading } = useQuery({
+    const { data: stats, isLoading, isError, error: statsError, refetch } = useQuery({
         queryKey: ["stats", dateRange, toISO(customFrom), toISO(customTo), sportFilter, venueFilter, statusFilter],
         queryFn: async () => {
             const { data, error } = await callRpc<StatsResponse>('get_stats', {
@@ -151,7 +151,7 @@ export default function StatisticsPage() {
     })();
 
     // Mientras se cargan los datos (o faltan fechas en modo personalizado)
-    const showLoader = (isLoading || !stats) && customReady;
+    const showLoader = (isLoading || !stats) && customReady && !isError;
     const t = stats?.totals;
     const activeCount = t ? t.total - t.cancelled : 0;
 
@@ -246,6 +246,18 @@ export default function StatisticsPage() {
                 <Card className="border border-divider">
                     <CardBody className="py-8 text-center text-sm text-default-500">
                         Elegí una fecha de inicio y una de fin para ver las estadísticas del período.
+                    </CardBody>
+                </Card>
+            )}
+
+            {isError && (
+                <Card className="border border-danger-200">
+                    <CardBody className="items-center gap-2 py-8 text-center">
+                        <p className="text-sm font-semibold text-danger">No se pudieron cargar las estadísticas</p>
+                        <p className="text-xs text-default-500">{(statsError as Error)?.message}</p>
+                        <button onClick={() => refetch()} className="text-xs text-primary hover:underline">
+                            Reintentar
+                        </button>
                     </CardBody>
                 </Card>
             )}

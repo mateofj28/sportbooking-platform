@@ -2,23 +2,22 @@
 @config "../../tailwind.config.ts";
 
 /* ============================================================
- * Quitar sombra de todas las Cards â€” flat design. * HeroUI aplica shadow-md/sm/lg via clases Tailwind en el * elemento. Anulamos las variables CSS de Tailwind shadow.
+ * Cards planas (sin sombra), pegadas al fondo.
+ * La Card de HeroUI no renderiza data-slot: se identifica por
+ * las clases que siempre aplica su base (flex-col relative
+ * h-auto text-foreground box-border). Anula cualquier shadow-*
+ * (shadow-medium por defecto o las que se pasen por className).
  * ============================================================ */
-[data-slot="base"].group\/card,
-[data-slot="base"].group\/card[data-hover="true"],
-[data-slot="base"].group\/card[data-pressed="true"] {
-    --tw-shadow: 0 0 #0000 !important;
-        --tw-shadow-colored: 0 0 #0000 !important;
-        box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),
-            var(--tw-ring-shadow, 0 0 #0000),
-            0 0 #0000 !important;
+.flex-col.relative.h-auto.text-foreground.box-border {
+    box-shadow: none !important;
+}
+
+/* Sin efecto de elevación/opacidad al pasar el mouse o presionar */
+.flex-col.relative.h-auto.text-foreground.box-border[data-hover="true"],
+.flex-col.relative.h-auto.text-foreground.box-border[data-pressed="true"] {
     opacity: 1 !important;
     scale: 1 !important;
     transform: none !important;
-}
-
-[data-slot="base"].group\/card:not([role="button"]) {
-    cursor: default;
 }
 
 h1,

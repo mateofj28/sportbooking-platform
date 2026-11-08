@@ -102,10 +102,10 @@ export default function AdminFacilitiesPage() {
         if (!facilities) return [];
         return facilities.filter((f) => {
             // El admin de sede solo ve las instalaciones de su propia sede
-            if (isVenueAdmin && user?.venueId && f.venue.id !== user.venueId) return false;
+            if (isVenueAdmin && user?.venueId && f.venue?.id !== user.venueId) return false;
             if (searchName && !f.name.toLowerCase().includes(searchName.toLowerCase())) return false;
             if (filterSport && f.sport.id !== filterSport) return false;
-            if (filterVenue && f.venue.id !== filterVenue) return false;
+            if (filterVenue && f.venue?.id !== filterVenue) return false;
             if (filterSurface && f.surfaceType?.toLowerCase() !== filterSurface.toLowerCase()) return false;
             return true;
         });
@@ -438,7 +438,7 @@ export default function AdminFacilitiesPage() {
                                         {facility.sport.name}
                                     </Chip>
                                 </TableCell>,
-                                ...(!isVenueAdmin ? [<TableCell key="sede">{facility.venue.name}</TableCell>] : []),
+                                ...(!isVenueAdmin ? [<TableCell key="sede">{facility.venue?.name ?? "-"}</TableCell>] : []),
                                 <TableCell key="superficie">{facility.surfaceType || "-"}</TableCell>,
                                 <TableCell key="estado">
                                     <button

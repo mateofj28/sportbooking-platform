@@ -145,7 +145,9 @@ export default function StatisticsPage() {
         if (!facilitiesData) return [] as { id: string; name: string }[];
         const map = new Map<string, { id: string; name: string }>();
         facilitiesData.forEach((f) => {
-            if (!map.has(f.venue.id)) map.set(f.venue.id, { id: f.venue.id, name: f.venue.name });
+            // Una cancha puede venir sin venue embebido (p. ej. complejo inactivo u oculto por RLS)
+            const v = f.venue;
+            if (v?.id && !map.has(v.id)) map.set(v.id, { id: v.id, name: v.name });
         });
         return Array.from(map.values());
     })();

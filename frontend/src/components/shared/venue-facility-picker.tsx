@@ -30,7 +30,7 @@ export function VenueFacilityPicker({ selectedFacilityId, onFacilityChange, clas
   const filteredFacilities = useMemo(() => {
     if (!facilities) return [] as Facility[];
     if (!selectedVenueId) return facilities;
-    return facilities.filter((f) => f.venue.id === selectedVenueId);
+    return facilities.filter((f) => f.venue?.id === selectedVenueId);
   }, [facilities, selectedVenueId]);
 
   // When venue changes, reset facility if it doesn't belong to the new venue
@@ -41,7 +41,7 @@ export function VenueFacilityPicker({ selectedFacilityId, onFacilityChange, clas
     // Clear facility selection if current doesn't belong to new venue
     if (selectedFacilityId && newVenueId) {
       const current = facilities?.find((f) => f.id === selectedFacilityId);
-      if (current && current.venue.id !== newVenueId) {
+      if (current && current.venue?.id !== newVenueId) {
         onFacilityChange("");
       }
     }
@@ -86,7 +86,7 @@ export function VenueFacilityPicker({ selectedFacilityId, onFacilityChange, clas
             <div>
               <p className="text-sm font-medium">{facility.name}</p>
               <p className="text-xs text-default-400">
-                {isVenueAdmin ? facility.sport.name : `${facility.sport.name} • ${facility.venue.name}`}
+                {isVenueAdmin ? facility.sport.name : `${facility.sport?.name} • ${facility.venue?.name ?? ""}`}
               </p>
             </div>
           </AutocompleteItem>

@@ -12,8 +12,8 @@ import { FacilityCard } from "@/components/cards/facility-card";
 import { useAvailabilitySummary, localDateStr } from "@/hooks/use-availability";
 import { amenityEmoji } from "@/lib/amenities";
 import { Search, MapPin, ArrowLeft, Building2 } from "lucide-react";
+import { MediaImage } from "@/components/shared/media-image";
 
-const VENUE_IMAGE = "https://images.unsplash.com/photo-1461896836934-bd900bb65104?w=600&h=300&fit=crop";
 
 function FacilitiesContent() {
     const searchParams = useSearchParams();
@@ -122,10 +122,11 @@ function FacilitiesContent() {
                                             className="w-full overflow-hidden"
                                         >
                                             <div className="relative h-40 w-full overflow-hidden">
-                                                <img
-                                                    src={venue.imageUrl || VENUE_IMAGE}
+                                                <MediaImage
+                                                    src={venue.imageUrl}
                                                     alt={venue.name}
-                                                    className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                                                    className="h-full w-full"
+                                                    imgClassName="transition-transform duration-300 hover:scale-105"
                                                 />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                                             </div>

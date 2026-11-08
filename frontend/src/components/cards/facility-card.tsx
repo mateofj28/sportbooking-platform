@@ -4,21 +4,7 @@ import { Card, CardBody, CardFooter, Chip, Button, Link } from "@heroui/react";
 import { MapPin, Users, Clock } from "lucide-react";
 import type { Facility } from "@/types";
 import { finalPricePerTurn, formatPrice } from "@/lib/pricing";
-
-const SPORT_IMAGES: Record<string, string> = {
-    futbol: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=600&h=300&fit=crop",
-    tenis: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=600&h=300&fit=crop",
-    padel: "https://images.unsplash.com/photo-1612534847738-b3af3b9545f4?w=600&h=300&fit=crop",
-    basquetbol: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&h=300&fit=crop",
-    voleibol: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=600&h=300&fit=crop",
-};
-
-const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1461896836934-bd900bb65104?w=600&h=300&fit=crop";
-
-function getSportImage(sportSlug: string): string {
-    const key = sportSlug.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    return SPORT_IMAGES[key] || DEFAULT_IMAGE;
-}
+import { MediaImage } from "@/components/shared/media-image";
 
 interface FacilityCardProps {
     facility: Facility;
@@ -35,16 +21,15 @@ export function FacilityCard({ facility, availabilityToday }: FacilityCardProps)
     const showBadge = availabilityToday === "available" || availabilityToday === "unavailable";
     const hasFreeSlots = availabilityToday === "available";
 
-    const imageUrl = facility.imageUrl || getSportImage(facility.sport.name);
-
     return (
       <Card className="w-full overflow-hidden" isPressable as={Link} href={`/facilities/${facility.id}`}>
           {/* Image */}
           <div className="relative h-40 w-full overflow-hidden">
-              <img
-                  src={imageUrl}
+                <MediaImage
+                    src={facility.imageUrl}
                   alt={facility.name}
-                  className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                    className="h-full w-full"
+                    imgClassName="transition-transform duration-300 hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               <div className="absolute top-2 right-2">

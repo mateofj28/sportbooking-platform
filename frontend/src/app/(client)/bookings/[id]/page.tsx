@@ -8,20 +8,8 @@ import { getBookingStatusChip } from "@/lib/booking-status";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { Navbar } from "@/components/layout/navbar";
+import { MediaImage } from "@/components/shared/media-image";
 import { ArrowLeft, MapPin, Calendar, Clock, User, Check, X, Repeat, ShieldCheck, AlertTriangle } from "lucide-react";
-
-const SPORT_IMAGES: Record<string, string> = {
-    futbol: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=1200&h=400&fit=crop",
-    tenis: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1200&h=400&fit=crop",
-    padel: "https://images.unsplash.com/photo-1612534847738-b3af3b9545f4?w=1200&h=400&fit=crop",
-    basquetbol: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&h=400&fit=crop",
-    voleibol: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=1200&h=400&fit=crop",
-};
-const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1461896836934-bd900bb65104?w=1200&h=400&fit=crop";
-function sportImage(name?: string) {
-    const key = (name || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    return SPORT_IMAGES[key] || DEFAULT_IMAGE;
-}
 
 function formatDateLong(dateStr: string): string {
     return formatDateAr(dateStr);
@@ -79,7 +67,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
 
                 {/* Hero */}
                 <div className="relative overflow-hidden rounded-2xl">
-                    <img src={sportImage(booking.facility.sport?.name)} alt={booking.facility.name} className="h-48 w-full object-cover sm:h-60" />
+                    <MediaImage src={booking.facility.imageUrl} alt={booking.facility.name} className="h-48 w-full sm:h-60" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between gap-3 p-5">
                         <div>

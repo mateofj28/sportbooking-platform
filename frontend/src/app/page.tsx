@@ -305,7 +305,7 @@ function FeatureCard({
     description: string;
 }) {
     return (
-        <div className="rounded-2xl border border-divider bg-background p-6">
+        <div className="rounded-2xl border border-divider bg-content1 p-6">
             <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-default-100">
                 {icon}
             </div>

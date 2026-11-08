@@ -67,8 +67,9 @@ const config: Config = {
                         },
                     },
                     colors: {
-                        background: "#FAFBFC",
+                        background: "#ffffff",
                         foreground: "#1e3a5f",
+                        content1: "#f0f2f5",
                         primary: {
                             50: "#EEF6FF",
                             100: "#D9EBFF",

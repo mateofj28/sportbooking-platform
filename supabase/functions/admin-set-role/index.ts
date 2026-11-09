@@ -1,7 +1,9 @@
 // admin-set-role/index.ts
 // Actualiza el rol y venue_id de un usuario via set_user_role (RPC).
+// Solo ADMIN general.
 
 import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
+import { requireAdmin } from '../_shared/auth.ts'
 
 Deno.serve(async (req) => {
   // Responder al preflight CORS que envía el browser antes de cada POST
@@ -10,8 +12,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) return err('No autorizado', 401)
+    // Autorización: sin esto, cualquiera con un header cualquiera podría cambiar roles
+    const caller = await requireAdmin(req)
+    if (caller instanceof Response) return caller
 
     const { user_id, role, venue_id } = await req.json()
     if (!user_id || !role) return err('user_id y role son requeridos')

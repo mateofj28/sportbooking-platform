@@ -2,21 +2,14 @@
 // Crea un usuario con rol y perfil. Solo accesible para ADMIN.
 
 import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireAdmin } from '../_shared/auth.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) return err('No autorizado', 401)
-
-    const userClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_PUBLISHABLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
-    )
-    const { data: { user } } = await userClient.auth.getUser()
-    if (!user || user.app_metadata?.role !== 'ADMIN') return err('Solo ADMIN puede crear usuarios', 403)
+    // Autorización: el rol se verifica en profiles (no en el JWT, que puede estar desactualizado)
+    const caller = await requireAdmin(req)
+    if (caller instanceof Response) return caller
 
     const { email, password, first_name, last_name, phone, dni, role, venue_id } = await req.json()
     if (!email || !password) return err('email y password son requeridos')

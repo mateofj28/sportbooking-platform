@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, Megaphone, Pencil, Plus, Trash2 } from "lucide-react";
 import { DataTable } from "@/components/shared/data-table";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { DateTimeField } from "@/components/shared/date-time-field";
 import { PromoCarousel, adToSlide, type PromoSlide } from "@/components/shared/promo-carousel";
 import { PROVINCES, provinceName } from "@/lib/ar-provinces";
 import {
@@ -571,9 +572,10 @@ function AdFormModal({ isOpen, onClose, initial, isEditing, isSaving, onSubmit }
                             <Controller
                                 name="startsAt" control={control}
                                 render={({ field }) => (
-                                    <Input
-                                        {...field} type="datetime-local" label="Comienza (opcional)" variant="bordered"
-                                        labelPlacement="outside" placeholder=" "
+                                    <DateTimeField
+                                        label="Comienza (opcional)"
+                                        value={field.value}
+                                        onChange={field.onChange}
                                         description="Hora de Argentina. Vacío = desde ya."
                                         isInvalid={!!errors.startsAt} errorMessage={errors.startsAt?.message}
                                     />
@@ -582,9 +584,10 @@ function AdFormModal({ isOpen, onClose, initial, isEditing, isSaving, onSubmit }
                             <Controller
                                 name="endsAt" control={control}
                                 render={({ field }) => (
-                                    <Input
-                                        {...field} type="datetime-local" label="Termina (opcional)" variant="bordered"
-                                        labelPlacement="outside" placeholder=" "
+                                    <DateTimeField
+                                        label="Termina (opcional)"
+                                        value={field.value}
+                                        onChange={field.onChange}
                                         description="Hora de Argentina. Vacío = sin vencimiento."
                                         isInvalid={!!errors.endsAt} errorMessage={errors.endsAt?.message}
                                     />

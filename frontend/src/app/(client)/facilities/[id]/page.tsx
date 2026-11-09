@@ -22,6 +22,7 @@ import { useCreateBooking, useCreateRecurringBooking } from "@/hooks/use-booking
 import { durationOptionsForSport } from "@/components/shared/availability-picker";
 import { finalPricePerTurn } from "@/lib/pricing";
 import { useFacilityAvailability, useAvailabilitySummary } from "@/hooks/use-availability";
+import { useAvailabilityRealtime } from "@/hooks/use-availability-realtime";
 import type { Facility } from "@/types";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
@@ -168,6 +169,10 @@ export default function FacilityDetailPage({
         !!facility,
     );
 
+    // Refresca la disponibilidad solo cuando la base avisa un cambio en esta cancha
+    // (reserva, cancelación, bloqueo, horario o tarifa). Sin polling.
+    useAvailabilityRealtime(facility ? id : undefined);
+
     /** ¿El día tiene al menos un slot disponible? Se evalúa localmente
      *  a partir del horario del día (sin fetch adicional por cada día del calendario). */
     const dayHasAvailableSlots = (day: Date): boolean => {
@@ -198,6 +203,18 @@ export default function FacilityDetailPage({
                 return { time: t, available: slotMin > nowMin };
             });
     }, [availability, schedule, facility, isToday]);
+
+    // Si llega un aviso en tiempo real y el turno elegido ya no está libre
+    // (otro usuario lo reservó), quitar la selección para no confirmar un turno tomado.
+    useEffect(() => {
+        if (!selectedSlot) return;
+        const current = timeSlots.find((s) => (typeof s === "string" ? s : s.time) === selectedSlot);
+        const stillAvailable = !!current && (typeof current === "string" || current.available);
+        if (!stillAvailable) {
+            setSelectedSlot(null);
+            setStep("select");
+        }
+    }, [timeSlots, selectedSlot]);
 
     // Duration options (según deporte: fútbol solo 60 min)
     const durationOptions = useMemo(() => {

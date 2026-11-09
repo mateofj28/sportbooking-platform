@@ -104,7 +104,7 @@ export default function AdminFacilitiesPage() {
             // El admin de sede solo ve las instalaciones de su propia sede
             if (isVenueAdmin && user?.venueId && f.venue?.id !== user.venueId) return false;
             if (searchName && !f.name.toLowerCase().includes(searchName.toLowerCase())) return false;
-            if (filterSport && f.sport.id !== filterSport) return false;
+            if (filterSport && f.sport?.id !== filterSport) return false;
             if (filterVenue && f.venue?.id !== filterVenue) return false;
             if (filterSurface && f.surfaceType?.toLowerCase() !== filterSurface.toLowerCase()) return false;
             return true;
@@ -435,7 +435,7 @@ export default function AdminFacilitiesPage() {
                                 <TableCell key="nombre" className="font-medium">{facility.name}</TableCell>,
                                 <TableCell key="deporte">
                                     <Chip color="primary" size="sm" variant="flat">
-                                        {facility.sport.name}
+                                        {facility.sport?.name ?? ""}
                                     </Chip>
                                 </TableCell>,
                                 ...(!isVenueAdmin ? [<TableCell key="sede">{facility.venue?.name ?? "-"}</TableCell>] : []),

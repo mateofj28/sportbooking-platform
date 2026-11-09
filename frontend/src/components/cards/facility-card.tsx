@@ -34,7 +34,7 @@ export function FacilityCard({ facility, availabilityToday }: FacilityCardProps)
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               <div className="absolute top-2 right-2">
                   <Chip color="primary" variant="solid" size="sm" className="shadow-md">
-                      {facility.sport.name}
+                        {facility.sport?.name ?? ""}
                   </Chip>
               </div>
                 {showBadge && (
@@ -65,7 +65,7 @@ export function FacilityCard({ facility, availabilityToday }: FacilityCardProps)
                       <div className="mt-1 flex items-center gap-1 text-xs text-default-500">
                           <MapPin className="h-3 w-3 flex-shrink-0" />
                           <span className="truncate">
-                              {facility.venue.name} — {facility.venue.city}
+                                {facility.venue?.name ?? ""} — {facility.venue?.city ?? ""}
                           </span>
                       </div>
                   </div>
@@ -96,7 +96,7 @@ export function FacilityCard({ facility, availabilityToday }: FacilityCardProps)
           </CardBody>
 
           <CardFooter className="justify-between border-t border-divider px-4 py-2.5">
-              <span className="text-xs text-default-400">{facility.venue.city}</span>
+                <span className="text-xs text-default-400">{facility.venue?.city ?? ""}</span>
               <Button size="sm" color="primary" variant="flat">
                   Ver disponibilidad
               </Button>

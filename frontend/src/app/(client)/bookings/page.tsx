@@ -180,7 +180,7 @@ export default function BookingsPage() {
                                                 </span>
                                                 <span className="flex items-center gap-1">
                                                     <MapPin className="h-3 w-3" />
-                                                    {r.facility.venue.name}
+                                                    {r.facility?.venue?.name ?? ""}
                                                 </span>
                                             </div>
                                             <p className="mt-1 text-xs text-default-400">
@@ -272,7 +272,7 @@ export default function BookingsPage() {
                                   </span>
                                   <span className="flex items-center gap-1">
                                       <MapPin className="h-3 w-3" />
-                                      {booking.facility.venue.name}
+                                                  {booking.facility?.venue?.name ?? ""}
                                   </span>
                               </div>
                               <p className="mt-1 text-sm font-medium text-success">

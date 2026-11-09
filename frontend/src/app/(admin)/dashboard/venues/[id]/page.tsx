@@ -62,7 +62,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
   // Unique sports and surfaces from this venue's facilities
   const sportOptions = useMemo(() => {
     const map = new Map<string, string>();
-    venueFacilities.forEach((f) => map.set(f.sport.id, f.sport.name));
+    venueFacilities.forEach((f) => { if (f.sport) map.set(f.sport.id, f.sport.name); });
     return Array.from(map, ([id, name]) => ({ id, name }));
   }, [venueFacilities]);
 
@@ -74,7 +74,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
   const facilities = useMemo(() => {
     return venueFacilities.filter((f) => {
       if (search && !f.name.toLowerCase().includes(search.toLowerCase())) return false;
-      if (filterSport && f.sport.id !== filterSport) return false;
+      if (filterSport && f.sport?.id !== filterSport) return false;
       if (filterSurface && f.surfaceType?.toLowerCase() !== filterSurface.toLowerCase()) return false;
       if (filterLocation === "indoor" && !f.isIndoor) return false;
       if (filterLocation === "exterior" && f.isIndoor) return false;
@@ -199,9 +199,9 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
                 <div className="flex items-center justify-between bg-primary/5 px-4 py-2.5 border-b border-divider">
                   <div className="flex items-center gap-2">
                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-base leading-none">
-                      <span aria-hidden>{getSportEmoji(facility.sport.name)}</span>
+                      <span aria-hidden>{getSportEmoji(facility.sport?.name ?? "")}</span>
                     </div>
-                    <span className="text-xs font-semibold text-primary">{facility.sport.name}</span>
+                    <span className="text-xs font-semibold text-primary">{facility.sport?.name ?? ""}</span>
                   </div>
                   <Chip size="sm" color={facility.isActive ? "success" : "danger"} variant="flat" className="text-[10px]">
                     {facility.isActive ? "Activa" : "Inactiva"}

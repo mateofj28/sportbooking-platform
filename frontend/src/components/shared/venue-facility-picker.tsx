@@ -82,11 +82,13 @@ export function VenueFacilityPicker({ selectedFacilityId, onFacilityChange, clas
         isDisabled={!!(selectedVenueId && filteredFacilities.length === 0)}
       >
         {(facility) => (
-          <AutocompleteItem key={facility.id} textValue={`${facility.name} — ${facility.sport.name}`}>
+          <AutocompleteItem key={facility.id} textValue={`${facility.name} — ${facility.sport?.name ?? ""}`}>
             <div>
               <p className="text-sm font-medium">{facility.name}</p>
               <p className="text-xs text-default-400">
-                {isVenueAdmin ? facility.sport.name : `${facility.sport?.name} • ${facility.venue?.name ?? ""}`}
+                {isVenueAdmin
+                  ? facility.sport?.name ?? ""
+                  : `${facility.sport?.name ?? ""} • ${facility.venue?.name ?? ""}`}
               </p>
             </div>
           </AutocompleteItem>

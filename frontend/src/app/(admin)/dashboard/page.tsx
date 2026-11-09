@@ -354,7 +354,9 @@ function TodaySummary() {
     });
 
     const { data: facilities } = useQuery({
-        queryKey: ["facilities", {}],
+        // Clave propia: esta consulta trae un subconjunto de columnas y NO debe
+        // compartir cache con useFacilities() (['facilities', filters]).
+        queryKey: ["facilities", "dashboard-summary"],
         queryFn: async () => {
             const { data, error } = await supabase
                 .from("facilities")

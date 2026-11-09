@@ -396,11 +396,11 @@ export default function FacilityDetailPage({
                             <h1 className="text-2xl font-bold">{facility.name}</h1>
                             <p className="mt-1 flex items-center gap-1 text-sm text-default-500">
                                 <MapPin className="h-3.5 w-3.5" />
-                                {facility.venue.name} — {facility.venue.address}, {facility.venue.city}
+                                {facility.venue?.name ?? ""} — {facility.venue?.address ?? ""}, {facility.venue?.city ?? ""}
                             </p>
                         </div>
                         <Chip color="primary" variant="flat" size="lg">
-                            {facility.sport.name}
+                            {facility.sport?.name ?? ""}
                         </Chip>
                     </div>
                     {facility.description && (
@@ -429,12 +429,12 @@ export default function FacilityDetailPage({
                             </div>
                             <h2 className="text-lg font-bold">Este deporte se abona por mensualidad</h2>
                             <p className="max-w-md text-sm text-default-500">
-                                {facility.sport.name} no se reserva por turno individual. Para sumarte,
+                                {facility.sport?.name ?? ""} no se reserva por turno individual. Para sumarte,
                                 consultá en el complejo por la inscripción mensual y los horarios de las clases.
                             </p>
                             <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm text-default-600">
                                 <MapPin className="h-4 w-4" />
-                                <span>{facility.venue.name} — {facility.venue.address}, {facility.venue.city}</span>
+                                <span>{facility.venue?.name ?? ""} — {facility.venue?.address ?? ""}, {facility.venue?.city ?? ""}</span>
                             </div>
                         </CardBody>
                     </Card>
@@ -721,8 +721,8 @@ export default function FacilityDetailPage({
 
                             {/* Alternativas en otras canchas DEL MISMO DEPORTE: día entero sin turnos u horas ocupadas */}
                             <OtherAvailableFacilities
-                                venueId={facility.venue.id}
-                                sportId={facility.sport.id}
+                                venueId={facility.venue?.id ?? ""}
+                                sportId={facility.sport?.id ?? ""}
                                 excludeId={facility.id}
                                 date={dateStr}
                                 dayLabel={selectedDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}

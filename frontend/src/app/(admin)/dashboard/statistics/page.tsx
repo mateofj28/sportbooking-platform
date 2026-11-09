@@ -65,19 +65,6 @@ const fmt = (n: number) => Math.round(n).toLocaleString("en-US");
 /** Valor de la opción "Todos" en los selects de deporte y complejo. */
 const ALL_KEY = "ALL";
 
-/** Colores de los items del desplegable: hover/foco suaves en lugar del gris oscuro por defecto. */
-const LISTBOX_PROPS = {
-    itemClasses: {
-        base: [
-            "data-[hover=true]:bg-default-100",
-            "data-[focus=true]:bg-default-100",
-            "data-[selectable=true]:focus:bg-default-100",
-            "data-[selected=true]:bg-default-100",
-            "data-[hover=true]:text-foreground",
-            "data-[focus=true]:text-foreground",
-        ],
-    },
-};
 
 export default function StatisticsPage() {
     const { user } = useAuthStore();
@@ -194,7 +181,6 @@ export default function StatisticsPage() {
                     <div className={`grid gap-3 sm:grid-cols-2 ${isVenueAdmin ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
                         <Select
                             label="Período" size="sm" variant="bordered"
-                            listboxProps={LISTBOX_PROPS}
                             selectedKeys={[dateRange]}
                             onSelectionChange={(keys: any) => setDateRange(Array.from(keys)[0] as DateRange || "month")}
                         >
@@ -226,7 +212,6 @@ export default function StatisticsPage() {
                         <Select
                             label="Deporte" size="sm" variant="bordered"
                             disallowEmptySelection
-                            listboxProps={LISTBOX_PROPS}
                             selectedKeys={[sportFilter || ALL_KEY]}
                             onSelectionChange={(keys: any) => {
                                 const k = Array.from(keys)[0] as string | undefined;
@@ -242,7 +227,6 @@ export default function StatisticsPage() {
                             <Select
                                 label="Complejo" size="sm" variant="bordered"
                                 disallowEmptySelection
-                                listboxProps={LISTBOX_PROPS}
                                 selectedKeys={[venueFilter || ALL_KEY]}
                                 onSelectionChange={(keys: any) => {
                                     const k = Array.from(keys)[0] as string | undefined;
@@ -257,7 +241,6 @@ export default function StatisticsPage() {
                         )}
                         <Select
                             label="Estado" size="sm" variant="bordered"
-                            listboxProps={LISTBOX_PROPS}
                             selectedKeys={[statusFilter]}
                             onSelectionChange={(keys: any) => setStatusFilter(Array.from(keys)[0] as StatusFilter || "ALL")}
                         >

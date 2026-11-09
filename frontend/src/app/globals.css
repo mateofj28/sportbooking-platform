@@ -12,7 +12,7 @@
     box-shadow: none !important;
 }
 
-/* Sin efecto de elevaci�n/opacidad al pasar el mouse o presionar */
+/* Sin efecto de elevaci�n/opacidad al pasar el mouse o presionar */
 .flex-col.relative.h-auto.text-foreground.box-border[data-hover="true"],
 .flex-col.relative.h-auto.text-foreground.box-border[data-pressed="true"] {
     opacity: 1 !important;
@@ -20,6 +20,30 @@
     transform: none !important;
 }
 
+/* ============================================================
+ * Items de TODOS los desplegables (Select, Dropdown, Autocomplete,
+ * menús): color al pasar el mouse o navegar con teclado.
+ * HeroUI usa el gris oscuro "default" por defecto; se reemplaza
+ * por uno claro. Se identifican por rol ARIA, así cubre cualquier
+ * componente nuevo sin tocar cada pantalla.
+ * ============================================================ */
+[role="option"][data-hover="true"],
+[role="option"][data-focus="true"],
+[role="option"][data-focus-visible="true"],
+[role="menuitem"][data-hover="true"],
+[role="menuitem"][data-focus="true"],
+[role="menuitem"][data-focus-visible="true"] {
+    background-color: #f0f1f2 !important;
+}
+
+.dark [role="option"][data-hover="true"],
+.dark [role="option"][data-focus="true"],
+.dark [role="option"][data-focus-visible="true"],
+.dark [role="menuitem"][data-hover="true"],
+.dark [role="menuitem"][data-focus="true"],
+.dark [role="menuitem"][data-focus-visible="true"] {
+    background-color: #2e2e32 !important;
+}
 h1,
 h2,
 h3,

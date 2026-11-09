@@ -27,6 +27,14 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
     (inicio `00:00`, fin `23:59`). Nada de comportamiento oculto.
   - El selector de "fin" no permite días anteriores al "inicio" (`minDate`).
   - Cada par es un grupo accesible (`role="group"`) con el error anunciado como alerta.
+- **Todo selector de fecha tiene límites** (`minValue`/`maxValue`, o `minDate`/`maxDate` en `DateTimeField`):
+  - No se ofrecen fechas que no tienen sentido para el caso (ej. programar algo en el pasado) ni años absurdos
+    (1900, 2222). Si no hay una regla de negocio distinta, el tope hacia adelante es de 2 años.
+  - "Hoy" y los límites se calculan en hora de Argentina (`todayAr()` en `lib/ads.ts`), nunca con la zona del navegador.
+  - Los límites se repiten en la validación Zod (el usuario puede escribir el año a mano) y en la base
+    (trigger o CHECK). Ver `createAdvertisementSchema` y la migración 019 como ejemplo.
+  - Las reglas "no en el pasado" se exigen solo sobre valores **nuevos o modificados**: al editar un registro
+    con una fecha vieja que no se toca, no se debe bloquear el guardado.
 - Las fechas de negocio se interpretan en **hora de Argentina (UTC-3)**. Ver `lib/ads.ts`
   (`arLocalToIso` / `isoToArLocal`) y `lib/datetime.ts`.
 

@@ -19,8 +19,10 @@ interface DateTimeFieldProps {
      * campo de hora, nunca oculta. Ej: "00:00" para un inicio, "23:59" para un fin.
      */
     defaultTime?: string;
-    /** Día mínimo permitido ("YYYY-MM-DD"). Ej: el día de inicio, para el selector de fin. */
+    /** Día mínimo permitido ("YYYY-MM-DD"). Ej: hoy, o el día de inicio para el selector de fin. */
     minDate?: string;
+    /** Día máximo permitido ("YYYY-MM-DD"). Evita años absurdos (2222, 3333). */
+    maxDate?: string;
     /** Muestra "Quitar" cuando hay un valor (para campos opcionales). */
     isClearable?: boolean;
 }
@@ -68,6 +70,7 @@ export function DateTimeField({
     errorMessage,
     defaultTime = "00:00",
     minDate,
+    maxDate,
     isClearable = true,
 }: DateTimeFieldProps) {
     const id = useId();
@@ -102,6 +105,7 @@ export function DateTimeField({
                         showMonthAndYearPickers
                         value={toDate(date) as any}
                         minValue={(minDate ? toDate(minDate) : undefined) as any}
+                        maxValue={(maxDate ? toDate(maxDate) : undefined) as any}
                         isInvalid={isInvalid}
                         onChange={(v) => {
                             // El valor llega como CalendarDate; ignorar si se vació

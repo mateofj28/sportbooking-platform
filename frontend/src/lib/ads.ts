@@ -102,6 +102,25 @@ export function describeTargeting(ad: Pick<Advertisement, "scope" | "provinces">
 
 const AR_OFFSET_MS = 3 * 60 * 60 * 1000;
 
+/** Hasta cuántos años hacia adelante se puede programar una publicidad (igual que la base, migración 019). */
+export const AD_MAX_FUTURE_YEARS = 2;
+
+/** Hoy en Argentina como "YYYY-MM-DD" (no depende de la zona horaria del navegador). */
+export function todayAr(now: Date = new Date()): string {
+    return new Date(now.getTime() - AR_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/** Suma años a un "YYYY-MM-DD". El 29/02 cae en el 01/03 si el año destino no es bisiesto. */
+export function addYearsToDate(date: string, years: number): string {
+    const [y, m, d] = date.split("-").map(Number);
+    return new Date(Date.UTC(y + years, m - 1, d)).toISOString().slice(0, 10);
+}
+
+/** Día máximo programable, "YYYY-MM-DD". */
+export function maxAdDate(now: Date = new Date()): string {
+    return addYearsToDate(todayAr(now), AD_MAX_FUTURE_YEARS);
+}
+
 /**
  * Valor de <input type="datetime-local"> ("YYYY-MM-DDTHH:mm"), interpretado
  * como hora de Argentina -> ISO UTC. Vacío o inválido -> null.

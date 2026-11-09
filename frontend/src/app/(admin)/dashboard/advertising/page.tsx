@@ -17,10 +17,11 @@ import { PromoCarousel, adToSlide, type PromoSlide } from "@/components/shared/p
 import { PROVINCES, provinceName } from "@/lib/ar-provinces";
 import {
     AD_LIMITS, AD_STATUS_META, AD_THEMES, AD_THEME_KEYS, adGradient, describeSchedule,
-    describeTargeting, getAdStatus, isoToArLocal, type AdStatus, type AdTheme, type Advertisement,
+    describeTargeting, getAdStatus, isoToArLocal, maxAdDate, todayAr,
+    type AdStatus, type AdTheme, type Advertisement,
 } from "@/lib/ads";
 import {
-    advertisementSchema, EMPTY_AD_FORM, type AdvertisementFormData,
+    createAdvertisementSchema, EMPTY_AD_FORM, type AdvertisementFormData,
 } from "@/lib/validations/advertisement.schema";
 import {
     PREVIEW_NO_PROVINCE, useActiveAdvertisements, useAdminAdvertisements,
@@ -387,16 +388,33 @@ interface AdFormModalProps {
 }
 
 function AdFormModal({ isOpen, onClose, initial, isEditing, isSaving, onSubmit }: AdFormModalProps) {
+    // El esquema recuerda las fechas con las que se abrió el formulario: la regla de
+    // "no en el pasado" solo se exige sobre fechas nuevas o modificadas.
+    const [schema] = useState(() =>
+        createAdvertisementSchema({ startsAt: initial.startsAt, endsAt: initial.endsAt }),
+    );
+
     const {
         control, handleSubmit, watch, setValue, formState: { errors },
     } = useForm<AdvertisementFormData>({
-        resolver: zodResolver(advertisementSchema),
+        resolver: zodResolver(schema),
         defaultValues: initial,
         mode: "onChange",
     });
 
     const values = watch();
     const scope = values.scope;
+
+    // Límites de los selectores de fecha (hora de Argentina). Al editar un anuncio que ya
+    // empezó/venció, su fecha original sigue siendo elegible para no forzar a cambiarla.
+    const today = todayAr();
+    const maxDate = maxAdDate();
+    const initialStartDay = initial.startsAt.slice(0, 10);
+    const initialEndDay = initial.endsAt.slice(0, 10);
+    const startMin = initialStartDay && initialStartDay < today ? initialStartDay : today;
+    const endBase = initialEndDay && initialEndDay < today ? initialEndDay : today;
+    const startDay = values.startsAt.slice(0, 10);
+    const endMin = startDay && startDay > endBase ? startDay : endBase;
 
     // Vista previa en vivo con lo que se está escribiendo
     const previewSlide: PromoSlide = {
@@ -577,6 +595,8 @@ function AdFormModal({ isOpen, onClose, initial, isEditing, isSaving, onSubmit }
                                         value={field.value}
                                         onChange={field.onChange}
                                         defaultTime="00:00"
+                                        minDate={startMin}
+                                        maxDate={maxDate}
                                         description="Hora de Argentina. Sin fecha = se publica desde ya. Al elegir el día, arranca a las 00:00."
                                         isInvalid={!!errors.startsAt} errorMessage={errors.startsAt?.message}
                                     />
@@ -590,7 +610,8 @@ function AdFormModal({ isOpen, onClose, initial, isEditing, isSaving, onSubmit }
                                         value={field.value}
                                         onChange={field.onChange}
                                         defaultTime="23:59"
-                                        minDate={values.startsAt.slice(0, 10) || undefined}
+                                        minDate={endMin}
+                                        maxDate={maxDate}
                                         description="Hora de Argentina. Sin fecha = sin vencimiento. Al elegir el día, termina a las 23:59."
                                         isInvalid={!!errors.endsAt} errorMessage={errors.endsAt?.message}
                                     />

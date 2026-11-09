@@ -8,7 +8,7 @@ import { parseDate, type CalendarDate } from "@internationalized/date";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCancelBooking } from "@/hooks/use-bookings";
 import { supabase } from "@/lib/supabase";
-import { camelize, BookingRow } from "@/lib/supabase-helpers";
+import { camelize } from "@/lib/supabase-helpers";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { todayAr } from "@/lib/ads";
 import { ADMIN_BOOKING_STATES, getAdminBookingState, type AdminBookingState } from "@/lib/booking-status";
@@ -21,25 +21,25 @@ import { useRouter } from "next/navigation";
 import { useToastStore } from "@/stores/toast-store";
 import type { Booking } from "@/types";
 
-/** Reserva del panel: el cliente trae también los datos para buscarlo. */
-type AdminBooking = Omit<Booking, "user"> & {
+/** Reserva del panel tal como la devuelve la RPC admin_list_bookings (ya camelizada). */
+type AdminBooking = Omit<Booking, "user" | "totalPrice" | "commissionAmount"> & {
+    /** Estado de negocio calculado en la base contra now(). */
+    bizState: AdminBookingState;
+    /** Solo llegan para el ADMIN general. */
+    totalPrice: number | null;
+    commissionAmount: number | null;
     user: { id: string; firstName: string; lastName: string; dni?: string | null; phone?: string | null; email?: string | null } | null;
 };
 
-// Igual que BOOKING_SELECT pero con DNI / teléfono / email del cliente para la búsqueda.
-// El RLS de profiles ya limita qué clientes puede ver cada admin (migración 014).
-const ADMIN_BOOKING_SELECT = `
-  *,
-  facility:facilities!facility_id(
-    id, name, image_url,
-    venue:venues!venue_id(id, name, city),
-    sport:sports!sport_id(id, name)
-  ),
-  user:profiles!user_id(id, first_name, last_name, dni, phone, email)
-`;
+interface AdminBookingsResult {
+    items: AdminBooking[];
+    total: number;
+    counts: Record<StateFilter, number>;
+}
 
-const FETCH_LIMIT = 1000;
 const PER_PAGE = 12;
+const SEARCH_DEBOUNCE_MS = 300;
+const EMPTY_COUNTS: Record<StateFilter, number> = { ALL: 0, REALIZADA: 0, PENDIENTE_PAGO: 0, COMPLETADA: 0, CANCELADA: 0 };
 
 type StateFilter = "ALL" | AdminBookingState;
 const STATE_FILTERS: StateFilter[] = ["ALL", "REALIZADA", "PENDIENTE_PAGO", "COMPLETADA", "CANCELADA"];
@@ -60,12 +60,6 @@ function addDays(date: string, days: number): string {
     return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }
 
-/** 00:00 hora AR del día dado, como instante ISO UTC (= 03:00 UTC). */
-function arMidnightIso(date: string): string {
-    const [y, m, d] = date.split("-").map(Number);
-    return new Date(Date.UTC(y, m - 1, d, 3, 0, 0)).toISOString();
-}
-
 /** Rango [desde, hasta) en días AR. La actividad se agrupa por el día de INICIO del turno. */
 function resolveRange(preset: DatePreset, custom: { start: CalendarDate; end: CalendarDate } | null): { from: string; to: string } | null {
     const today = todayAr();
@@ -79,7 +73,7 @@ function resolveRange(preset: DatePreset, custom: { start: CalendarDate; end: Ca
 }
 
 const formatDate = (d: string) => formatDateAr(d, { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
-const formatMoney = (v: number | undefined) => Math.round(Number(v ?? 0)).toLocaleString("en-US");
+const formatMoney = (v: number | null | undefined) => Math.round(Number(v ?? 0)).toLocaleString("en-US");
 
 export default function AdminBookingsPage() {
     const queryClient = useQueryClient();
@@ -87,7 +81,6 @@ export default function AdminBookingsPage() {
     const router = useRouter();
     const { user } = useAuthStore();
     const isAdmin = user?.role === "ADMIN";
-    const isVenueAdmin = user?.role === "VENUE_ADMIN";
 
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
@@ -102,72 +95,51 @@ export default function AdminBookingsPage() {
 
     const range = resolveRange(datePreset, customRange);
 
-    // El rango de fechas se filtra en la base; estado y búsqueda en el cliente
-    const { data: allBookings, isLoading, isFetching } = useQuery({
-        queryKey: ["bookings", "admin", range?.from ?? "", range?.to ?? ""],
-        queryFn: async (): Promise<AdminBooking[]> => {
-            let query = supabase.from("bookings").select(ADMIN_BOOKING_SELECT);
-            if (range) {
-                query = query.gte("start_datetime", arMidnightIso(range.from)).lt("start_datetime", arMidnightIso(range.to));
-            }
-            const { data, error } = await query.order("start_datetime", { ascending: false }).limit(FETCH_LIMIT);
+    // La búsqueda se manda a la base recién cuando el usuario deja de tipear
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(search.trim()), SEARCH_DEBOUNCE_MS);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    // Volver a la página 1 cuando cambia cualquier filtro
+    useEffect(() => { setPage(1); }, [debouncedSearch, stateFilter, datePreset, customRange]);
+
+    // Todo se resuelve en la base (RPC admin_list_bookings, migración 021):
+    // rango, estado de negocio, búsqueda, contadores, orden y paginación.
+    // El alcance (admin de sede -> su complejo) también lo aplica la RPC.
+    const { data, isLoading, isFetching, error } = useQuery({
+        queryKey: ["bookings", "admin", range?.from ?? "", range?.to ?? "", stateFilter, debouncedSearch, page],
+        queryFn: async (): Promise<AdminBookingsResult> => {
+            const { data, error } = await (supabase.rpc as any)("admin_list_bookings", {
+                p_from: range?.from ?? null,
+                p_to: range?.to ?? null,
+                p_state: stateFilter,
+                p_search: debouncedSearch || null,
+                p_page: page,
+                p_per_page: PER_PAGE,
+            });
             if (error) throw new Error(error.message);
-            return (data ?? []).map((r) => camelize(r as unknown as BookingRow) as unknown as AdminBooking);
+            const res = camelize((data ?? {}) as Record<string, unknown>) as unknown as Partial<AdminBookingsResult>;
+            return {
+                items: res.items ?? [],
+                total: Number(res.total ?? 0),
+                counts: { ...EMPTY_COUNTS, ...(res.counts ?? {}) },
+            };
         },
-        placeholderData: (prev) => prev, // no parpadear al cambiar de rango
+        placeholderData: (prev) => prev, // no parpadear al cambiar de filtro o de página
+        enabled: !!user,
     });
 
-    // Alcance del panel: el admin de sede ve SU complejo. El RLS también le devuelve
-    // sus reservas propias en otros complejos; esas son de su vista de cliente.
-    const scoped = useMemo(() => {
-        const list = allBookings ?? [];
-        if (!isVenueAdmin) return list;
-        return list.filter((b) => b.facility?.venue?.id === user?.venueId);
-    }, [allBookings, isVenueAdmin, user?.venueId]);
+    const pageItems = data?.items ?? [];
+    const counts = data?.counts ?? EMPTY_COUNTS;
+    const total = data?.total ?? 0;
+    const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
 
-    const searched = useMemo(() => {
-        const q = search.trim().toLowerCase();
-        if (!q) return scoped;
-        const digits = q.replace(/\D/g, "");
-        return scoped.filter((b) => {
-            const u = b.user;
-            const fullName = u ? `${u.firstName} ${u.lastName}`.toLowerCase() : "";
-            return (
-                fullName.includes(q) ||
-                (u?.email ?? "").toLowerCase().includes(q) ||
-                (digits.length >= 3 && ((u?.dni ?? "").replace(/\D/g, "").includes(digits) || (u?.phone ?? "").replace(/\D/g, "").includes(digits))) ||
-                (b.facility?.name ?? "").toLowerCase().includes(q) ||
-                (b.facility?.venue?.name ?? "").toLowerCase().includes(q)
-            );
-        });
-    }, [scoped, search]);
-
-    // Estado de negocio calculado una vez por render (depende de "ahora")
-    const withState = useMemo(() => {
-        const now = Date.now();
-        return searched.map((b) => ({ booking: b, state: getAdminBookingState(b, now) }));
-    }, [searched]);
-
-    const counts = useMemo(() => {
-        const c: Record<StateFilter, number> = { ALL: withState.length, REALIZADA: 0, PENDIENTE_PAGO: 0, COMPLETADA: 0, CANCELADA: 0 };
-        withState.forEach(({ state }) => { c[state]++; });
-        return c;
-    }, [withState]);
-
-    // Próximas primero (la más cercana arriba); después las pasadas, de la más reciente a la más vieja
-    const sorted = useMemo(() => {
-        const now = Date.now();
-        const list = stateFilter === "ALL" ? withState : withState.filter((x) => x.state === stateFilter);
-        const t = (x: { booking: AdminBooking }) => new Date(x.booking.startDatetime).getTime();
-        const upcoming = list.filter((x) => t(x) >= now).sort((a, b) => t(a) - t(b));
-        const past = list.filter((x) => t(x) < now).sort((a, b) => t(b) - t(a));
-        return [...upcoming, ...past];
-    }, [withState, stateFilter]);
-
-    const totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
-    const pageItems = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-
-    useEffect(() => { setPage(1); }, [search, stateFilter, datePreset, customRange]);
+    // Si un cambio (ej. una cancelación) deja la página actual vacía, retroceder
+    useEffect(() => {
+        if (data && page > totalPages) setPage(totalPages);
+    }, [data, page, totalPages]);
 
     // ---------- Cancelación ----------
     const cancelBooking = useCancelBooking();
@@ -204,11 +176,10 @@ export default function AdminBookingsPage() {
     const actor = user ? { id: user.id, role: user.role, venueId: user.venueId } : null;
     const clientName = (b: AdminBooking) => (b.user ? `${b.user.firstName} ${b.user.lastName}` : "Cliente");
 
-    if (isLoading) {
+    if (!data && (isLoading || !user)) {
         return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;
     }
 
-    const hitLimit = (allBookings?.length ?? 0) >= FETCH_LIMIT;
 
     return (
         <div className="space-y-6">
@@ -292,9 +263,9 @@ export default function AdminBookingsPage() {
                     })}
                 </div>
 
-                {hitLimit && (
-                    <p className="text-xs text-warning-600">
-                        Se muestran las {FETCH_LIMIT} reservas más recientes. Acotá el rango de fechas para ver el resto.
+                {error && (
+                    <p role="alert" className="text-sm text-danger">
+                        No se pudieron cargar las reservas: {(error as Error).message}
                     </p>
                 )}
             </div>
@@ -302,8 +273,9 @@ export default function AdminBookingsPage() {
             {/* Tarjetas */}
             {pageItems.length > 0 ? (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {pageItems.map(({ booking, state }) => {
-                        const meta = ADMIN_BOOKING_STATES[state];
+                    {pageItems.map((booking) => {
+                        // Estado que calculó la base; si faltara, la misma regla en el cliente
+                        const meta = ADMIN_BOOKING_STATES[booking.bizState ?? getAdminBookingState(booking)];
                         const cancel = actor ? checkCancel(actor, booking) : { allowed: false as const, reason: "" };
                         const isOwn = booking.userId === user?.id;
                         // Mostrar el motivo solo cuando la reserva sigue activa y futura (si no, no aporta)
@@ -393,7 +365,7 @@ export default function AdminBookingsPage() {
             {/* Paginación */}
             {totalPages > 1 && (
                 <div className="flex items-center justify-between pt-2">
-                    <p className="text-sm text-default-500">Página {page} de {totalPages} ({sorted.length} reservas)</p>
+                    <p className="text-sm text-default-500">Página {page} de {totalPages} ({total} reservas)</p>
                     <div className="flex gap-2">
                         <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage((p) => p - 1)}>Anterior</Button>
                         <Button size="sm" variant="flat" isDisabled={page >= totalPages} onPress={() => setPage((p) => p + 1)}>Siguiente</Button>

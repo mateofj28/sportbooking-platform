@@ -568,7 +568,7 @@ function AdFormModal({ isOpen, onClose, initial, isEditing, isSaving, onSubmit }
                         </div>
 
                         {/* Programación */}
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-5">
                             <Controller
                                 name="startsAt" control={control}
                                 render={({ field }) => (
@@ -576,7 +576,8 @@ function AdFormModal({ isOpen, onClose, initial, isEditing, isSaving, onSubmit }
                                         label="Comienza (opcional)"
                                         value={field.value}
                                         onChange={field.onChange}
-                                        description="Hora de Argentina. Vacío = desde ya."
+                                        defaultTime="00:00"
+                                        description="Hora de Argentina. Sin fecha = se publica desde ya. Al elegir el día, arranca a las 00:00."
                                         isInvalid={!!errors.startsAt} errorMessage={errors.startsAt?.message}
                                     />
                                 )}
@@ -588,7 +589,9 @@ function AdFormModal({ isOpen, onClose, initial, isEditing, isSaving, onSubmit }
                                         label="Termina (opcional)"
                                         value={field.value}
                                         onChange={field.onChange}
-                                        description="Hora de Argentina. Vacío = sin vencimiento."
+                                        defaultTime="23:59"
+                                        minDate={values.startsAt.slice(0, 10) || undefined}
+                                        description="Hora de Argentina. Sin fecha = sin vencimiento. Al elegir el día, termina a las 23:59."
                                         isInvalid={!!errors.endsAt} errorMessage={errors.endsAt?.message}
                                     />
                                 )}

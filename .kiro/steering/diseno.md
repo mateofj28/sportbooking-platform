@@ -16,9 +16,17 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
   `type="time"`, `type="month"`, `type="week"`. Cada navegador los dibuja distinto y no respetan el tema.
 - Usar los componentes de HeroUI:
   - Fecha: `DatePicker` (con `showMonthAndYearPickers` si el rango es amplio).
-  - Fecha y hora: `DateTimeField` (`components/shared/date-time-field.tsx`), que envuelve `DatePicker` con
-    `granularity="minute"` y entrega el valor como texto `YYYY-MM-DDTHH:mm`.
+  - Fecha y hora: **dos controles independientes**, nunca un solo campo combinado.
+    `DateTimeField` (`components/shared/date-time-field.tsx`) ya lo resuelve: `DatePicker` para el día y
+    `TimeInput` para la hora, y entrega el valor como texto `YYYY-MM-DDTHH:mm`.
   - Solo hora: `TimeInput`. Rango de fechas: `DateRangePicker`.
+- UX de fecha + hora:
+  - La fecha manda: la hora está deshabilitada hasta elegir el día, y quitar el día quita la hora
+    (nunca queda un estado a medias).
+  - Al elegir el día, la hora se completa con un valor por defecto **visible** y editable
+    (inicio `00:00`, fin `23:59`). Nada de comportamiento oculto.
+  - El selector de "fin" no permite días anteriores al "inicio" (`minDate`).
+  - Cada par es un grupo accesible (`role="group"`) con el error anunciado como alerta.
 - Las fechas de negocio se interpretan en **hora de Argentina (UTC-3)**. Ver `lib/ads.ts`
   (`arLocalToIso` / `isoToArLocal`) y `lib/datetime.ts`.
 

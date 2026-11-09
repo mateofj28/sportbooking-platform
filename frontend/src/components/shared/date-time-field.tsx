@@ -1,38 +1,63 @@
 "use client";
 
-import { DatePicker } from "@heroui/react";
-import { parseDateTime, type CalendarDateTime } from "@internationalized/date";
+import { useId } from "react";
+import { DatePicker, TimeInput } from "@heroui/react";
+import { Time, parseDate } from "@internationalized/date";
 
 interface DateTimeFieldProps {
     /** "YYYY-MM-DDTHH:mm" (hora local, sin zona) o "" si no hay valor. */
     value: string;
     onChange: (value: string) => void;
+    /** Título del grupo, ej. "Comienza (opcional)". */
     label: string;
+    /** Texto de ayuda bajo el grupo. */
     description?: string;
     isInvalid?: boolean;
     errorMessage?: string;
-    /** Muestra "Quitar fecha" cuando hay un valor (para campos opcionales). */
+    /**
+     * Hora que se completa sola al elegir el día ("HH:mm"). Queda visible en el
+     * campo de hora, nunca oculta. Ej: "00:00" para un inicio, "23:59" para un fin.
+     */
+    defaultTime?: string;
+    /** Día mínimo permitido ("YYYY-MM-DD"). Ej: el día de inicio, para el selector de fin. */
+    minDate?: string;
+    /** Muestra "Quitar" cuando hay un valor (para campos opcionales). */
     isClearable?: boolean;
 }
 
 const pad = (n: number, len = 2) => String(n).padStart(len, "0");
 
-function toCalendarDateTime(value: string): CalendarDateTime | null {
-    if (!value) return null;
+/** "YYYY-MM-DDTHH:mm" -> { date: "YYYY-MM-DD", time: "HH:mm" } */
+function splitValue(value: string): { date: string; time: string } {
+    const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/.exec(value);
+    return m ? { date: m[1], time: m[2] } : { date: "", time: "" };
+}
+
+function toDate(date: string) {
+    if (!date) return null;
     try {
-        return parseDateTime(value);
+        return parseDate(date);
     } catch {
         return null;
     }
 }
 
+function toTime(time: string): Time | null {
+    const m = /^(\d{2}):(\d{2})$/.exec(time);
+    return m ? new Time(Number(m[1]), Number(m[2])) : null;
+}
+
 /**
- * Fecha + hora con el DatePicker de HeroUI.
- * Regla de diseño: nunca usar <input type="date|datetime-local|time"> nativo
- * (cada navegador lo dibuja distinto y no respeta el tema de la app).
+ * Fecha y hora como DOS controles independientes (DatePicker + TimeInput de HeroUI).
  *
- * El valor entra y sale como texto "YYYY-MM-DDTHH:mm" para integrarse con
- * formularios de texto (react-hook-form + Zod) sin conversiones en cada pantalla.
+ * Regla de diseño: nunca <input type="date|datetime-local|time"> nativo.
+ *
+ * Decisiones de UX:
+ *  - La fecha manda. La hora queda deshabilitada hasta elegir el día (no existe una
+ *    hora "suelta") y limpiar el día limpia la hora: nunca hay un estado a medias.
+ *  - Al elegir el día, la hora toma `defaultTime` y se ve en el campo; se puede editar.
+ *  - La hora se edita sin tocar el día, y viceversa: cada control cambia solo lo suyo.
+ *  - El valor entra y sale como "YYYY-MM-DDTHH:mm" para integrarse con react-hook-form + Zod.
  */
 export function DateTimeField({
     value,
@@ -41,39 +66,71 @@ export function DateTimeField({
     description,
     isInvalid,
     errorMessage,
+    defaultTime = "00:00",
+    minDate,
     isClearable = true,
 }: DateTimeFieldProps) {
+    const id = useId();
+    const { date, time } = splitValue(value);
+    const hasDate = !!date;
+
+    const emit = (nextDate: string, nextTime: string) => {
+        if (!nextDate) return onChange("");
+        onChange(`${nextDate}T${nextTime || defaultTime}`);
+    };
+
     return (
-        <div className="flex flex-col gap-1">
-            <DatePicker
-                label={label}
-                variant="bordered"
-                granularity="minute"
-                hideTimeZone
-                showMonthAndYearPickers
-                // Cast: HeroUI incluye su propia copia de @internationalized/date y sus clases
-                // no son asignables entre sí (mismo patrón que los demás DatePicker del proyecto)
-                value={toCalendarDateTime(value) as any}
-                onChange={(v) => {
-                    if (!v) return onChange("");
-                    // Con granularity="minute" el valor trae hora y minuto
-                    const hour = "hour" in v ? v.hour : 0;
-                    const minute = "minute" in v ? v.minute : 0;
-                    onChange(`${pad(v.year, 4)}-${pad(v.month)}-${pad(v.day)}T${pad(hour)}:${pad(minute)}`);
-                }}
-                description={description}
-                isInvalid={isInvalid}
-                errorMessage={errorMessage}
-            />
-            {isClearable && value && (
-                <button
-                    type="button"
-                    onClick={() => onChange("")}
-                    className="self-start text-xs text-primary hover:underline"
-                >
-                    Quitar fecha
-                </button>
-            )}
+        <div role="group" aria-labelledby={`${id}-label`} className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+                <p id={`${id}-label`} className="text-sm text-default-600">{label}</p>
+                {isClearable && hasDate && (
+                    <button
+                        type="button"
+                        onClick={() => onChange("")}
+                        className="text-xs text-primary hover:underline"
+                    >
+                        Quitar
+                    </button>
+                )}
+            </div>
+
+            <div className="grid grid-cols-5 gap-3">
+                <div className="col-span-3">
+                    <DatePicker
+                        aria-label={`${label} — fecha`}
+                        variant="bordered"
+                        showMonthAndYearPickers
+                        value={toDate(date) as any}
+                        minValue={(minDate ? toDate(minDate) : undefined) as any}
+                        isInvalid={isInvalid}
+                        onChange={(v) => {
+                            // El valor llega como CalendarDate; ignorar si se vació
+                            if (!v) return emit("", "");
+                            emit(`${pad(v.year, 4)}-${pad(v.month)}-${pad(v.day)}`, time);
+                        }}
+                    />
+                </div>
+                <div className="col-span-2">
+                    <TimeInput
+                        aria-label={`${label} — hora`}
+                        variant="bordered"
+                        granularity="minute"
+                        isDisabled={!hasDate}
+                        isInvalid={isInvalid}
+                        value={toTime(time) as any}
+                        onChange={(v) => {
+                            // Si se vacían los segmentos, vuelve a la hora por defecto (siempre visible)
+                            emit(date, v ? `${pad(v.hour)}:${pad(v.minute)}` : defaultTime);
+                        }}
+                    />
+                </div>
+            </div>
+
+            {isInvalid && errorMessage ? (
+                <p role="alert" className="text-xs text-danger">{errorMessage}</p>
+            ) : description ? (
+                <p className="text-xs text-default-400">{description}</p>
+            ) : null}
         </div>
     );
 }

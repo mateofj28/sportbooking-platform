@@ -9,7 +9,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize } from "@/lib/supabase-helpers";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
-import { todayAr } from "@/lib/ads";
+import { todayAr, addYearsToDate } from "@/lib/ads";
+import { bookingRangeSchema, BOOKING_RANGE_YEARS } from "@/lib/validations/booking.schema";
 import { ADMIN_BOOKING_STATES, getAdminBookingState, type AdminBookingState } from "@/lib/booking-status";
 import { checkCancel, canMarkPaid } from "@/lib/booking-permissions";
 import { useAuthStore } from "@/stores/auth-store";
@@ -86,12 +87,45 @@ export default function AdminBookingsPage() {
     const [search, setSearch] = useState("");
     const [stateFilter, setStateFilter] = useState<StateFilter>("ALL");
     const [datePreset, setDatePreset] = useState<DatePreset>("ALL");
+    // Rango APLICADO al filtro: solo cambia cuando lo escrito es un rango válido completo
     const [customRange, setCustomRange] = useState<{ start: CalendarDate; end: CalendarDate } | null>(null);
+    // Lo que está en el selector, incluso a medio escribir o fuera de límites
+    const [draftRange, setDraftRange] = useState<{ start: CalendarDate; end: CalendarDate } | null>(null);
+    const [rangeError, setRangeError] = useState<string | null>(null);
 
-    // Límites del selector: historial y agenda razonables (sin años absurdos)
+    // Límites (iguales en el selector, en Zod y en la RPC): 2 años atrás y 2 adelante, en hora AR
     const today = todayAr();
-    const minDate = useMemo(() => parseDate(addDays(today, -730)), [today]);
-    const maxDate = useMemo(() => parseDate(addDays(today, 730)), [today]);
+    const minDay = addYearsToDate(today, -BOOKING_RANGE_YEARS);
+    const maxDay = addYearsToDate(today, BOOKING_RANGE_YEARS);
+    const minDate = useMemo(() => parseDate(minDay), [minDay]);
+    const maxDate = useMemo(() => parseDate(maxDay), [maxDay]);
+    const rangeSchema = useMemo(() => bookingRangeSchema(minDay, maxDay), [minDay, maxDay]);
+
+    /** Elegir un atajo (Hoy, Mañana...) descarta lo escrito en el selector. */
+    const choosePreset = (key: Exclude<DatePreset, "CUSTOM">) => {
+        setDatePreset(key);
+        setCustomRange(null);
+        setDraftRange(null);
+        setRangeError(null);
+    };
+
+    const onRangeChange = (v: { start: CalendarDate; end: CalendarDate } | null) => {
+        // Vaciar el selector = volver a "Todas las fechas"
+        if (!v?.start || !v?.end) {
+            choosePreset("ALL");
+            return;
+        }
+        setDraftRange(v);
+        const parsed = rangeSchema.safeParse({ from: v.start.toString(), to: v.end.toString() });
+        if (!parsed.success) {
+            // No se aplica: la tabla sigue mostrando el último filtro válido
+            setRangeError(parsed.error.issues[0]?.message ?? "Rango inválido");
+            return;
+        }
+        setRangeError(null);
+        setCustomRange(v);
+        setDatePreset("CUSTOM");
+    };
 
     const range = resolveRange(datePreset, customRange);
 
@@ -190,7 +224,7 @@ export default function AdminBookingsPage() {
                             color={datePreset === p.key ? "primary" : "default"}
                             variant={datePreset === p.key ? "solid" : "bordered"}
                             className="cursor-pointer"
-                            onClick={() => { setDatePreset(p.key); setCustomRange(null); }}
+                            onClick={() => choosePreset(p.key)}
                         >
                             {p.label}
                         </Chip>
@@ -199,23 +233,24 @@ export default function AdminBookingsPage() {
                         aria-label="Rango de fechas personalizado"
                         size="sm"
                         variant="bordered"
-                        className="max-w-xs"
+                        className="w-full max-w-xs"
                         visibleMonths={2}
                         // Cast: HeroUI trae su propia copia de @internationalized/date (mismo
                         // runtime, tipos de otra versión). Igual que en DateTimeField.
                         minValue={minDate as any}
                         maxValue={maxDate as any}
-                        value={(datePreset === "CUSTOM" ? customRange : null) as any}
-                        onChange={(v) => {
-                            if (v?.start && v?.end) {
-                                setCustomRange({ start: v.start as CalendarDate, end: v.end as CalendarDate });
-                                setDatePreset("CUSTOM");
-                            } else {
-                                setCustomRange(null);
-                                setDatePreset("ALL");
-                            }
-                        }}
+                        value={draftRange as any}
+                        onChange={(v) => onRangeChange(v as { start: CalendarDate; end: CalendarDate } | null)}
+                        // Validación propia (Zod) con un único mensaje claro, en vez del genérico de HeroUI
+                        validationBehavior="aria"
+                        isInvalid={!!rangeError}
+                        errorMessage={rangeError ?? undefined}
                     />
+                    {datePreset === "CUSTOM" && customRange && (
+                        <Button size="sm" variant="light" onPress={() => choosePreset("ALL")}>
+                            Quitar rango
+                        </Button>
+                    )}
                     {isFetching && <Spinner size="sm" aria-label="Actualizando" />}
                 </div>
 

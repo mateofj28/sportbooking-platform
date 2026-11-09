@@ -42,6 +42,16 @@ const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
     { key: "PAUSED", label: "Pausadas" },
 ];
 
+/** Prioridades elegibles: 0, 10, 20 … 100. */
+const PRIORITY_STEPS = Array.from({ length: 11 }, (_, i) => i * 10);
+
+function priorityLabel(p: number): string {
+    if (p === AD_LIMITS.priorityMin) return `${p} · Más baja`;
+    if (p === 50) return `${p} · Media`;
+    if (p === AD_LIMITS.priorityMax) return `${p} · Más alta`;
+    return String(p);
+}
+
 /** Primera clave de un Select de selección simple (HeroUI entrega un Set). */
 const firstKey = (keys: unknown): string | undefined => Array.from(keys as Set<string>)[0];
 
@@ -405,6 +415,14 @@ function AdFormModal({ isOpen, onClose, initial, isEditing, isSaving, onSubmit }
     const values = watch();
     const scope = values.scope;
 
+    // Prioridad: de 10 en 10. Si el anuncio ya tenía un valor intermedio (p. ej. cargado por API),
+    // se conserva como opción extra para no cambiárselo en silencio.
+    const priorityOptions = useMemo(() => {
+        const set = new Set<number>(PRIORITY_STEPS);
+        if (Number.isFinite(initial.priority)) set.add(initial.priority);
+        return Array.from(set).sort((a, b) => a - b);
+    }, [initial.priority]);
+
     // Límites de los selectores de fecha (hora de Argentina). Al editar un anuncio que ya
     // empezó/venció, su fecha original sigue siendo elegible para no forzar a cambiarla.
     const today = todayAr();
@@ -623,15 +641,21 @@ function AdFormModal({ isOpen, onClose, initial, isEditing, isSaving, onSubmit }
                             <Controller
                                 name="priority" control={control}
                                 render={({ field }) => (
-                                    <Input
-                                        type="number" label="Prioridad" variant="bordered"
-                                        min={AD_LIMITS.priorityMin} max={AD_LIMITS.priorityMax}
-                                        value={Number.isNaN(field.value) ? "" : String(field.value)}
-                                        onValueChange={(v) => field.onChange(v === "" ? NaN : Number(v))}
-                                        onBlur={field.onBlur}
-                                        description="0 a 100. Las de mayor número aparecen primero."
+                                    <Select
+                                        label="Prioridad" variant="bordered"
+                                        disallowEmptySelection
+                                        selectedKeys={[String(field.value)]}
+                                        onSelectionChange={(keys: unknown) => {
+                                            const k = firstKey(keys);
+                                            if (k !== undefined) field.onChange(Number(k));
+                                        }}
+                                        description="Las de mayor número aparecen primero."
                                         isInvalid={!!errors.priority} errorMessage={errors.priority?.message}
-                                    />
+                                    >
+                                        {priorityOptions.map((p) => (
+                                            <SelectItem key={String(p)}>{priorityLabel(p)}</SelectItem>
+                                        ))}
+                                    </Select>
                                 )}
                             />
                             <Controller

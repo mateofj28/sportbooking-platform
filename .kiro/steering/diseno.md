@@ -9,6 +9,9 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
 - Está resuelto globalmente en `globals.css` para cualquier `input[type="number"]` (también los de HeroUI),
   así que no hace falta repetirlo por pantalla. No agregar steppers ni botones +/- en campos numéricos.
 - Validar rango con `min`/`max` y con Zod; el usuario escribe el número, no lo "gira".
+- Si el valor es **discreto y de pocas opciones** (ej. prioridad 0 a 100 de 10 en 10), no usar un campo para
+  tipear: usar un `Select` con las opciones. Si el registro ya tiene un valor fuera de esos pasos, se conserva
+  como opción extra para no cambiarlo en silencio.
 
 ## Campos de fecha y hora
 

@@ -29,6 +29,19 @@ export function appliesClientRules(actor: Actor, ownerId: string): boolean {
     return actor.role === "CLIENT" || ownerId === actor.id;
 }
 
+/**
+ * ¿Puede marcar la reserva como pagada? Igual que la Edge Function mark-paid:
+ * no cancelada, todavía impaga, y lo mío o lo ajeno según el rol.
+ */
+export function canMarkPaid(
+    actor: Actor,
+    booking: { userId: string; status: string; paymentStatus?: string | null; facility?: { venue?: { id: string } | null } | null },
+): boolean {
+    if (booking.status === "CANCELLED") return false;
+    if (booking.paymentStatus === "PAID") return false;
+    return canManage(actor, booking.userId, booking.facility?.venue?.id ?? null);
+}
+
 export type CancelCheck = { allowed: true } | { allowed: false; reason: string };
 
 /** ¿Puede este actor cancelar esta reserva ahora? Con el motivo si no puede. */

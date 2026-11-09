@@ -110,10 +110,21 @@ export function todayAr(now: Date = new Date()): string {
     return new Date(now.getTime() - AR_OFFSET_MS).toISOString().slice(0, 10);
 }
 
-/** Suma años a un "YYYY-MM-DD". El 29/02 cae en el 01/03 si el año destino no es bisiesto. */
+/**
+ * Suma (o resta) años a un "YYYY-MM-DD".
+ *
+ * Si el día no existe en el año destino (29/02 en un año no bisiesto) se ajusta al
+ * ÚLTIMO día de ese mes (28/02), igual que Postgres con `date ± interval 'N years'`.
+ * Así los topes del selector coinciden con los que valida la base (migraciones 019 y 023);
+ * con el desborde nativo de JS (29/02 -> 01/03) la pantalla ofrecería un día que la base
+ * rechaza, o bloquearía uno que la base acepta.
+ */
 export function addYearsToDate(date: string, years: number): string {
     const [y, m, d] = date.split("-").map(Number);
-    return new Date(Date.UTC(y + years, m - 1, d)).toISOString().slice(0, 10);
+    const targetYear = y + years;
+    // Día 0 del mes siguiente = último día del mes destino
+    const lastDayOfMonth = new Date(Date.UTC(targetYear, m, 0)).getUTCDate();
+    return new Date(Date.UTC(targetYear, m - 1, Math.min(d, lastDayOfMonth))).toISOString().slice(0, 10);
 }
 
 /** Día máximo programable, "YYYY-MM-DD". */

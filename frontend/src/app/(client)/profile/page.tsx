@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { Navbar } from "@/components/layout/navbar";
+import { ProvinceSelect } from "@/components/shared/province-select";
+import { useMyProvince, useSetMyProvince } from "@/hooks/use-my-province";
 import { User, Mail, Phone, Save, Lock, Eye, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -15,6 +17,9 @@ import type { User as UserType } from "@/types";
 export default function ProfilePage() {
     const { user, _updateUser: updateUser, isAuthenticated, isHydrated } = useAuthStore();
     const router = useRouter();
+    const addToast = useToastStore((s) => s.addToast);
+    const { data: myProvince } = useMyProvince();
+    const provinceMutation = useSetMyProvince();
 
     useEffect(() => {
         if (isHydrated && !isAuthenticated) {
@@ -104,6 +109,17 @@ export default function ProfilePage() {
                                 label="Teléfono"
                                 variant="bordered"
                                 startContent={<Phone className="h-4 w-4 text-default-400" />}
+                            />
+                            <ProvinceSelect
+                                value={myProvince}
+                                isDisabled={provinceMutation.isPending}
+                                description="Define las promociones que ves en tu inicio. Se guarda al elegirla."
+                                onChange={(code) =>
+                                    provinceMutation.mutate(code, {
+                                        onSuccess: () => addToast("Provincia actualizada"),
+                                        onError: () => addToast("No se pudo guardar la provincia", "error"),
+                                    })
+                                }
                             />
 
                             <Button

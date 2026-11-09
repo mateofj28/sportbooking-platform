@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isProvinceCode } from "@/lib/ar-provinces";
 
 export const loginSchema = z.object({
     email: z.string().email("Email inválido"),
@@ -17,6 +18,10 @@ export const registerSchema = z
                 (v) => /^[0-9]{1,15}$/.test(v),
                 "El DNI solo puede contener números (máximo 15 dígitos)",
             ),
+        // Ubicación del cliente: define qué publicidad ve. Código ISO (ej. "AR-X").
+        province: z
+            .string({ required_error: "Elegí tu provincia" })
+            .refine(isProvinceCode, "Elegí tu provincia"),
         password: z.string()
             .min(8, "Mínimo 8 caracteres")
             .regex(/[A-Z]/, "Debe tener al menos una mayúscula")

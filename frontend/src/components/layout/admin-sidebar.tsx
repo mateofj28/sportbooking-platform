@@ -19,6 +19,7 @@ import {
     Bell,
     HelpCircle,
     BarChart3,
+    Megaphone,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useSidebarStore } from "@/stores/sidebar-store";
@@ -34,6 +35,7 @@ const menuItems = [
     { href: "/dashboard/blocked-slots", label: "Bloqueos", icon: Ban },
     { href: "/dashboard/users", label: "Usuarios", icon: Users },
     { href: "/dashboard/sports", label: "Deportes", icon: Trophy },
+    { href: "/dashboard/advertising", label: "Publicidad", icon: Megaphone },
     { href: "/dashboard/notifications", label: "Notificaciones", icon: Bell },
     { href: "/dashboard/support", label: "Ayuda y soporte", icon: HelpCircle },
 ];
@@ -46,7 +48,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
     // VENUE_ADMIN can't see: venues, sports, users
     const visibleItems = isVenueAdmin
-        ? menuItems.filter((item) => !(["/dashboard/venues", "/dashboard/sports", "/dashboard/users"].includes(item.href)))
+        ? menuItems.filter((item) => !(["/dashboard/venues", "/dashboard/sports", "/dashboard/users", "/dashboard/advertising"].includes(item.href)))
         : menuItems;
 
     return (

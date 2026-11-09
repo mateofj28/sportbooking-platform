@@ -4,7 +4,10 @@ import { useMemo, useState, useEffect } from "react";
 import { Card, CardBody, Chip, Button, Spinner, Input } from "@heroui/react";
 import { getBookingStatusChip } from "@/lib/booking-status";
 import { formatTimeAr } from "@/lib/datetime";
-import { PromoCarousel } from "@/components/shared/promo-carousel";
+import { PromoCarousel, adToSlide } from "@/components/shared/promo-carousel";
+import { ProvincePrompt } from "@/components/shared/province-prompt";
+import { useActiveAdvertisements } from "@/hooks/use-advertisements";
+import { useMyProvince } from "@/hooks/use-my-province";
 import { useAuthStore } from "@/stores/auth-store";
 import { useBookings, useMarkBookingPaid } from "@/hooks/use-bookings";
 import { useSports } from "@/hooks/use-sports";
@@ -34,14 +37,6 @@ function formatPrice(value: number): string {
     return Math.round(Number(value)).toLocaleString("en-US");
 }
 
-// Promociones (mismas que el dashboard admin, solo para clientes)
-const ADS = [
-    { title: "🏆 Torneo de Fútbol 5", subtitle: "Inscripciones abiertas", description: "Organiza tu equipo y participa en el torneo de verano.", bg: "from-blue-500 to-blue-700" },
-    { title: "🎾 Clases de Tenis", subtitle: "Nuevos horarios", description: "Aprende con profesores certificados. Todos los niveles.", bg: "from-emerald-500 to-emerald-700" },
-    { title: "🏸 30% OFF Pádel", subtitle: "Horarios matutinos", description: "Reserva antes de las 12pm y obtén descuento automático.", bg: "from-violet-500 to-violet-700" },
-    { title: "🏀 Liga de Básquet", subtitle: "Temporada 2026", description: "Forma tu equipo de 5 y compite cada sábado.", bg: "from-orange-500 to-orange-700" },
-];
-
 export default function ClientHomePage() {
     const router = useRouter();
     const { user, isAuthenticated, isHydrated } = useAuthStore();
@@ -56,6 +51,12 @@ export default function ClientHomePage() {
     const bookings = useMemo(() => (Array.isArray(bookingsResponse?.data) ? bookingsResponse.data : []), [bookingsResponse]);
 
     const { data: sports } = useSports();
+
+    // Publicidad: el servidor decide qué corresponde según la provincia del perfil
+    const { data: activeAds } = useActiveAdvertisements();
+    const { data: myProvince, isSuccess: provinceLoaded } = useMyProvince();
+    const slides = useMemo(() => (activeAds ?? []).map(adToSlide), [activeAds]);
+    const needsProvince = provinceLoaded && !myProvince;
 
     // Próximas reservas confirmadas (futuras), ordenadas por fecha
     const upcoming = useMemo(() => {
@@ -111,9 +112,12 @@ export default function ClientHomePage() {
                 </section>
 
                 {/* Promociones (justo después del buscador) */}
-                <section>
-                    <PromoCarousel slides={ADS} autoPlayMs={4000} />
-                </section>
+                {(needsProvince || slides.length > 0) && (
+                    <section className="space-y-4">
+                        {needsProvince && <ProvincePrompt />}
+                        {slides.length > 0 && <PromoCarousel slides={slides} autoPlayMs={4000} />}
+                    </section>
+                )}
 
                 {/* 2. Próximas reservas */}
                 <section>

@@ -2,13 +2,33 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { adGradient, type ActiveAdvertisement } from "@/lib/ads";
 
 export interface PromoSlide {
+    /** Identificador estable (key de React). */
+    id?: string;
     title: string;
-    subtitle: string;
-    description: string;
+    subtitle?: string | null;
+    description?: string | null;
     /** clases de gradiente tailwind, ej: "from-blue-500 to-blue-700" */
     bg: string;
+    /** https://... (se abre en pestaña nueva) o ruta interna "/facilities". */
+    href?: string | null;
+    /** Texto del botón. Solo se muestra si hay href. */
+    ctaLabel?: string | null;
+}
+
+/** Anuncio de la base (RPC) -> slide del carrusel. Una sola conversión para toda la app. */
+export function adToSlide(ad: ActiveAdvertisement): PromoSlide {
+    return {
+        id: ad.id,
+        title: ad.title,
+        subtitle: ad.subtitle,
+        description: ad.description,
+        bg: adGradient(ad.theme),
+        href: ad.linkUrl,
+        ctaLabel: ad.ctaLabel,
+    };
 }
 
 interface PromoCarouselProps {
@@ -34,11 +54,18 @@ export function PromoCarousel({ slides, autoPlayMs = 4000 }: PromoCarouselProps)
         width: 0,
     });
     const [paused, setPaused] = useState(false);
+    // true si el puntero se movió lo suficiente como para considerarse arrastre (no clic)
+    const movedRef = useRef(false);
 
     const count = slides.length;
     const goTo = useCallback((i: number) => setIndex(((i % count) + count) % count), [count]);
     const next = useCallback(() => goTo(index + 1), [goTo, index]);
     const prev = useCallback(() => goTo(index - 1), [goTo, index]);
+
+    // Si la lista se acorta (p. ej. cambió la provincia), volver a una posición válida
+    useEffect(() => {
+        if (count > 0 && index >= count) setIndex(0);
+    }, [count, index]);
 
     // Auto-play, en pausa mientras el usuario interactúa
     useEffect(() => {
@@ -49,6 +76,7 @@ export function PromoCarousel({ slides, autoPlayMs = 4000 }: PromoCarouselProps)
 
     // --- Gestos (pointer events: cubren mouse + touch) ---
     const onPointerDown = (e: React.PointerEvent) => {
+        movedRef.current = false;
         dragState.current = {
             startX: e.clientX,
             dragging: true,
@@ -60,7 +88,9 @@ export function PromoCarousel({ slides, autoPlayMs = 4000 }: PromoCarouselProps)
 
     const onPointerMove = (e: React.PointerEvent) => {
         if (!dragState.current.dragging) return;
-        setDragPx(e.clientX - dragState.current.startX);
+        const dx = e.clientX - dragState.current.startX;
+        if (Math.abs(dx) > 5) movedRef.current = true;
+        setDragPx(dx);
     };
 
     const endDrag = () => {
@@ -106,17 +136,45 @@ export function PromoCarousel({ slides, autoPlayMs = 4000 }: PromoCarouselProps)
                         transition: dragState.current.dragging ? "none" : "transform 400ms ease",
                     }}
                 >
-                    {slides.map((ad, i) => (
-                        <div key={i} className="w-full flex-shrink-0 px-0.5">
-                            <div className={`rounded-2xl bg-gradient-to-r ${ad.bg} border-none shadow-lg`}>
-                                <div className="p-6">
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-white/70">{ad.subtitle}</p>
-                                    <h3 className="mt-1 text-lg font-bold text-white">{ad.title}</h3>
-                                    <p className="mt-2 text-sm text-white/80">{ad.description}</p>
-                                </div>
+                    {slides.map((ad, i) => {
+                        // Los colores llevan "!" porque globals.css fuerza un color oscuro en
+                        // .font-bold/.font-semibold/h3 y pisaría el texto blanco sobre el degradado.
+                        const content = (
+                            <div className="p-6">
+                                {ad.subtitle && (
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-white/80!">{ad.subtitle}</p>
+                                )}
+                                <h3 className="mt-1 text-lg font-bold text-white!">{ad.title}</h3>
+                                {ad.description && <p className="mt-2 text-sm text-white/90!">{ad.description}</p>}
+                                {ad.href && ad.ctaLabel && (
+                                    <span className="mt-4 inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white!">
+                                        {ad.ctaLabel} →
+                                    </span>
+                                )}
                             </div>
-                        </div>
-                    ))}
+                        );
+                        const cardClass = `block rounded-2xl bg-gradient-to-r ${ad.bg} border-none shadow-lg`;
+                        const isExternal = !!ad.href && ad.href.startsWith("https://");
+
+                        return (
+                            <div key={ad.id ?? i} className="w-full flex-shrink-0 px-0.5">
+                                {ad.href ? (
+                                    <a
+                                        href={ad.href}
+                                        draggable={false}
+                                        {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                                        // Si el gesto fue un arrastre, no navegar
+                                        onClick={(e) => { if (movedRef.current) e.preventDefault(); }}
+                                        className={`${cardClass} focus:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
+                                    >
+                                        {content}
+                                    </a>
+                                ) : (
+                                    <div className={cardClass}>{content}</div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 

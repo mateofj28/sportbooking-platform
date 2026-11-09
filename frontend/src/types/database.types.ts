@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -12,8 +12,98 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
+      advertisements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          cta_label: string | null
+          description: string | null
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          link_url: string | null
+          priority: number
+          provinces: string[]
+          scope: string
+          starts_at: string | null
+          subtitle: string | null
+          theme: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          link_url?: string | null
+          priority?: number
+          provinces?: string[]
+          scope?: string
+          starts_at?: string | null
+          subtitle?: string | null
+          theme?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          link_url?: string | null
+          priority?: number
+          provinces?: string[]
+          scope?: string
+          starts_at?: string | null
+          subtitle?: string | null
+          theme?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advertisements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocked_slots: {
         Row: {
           created_at: string
@@ -371,11 +461,13 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           dni: string | null
+          email: string | null
           first_name: string
           id: string
           is_active: boolean
           last_name: string
           phone: string | null
+          province: string | null
           role: Database["public"]["Enums"]["role"]
           updated_at: string
           venue_id: string | null
@@ -384,11 +476,13 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           dni?: string | null
+          email?: string | null
           first_name?: string
           id: string
           is_active?: boolean
           last_name?: string
           phone?: string | null
+          province?: string | null
           role?: Database["public"]["Enums"]["role"]
           updated_at?: string
           venue_id?: string | null
@@ -397,11 +491,13 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           dni?: string | null
+          email?: string | null
           first_name?: string
           id?: string
           is_active?: boolean
           last_name?: string
           phone?: string | null
+          province?: string | null
           role?: Database["public"]["Enums"]["role"]
           updated_at?: string
           venue_id?: string | null
@@ -654,9 +750,23 @@ export type Database = {
     Functions: {
       ar_day_key: { Args: { ts: string }; Returns: string }
       ar_midnight_utc: { Args: { date_str: string }; Returns: string }
+      ar_province_codes: { Args: never; Returns: string[] }
       calculate_price: {
         Args: { p_facility_id: string; p_start_datetime: string }
         Returns: Json
+      }
+      get_active_advertisements: {
+        Args: { p_province?: string }
+        Returns: {
+          cta_label: string
+          description: string
+          id: string
+          link_url: string
+          scope: string
+          subtitle: string
+          theme: string
+          title: string
+        }[]
       }
       get_availability: {
         Args: { p_date: string; p_facility_id: string }
@@ -681,11 +791,19 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_venue_admin: { Args: never; Returns: boolean }
+      is_facility_bookable: {
+        Args: { p_facility_id: string }
+        Returns: boolean
+      }
       is_venue_admin: { Args: never; Returns: boolean }
       owns_venue: { Args: { p_venue_id: string }; Returns: boolean }
       set_user_role: {
         Args: { p_role: string; p_user_id: string; p_venue_id?: string }
         Returns: Json
+      }
+      venue_admin_can_see_profile: {
+        Args: { p_profile_id: string }
+        Returns: boolean
       }
     }
     Enums: {
@@ -828,6 +946,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       billing_type: ["PER_SESSION", "MONTHLY"],

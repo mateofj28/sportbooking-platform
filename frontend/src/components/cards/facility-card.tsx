@@ -51,7 +51,7 @@ export function FacilityCard({ facility, availabilityToday }: FacilityCardProps)
                 )}
               {lowestPrice !== null && (
                   <div className="absolute bottom-2 left-2">
-                      <span className="rounded-md bg-black/60 px-2 py-1 text-xs font-bold text-white">
+                        <span className="rounded-md bg-black/75 px-2 py-1 text-xs font-bold text-white! backdrop-blur-sm">
                             Desde ${formatPrice(lowestPrice)} por turno
                       </span>
                   </div>

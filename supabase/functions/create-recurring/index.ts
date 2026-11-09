@@ -6,6 +6,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { sendBookingConfirmation } from '../_shared/email.ts'
 import { notifyRecurringCreated } from '../_shared/notifications.ts'
 import { arMidnightUtc } from '../_shared/ar-time.ts'
+import { actorFromUser, canManage } from '../_shared/permissions.ts'
 
 const AR_OFFSET_MIN = 3 * 60
 const OCCURRENCES = 8
@@ -31,8 +32,9 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createAdminClient()
-    const role = user.app_metadata?.role ?? 'CLIENT'
-    const targetUserId = (role !== 'CLIENT' && user_id) ? user_id : user.id
+    const actor = actorFromUser(user)
+    // Un admin puede crear el turno a nombre de otra persona (user_id); si no, es a nombre propio.
+    const targetUserId = (actor.role !== 'CLIENT' && user_id) ? user_id : user.id
 
     // Verificar cancha
     const { data: facility } = await supabase
@@ -41,7 +43,9 @@ Deno.serve(async (req) => {
       .eq('id', facility_id)
       .single()
     if (!facility?.is_active) return err('Cancha no disponible', 404)
-    if (role === 'VENUE_ADMIN' && (facility as any).venue_id !== user.app_metadata?.venue_id) {
+    // El alcance por complejo solo importa al reservar PARA OTRA persona. Si el turno es a nombre
+    // propio (un admin reservando como cliente), puede ser en cualquier complejo.
+    if (targetUserId !== user.id && !canManage(actor, targetUserId, (facility as any).venue_id ?? null)) {
       return err('No autorizado', 403)
     }
 

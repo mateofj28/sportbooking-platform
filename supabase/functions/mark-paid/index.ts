@@ -4,6 +4,7 @@
 import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { notifyBookingPaid } from '../_shared/notifications.ts'
+import { actorFromUser, canManage } from '../_shared/permissions.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -23,7 +24,7 @@ Deno.serve(async (req) => {
     if (!booking_id) return err('booking_id es requerido')
 
     const supabase = createAdminClient()
-    const role = user.app_metadata?.role ?? 'CLIENT'
+    const actor = actorFromUser(user)
 
     const { data: booking, error: fetchErr } = await supabase
       .from('bookings')
@@ -34,11 +35,9 @@ Deno.serve(async (req) => {
     if (fetchErr || !booking) return err('Reserva no encontrada', 404)
     if (booking.status === 'CANCELLED') return err('No se puede pagar una reserva cancelada')
 
-    // Validar scope
-    if (role === 'CLIENT' && booking.user_id !== user.id) return err('No autorizado', 403)
-    if (role === 'VENUE_ADMIN') {
-      const myVenueId = user.app_metadata?.venue_id
-      if ((booking.facility as any).venue_id !== myVenueId) return err('No autorizado', 403)
+    // Lo propio siempre (aun siendo admin y en cualquier complejo); lo ajeno según el rol
+    if (!canManage(actor, booking.user_id, (booking.facility as any)?.venue_id ?? null)) {
+      return err('No autorizado', 403)
     }
 
     // Idempotente: si ya está PAID, devolver éxito sin re-procesar

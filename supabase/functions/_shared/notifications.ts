@@ -128,3 +128,33 @@ export async function notifyBookingCreated(booking: Parameters<typeof bookingDat
     data: bookingData(booking),
   })
 }
+
+const DAY_NAMES_ES = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+
+/** Turno fijo creado. dayOfWeek: 0 = lunes … 6 = domingo (igual que la tabla recurring_bookings). */
+export async function notifyRecurringCreated(input: {
+  venueId: string | null
+  facilityName?: string
+  clientName?: string
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+  createdCount: number
+}): Promise<void> {
+  const clientName = input.clientName?.trim() || 'Un cliente'
+  const facility = input.facilityName || 'una cancha'
+  const day = DAY_NAMES_ES[input.dayOfWeek] ?? ''
+  await emit({
+    type: 'RECURRING_CREATED',
+    title: 'Nuevo turno fijo',
+    body: `${clientName} creó un turno fijo en ${facility}: los ${day} de ${input.startTime} a ${input.endTime} (${input.createdCount} fechas).`,
+    venueId: input.venueId,
+    data: {
+      cliente: clientName,
+      cancha: input.facilityName ?? '',
+      dia: day,
+      horario: `${input.startTime} - ${input.endTime}`,
+      fechas: input.createdCount,
+    },
+  })
+}

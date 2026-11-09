@@ -49,3 +49,18 @@ Relación clave:
 - Backend NestJS + Prisma/Postgres (Railway). Frontend Next.js + HeroUI (Vercel).
 - Verificar build antes de commitear: backend `npx nest build`, frontend `npx next build`.
 - Commit + push a `main` por cada cambio.
+
+## Administradores que reservan como clientes
+
+- Un **ADMIN general** o un **VENUE_ADMIN** también puede usar la app como cliente: ver canchas, reservar, pagar y
+  ver sus propias reservas. El admin de sede puede reservar en **cualquier complejo**, incluidos los de otros.
+- La app tiene dos contextos, definidos por la ruta: `/dashboard/*` es la gestión del negocio; todo lo demás es la
+  vista de cliente. El navbar ofrece el cambio entre ambos ("Panel de administración" / "Vista de cliente").
+- "Mis Reservas" y "Turnos fijos" muestran **solo las reservas del propio usuario** (filtro explícito por `user_id`),
+  nunca el alcance de administración. El panel de administración sigue viendo todo su alcance.
+- Una reserva propia de un administrador se rige por las **reglas de cliente**: se puede cancelar solo con 24 horas
+  o más de anticipación. Cancelar la reserva de otra persona no tiene ese límite (ADMIN: cualquiera; VENUE_ADMIN:
+  las de su complejo).
+- Precio y comisión son los **normales**; no hay trato especial para el admin ni para su propio complejo.
+- Regla técnica: la autorización de reservas vive en `supabase/functions/_shared/permissions.ts`
+  (`canManage`, `appliesClientRules`). "Lo mío" siempre se puede; "lo ajeno" depende del rol.

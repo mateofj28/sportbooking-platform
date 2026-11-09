@@ -1,10 +1,12 @@
 // cancel-booking/index.ts
-// Cancela una reserva. CLIENT: valida regla 24h. Admins: sin límite.
+// Cancela una reserva. Regla 24 h para clientes y para las reservas propias de un admin.
+// Un admin cancelando la reserva de OTRA persona: sin límite (ADMIN todo, VENUE_ADMIN su complejo).
 
 import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { bookingToEmailData, sendBookingCancellation } from '../_shared/email.ts'
 import { notifyBookingCancelled } from '../_shared/notifications.ts'
+import { actorFromUser, appliesClientRules, canManage } from '../_shared/permissions.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -40,18 +42,21 @@ Deno.serve(async (req) => {
     if (booking.status === 'CANCELLED') return err('La reserva ya está cancelada')
     if (booking.status === 'COMPLETED') return err('No se puede cancelar una reserva completada')
 
-    const role = user.app_metadata?.role ?? 'CLIENT'
+    const actor = actorFromUser(user)
 
-    // Validar regla 24h para CLIENT
-    if (role === 'CLIENT') {
-      if (booking.user_id !== user.id) return err('No autorizado', 403)
+    // ¿Puede operar sobre esta reserva? Lo propio siempre (aun siendo admin y en cualquier
+    // complejo); lo ajeno según el rol (ADMIN todo, VENUE_ADMIN solo su complejo).
+    if (!canManage(actor, booking.user_id, (booking.facility as any)?.venue_id ?? null)) {
+      return err('No autorizado', 403)
+    }
+
+    // Regla de las 24 h: aplica a los clientes y a las reservas PROPIAS de un administrador
+    // (cuando reserva como cliente). Cancelar la reserva de otra persona no tiene límite.
+    if (appliesClientRules(actor, booking.user_id)) {
       const LIMIT_MS = 24 * 60 * 60 * 1000
       if (new Date(booking.start_datetime).getTime() - Date.now() < LIMIT_MS) {
         return err('Solo puedes cancelar hasta 24 horas antes del inicio del turno')
       }
-    } else if (role === 'VENUE_ADMIN') {
-      const myVenueId = user.app_metadata?.venue_id
-      if ((booking.facility as any).venue_id !== myVenueId) return err('No autorizado', 403)
     }
 
     // Cancelar

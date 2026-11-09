@@ -87,12 +87,13 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
           </nav>
 
           <div className="space-y-1 border-t border-divider pt-4">
+                {/* Salida del panel hacia la vista de cliente (reservar, ver mis reservas) */}
               <Link
-                  href="/"
+                    href="/inicio"
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-default-600 hover:bg-default-100"
               >
                   <ArrowLeft className="h-4 w-4" />
-                  Volver al sitio
+                    Vista de cliente
               </Link>
               <button
                   onClick={logout}

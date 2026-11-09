@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/stores/auth-store'
 import { camelize, BOOKING_SELECT, RECURRING_BOOKING_SELECT, invokeFunction } from '@/lib/supabase-helpers'
 import type { BookingRow, RecurringBookingRow } from '@/lib/supabase-helpers'
 import type { Booking, CreateBookingData } from '@/types'
@@ -95,14 +96,25 @@ function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
 // LECTURAS — supabase.from() directo con RLS automático
 // ============================================================
 
-/** Lista de reservas (RLS filtra por rol: CLIENT ve las suyas, VENUE_ADMIN su sede, ADMIN todas). */
+/**
+ * MIS reservas (las que hice yo como cliente).
+ *
+ * Filtra SIEMPRE por el usuario actual. No alcanza con confiar en RLS: un ADMIN o VENUE_ADMIN
+ * puede leer las reservas de otros (todas / las de su complejo), y "Mis Reservas" mostraría
+ * reservas ajenas. Para un cliente común el resultado es el mismo que antes.
+ * El panel de administración usa useDashboardBookings(), que sí ve el alcance completo.
+ */
 export function useBookings(status?: string) {
+    const userId = useAuthStore((s) => s.user?.id)
+
     return useQuery({
-        queryKey: ['bookings', status],
+        queryKey: ['bookings', 'mine', userId, status],
+        enabled: !!userId,
         queryFn: async (): Promise<{ data: Booking[]; meta: { total: number } }> => {
             let query = supabase
                 .from('bookings')
                 .select(BOOKING_SELECT, { count: 'exact' })
+                .eq('user_id', userId!)
                 .order('start_datetime', { ascending: false })
                 .limit(200)
 
@@ -136,14 +148,18 @@ export function useBooking(id: string) {
     })
 }
 
-/** Turnos fijos del usuario (RLS filtra por rol). */
+/** MIS turnos fijos. Filtra siempre por el usuario actual (ver useBookings). */
 export function useRecurringBookings() {
+    const userId = useAuthStore((s) => s.user?.id)
+
     return useQuery({
-        queryKey: ['recurring-bookings'],
+        queryKey: ['recurring-bookings', 'mine', userId],
+        enabled: !!userId,
         queryFn: async (): Promise<RecurringBooking[]> => {
             const { data, error } = await supabase
                 .from('recurring_bookings')
                 .select(RECURRING_BOOKING_SELECT)
+                .eq('user_id', userId!)
                 .order('created_at', { ascending: false })
 
             if (error) throw new Error(error.message)

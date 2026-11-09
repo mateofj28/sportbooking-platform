@@ -3,6 +3,7 @@
 
 import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { actorFromUser, canManage } from '../_shared/permissions.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -22,7 +23,7 @@ Deno.serve(async (req) => {
     if (!recurring_booking_id) return err('recurring_booking_id es requerido')
 
     const supabase = createAdminClient()
-    const role = user.app_metadata?.role ?? 'CLIENT'
+    const actor = actorFromUser(user)
 
     const { data: recurring } = await supabase
       .from('recurring_bookings')
@@ -32,11 +33,9 @@ Deno.serve(async (req) => {
 
     if (!recurring) return err('Turno fijo no encontrado', 404)
 
-    // Validar scope
-    if (role === 'CLIENT' && recurring.user_id !== user.id) return err('No autorizado', 403)
-    if (role === 'VENUE_ADMIN') {
-      const myVenueId = user.app_metadata?.venue_id
-      if ((recurring.facility as any)?.venue_id !== myVenueId) return err('No autorizado', 403)
+    // Lo propio siempre (aun siendo admin y en cualquier complejo); lo ajeno según el rol
+    if (!canManage(actor, recurring.user_id, (recurring.facility as any)?.venue_id ?? null)) {
+      return err('No autorizado', 403)
     }
 
     const now = new Date().toISOString()

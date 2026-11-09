@@ -27,7 +27,7 @@ import { useSidebarStore } from "@/stores/sidebar-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { NotificationBell } from "@/components/layout/notification-bell";
-import { Trophy, LogOut, User, Calendar, LayoutDashboard, Sun, Moon, Menu, ChevronLeft, Monitor, Check } from "lucide-react";
+import { Trophy, LogOut, User, Calendar, LayoutDashboard, Eye, Sun, Moon, Menu, ChevronLeft, Monitor, Check } from "lucide-react";
 
 export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -45,6 +45,11 @@ export function Navbar() {
     // Dentro del panel admin, en móvil el menú lo abre un botón en el navbar
     // (arriba a la izquierda) que despliega el drawer del sidebar.
     const inDashboard = pathname?.startsWith("/dashboard");
+
+    // Los administradores también pueden usar la app como clientes (ver canchas, reservar, ver
+    // sus propias reservas). El contexto lo define la ruta: /dashboard = gestión; el resto = cliente.
+    const isAdminUser = user?.role === "ADMIN" || user?.role === "VENUE_ADMIN";
+    const showClientLinks = !(isAdminUser && inDashboard);
 
     return (
         <HeroNavbar
@@ -81,31 +86,39 @@ export function Navbar() {
             </NavbarContent>
 
             <NavbarContent className="hidden gap-6 sm:flex" justify="center">
-                {isAuthenticated && user?.role === "CLIENT" && (
+                {/* Vista de cliente: la ven los clientes y también los admins fuera del panel */}
+                {showClientLinks && isAuthenticated && (
                     <NavbarItem>
                         <Link href="/inicio" className="text-sm font-medium text-white hover:text-blue-200">
                             Inicio
                         </Link>
                     </NavbarItem>
                 )}
-                {user?.role !== "VENUE_ADMIN" && (
+                {showClientLinks && (
                     <NavbarItem>
                         <Link href="/facilities" className="text-sm font-medium text-white hover:text-blue-200">
                             Instalaciones
                         </Link>
                     </NavbarItem>
                 )}
-                {isAuthenticated && (
+                {showClientLinks && isAuthenticated && (
                     <NavbarItem>
                         <Link href="/bookings" className="text-sm font-medium text-white hover:text-blue-200">
                             Mis Reservas
                         </Link>
                     </NavbarItem>
                 )}
-                {(user?.role === "ADMIN" || user?.role === "VENUE_ADMIN") && (
+                {/* Cambio de contexto para administradores: panel de gestión <-> vista de cliente */}
+                {isAdminUser && (
                     <NavbarItem>
-                        <Link href="/dashboard" className="text-sm font-medium text-white hover:text-blue-200">
-                            Dashboard
+                        <Link
+                            href={inDashboard ? "/inicio" : "/dashboard"}
+                            className="flex items-center gap-1.5 rounded-full border border-white/40 px-3 py-1 text-sm font-medium text-white hover:bg-white/10"
+                        >
+                            {inDashboard
+                                ? <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                                : <LayoutDashboard className="h-3.5 w-3.5" aria-hidden="true" />}
+                            {inDashboard ? "Vista de cliente" : "Panel de administración"}
                         </Link>
                     </NavbarItem>
                 )}
@@ -163,8 +176,10 @@ export function Navbar() {
                                         <div className="py-1">
                                             <MenuItem href="/profile" icon={<User className="h-4 w-4" />} label="Mi Perfil" />
                                             <MenuItem href="/bookings" icon={<Calendar className="h-4 w-4" />} label="Mis Reservas" />
-                                            {(user?.role === "ADMIN" || user?.role === "VENUE_ADMIN") && (
-                                                <MenuItem href="/dashboard" icon={<LayoutDashboard className="h-4 w-4" />} label="Dashboard Admin" />
+                                            {isAdminUser && (
+                                                inDashboard
+                                                    ? <MenuItem href="/inicio" icon={<Eye className="h-4 w-4" />} label="Vista de cliente" />
+                                                    : <MenuItem href="/dashboard" icon={<LayoutDashboard className="h-4 w-4" />} label="Panel de administración" />
                                             )}
                                             {/* Tema con flecha */}
                                             <button
@@ -246,20 +261,18 @@ export function Navbar() {
 
             <NavbarMenu>
                 {inDashboard ? null : <>
-                {isAuthenticated && user?.role === "CLIENT" && (
+                    {isAuthenticated && (
                     <NavbarMenuItem>
                         <Link className="w-full" href="/inicio" size="lg">
                             Inicio
                         </Link>
                     </NavbarMenuItem>
-                )}
-                {user?.role !== "VENUE_ADMIN" && (
+                    )}
                     <NavbarMenuItem>
                         <Link className="w-full" href="/facilities" size="lg">
                             Instalaciones
                         </Link>
                     </NavbarMenuItem>
-                )}
                 {isAuthenticated && (
                     <>
                         <NavbarMenuItem>
@@ -274,10 +287,10 @@ export function Navbar() {
                         </NavbarMenuItem>
                     </>
                 )}
-                {(user?.role === "ADMIN" || user?.role === "VENUE_ADMIN") && (
+                    {isAdminUser && (
                     <NavbarMenuItem>
                         <Link className="w-full" href="/dashboard" size="lg">
-                            Dashboard
+                                Panel de administración
                         </Link>
                     </NavbarMenuItem>
                 )}

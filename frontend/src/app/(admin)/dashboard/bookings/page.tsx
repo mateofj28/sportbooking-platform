@@ -1,111 +1,214 @@
 "use client";
 
-import { Button, Chip, Spinner, Card, CardBody, Input } from "@heroui/react";
+import {
+    Button, Chip, Spinner, Card, CardBody, Input, Textarea, DateRangePicker,
+    Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
+} from "@heroui/react";
+import { parseDate, type CalendarDate } from "@internationalized/date";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCancelBooking } from "@/hooks/use-bookings";
 import { supabase } from "@/lib/supabase";
-import { camelize, BOOKING_SELECT, BookingRow } from "@/lib/supabase-helpers";
+import { camelize, BookingRow } from "@/lib/supabase-helpers";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
-import { XCircle, Plus, Calendar, Clock, MapPin, User, DollarSign, Search } from "lucide-react";
+import { todayAr } from "@/lib/ads";
+import { ADMIN_BOOKING_STATES, getAdminBookingState, type AdminBookingState } from "@/lib/booking-status";
+import { checkCancel } from "@/lib/booking-permissions";
+import { cancelBookingSchema, CANCEL_REASON_MAX } from "@/lib/validations/booking.schema";
+import { useAuthStore } from "@/stores/auth-store";
+import { XCircle, Plus, Calendar, Clock, MapPin, User, DollarSign, Search, AlertTriangle, Repeat } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useToastStore } from "@/stores/toast-store";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
-import type { Booking, BookingStatus } from "@/types";
+import type { Booking } from "@/types";
 
-const STATUS_MAP: Record<BookingStatus, { label: string; color: "warning" | "success" | "danger" | "default" }> = {
-    PENDING: { label: "Pendiente", color: "warning" },
-    CONFIRMED: { label: "Confirmada", color: "success" },
-    CANCELLED: { label: "Cancelada", color: "danger" },
-    COMPLETED: { label: "Completada", color: "default" },
+/** Reserva del panel: el cliente trae también los datos para buscarlo. */
+type AdminBooking = Omit<Booking, "user"> & {
+    user: { id: string; firstName: string; lastName: string; dni?: string | null; phone?: string | null; email?: string | null } | null;
 };
 
-const STATUS_FILTERS: { key: "ALL" | BookingStatus; label: string; color: "primary" | "warning" | "success" | "danger" | "default" }[] = [
-    { key: "ALL", label: "Todas", color: "primary" },
-    { key: "CONFIRMED", label: "Confirmadas", color: "success" },
-    { key: "COMPLETED", label: "Completadas", color: "default" },
-    { key: "CANCELLED", label: "Canceladas", color: "danger" },
+// Igual que BOOKING_SELECT pero con DNI / teléfono / email del cliente para la búsqueda.
+// El RLS de profiles ya limita qué clientes puede ver cada admin (migración 014).
+const ADMIN_BOOKING_SELECT = `
+  *,
+  facility:facilities!facility_id(
+    id, name, image_url,
+    venue:venues!venue_id(id, name, city),
+    sport:sports!sport_id(id, name)
+  ),
+  user:profiles!user_id(id, first_name, last_name, dni, phone, email)
+`;
+
+const FETCH_LIMIT = 1000;
+const PER_PAGE = 12;
+
+type StateFilter = "ALL" | AdminBookingState;
+const STATE_FILTERS: StateFilter[] = ["ALL", "REALIZADA", "PENDIENTE_PAGO", "COMPLETADA", "CANCELADA"];
+
+type DatePreset = "ALL" | "TODAY" | "TOMORROW" | "NEXT7" | "CUSTOM";
+const DATE_PRESETS: { key: Exclude<DatePreset, "CUSTOM">; label: string }[] = [
+    { key: "ALL", label: "Todas las fechas" },
+    { key: "TODAY", label: "Hoy" },
+    { key: "TOMORROW", label: "Mañana" },
+    { key: "NEXT7", label: "Próximos 7 días" },
 ];
 
-const PER_PAGE = 12;
+// ---------- Fechas en hora de Argentina (UTC-3) ----------
+
+/** Suma días a un "YYYY-MM-DD" (aritmética de calendario, sin zona). */
+function addDays(date: string, days: number): string {
+    const [y, m, d] = date.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+/** 00:00 hora AR del día dado, como instante ISO UTC (= 03:00 UTC). */
+function arMidnightIso(date: string): string {
+    const [y, m, d] = date.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d, 3, 0, 0)).toISOString();
+}
+
+/** Rango [desde, hasta) en días AR. La actividad se agrupa por el día de INICIO del turno. */
+function resolveRange(preset: DatePreset, custom: { start: CalendarDate; end: CalendarDate } | null): { from: string; to: string } | null {
+    const today = todayAr();
+    switch (preset) {
+        case "TODAY": return { from: today, to: addDays(today, 1) };
+        case "TOMORROW": return { from: addDays(today, 1), to: addDays(today, 2) };
+        case "NEXT7": return { from: today, to: addDays(today, 7) };
+        case "CUSTOM": return custom ? { from: custom.start.toString(), to: addDays(custom.end.toString(), 1) } : null;
+        default: return null;
+    }
+}
+
+const formatDate = (d: string) => formatDateAr(d, { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
+const formatMoney = (v: number | undefined) => Math.round(Number(v ?? 0)).toLocaleString("en-US");
 
 export default function AdminBookingsPage() {
     const queryClient = useQueryClient();
     const addToast = useToastStore((s) => s.addToast);
     const router = useRouter();
+    const { user } = useAuthStore();
+    const isAdmin = user?.role === "ADMIN";
+    const isVenueAdmin = user?.role === "VENUE_ADMIN";
+
     const [page, setPage] = useState(1);
-
-    // Filters
     const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState<"ALL" | BookingStatus>("ALL");
+    const [stateFilter, setStateFilter] = useState<StateFilter>("ALL");
+    const [datePreset, setDatePreset] = useState<DatePreset>("ALL");
+    const [customRange, setCustomRange] = useState<{ start: CalendarDate; end: CalendarDate } | null>(null);
 
-    const { data: bookingsData, isLoading } = useQuery({
-        queryKey: ["bookings"],
-        queryFn: async (): Promise<{ data: Booking[]; meta: { total: number; page: number; totalPages: number } }> => {
-            const { data, error } = await supabase
-                .from("bookings")
-                .select(BOOKING_SELECT)
-                .order("start_datetime", { ascending: false })
-                .limit(500);
+    // Límites del selector: historial y agenda razonables (sin años absurdos)
+    const today = todayAr();
+    const minDate = useMemo(() => parseDate(addDays(today, -730)), [today]);
+    const maxDate = useMemo(() => parseDate(addDays(today, 730)), [today]);
+
+    const range = resolveRange(datePreset, customRange);
+
+    // El rango de fechas se filtra en la base; estado y búsqueda en el cliente
+    const { data: allBookings, isLoading, isFetching } = useQuery({
+        queryKey: ["bookings", "admin", range?.from ?? "", range?.to ?? ""],
+        queryFn: async (): Promise<AdminBooking[]> => {
+            let query = supabase.from("bookings").select(ADMIN_BOOKING_SELECT);
+            if (range) {
+                query = query.gte("start_datetime", arMidnightIso(range.from)).lt("start_datetime", arMidnightIso(range.to));
+            }
+            const { data, error } = await query.order("start_datetime", { ascending: false }).limit(FETCH_LIMIT);
             if (error) throw new Error(error.message);
-            return {
-                data: (data ?? []).map((r) => camelize(r as unknown as BookingRow) as unknown as Booking),
-                meta: { total: data?.length ?? 0, page: 1, totalPages: 1 },
-            };
+            return (data ?? []).map((r) => camelize(r as unknown as BookingRow) as unknown as AdminBooking);
         },
+        placeholderData: (prev) => prev, // no parpadear al cambiar de rango
     });
-    const allBookings = bookingsData?.data;
 
-    const filteredBookings = useMemo(() => {
-        let result = allBookings || [];
-        if (statusFilter !== "ALL") {
-            result = result.filter((b) => b.status === statusFilter);
-        }
-        if (search) {
-            const q = search.toLowerCase();
-            result = result.filter((b) =>
-                b.facility?.name?.toLowerCase().includes(q) ||
-                b.facility?.venue?.name?.toLowerCase().includes(q)
+    // Alcance del panel: el admin de sede ve SU complejo. El RLS también le devuelve
+    // sus reservas propias en otros complejos; esas son de su vista de cliente.
+    const scoped = useMemo(() => {
+        const list = allBookings ?? [];
+        if (!isVenueAdmin) return list;
+        return list.filter((b) => b.facility?.venue?.id === user?.venueId);
+    }, [allBookings, isVenueAdmin, user?.venueId]);
+
+    const searched = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        if (!q) return scoped;
+        const digits = q.replace(/\D/g, "");
+        return scoped.filter((b) => {
+            const u = b.user;
+            const fullName = u ? `${u.firstName} ${u.lastName}`.toLowerCase() : "";
+            return (
+                fullName.includes(q) ||
+                (u?.email ?? "").toLowerCase().includes(q) ||
+                (digits.length >= 3 && ((u?.dni ?? "").replace(/\D/g, "").includes(digits) || (u?.phone ?? "").replace(/\D/g, "").includes(digits))) ||
+                (b.facility?.name ?? "").toLowerCase().includes(q) ||
+                (b.facility?.venue?.name ?? "").toLowerCase().includes(q)
             );
-        }
-        return result;
-    }, [allBookings, statusFilter, search]);
+        });
+    }, [scoped, search]);
 
-    const statusCounts = useMemo(() => {
-        const counts: Record<string, number> = { ALL: (allBookings || []).length };
-        (allBookings || []).forEach((b) => { counts[b.status] = (counts[b.status] || 0) + 1; });
-        return counts;
-    }, [allBookings]);
+    // Estado de negocio calculado una vez por render (depende de "ahora")
+    const withState = useMemo(() => {
+        const now = Date.now();
+        return searched.map((b) => ({ booking: b, state: getAdminBookingState(b, now) }));
+    }, [searched]);
 
-    const totalPages = Math.max(1, Math.ceil(filteredBookings.length / PER_PAGE));
-    const bookings = filteredBookings.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-    const meta = { total: filteredBookings.length, page, totalPages };
+    const counts = useMemo(() => {
+        const c: Record<StateFilter, number> = { ALL: withState.length, REALIZADA: 0, PENDIENTE_PAGO: 0, COMPLETADA: 0, CANCELADA: 0 };
+        withState.forEach(({ state }) => { c[state]++; });
+        return c;
+    }, [withState]);
 
-    useEffect(() => { setPage(1); }, [search, statusFilter]);
+    // Próximas primero (la más cercana arriba); después las pasadas, de la más reciente a la más vieja
+    const sorted = useMemo(() => {
+        const now = Date.now();
+        const list = stateFilter === "ALL" ? withState : withState.filter((x) => x.state === stateFilter);
+        const t = (x: { booking: AdminBooking }) => new Date(x.booking.startDatetime).getTime();
+        const upcoming = list.filter((x) => t(x) >= now).sort((a, b) => t(a) - t(b));
+        const past = list.filter((x) => t(x) < now).sort((a, b) => t(b) - t(a));
+        return [...upcoming, ...past];
+    }, [withState, stateFilter]);
 
+    const totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
+    const pageItems = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+    useEffect(() => { setPage(1); }, [search, stateFilter, datePreset, customRange]);
+
+    // ---------- Cancelación ----------
     const cancelBooking = useCancelBooking();
-    const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
+    const [bookingToCancel, setBookingToCancel] = useState<AdminBooking | null>(null);
+    const [cancelReason, setCancelReason] = useState("");
+    const [cancelError, setCancelError] = useState<string | null>(null);
+
+    const openCancel = (b: AdminBooking) => { setBookingToCancel(b); setCancelReason(""); setCancelError(null); };
+    const closeCancel = () => { if (!cancelBooking.isPending) setBookingToCancel(null); };
 
     const handleConfirmCancel = () => {
         if (!bookingToCancel) return;
+        const parsed = cancelBookingSchema.safeParse({ reason: cancelReason });
+        if (!parsed.success) {
+            setCancelError(parsed.error.issues[0]?.message ?? "Motivo inválido");
+            return;
+        }
         cancelBooking.mutate(
-            { id: bookingToCancel.id },
+            { id: bookingToCancel.id, reason: parsed.data.reason || undefined },
             {
                 onSuccess: () => {
                     addToast("Reserva cancelada");
                     queryClient.invalidateQueries({ queryKey: ["bookings"] });
                     setBookingToCancel(null);
                 },
-            }
+                onError: (error: Error) => {
+                    // El backend es quien autoriza: mostrar su motivo (ej. regla de 24 h)
+                    setCancelError(error.message || "No se pudo cancelar la reserva");
+                },
+            },
         );
     };
 
-    const formatDate = (d: string) => formatDateAr(d, { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
-    const formatTime = formatTimeAr;
+    const actor = user ? { id: user.id, role: user.role, venueId: user.venueId } : null;
+    const clientName = (b: AdminBooking) => (b.user ? `${b.user.firstName} ${b.user.lastName}` : "Cliente");
 
     if (isLoading) {
         return <div className="flex items-center justify-center py-12"><Spinner size="lg" /></div>;
     }
+
+    const hitLimit = (allBookings?.length ?? 0) >= FETCH_LIMIT;
 
     return (
         <div className="space-y-6">
@@ -119,10 +222,11 @@ export default function AdminBookingsPage() {
                 </Button>
             </div>
 
-            {/* Filters */}
+            {/* Filtros */}
             <div className="space-y-3">
                 <Input
-                    placeholder="Buscar por nombre de cancha o complejo..."
+                    aria-label="Buscar reservas"
+                    placeholder="Buscar por cliente, DNI, teléfono, email, cancha o complejo..."
                     variant="bordered"
                     size="sm"
                     value={search}
@@ -130,64 +234,131 @@ export default function AdminBookingsPage() {
                     startContent={<Search className="h-4 w-4 text-default-400" />}
                     isClearable
                     onClear={() => setSearch("")}
-                    className="max-w-md"
+                    className="max-w-xl"
                 />
-                <div className="flex flex-wrap gap-2">
-                    {STATUS_FILTERS.map((f) => (
+
+                <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por fecha">
+                    {DATE_PRESETS.map((p) => (
                         <Chip
-                            key={f.key}
-                            color={statusFilter === f.key ? f.color : "default"}
-                            variant={statusFilter === f.key ? "solid" : "bordered"}
+                            key={p.key}
+                            color={datePreset === p.key ? "primary" : "default"}
+                            variant={datePreset === p.key ? "solid" : "bordered"}
                             className="cursor-pointer"
-                            onClick={() => setStatusFilter(f.key)}
+                            onClick={() => { setDatePreset(p.key); setCustomRange(null); }}
                         >
-                            {f.label} ({statusCounts[f.key] || 0})
+                            {p.label}
                         </Chip>
                     ))}
+                    <DateRangePicker
+                        aria-label="Rango de fechas personalizado"
+                        size="sm"
+                        variant="bordered"
+                        className="max-w-xs"
+                        visibleMonths={2}
+                        // Cast: HeroUI trae su propia copia de @internationalized/date (mismo
+                        // runtime, tipos de otra versión). Igual que en DateTimeField.
+                        minValue={minDate as any}
+                        maxValue={maxDate as any}
+                        value={(datePreset === "CUSTOM" ? customRange : null) as any}
+                        onChange={(v) => {
+                            if (v?.start && v?.end) {
+                                setCustomRange({ start: v.start as CalendarDate, end: v.end as CalendarDate });
+                                setDatePreset("CUSTOM");
+                            } else {
+                                setCustomRange(null);
+                                setDatePreset("ALL");
+                            }
+                        }}
+                    />
+                    {isFetching && <Spinner size="sm" aria-label="Actualizando" />}
                 </div>
+
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por estado">
+                    {STATE_FILTERS.map((key) => {
+                        const active = stateFilter === key;
+                        const color = key === "ALL" ? "primary" : ADMIN_BOOKING_STATES[key].color;
+                        const label = key === "ALL" ? "Todas" : ADMIN_BOOKING_STATES[key].plural;
+                        return (
+                            <Chip
+                                key={key}
+                                color={active ? color : "default"}
+                                variant={active ? "solid" : "bordered"}
+                                className="cursor-pointer"
+                                onClick={() => setStateFilter(key)}
+                            >
+                                {label} ({counts[key]})
+                            </Chip>
+                        );
+                    })}
+                </div>
+
+                {hitLimit && (
+                    <p className="text-xs text-warning-600">
+                        Se muestran las {FETCH_LIMIT} reservas más recientes. Acotá el rango de fechas para ver el resto.
+                    </p>
+                )}
             </div>
 
-            {/* Booking Cards Grid */}
-            {bookings && bookings.length > 0 ? (
+            {/* Tarjetas */}
+            {pageItems.length > 0 ? (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {bookings.map((booking) => {
-                        const status = STATUS_MAP[booking.status];
+                    {pageItems.map(({ booking, state }) => {
+                        const meta = ADMIN_BOOKING_STATES[state];
+                        const cancel = actor ? checkCancel(actor, booking) : { allowed: false as const, reason: "" };
+                        const isOwn = booking.userId === user?.id;
+                        // Mostrar el motivo solo cuando la reserva sigue activa y futura (si no, no aporta)
+                        const showBlockedHint = !cancel.allowed && booking.status === "CONFIRMED"
+                            && new Date(booking.startDatetime).getTime() > Date.now();
                         return (
-                            <Card key={booking.id} className="border border-divider">
+                            <Card key={booking.id} shadow="none" className="border border-divider">
                                 <CardBody className="p-4 gap-3">
-                                    <div className="flex items-start justify-between">
+                                    <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="font-semibold truncate">{booking.facility.name}</h3>
+                                            <h3 className="font-semibold truncate">{booking.facility?.name ?? "Cancha"}</h3>
                                             <p className="text-xs text-default-400 flex items-center gap-1 mt-0.5">
                                                 <MapPin className="h-3 w-3" />
-                                                {booking.facility.venue?.name}
+                                                {booking.facility?.venue?.name ?? ""}
                                             </p>
                                         </div>
-                                        <Chip color={status.color} size="sm" variant="flat">
-                                            {status.label}
-                                        </Chip>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <Chip color={meta.color} size="sm" variant="flat">{meta.label}</Chip>
+                                            {booking.recurringBookingId && (
+                                                <Chip size="sm" variant="flat" color="secondary" startContent={<Repeat className="h-3 w-3" />}>
+                                                    Turno fijo
+                                                </Chip>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div className="space-y-2 text-sm">
                                         <div className="flex items-center gap-2 text-default-600">
                                             <User className="h-3.5 w-3.5 text-default-400" />
-                                            <span>{booking.user ? `${booking.user.firstName} ${booking.user.lastName}` : "Cliente"}</span>
+                                            <span className="truncate">{clientName(booking)}</span>
+                                            {isOwn && <Chip size="sm" variant="flat">Tu reserva</Chip>}
                                         </div>
                                         <div className="flex items-center gap-2 text-default-600">
                                             <Calendar className="h-3.5 w-3.5 text-default-400" />
-                                            <span>{formatDate(booking.startDatetime)}</span>
+                                            <span className="capitalize">{formatDate(booking.startDatetime)}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-default-600">
                                             <Clock className="h-3.5 w-3.5 text-default-400" />
-                                            <span>{formatTime(booking.startDatetime)} — {formatTime(booking.endDatetime)}</span>
+                                            <span>{formatTimeAr(booking.startDatetime)} — {formatTimeAr(booking.endDatetime)}</span>
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        {/* Dinero: el complejo ve su ganancia (base); la comisión solo el admin general */}
+                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                             <DollarSign className="h-3.5 w-3.5 text-success" />
-                                            <span className="font-semibold text-success">{Math.round(Number(booking.totalPrice)).toLocaleString("en-US")} ARS</span>
+                                            {isAdmin ? (
+                                                <>
+                                                    <span className="font-semibold text-success">{formatMoney(booking.totalPrice)} ARS</span>
+                                                    <span className="text-xs text-default-400">comisión {formatMoney(booking.commissionAmount)}</span>
+                                                </>
+                                            ) : (
+                                                <span className="font-semibold text-success">{formatMoney(booking.basePrice)} ARS</span>
+                                            )}
                                         </div>
                                     </div>
 
-                                    {booking.status === "CONFIRMED" && (
+                                    {cancel.allowed && (
                                         <div className="flex gap-2 pt-2 border-t border-divider mt-1">
                                             <Button
                                                 size="sm"
@@ -195,11 +366,17 @@ export default function AdminBookingsPage() {
                                                 variant="flat"
                                                 className="w-full"
                                                 startContent={<XCircle className="h-3.5 w-3.5" />}
-                                                onPress={() => setBookingToCancel(booking)}
+                                                onPress={() => openCancel(booking)}
                                             >
                                                 Cancelar
                                             </Button>
                                         </div>
+                                    )}
+                                    {showBlockedHint && (
+                                        <p className="flex items-center gap-1.5 border-t border-divider pt-2 mt-1 text-xs text-default-400">
+                                            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                                            {cancel.reason}
+                                        </p>
                                     )}
                                 </CardBody>
                             </Card>
@@ -209,33 +386,59 @@ export default function AdminBookingsPage() {
             ) : (
                 <div className="py-12 text-center">
                     <Calendar className="mx-auto h-12 w-12 text-default-200" />
-                    <p className="mt-4 text-default-500">No hay reservas</p>
+                        <p className="mt-4 text-default-500">No hay reservas para estos filtros</p>
                 </div>
             )}
 
-            {/* Pagination */}
-            {meta && meta.totalPages > 1 && (
+            {/* Paginación */}
+            {totalPages > 1 && (
                 <div className="flex items-center justify-between pt-2">
-                    <p className="text-sm text-default-500">Página {meta.page} de {meta.totalPages} ({meta.total} reservas)</p>
+                    <p className="text-sm text-default-500">Página {page} de {totalPages} ({sorted.length} reservas)</p>
                     <div className="flex gap-2">
                         <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage((p) => p - 1)}>Anterior</Button>
-                        <Button size="sm" variant="flat" isDisabled={page >= meta.totalPages} onPress={() => setPage((p) => p + 1)}>Siguiente</Button>
+                        <Button size="sm" variant="flat" isDisabled={page >= totalPages} onPress={() => setPage((p) => p + 1)}>Siguiente</Button>
                     </div>
                 </div>
             )}
 
-            {/* Confirmación de cancelación */}
-            <ConfirmModal
-                isOpen={!!bookingToCancel}
-                onClose={() => setBookingToCancel(null)}
-                onConfirm={handleConfirmCancel}
-                title="Cancelar reserva"
-                message={bookingToCancel
-                    ? `¿Seguro que deseas cancelar la reserva de ${bookingToCancel.user ? `${bookingToCancel.user.firstName} ${bookingToCancel.user.lastName}` : "este cliente"} en ${bookingToCancel.facility.name}? Esta acción no se puede deshacer.`
-                    : "Esta acción no se puede deshacer."}
-                confirmLabel="Sí, cancelar reserva"
-                isLoading={cancelBooking.isPending}
-            />
+            {/* Cancelación con motivo */}
+            <Modal isOpen={!!bookingToCancel} onClose={closeCancel} size="md">
+                <ModalContent>
+                    <ModalHeader className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-warning" />
+                        Cancelar reserva
+                    </ModalHeader>
+                    <ModalBody className="gap-3">
+                        {bookingToCancel && (
+                            <p className="text-sm text-default-600">
+                                ¿Seguro que deseas cancelar la reserva de <strong>{clientName(bookingToCancel)}</strong> en{" "}
+                                <strong>{bookingToCancel.facility?.name}</strong> del{" "}
+                                {formatDate(bookingToCancel.startDatetime)} a las {formatTimeAr(bookingToCancel.startDatetime)}?
+                                Esta acción no se puede deshacer.
+                            </p>
+                        )}
+                        <Textarea
+                            label="Motivo (opcional)"
+                            placeholder="Ej: mantenimiento de la cancha"
+                            variant="bordered"
+                            value={cancelReason}
+                            onValueChange={(v) => { setCancelReason(v); setCancelError(null); }}
+                            maxLength={CANCEL_REASON_MAX}
+                            description={`${cancelReason.length}/${CANCEL_REASON_MAX}`}
+                            minRows={2}
+                        />
+                        {cancelError && (
+                            <p role="alert" className="text-sm text-danger">{cancelError}</p>
+                        )}
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="light" onPress={closeCancel} isDisabled={cancelBooking.isPending}>Volver</Button>
+                        <Button color="danger" onPress={handleConfirmCancel} isLoading={cancelBooking.isPending}>
+                            Sí, cancelar reserva
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </div>
     );
 }

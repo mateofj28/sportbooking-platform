@@ -22,3 +22,33 @@ export function getBookingStatusChip(booking: Pick<Booking, "status" | "paymentS
     // Pagada (tanto reservas únicas como turnos fijos ya pagados)
     return { label: "Pagada", color: "success" };
 }
+
+// ============================================================
+// Estado de NEGOCIO para el panel de administración.
+// Regla: de cara al admin existen Realizada / Completada / Cancelada.
+//   - Realizada: pagada y el turno todavía no terminó.
+//   - Completada: COMPLETED, o pagada cuyo fin ya pasó (aunque el cron aún no corrió).
+//   - Cancelada.
+// Caso aparte: turno fijo creado pero sin pagar -> "Pendiente de pago"
+// (todavía no es una reserva realizada; el cron la cancela si no se paga).
+// ============================================================
+
+export type AdminBookingState = "REALIZADA" | "PENDIENTE_PAGO" | "COMPLETADA" | "CANCELADA";
+
+export const ADMIN_BOOKING_STATES: Record<AdminBookingState, { label: string; plural: string; color: ChipColor }> = {
+    REALIZADA: { label: "Realizada", plural: "Realizadas", color: "success" },
+    PENDIENTE_PAGO: { label: "Pendiente de pago", plural: "Pendientes de pago", color: "warning" },
+    COMPLETADA: { label: "Completada", plural: "Completadas", color: "default" },
+    CANCELADA: { label: "Cancelada", plural: "Canceladas", color: "danger" },
+};
+
+export function getAdminBookingState(
+    booking: Pick<Booking, "status" | "paymentStatus" | "endDatetime">,
+    now: number = Date.now(),
+): AdminBookingState {
+    if (booking.status === "CANCELLED") return "CANCELADA";
+    if (booking.status === "COMPLETED") return "COMPLETADA";
+    if (booking.paymentStatus !== "PAID") return "PENDIENTE_PAGO";
+    // "¿Ya terminó?" se compara en instantes absolutos: no depende de la zona
+    return new Date(booking.endDatetime).getTime() <= now ? "COMPLETADA" : "REALIZADA";
+}

@@ -7,8 +7,14 @@ export const createBookingSchema = z.object({
     notes: z.string().optional(),
 });
 
+export const CANCEL_REASON_MAX = 300;
+
 export const cancelBookingSchema = z.object({
-    reason: z.string().optional(),
+    reason: z
+        .string()
+        .trim()
+        .max(CANCEL_REASON_MAX, `El motivo admite hasta ${CANCEL_REASON_MAX} caracteres`)
+        .optional(),
 });
 
 export type CreateBookingFormData = z.infer<typeof createBookingSchema>;

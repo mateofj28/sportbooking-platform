@@ -281,7 +281,7 @@ $$ LANGUAGE sql STABLE;
 | `schedules` | todos | ADMIN, VENUE_ADMIN (su venue) | ADMIN, VENUE_ADMIN (su venue) | ADMIN, VENUE_ADMIN (su venue) |
 | `pricing` | todos | ADMIN, VENUE_ADMIN (su venue) | ADMIN, VENUE_ADMIN (su venue) | ADMIN, VENUE_ADMIN (su venue) |
 | `blocked_slots` | ADMIN ve todo; VENUE_ADMIN su venue | ADMIN, VENUE_ADMIN (su venue) | ADMIN, VENUE_ADMIN (su venue) | ADMIN, VENUE_ADMIN |
-| `bookings` | CLIENT sus reservas; VENUE_ADMIN su venue; ADMIN todo | CLIENT, con validación | CLIENT/ADMIN markAsPaid, cancel | NO |
+| `bookings` | CLIENT sus reservas; VENUE_ADMIN su venue; ADMIN todo | Solo Edge Functions (create-booking / create-recurring) | Solo Edge Functions (cancel-*, mark-paid, crons); el pago solo lo registra mark-paid para el titular (migración 028) | NO |
 | `recurring_bookings` | CLIENT las propias; VENUE_ADMIN su venue; ADMIN todo | CLIENT, ADMIN, VENUE_ADMIN | CLIENT/ADMIN | NO |
 | `notifications` | VENUE_ADMIN su venue_id; ADMIN todo | Solo Edge Functions (service role) | NO | NO |
 | `notification_reads` | solo las propias | propio user | NO | NO |

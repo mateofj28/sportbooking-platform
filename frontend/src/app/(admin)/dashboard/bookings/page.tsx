@@ -16,6 +16,7 @@ import { checkCancel, canMarkPaid } from "@/lib/booking-permissions";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAdminBookingsRealtime } from "@/hooks/use-admin-bookings-realtime";
 import { DataTable } from "@/components/shared/data-table";
+import { FilterChip } from "@/components/shared/filter-chip";
 import { CancelBookingModal, type CancelBookingTarget } from "@/components/shared/cancel-booking-modal";
 import { MarkPaidModal, type MarkPaidTarget } from "@/components/shared/mark-paid-modal";
 import { XCircle, Plus, Search, Repeat, Eye, BadgeDollarSign, Lock } from "lucide-react";
@@ -219,15 +220,12 @@ export default function AdminBookingsPage() {
 
                 <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por fecha">
                     {DATE_PRESETS.map((p) => (
-                        <Chip
+                        <FilterChip
                             key={p.key}
-                            color={datePreset === p.key ? "primary" : "default"}
-                            variant={datePreset === p.key ? "solid" : "bordered"}
-                            className="cursor-pointer"
-                            onClick={() => choosePreset(p.key)}
-                        >
-                            {p.label}
-                        </Chip>
+                            label={p.label}
+                            selected={datePreset === p.key}
+                            onSelect={() => choosePreset(p.key)}
+                        />
                     ))}
                     <DateRangePicker
                         aria-label="Rango de fechas personalizado"
@@ -260,15 +258,14 @@ export default function AdminBookingsPage() {
                         const color = key === "ALL" ? "primary" : ADMIN_BOOKING_STATES[key].color;
                         const label = key === "ALL" ? "Todas" : ADMIN_BOOKING_STATES[key].plural;
                         return (
-                            <Chip
+                            <FilterChip
                                 key={key}
-                                color={active ? color : "default"}
-                                variant={active ? "solid" : "bordered"}
-                                className="cursor-pointer"
-                                onClick={() => setStateFilter(key)}
-                            >
-                                {label} ({counts[key]})
-                            </Chip>
+                                label={label}
+                                count={counts[key]}
+                                selected={active}
+                                color={color}
+                                onSelect={() => setStateFilter(key)}
+                            />
                         );
                     })}
                 </div>

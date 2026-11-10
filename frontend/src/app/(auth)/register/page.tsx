@@ -14,7 +14,6 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { PhoneInput, COUNTRY_CODES, validatePhoneNumber } from "@/components/shared/phone-input";
 import { DniInput } from "@/components/shared/dni-input";
-import { ProvinceSelect } from "@/components/shared/province-select";
 
 
 export default function RegisterPage() {
@@ -234,15 +233,6 @@ export default function RegisterPage() {
                             errorMessage={errors.dni?.message || dniError || undefined}
                                         isRequired
                         />
-
-                                    {/* Provincia: define qué publicidad ve el cliente */}
-                                    <ProvinceSelect
-                                        value={watch("province")}
-                                        onChange={(code) => setValue("province", code, { shouldValidate: true })}
-                                        isRequired
-                                        isInvalid={!!errors.province}
-                                        errorMessage={errors.province?.message}
-                                    />
 
                                     {/* Teléfono */}
                                     <PhoneInput

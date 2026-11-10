@@ -349,7 +349,7 @@ function ClientSimulator({
                     <div>
                         <h2 className="text-base font-semibold">Vista del cliente</h2>
                         <p className="text-xs text-default-500">
-                            Mirá exactamente lo que vería un cliente de cada provincia hoy: solo publicidad activa y vigente.
+                            Mirá exactamente lo que vería hoy alguien que está en cada provincia (la app usa la ubicación actual, no la del perfil): solo publicidad activa y vigente.
                         </p>
                     </div>
                 </div>

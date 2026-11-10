@@ -3,9 +3,10 @@
 // ============================================================
 // hooks/use-advertisements.ts
 //
-// Cliente:  useActiveAdvertisements() -> RPC get_active_advertisements.
-//           El servidor decide qué le corresponde según la provincia
-//           guardada en su perfil. El cliente no filtra nada.
+// Cliente:  useActiveAdvertisements(province) -> RPC get_active_advertisements.
+//           La provincia es donde está el usuario AHORA (useCurrentProvince:
+//           GPS, o IP como respaldo). El servidor decide qué anuncios le
+//           corresponden a esa provincia; el cliente no filtra nada.
 // Admin:    useAdminAdvertisements() + mutaciones (RLS: solo ADMIN).
 // ============================================================
 
@@ -52,19 +53,21 @@ function mapAdminRow(r: AdRow): Advertisement {
 // ---------------------------------------------------------------
 
 /**
- * Publicidad vigente que le corresponde al usuario.
- * @param province  Solo para simulación (panel admin). Si se omite, el servidor
- *                  usa la provincia del perfil del usuario autenticado.
+ * Publicidad vigente para una provincia.
+ * @param province  Dónde está el usuario AHORA (useCurrentProvince), o la provincia
+ *                  simulada en el panel admin. null = solo nacionales.
+ *                  La base ya no usa la provincia del perfil (migración 027).
+ * @param enabled   false mientras todavía no se sabe la ubicación (evita pedir dos veces).
  */
-export function useActiveAdvertisements(province?: string) {
+export function useActiveAdvertisements(province: string | null, enabled = true) {
   const userId = useAuthStore((s) => s.user?.id)
 
   return useQuery({
     // userId en la key: al cambiar de cuenta no se reutiliza la caché de otra persona
-    queryKey: [...ADS_KEY, 'active', userId ?? 'anon', province ?? 'me'],
+    queryKey: [...ADS_KEY, 'active', userId ?? 'anon', province ?? 'NONE'],
     queryFn: async (): Promise<ActiveAdvertisement[]> => {
       const { data, error } = await supabase.rpc('get_active_advertisements', {
-        p_province: province,
+        p_province: province ?? undefined,
       })
       if (error) throw new Error(error.message)
       return (data ?? []).map((a) => ({
@@ -78,6 +81,10 @@ export function useActiveAdvertisements(province?: string) {
         scope: a.scope as AdScope,
       }))
     },
+    enabled,
+    // Al pasar de la provincia por IP a la del GPS, mantener el carrusel anterior
+    // hasta que llegue el nuevo (sin parpadeo)
+    placeholderData: (prev) => prev,
     staleTime: 5 * 60 * 1000,
   })
 }

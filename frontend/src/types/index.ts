@@ -32,8 +32,6 @@ export interface RegisterData {
     lastName: string;
     phone?: string;
     dni: string;
-    /** Código ISO de la provincia (ej. "AR-X"). */
-    province: string;
 }
 
 // Sport types

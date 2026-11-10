@@ -5,9 +5,9 @@ import { Card, CardBody, Chip, Button, Spinner, Input } from "@heroui/react";
 import { getBookingStatusChip } from "@/lib/booking-status";
 import { formatTimeAr } from "@/lib/datetime";
 import { PromoCarousel, adToSlide } from "@/components/shared/promo-carousel";
-import { ProvincePrompt } from "@/components/shared/province-prompt";
+import { LocationNotice } from "@/components/shared/location-notice";
 import { useActiveAdvertisements } from "@/hooks/use-advertisements";
-import { useMyProvince } from "@/hooks/use-my-province";
+import { useCurrentProvince } from "@/hooks/use-current-province";
 import { useAuthStore } from "@/stores/auth-store";
 import { useBookings, useMarkBookingPaid } from "@/hooks/use-bookings";
 import { useSports } from "@/hooks/use-sports";
@@ -52,11 +52,11 @@ export default function ClientHomePage() {
 
     const { data: sports } = useSports();
 
-    // Publicidad: el servidor decide qué corresponde según la provincia del perfil
-    const { data: activeAds } = useActiveAdvertisements();
-    const { data: myProvince, isSuccess: provinceLoaded } = useMyProvince();
+    // Publicidad según dónde está el usuario AHORA (GPS; IP como respaldo), no según su perfil.
+    // Se pide recién con la sesión lista para no disparar el cartel de permiso antes de tiempo.
+    const location = useCurrentProvince(isHydrated && isAuthenticated);
+    const { data: activeAds } = useActiveAdvertisements(location.province, location.ready);
     const slides = useMemo(() => (activeAds ?? []).map(adToSlide), [activeAds]);
-    const needsProvince = provinceLoaded && !myProvince;
 
     // Próximas reservas confirmadas (futuras), ordenadas por fecha
     const upcoming = useMemo(() => {
@@ -112,9 +112,9 @@ export default function ClientHomePage() {
                 </section>
 
                 {/* Promociones (justo después del buscador) */}
-                {(needsProvince || slides.length > 0) && (
-                    <section className="space-y-4">
-                        {needsProvince && <ProvincePrompt />}
+                {location.ready && (
+                    <section className="space-y-3" aria-label="Promociones">
+                        <LocationNotice location={location} />
                         {slides.length > 0 && <PromoCarousel slides={slides} autoPlayMs={4000} />}
                     </section>
                 )}

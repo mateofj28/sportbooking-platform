@@ -51,7 +51,7 @@ export function useAuth() {
                         last_name: data.lastName,
                         phone: data.phone,
                         dni: data.dni || null,
-                        province: data.province,
+                        // Sin provincia: la publicidad usa la ubicación actual, no el perfil
                     },
                 },
             })

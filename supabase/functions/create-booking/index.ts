@@ -8,6 +8,7 @@ import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { bookingToEmailData, sendBookingConfirmation } from '../_shared/email.ts'
 import { notifyBookingCreated } from '../_shared/notifications.ts'
+import { bookingInsertProblem } from '../_shared/booking-errors.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -114,7 +115,12 @@ Deno.serve(async (req) => {
       `)
       .single()
 
-    if (insertErr) return err(`Error al crear la reserva: ${insertErr.message}`)
+    // La base es la garantía final (migración 025): superposición concurrente,
+    // fuera de horario o bloqueo llegan acá como error de integridad.
+    if (insertErr) {
+      const problem = bookingInsertProblem(insertErr)
+      return err(problem.message, problem.status)
+    }
 
     // 11. Efectos secundarios: email + notificación (best-effort)
     const emailData = bookingToEmailData(booking as any)

@@ -7,6 +7,7 @@ import { sendBookingConfirmation } from '../_shared/email.ts'
 import { notifyRecurringCreated } from '../_shared/notifications.ts'
 import { arMidnightUtc } from '../_shared/ar-time.ts'
 import { actorFromUser, canManage } from '../_shared/permissions.ts'
+import { bookingInsertProblem } from '../_shared/booking-errors.ts'
 
 const AR_OFFSET_MIN = 3 * 60
 const OCCURRENCES = 8
@@ -143,7 +144,8 @@ Deno.serve(async (req) => {
         .single()
 
       if (bErr) {
-        skipped.push({ date: dateLabel, reason: bErr.message })
+        // Superposición concurrente, fuera de horario o bloqueo (migración 025): se saltea la fecha
+        skipped.push({ date: dateLabel, reason: bookingInsertProblem(bErr).message })
       } else {
         created.push({ date: dateLabel, bookingId: booking.id })
       }

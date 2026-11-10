@@ -78,6 +78,30 @@ export function snakeize(obj: unknown): unknown {
 // ---- Helpers de Supabase con manejo de errores ----
 
 /**
+ * Mensaje real de una Edge Function que respondió con error.
+ *
+ * Ante un status 4xx/5xx, supabase-js devuelve un FunctionsHttpError cuyo `message`
+ * es genérico ("Edge Function returned a non-2xx status code"). El motivo que
+ * escribimos para el usuario viene en el cuerpo de la respuesta (`error.context`),
+ * con la forma de `err()` en _shared/db.ts: { data: null, error: { message } }.
+ */
+async function functionErrorMessage(error: unknown): Promise<string> {
+  const fallback = (error as { message?: string })?.message || 'Error inesperado'
+  const response = (error as { context?: unknown })?.context
+  if (!(response instanceof Response)) return fallback
+  try {
+    const body = await response.clone().json()
+    const e = body?.error
+    if (typeof e === 'string' && e) return e
+    if (typeof e?.message === 'string' && e.message) return e.message
+    if (typeof body?.message === 'string' && body.message) return body.message
+  } catch {
+    // Cuerpo vacío o no JSON (ej. caída del gateway): usar el mensaje genérico
+  }
+  return fallback
+}
+
+/**
  * Llama a una Edge Function de Supabase con tipado fuerte.
  * Devuelve { data, error } consistente — nunca lanza.
  */
@@ -89,7 +113,7 @@ export async function invokeFunction<T>(
     const { data, error } = await supabase.functions.invoke<T>(name, {
       body,
     })
-    if (error) return { data: null, error: error.message }
+    if (error) return { data: null, error: await functionErrorMessage(error) }
     return { data, error: null }
   } catch (e) {
     return { data: null, error: String(e) }

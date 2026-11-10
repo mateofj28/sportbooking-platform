@@ -23,6 +23,7 @@ import { durationOptionsForSport } from "@/components/shared/availability-picker
 import { finalPricePerTurn } from "@/lib/pricing";
 import { useFacilityAvailability, useAvailabilitySummary } from "@/hooks/use-availability";
 import { useAvailabilityRealtime } from "@/hooks/use-availability-realtime";
+import { useToastStore } from "@/stores/toast-store";
 import type { Facility } from "@/types";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
@@ -130,6 +131,7 @@ export default function FacilityDetailPage({
     const router = useRouter();
     const { isAuthenticated } = useAuthStore();
     const { data: facility, isLoading } = useFacility(id);
+    const addToast = useToastStore((s) => s.addToast);
     const createBooking = useCreateBooking();
     const createRecurring = useCreateRecurringBooking();
 
@@ -173,6 +175,15 @@ export default function FacilityDetailPage({
     // (reserva, cancelación, bloqueo, horario o tarifa). Sin polling.
     useAvailabilityRealtime(facility ? id : undefined);
 
+    // Un error de confirmación se refiere al turno que se intentó reservar. Si el usuario
+    // cambia de turno, día, duración o modo, ese mensaje ya no aplica: se limpia.
+    const resetBooking = createBooking.reset;
+    const resetRecurring = createRecurring.reset;
+    useEffect(() => {
+        resetBooking();
+        resetRecurring();
+    }, [selectedSlot, selectedDate, duration, mode, resetBooking, resetRecurring]);
+
     /** ¿El día tiene al menos un slot disponible? Se evalúa localmente
      *  a partir del horario del día (sin fetch adicional por cada día del calendario). */
     const dayHasAvailableSlots = (day: Date): boolean => {
@@ -211,6 +222,12 @@ export default function FacilityDetailPage({
         const current = timeSlots.find((s) => (typeof s === "string" ? s : s.time) === selectedSlot);
         const stillAvailable = !!current && (typeof current === "string" || current.available);
         if (!stillAvailable) {
+            // Avisar solo si el turno sigue en la grilla pero quedó ocupado/bloqueado
+            // (ej. otra persona lo acaba de reservar). Si no existe en este día, limpiar en silencio.
+            // `reason` solo viene en los slots de la RPC (la estimación local no la tiene)
+            const reason = current && typeof current !== "string" && "reason" in current ? current.reason : undefined;
+            const taken = reason === "booked" || reason === "blocked";
+            if (taken) addToast(`El turno de las ${formatTime12h(selectedSlot)} ya no está disponible. Elegí otro horario.`);
             setSelectedSlot(null);
             setStep("select");
         }

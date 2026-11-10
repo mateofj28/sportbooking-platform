@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth-store'
+import { useToastStore } from '@/stores/toast-store'
 import { camelize, BOOKING_SELECT, RECURRING_BOOKING_SELECT, invokeFunction } from '@/lib/supabase-helpers'
 import type { BookingRow, RecurringBookingRow } from '@/lib/supabase-helpers'
 import type { Booking, CreateBookingData } from '@/types'
@@ -244,17 +245,76 @@ export function useCancelRecurringBooking() {
     })
 }
 
-/** Marca una reserva como pagada. */
+export interface PayBookingInput {
+    id: string
+    /** El monto que el cliente está viendo. Si el precio cambió, el pago se rechaza (409). */
+    expectedTotal: number
+}
+
+/**
+ * Paga una reserva propia (solo el titular, mark-paid / canPay).
+ * Si el precio cambió mientras el cliente miraba (cambio de tarifa, migración 029),
+ * no se cobra: se avisa con un toast y se recargan los datos para mostrar el precio nuevo.
+ */
 export function useMarkBookingPaid() {
     const queryClient = useQueryClient()
+    const addToast = useToastStore((s) => s.addToast)
     return useMutation({
-        mutationFn: async (id: string) => {
+        mutationFn: async ({ id, expectedTotal }: PayBookingInput) => {
             const { data: result, error } = await invokeFunction('mark-paid', {
                 booking_id: id,
+                expected_total: expectedTotal,
             })
             if (error) throw new Error(error)
             return result
         },
-        onSuccess: () => invalidateAll(queryClient),
+        onSuccess: () => {
+            addToast('Pago registrado')
+            invalidateAll(queryClient)
+        },
+        onError: (e: Error) => {
+            addToast(e.message || 'No se pudo registrar el pago', 'error')
+            // Si fue por un cambio de precio, mostrar el precio nuevo
+            invalidateAll(queryClient)
+            queryClient.invalidateQueries({ queryKey: ['price-changes'] })
+        },
+    })
+}
+
+/** Cambio de precio pendiente de una reserva (tarifa actualizada; migración 029). */
+export interface PriceChange {
+    bookingId: string
+    oldTotal: number
+    newTotal: number
+    currency: string
+}
+
+/**
+ * Cambios de precio de MIS reservas, por id de reserva. El RLS ya limita a las propias.
+ * Se usa para mostrar "antes $X, ahora $Y" en las fechas pendientes de pago.
+ */
+export function usePriceChanges() {
+    const userId = useAuthStore((s) => s.user?.id)
+    return useQuery({
+        queryKey: ['price-changes', userId],
+        queryFn: async (): Promise<Map<string, PriceChange>> => {
+            const { data, error } = await supabase
+                .from('booking_price_changes' as never)
+                .select('booking_id, old_total, new_total, currency')
+                .eq('user_id', userId!)
+            if (error) throw new Error(error.message)
+            const map = new Map<string, PriceChange>()
+            for (const r of (data ?? []) as { booking_id: string; old_total: number; new_total: number; currency: string }[]) {
+                map.set(r.booking_id, {
+                    bookingId: r.booking_id,
+                    oldTotal: Number(r.old_total),
+                    newTotal: Number(r.new_total),
+                    currency: r.currency ?? 'ARS',
+                })
+            }
+            return map
+        },
+        enabled: !!userId,
+        staleTime: 60_000,
     })
 }

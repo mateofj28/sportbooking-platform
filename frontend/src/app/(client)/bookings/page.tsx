@@ -14,7 +14,8 @@ import {
     Textarea,
     useDisclosure,
 } from "@heroui/react";
-import { useBookings, useCancelBooking, useRecurringBookings, useCancelRecurringBooking, useMarkBookingPaid, type RecurringBooking } from "@/hooks/use-bookings";
+import { useBookings, useCancelBooking, useRecurringBookings, useCancelRecurringBooking, useMarkBookingPaid, usePriceChanges, type RecurringBooking } from "@/hooks/use-bookings";
+import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
 import { Calendar, MapPin, Clock, X, Repeat, DollarSign } from "lucide-react";
@@ -66,6 +67,7 @@ export default function BookingsPage() {
     const bookings = Array.isArray(bookingsResponse?.data) ? bookingsResponse.data : [];
     const cancelBooking = useCancelBooking();
     const markPaid = useMarkBookingPaid();
+    const { data: priceChanges } = usePriceChanges();
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [cancelReason, setCancelReason] = useState("");
@@ -278,6 +280,9 @@ export default function BookingsPage() {
                               <p className="mt-1 text-sm font-medium text-success">
                                               Total: ${Math.round(Number(booking.totalPrice)).toLocaleString("en-US")} ARS
                               </p>
+                                          {booking.status === "CONFIRMED" && booking.paymentStatus !== "PAID" && (
+                                              <PriceChangeNote change={priceChanges?.get(booking.id)} className="mt-1" />
+                                          )}
                           </div>
                                       <div className="flex flex-col items-end gap-2">
                                           {booking.status === "CONFIRMED" && booking.paymentStatus !== "PAID" && (
@@ -286,8 +291,8 @@ export default function BookingsPage() {
                                                       color="primary"
                                                       size="sm"
                                                       startContent={<DollarSign className="h-4 w-4" />}
-                                                      isLoading={markPaid.isPending && markPaid.variables === booking.id}
-                                                      onPress={() => markPaid.mutate(booking.id)}
+                                                      isLoading={markPaid.isPending && markPaid.variables?.id === booking.id}
+                                                      onPress={() => markPaid.mutate({ id: booking.id, expectedTotal: Number(booking.totalPrice) })}
                                                   >
                                                       Pagar
                                                   </Button>

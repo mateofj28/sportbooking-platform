@@ -3,7 +3,8 @@
 import { use, useState } from "react";
 import { Button, Card, CardBody, Chip, Divider, Spinner } from "@heroui/react";
 import { useRouter } from "next/navigation";
-import { useBooking, useMarkBookingPaid, useCancelBooking } from "@/hooks/use-bookings";
+import { useBooking, useMarkBookingPaid, useCancelBooking, usePriceChanges } from "@/hooks/use-bookings";
+import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { getBookingStatusChip } from "@/lib/booking-status";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
@@ -27,6 +28,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     const router = useRouter();
     const { data: booking, isLoading } = useBooking(id);
     const markPaid = useMarkBookingPaid();
+    const { data: priceChanges } = usePriceChanges();
     const cancelBooking = useCancelBooking();
     const [confirmCancel, setConfirmCancel] = useState(false);
 
@@ -157,6 +159,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                                     <span className="text-2xl font-bold">${formatPrice(booking.totalPrice)}</span>
                                 </div>
                                 <p className="-mt-2 text-xs text-default-400">{booking.currency} · comisión de servicio incluida</p>
+                                {booking.paymentStatus !== "PAID" && <PriceChangeNote change={priceChanges?.get(booking.id)} />}
 
                                 {(canPay || canCancel || cancelBlockedByTime) && <Divider />}
 
@@ -167,7 +170,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                                         className="font-semibold"
                                         startContent={<Check className="h-4 w-4" />}
                                         isLoading={markPaid.isPending}
-                                        onPress={() => markPaid.mutate(booking.id)}
+                                        onPress={() => markPaid.mutate({ id: booking.id, expectedTotal: Number(booking.totalPrice) })}
                                     >
                                         Pagar ${formatPrice(booking.totalPrice)} {booking.currency}
                                     </Button>

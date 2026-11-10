@@ -9,7 +9,8 @@ import { LocationNotice } from "@/components/shared/location-notice";
 import { useActiveAdvertisements } from "@/hooks/use-advertisements";
 import { useCurrentProvince } from "@/hooks/use-current-province";
 import { useAuthStore } from "@/stores/auth-store";
-import { useBookings, useMarkBookingPaid } from "@/hooks/use-bookings";
+import { useBookings, useMarkBookingPaid, usePriceChanges } from "@/hooks/use-bookings";
+import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { useSports } from "@/hooks/use-sports";
 import { Navbar } from "@/components/layout/navbar";
 import { useRouter } from "next/navigation";
@@ -41,6 +42,7 @@ export default function ClientHomePage() {
     const router = useRouter();
     const { user, isAuthenticated, isHydrated } = useAuthStore();
     const markPaid = useMarkBookingPaid();
+    const { data: priceChanges } = usePriceChanges();
     const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
@@ -146,14 +148,19 @@ export default function ClientHomePage() {
                                             <Clock className="h-3 w-3" /> {formatTime12h(b.startDatetime)} - {formatTime12h(b.endDatetime)}
                                         </p>
                                         <div className="mt-1 flex items-center justify-between">
-                                            <p className="text-sm font-bold text-success">${formatPrice(b.totalPrice)} ARS</p>
+                                            <div>
+                                                <p className="text-sm font-bold text-success">${formatPrice(b.totalPrice)} ARS</p>
+                                                {b.status === "CONFIRMED" && b.paymentStatus !== "PAID" && (
+                                                    <PriceChangeNote change={priceChanges?.get(b.id)} />
+                                                )}
+                                            </div>
                                             {b.status === "CONFIRMED" && b.paymentStatus !== "PAID" && (
                                                 <div onClick={(e) => e.stopPropagation()}>
                                                     <Button
                                                         color="primary"
                                                         size="sm"
-                                                        isLoading={markPaid.isPending && markPaid.variables === b.id}
-                                                        onPress={() => markPaid.mutate(b.id)}
+                                                        isLoading={markPaid.isPending && markPaid.variables?.id === b.id}
+                                                        onPress={() => markPaid.mutate({ id: b.id, expectedTotal: Number(b.totalPrice) })}
                                                     >
                                                         Pagar
                                                     </Button>

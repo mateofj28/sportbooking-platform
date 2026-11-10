@@ -148,3 +148,59 @@ export async function sendBookingReminder(data: BookingEmailData): Promise<void>
     </table>`
   await send(data.email, 'Recordatorio de tu turno - SportBooking', '⏰ Tu turno es pronto', body, '#3B82F6')
 }
+
+// ------------------------------------------------------------
+// Cambio de precio de fechas pendientes de un turno fijo (migración 029)
+// ------------------------------------------------------------
+
+export interface PriceChangeLine {
+  venueName: string
+  facilityName: string
+  dateLabel: string
+  timeLabel: string
+  oldPrice: string
+  newPrice: string
+  /** ISO, solo para ordenar. */
+  startsAt: string
+}
+
+/** Escapa texto que viene de la base antes de meterlo en el HTML del email. */
+function esc(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
+}
+
+export async function sendPriceChangeNotice(data: { email: string; firstName: string; lines: PriceChangeLine[] }): Promise<void> {
+  if (data.lines.length === 0) return
+  const rows = data.lines.map((l) => `
+    <tr>
+      <td style="padding:8px 0;font-size:13px;color:#1a1d23;border-bottom:1px solid #f3f4f6;">
+        <strong>${esc(l.dateLabel)}</strong><br>
+        <span style="color:#9ca3af;">${esc(l.timeLabel)} · ${esc(l.facilityName)} · ${esc(l.venueName)}</span>
+      </td>
+      <td style="padding:8px 0;font-size:13px;text-align:right;white-space:nowrap;border-bottom:1px solid #f3f4f6;">
+        <span style="color:#9ca3af;text-decoration:line-through;">${esc(l.oldPrice)}</span><br>
+        <strong style="color:#1a1d23;">${esc(l.newPrice)}</strong>
+      </td>
+    </tr>`).join('')
+
+  const plural = data.lines.length > 1
+  const body = `
+    <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#6b7280;">
+      Hola ${esc(data.firstName)}, el complejo actualizó su tarifa y cambió el precio de
+      ${plural ? 'estas fechas' : 'esta fecha'} de tu turno fijo, que todavía no pagaste:
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+      ${rows}
+    </table>
+    <p style="margin:0;font-size:13px;color:#6b7280;background:#f3f4f6;padding:12px;border-radius:8px;">
+      Las fechas que ya pagaste no cambian. Podés pagar con el nuevo precio o, si preferís,
+      cancelar la fecha (hasta 24 horas antes del turno) desde <strong>Mis Reservas</strong>.
+    </p>`
+  await send(
+    data.email,
+    'Cambió el precio de tu turno fijo - SportBooking',
+    'Cambió el precio de tu turno fijo',
+    body,
+    '#F59E0B',
+  )
+}

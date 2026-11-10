@@ -579,22 +579,8 @@ supabase/
   - Hoy se usa `onboarding@resend.dev` (solo llega al email registrado en Resend, sirve para testing).
   - Para producción: ir a **https://resend.com/domains**, agregar tu dominio, configurar los registros DNS que Resend indique, y luego actualizar el secret `RESEND_FROM_EMAIL` en Supabase Edge Functions con `SportBooking <notificaciones@tudominio.com>`.
 
-- [ ] **Recalcular el precio de las fechas pendientes de un turno fijo cuando cambia la tarifa** (opción 2 elegida;
-  queda en espera hasta que el usuario lo pida. NO implementar sin que lo pida).
-  - **Hoy:** cada reserva guarda su precio al crearse (`base_price`, `commission_amount`, `total_price`, calculados por
-    `calculate_price` en `create-booking` / `create-recurring`). Cambiar una tarifa no afecta reservas ya creadas.
-    No es un tema de tiempo real: es una regla de negocio.
-  - **Lo decidido:** al cambiar la tarifa, recalcular las fechas de turno fijo que todavía no se pagaron.
-  - **Diseño propuesto:**
-    1. Trigger sobre `pricing` (INSERT/UPDATE/DELETE): recalcula con `calculate_price` las reservas de esa cancha que
-       estén `CONFIRMED` + `payment_status = 'PENDING'` + con inicio a más de 24 h. Cubre cambio de precio, de % de
-       comisión, de franja horaria, desactivar/borrar una tarifa o agregar una más específica.
-    2. Nunca tocar reservas pagadas ni pasadas.
-    3. Si una fecha pendiente queda sin tarifa que la cubra: conserva su precio anterior (no se cancela sola).
-    4. Avisar al cliente de cada fecha que cambió (email + notificación in-app): "antes $X, ahora $Y". Funciona en
-       ambos sentidos (si la tarifa baja, también baja).
-    5. Agregar en `/terminos`: las fechas no pagadas de un turno fijo se cobran con la tarifa vigente. (Conviene
-       consultarlo con alguien del área legal: defensa del consumidor.)
-  - **Decisiones abiertas (preguntar antes de implementar):**
-    - ¿El margen de 24 h está bien, u otro (48 h, ninguno)? Motivo: el cron cancela las impagas a < 24 h.
-    - ¿Solo turnos fijos, o también reservas únicas impagas? (Hoy las únicas se pagan al crearlas.)
+- [x] **Recalcular el precio de las fechas pendientes de un turno fijo cuando cambia la tarifa** — HECHO
+  (migraciones 029 y 030, `cron-notify-price-changes`, `mark-paid` con `expected_total`). La regla vigente está en
+  `negocio.md` ("Cambio de tarifa y turnos fijos").
+- [ ] **Revisar con el área legal** el párrafo de `/terminos` sobre cambio de precio de fechas no pagadas de un turno
+  fijo (defensa del consumidor).

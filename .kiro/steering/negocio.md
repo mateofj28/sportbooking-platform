@@ -39,6 +39,20 @@ Relación clave:
 - "¿El turno ya terminó?" se evalúa comparando instantes absolutos (`endDatetime <= now`); esto es correcto sin importar la zona.
 - Los rangos de período (hoy/ayer/semana/mes/personalizado) se cortan a **medianoche hora Argentina**.
 
+## Cambio de tarifa y turnos fijos
+
+- Cada reserva guarda su precio al crearse. Cambiar una tarifa NO cambia reservas pagadas, pasadas, canceladas
+  ni reservas únicas.
+- Excepción: las fechas de **turno fijo** `CONFIRMED` + impagas + con inicio a **más de 48 h** se recalculan con la
+  tarifa vigente (sube o baja). 48 h porque el cron cancela impagas a < 24 h y el cliente cancela con ≥ 24 h:
+  así siempre tiene al menos un día para pagar o cancelar.
+- Si una fecha queda sin tarifa que la cubra, conserva su precio.
+- Se avisa al cliente por email (`cron-notify-price-changes`, agrupa cambios seguidos: un solo aviso tras 5 min sin
+  cambios; si vuelve al precio original, no avisa) y en la app ("antes / ahora", tabla `booking_price_changes`).
+- Al pagar, nunca se cobra un monto distinto del que el cliente ve: `mark-paid` recibe `expected_total` y responde
+  409 si el precio cambió.
+- Implementación: `reprice_pending_recurring` + trigger `pricing_changed_reprice` (migraciones 029 y 030).
+
 ## Cancelación
 
 - El cliente solo puede cancelar con **24 horas o más de anticipación** al inicio del turno. Los administradores no tienen ese límite.

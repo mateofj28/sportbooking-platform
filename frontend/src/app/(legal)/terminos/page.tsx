@@ -92,6 +92,14 @@ export default function TermsPage() {
                             servicio. Los comprobantes y el estado de pago quedan registrados en tu cuenta.
                         </p>
                         <p>
+                            En un <strong>turno fijo</strong>, cada fecha se paga por separado. Si el complejo
+                            actualiza su tarifa, las fechas que todavía no pagaste y que faltan más de 48 horas
+                            se cobran con la tarifa vigente; el precio puede subir o bajar. Te avisamos por
+                            correo electrónico y en la app con el precio anterior y el nuevo, para que puedas
+                            pagar o cancelar la fecha. Las fechas ya pagadas no cambian, y nunca se te cobra un
+                            monto distinto del que ves al pagar.
+                        </p>
+                        <p>
                             La administración de cada complejo es responsable de la prestación del servicio
                             en sus instalaciones. SportBooking actúa como intermediario tecnológico para la
                             reserva y el cobro.

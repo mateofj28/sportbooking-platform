@@ -7,6 +7,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { bookingToEmailData, sendBookingCancellation } from '../_shared/email.ts'
 import { notifyBookingCancelled } from '../_shared/notifications.ts'
 import { actorFromUser, appliesClientRules, canManage } from '../_shared/permissions.ts'
+import { normalizeCancelReason } from '../_shared/cancel-reason.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -22,8 +23,13 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await userClient.auth.getUser()
     if (authError || !user) return err('No autorizado', 401)
 
-    const { booking_id, reason } = await req.json()
+    const { booking_id, reason: rawReason } = await req.json()
     if (!booking_id) return err('booking_id es requerido')
+
+    // Mismo límite que Zod y que la base (migración 026); vacío -> null
+    const parsedReason = normalizeCancelReason(rawReason)
+    if (!parsedReason.ok) return err(parsedReason.error)
+    const reason = parsedReason.reason ?? undefined
 
     const supabase = createAdminClient()
 

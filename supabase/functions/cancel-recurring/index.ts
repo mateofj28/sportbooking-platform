@@ -4,6 +4,7 @@
 import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { actorFromUser, canManage } from '../_shared/permissions.ts'
+import { normalizeCancelReason } from '../_shared/cancel-reason.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -19,8 +20,13 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await userClient.auth.getUser()
     if (authError || !user) return err('No autorizado', 401)
 
-    const { recurring_booking_id, reason } = await req.json()
+    const { recurring_booking_id, reason: rawReason } = await req.json()
     if (!recurring_booking_id) return err('recurring_booking_id es requerido')
+
+    // Mismo límite que Zod y que la base (migración 026); vacío -> motivo por defecto
+    const parsedReason = normalizeCancelReason(rawReason)
+    if (!parsedReason.ok) return err(parsedReason.error)
+    const reason = parsedReason.reason
 
     const supabase = createAdminClient()
     const actor = actorFromUser(user)

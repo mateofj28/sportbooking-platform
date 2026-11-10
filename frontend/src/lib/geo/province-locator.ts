@@ -76,9 +76,68 @@ export function findProvince(shapes: ProvinceShape[], lat: number, lon: number):
 }
 
 /**
+ * Distancia (km) por debajo de la cual un punto que no cae en ninguna provincia se
+ * considera "pegado al límite" (costa o borde simplificado, o una ciudad limítrofe
+ * cruzando un río) y no "en otro país". La simplificación de los límites tiene un
+ * error muy inferior a esto.
+ */
+const NEAR_KM = 5;
+const KM_PER_DEG_LAT = 111.32;
+
+/** Distancia aproximada (km) de un punto a un segmento, proyectando en un plano local. */
+function distToSegmentKm(lat: number, lon: number, a: [number, number], b: [number, number]): number {
+    const kx = KM_PER_DEG_LAT * Math.cos((lat * Math.PI) / 180); // km por grado de longitud a esta latitud
+    const ax = (a[0] - lon) * kx, ay = (a[1] - lat) * KM_PER_DEG_LAT;
+    const bx = (b[0] - lon) * kx, by = (b[1] - lat) * KM_PER_DEG_LAT;
+    const dx = bx - ax, dy = by - ay;
+    const len2 = dx * dx + dy * dy;
+    const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2));
+    const px = ax + t * dx, py = ay + t * dy;
+    return Math.sqrt(px * px + py * py);
+}
+
+/**
+ * ¿El punto está a menos de NEAR_KM de alguna provincia? (exportada para pruebas)
+ * Solo se miden las provincias cuyo rectángulo, agrandado por el margen, contiene el punto.
+ */
+export function isNearArgentina(shapes: ProvinceShape[], lat: number, lon: number): boolean {
+    const marginLat = NEAR_KM / KM_PER_DEG_LAT;
+    const marginLon = NEAR_KM / (KM_PER_DEG_LAT * Math.max(Math.cos((lat * Math.PI) / 180), 0.1));
+    for (const p of shapes) {
+        const [minLon, minLat, maxLon, maxLat] = p.bbox;
+        if (lon < minLon - marginLon || lon > maxLon + marginLon || lat < minLat - marginLat || lat > maxLat + marginLat) continue;
+        for (const poly of p.polygons) {
+            const ring = poly[0];
+            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                if (distToSegmentKm(lat, lon, ring[j], ring[i]) <= NEAR_KM) return true;
+            }
+        }
+    }
+    return false;
+}
+
+export interface LocateResult {
+    /** Código ISO 3166-2:AR, o null si el punto no cae en ninguna provincia. */
+    province: string | null;
+    /**
+     * true si el punto está lejos de Argentina (otro país): no tiene sentido usar la IP.
+     * false si está dentro o cerca del territorio (un borde/costa simplificado o un país
+     * limítrofe pegado a la frontera): ahí la IP puede desempatar.
+     */
+    abroad: boolean;
+}
+
+/** Provincia en la que está la coordenada, y si está claramente fuera del país. */
+export async function locate(lat: number, lon: number): Promise<LocateResult> {
+    const shapes = await loadShapes();
+    const province = findProvince(shapes, lat, lon);
+    return { province, abroad: province === null && !isNearArgentina(shapes, lat, lon) };
+}
+
+/**
  * Código ISO 3166-2:AR de la provincia en la que está la coordenada,
  * o null si no cae en ninguna (fuera del país, en el agua, Antártida).
  */
 export async function provinceAt(lat: number, lon: number): Promise<string | null> {
-    return findProvince(await loadShapes(), lat, lon);
+    return (await locate(lat, lon)).province;
 }

@@ -69,7 +69,8 @@ const ALL_KEY = "ALL";
 export default function StatisticsPage() {
     const { user } = useAuthStore();
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
-    const [dateRange, setDateRange] = useState<DateRange>("month");
+    // Por defecto se ve todo lo acumulado hasta hoy (igual que "Limpiar filtros")
+    const [dateRange, setDateRange] = useState<DateRange>("all");
     const [customFrom, setCustomFrom] = useState<CalendarDate | null>(null);
     const [customTo, setCustomTo] = useState<CalendarDate | null>(null);
     const [sportFilter, setSportFilter] = useState("");
@@ -182,7 +183,7 @@ export default function StatisticsPage() {
                         <Select
                             label="Período" size="sm" variant="bordered"
                             selectedKeys={[dateRange]}
-                            onSelectionChange={(keys: any) => setDateRange(Array.from(keys)[0] as DateRange || "month")}
+                            onSelectionChange={(keys: any) => setDateRange(Array.from(keys)[0] as DateRange || "all")}
                         >
                             {DATE_OPTIONS.map((opt) => <SelectItem key={opt.key}>{opt.label}</SelectItem>)}
                         </Select>

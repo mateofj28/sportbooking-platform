@@ -206,7 +206,9 @@ export default function AdminBookingsPage() {
             <div className="space-y-3">
                 <Input
                     aria-label="Buscar reservas"
-                    placeholder="Buscar por cliente, DNI, teléfono, email, cancha o complejo..."
+                    placeholder={isAdmin
+                        ? "Buscar por cliente, DNI, teléfono, email, cancha o complejo..."
+                        : "Buscar por cliente o cancha..."}
                     variant="bordered"
                     size="sm"
                     value={search}
@@ -313,7 +315,8 @@ export default function AdminBookingsPage() {
                                         <span>{name}</span>
                                         {isOwn && <StatusChip>Tu reserva</StatusChip>}
                                     </div>
-                                    {(booking.user?.phone || booking.user?.dni) && (
+                                    {/* Contacto del cliente: solo el admin general (al admin de sede la RPC ni lo envía) */}
+                                    {isAdmin && (booking.user?.phone || booking.user?.dni) && (
                                         <p className="text-xs text-default-400">
                                             {booking.user?.phone ?? ""}{booking.user?.phone && booking.user?.dni ? " · " : ""}
                                             {booking.user?.dni ? `DNI ${booking.user.dni}` : ""}

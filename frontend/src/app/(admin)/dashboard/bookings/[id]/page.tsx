@@ -24,14 +24,16 @@ const DAYS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "
 
 // Detalle completo con RLS: el admin de sede solo puede leer reservas de su complejo.
 // Los perfiles que el RLS no deja ver (ej. quién canceló) llegan en null.
-const DETAIL_SELECT = `
+// Datos de contacto del cliente (DNI, teléfono, email): solo el admin general.
+// Al admin de sede ni se le piden, así no viajan en la respuesta.
+const detailSelect = (withContact: boolean) => `
   *,
   facility:facilities!facility_id(
     id, name, image_url,
     venue:venues!venue_id(id, name, city, address),
     sport:sports!sport_id(id, name)
   ),
-  user:profiles!user_id(id, first_name, last_name, dni, phone, email),
+  user:profiles!user_id(id, first_name, last_name${withContact ? ", dni, phone, email" : ""}),
   created_by_profile:profiles!created_by(id, first_name, last_name),
   cancelled_by_profile:profiles!cancelled_by(id, first_name, last_name),
   recurring:recurring_bookings!recurring_booking_id(id, day_of_week, start_time, end_time, start_date, end_date, is_active)
@@ -81,11 +83,12 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
     const [toCancel, setToCancel] = useState<CancelBookingTarget | null>(null);
 
     const { data: booking, isLoading, error } = useQuery({
-        queryKey: ["booking", "admin", id],
+        queryKey: ["booking", "admin", id, isAdmin],
         queryFn: async (): Promise<AdminBookingDetail | null> => {
-            const { data, error } = await supabase.from("bookings").select(DETAIL_SELECT).eq("id", id).maybeSingle();
+            const { data, error } = await supabase.from("bookings").select(detailSelect(isAdmin)).eq("id", id).maybeSingle();
             if (error) throw new Error(error.message);
-            return data ? (camelize(data as Record<string, unknown>) as unknown as AdminBookingDetail) : null;
+            // El select se arma según el rol, así que supabase-js no puede inferir el tipo
+            return data ? (camelize(data as unknown as Record<string, unknown>) as unknown as AdminBookingDetail) : null;
         },
         enabled: !!user,
     });
@@ -211,13 +214,14 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
                         <Divider />
                         <CardBody className="gap-3 text-sm">
                             <Row icon={<User className="h-4 w-4" />} label="Nombre">{client}</Row>
-                            {booking.user?.dni && <Row icon={<IdCard className="h-4 w-4" />} label="DNI">{booking.user.dni}</Row>}
-                            {booking.user?.phone && (
+                            {/* Contacto del cliente: solo el admin general. El admin de sede ve solo el nombre. */}
+                            {isAdmin && booking.user?.dni && <Row icon={<IdCard className="h-4 w-4" />} label="DNI">{booking.user.dni}</Row>}
+                            {isAdmin && booking.user?.phone && (
                                 <Row icon={<Phone className="h-4 w-4" />} label="Teléfono">
                                     <a className="text-primary hover:underline" href={`tel:${booking.user.phone.replace(/[^\d+]/g, "")}`}>{booking.user.phone}</a>
                                 </Row>
                             )}
-                            {booking.user?.email && (
+                            {isAdmin && booking.user?.email && (
                                 <Row icon={<Mail className="h-4 w-4" />} label="Email">
                                     <a className="text-primary hover:underline break-all" href={`mailto:${booking.user.email}`}>{booking.user.email}</a>
                                 </Row>

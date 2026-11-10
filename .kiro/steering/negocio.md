@@ -76,6 +76,9 @@ Relación clave:
   o más de anticipación. Cancelar la reserva de otra persona no tiene ese límite (ADMIN: cualquiera; VENUE_ADMIN:
   las de su complejo).
 - Precio y comisión son los **normales**; no hay trato especial para el admin ni para su propio complejo.
+- **Datos del cliente:** el VENUE_ADMIN solo ve el **nombre** del cliente (sin DNI, teléfono ni email), y no puede
+  buscar por esos datos. El ADMIN general ve todo. Se aplica en la base, no solo en pantalla
+  (`admin_list_bookings`, migración 031) y en el detalle de reserva del panel.
 - **El pago lo hace solo el titular de la reserva**, desde su vista de cliente. Ni el ADMIN general ni el VENUE_ADMIN
   pagan ni marcan como pagada la reserva de otra persona: el panel de administración NO ofrece "Marcar como pagada".
   Un admin sí paga sus propias reservas (ahí actúa como cliente).

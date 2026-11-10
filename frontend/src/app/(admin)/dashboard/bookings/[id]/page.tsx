@@ -3,7 +3,7 @@
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, CardBody, CardHeader, Chip, Divider, Spinner } from "@heroui/react";
+import { Button, Card, CardBody, CardHeader, Divider, Spinner } from "@heroui/react";
 import {
     ArrowLeft, MapPin, Calendar, Clock, User, Phone, Mail, IdCard, Repeat, XCircle,
     BadgeDollarSign, History, StickyNote, AlertTriangle,
@@ -17,6 +17,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useAdminBookingsRealtime } from "@/hooks/use-admin-bookings-realtime";
 import { CancelBookingModal, type CancelBookingTarget } from "@/components/shared/cancel-booking-modal";
 import { MarkPaidModal, type MarkPaidTarget } from "@/components/shared/mark-paid-modal";
+import { StatusChip } from "@/components/shared/status-chip";
 import type { BookingStatus, PaymentStatus } from "@/types";
 
 const DAYS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
@@ -139,11 +140,11 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
                         {booking.facility?.sport?.name ? ` · ${booking.facility.sport.name}` : ""}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
-                        <Chip color={state.color} size="sm" variant="flat">{state.label}</Chip>
+                        <StatusChip color={state.color}>{state.label}</StatusChip>
                         {booking.recurringBookingId && (
-                            <Chip size="sm" variant="flat" color="secondary" startContent={<Repeat className="h-3 w-3" />}>Turno fijo</Chip>
+                            <StatusChip color="secondary" startContent={<Repeat className="h-3 w-3" />}>Turno fijo</StatusChip>
                         )}
-                        {isOwn && <Chip size="sm" variant="flat">Tu reserva</Chip>}
+                        {isOwn && <StatusChip>Tu reserva</StatusChip>}
                     </div>
                 </div>
 
@@ -241,9 +242,9 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
                         <CardBody className="gap-3 text-sm">
                             <div className="flex items-center justify-between">
                                 <span className="text-default-500">Estado</span>
-                                <Chip size="sm" variant="flat" color={booking.paymentStatus === "PAID" ? "success" : "warning"}>
+                                <StatusChip color={booking.paymentStatus === "PAID" ? "success" : "warning"}>
                                     {booking.paymentStatus === "PAID" ? "Pagada" : "Pendiente de pago"}
-                                </Chip>
+                                </StatusChip>
                             </div>
                             {booking.paidAt && (
                                 <div className="flex items-center justify-between">

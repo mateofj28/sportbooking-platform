@@ -1,7 +1,7 @@
 "use client";
 
 import {
-    Button, Chip, Spinner, Input, DateRangePicker, Tooltip,
+    Button, Spinner, Input, DateRangePicker, Tooltip,
     TableHeader, TableColumn, TableBody, TableRow, TableCell,
 } from "@heroui/react";
 import { parseDate, type CalendarDate } from "@internationalized/date";
@@ -17,6 +17,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useAdminBookingsRealtime } from "@/hooks/use-admin-bookings-realtime";
 import { DataTable } from "@/components/shared/data-table";
 import { FilterChip } from "@/components/shared/filter-chip";
+import { StatusChip } from "@/components/shared/status-chip";
 import { CancelBookingModal, type CancelBookingTarget } from "@/components/shared/cancel-booking-modal";
 import { MarkPaidModal, type MarkPaidTarget } from "@/components/shared/mark-paid-modal";
 import { XCircle, Plus, Search, Repeat, Eye, BadgeDollarSign, Lock } from "lucide-react";
@@ -313,7 +314,7 @@ export default function AdminBookingsPage() {
                                 <TableCell>
                                     <div className="flex items-center gap-2">
                                         <span>{name}</span>
-                                        {isOwn && <Chip size="sm" variant="flat">Tu reserva</Chip>}
+                                        {isOwn && <StatusChip>Tu reserva</StatusChip>}
                                     </div>
                                     {(booking.user?.phone || booking.user?.dni) && (
                                         <p className="text-xs text-default-400">
@@ -323,12 +324,12 @@ export default function AdminBookingsPage() {
                                     )}
                                 </TableCell>
                                 <TableCell>
-                                    <div className="flex flex-wrap items-center gap-1">
-                                        <Chip color={meta.color} size="sm" variant="flat">{meta.label}</Chip>
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        <StatusChip color={meta.color}>{meta.label}</StatusChip>
                                         {booking.recurringBookingId && (
-                                            <Chip size="sm" variant="flat" color="secondary" startContent={<Repeat className="h-3 w-3" />}>
+                                            <StatusChip color="secondary" startContent={<Repeat className="h-3 w-3" />}>
                                                 Fijo
-                                            </Chip>
+                                            </StatusChip>
                                         )}
                                     </div>
                                 </TableCell>

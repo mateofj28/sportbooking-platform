@@ -12,15 +12,14 @@ import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { todayAr, addYearsToDate } from "@/lib/ads";
 import { bookingRangeSchema, BOOKING_RANGE_YEARS } from "@/lib/validations/booking.schema";
 import { ADMIN_BOOKING_STATES, getAdminBookingState, type AdminBookingState } from "@/lib/booking-status";
-import { checkCancel, canMarkPaid } from "@/lib/booking-permissions";
+import { checkCancel } from "@/lib/booking-permissions";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAdminBookingsRealtime } from "@/hooks/use-admin-bookings-realtime";
 import { DataTable } from "@/components/shared/data-table";
 import { FilterChip } from "@/components/shared/filter-chip";
 import { StatusChip } from "@/components/shared/status-chip";
 import { CancelBookingModal, type CancelBookingTarget } from "@/components/shared/cancel-booking-modal";
-import { MarkPaidModal, type MarkPaidTarget } from "@/components/shared/mark-paid-modal";
-import { XCircle, Plus, Search, Repeat, Eye, BadgeDollarSign, Lock } from "lucide-react";
+import { XCircle, Plus, Search, Repeat, Eye, Lock } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -181,7 +180,6 @@ export default function AdminBookingsPage() {
     }, [data, page, totalPages]);
 
     const [toCancel, setToCancel] = useState<CancelBookingTarget | null>(null);
-    const [toPay, setToPay] = useState<MarkPaidTarget | null>(null);
 
     const actor = user ? { id: user.id, role: user.role, venueId: user.venueId } : null;
     const clientName = (b: AdminBooking) => (b.user ? `${b.user.firstName} ${b.user.lastName}` : "Cliente");
@@ -197,7 +195,7 @@ export default function AdminBookingsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold">Gestión de Reservas</h1>
-                    <p className="text-sm text-default-500 mt-1">Gestiona, cobra y cancela las reservas</p>
+                    <p className="text-sm text-default-500 mt-1">Gestiona y cancela las reservas</p>
                 </div>
                 <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => router.push("/dashboard/bookings/nueva")}>
                     Reserva Manual
@@ -293,7 +291,6 @@ export default function AdminBookingsPage() {
                         // Estado que calculó la base; si faltara, la misma regla en el cliente
                         const meta = ADMIN_BOOKING_STATES[booking.bizState ?? getAdminBookingState(booking)];
                         const cancel = actor ? checkCancel(actor, booking) : { allowed: false as const, reason: "" };
-                        const payable = actor ? canMarkPaid(actor, booking) : false;
                         const isOwn = booking.userId === user?.id;
                         const showBlocked = !cancel.allowed && booking.status === "CONFIRMED"
                             && new Date(booking.startDatetime).getTime() > Date.now();
@@ -353,23 +350,6 @@ export default function AdminBookingsPage() {
                                                 <Eye className="h-4 w-4" />
                                             </Button>
                                         </Tooltip>
-                                        {payable && (
-                                            <Tooltip content="Marcar como pagada">
-                                                <Button
-                                                    size="sm"
-                                                    color="success"
-                                                    variant="light"
-                                                    isIconOnly
-                                                    aria-label={`Marcar como pagada la reserva de ${name}`}
-                                                    onPress={() => setToPay({
-                                                        id: booking.id, startDatetime: booking.startDatetime, clientName: name, facilityName,
-                                                        amountLabel: `$${formatMoney(amountOf(booking))} ${booking.currency ?? "ARS"}`,
-                                                    })}
-                                                >
-                                                    <BadgeDollarSign className="h-4 w-4" />
-                                                </Button>
-                                            </Tooltip>
-                                        )}
                                         {cancel.allowed && (
                                             <Tooltip content="Cancelar reserva">
                                                 <Button
@@ -411,7 +391,6 @@ export default function AdminBookingsPage() {
             )}
 
             <CancelBookingModal booking={toCancel} onClose={() => setToCancel(null)} />
-            <MarkPaidModal booking={toPay} onClose={() => setToPay(null)} />
         </div>
     );
 }

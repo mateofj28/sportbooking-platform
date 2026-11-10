@@ -12,11 +12,11 @@ import { supabase } from "@/lib/supabase";
 import { camelize } from "@/lib/supabase-helpers";
 import { formatDateAr, formatTimeAr } from "@/lib/datetime";
 import { ADMIN_BOOKING_STATES, getAdminBookingState } from "@/lib/booking-status";
-import { checkCancel, canMarkPaid } from "@/lib/booking-permissions";
+import { checkCancel, canPay } from "@/lib/booking-permissions";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAdminBookingsRealtime } from "@/hooks/use-admin-bookings-realtime";
 import { CancelBookingModal, type CancelBookingTarget } from "@/components/shared/cancel-booking-modal";
-import { MarkPaidModal, type MarkPaidTarget } from "@/components/shared/mark-paid-modal";
+import Link from "next/link";
 import { StatusChip } from "@/components/shared/status-chip";
 import type { BookingStatus, PaymentStatus } from "@/types";
 
@@ -79,7 +79,6 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
     const isAdmin = user?.role === "ADMIN";
 
     const [toCancel, setToCancel] = useState<CancelBookingTarget | null>(null);
-    const [toPay, setToPay] = useState<MarkPaidTarget | null>(null);
 
     const { data: booking, isLoading, error } = useQuery({
         queryKey: ["booking", "admin", id],
@@ -117,8 +116,9 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
     const state = ADMIN_BOOKING_STATES[getAdminBookingState(booking)];
     const actor = { id: user.id, role: user.role, venueId: user.venueId };
     const cancel = checkCancel(actor, booking);
-    const payable = canMarkPaid(actor, booking);
     const isOwn = booking.userId === user.id;
+    // Solo el titular paga (canPay): en el panel no se cobra la reserva de otra persona
+    const ownPending = canPay(actor, booking.userId) && booking.status === "CONFIRMED" && booking.paymentStatus !== "PAID";
     const client = fullName(booking.user) ?? "Cliente";
     const facilityName = booking.facility?.name ?? "Cancha";
     const mins = Math.round((new Date(booking.endDatetime).getTime() - new Date(booking.startDatetime).getTime()) / 60000);
@@ -149,17 +149,17 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                    {payable && (
+                    {/* El pago lo hace solo el titular, desde su vista de cliente. Si la reserva
+                        pendiente es del propio admin, se lo lleva ahí; si es de otra persona, no hay acción. */}
+                    {ownPending && (
                         <Button
+                            as={Link}
+                            href={`/bookings/${booking.id}`}
                             color="success"
                             variant="flat"
                             startContent={<BadgeDollarSign className="h-4 w-4" />}
-                            onPress={() => setToPay({
-                                id: booking.id, startDatetime: booking.startDatetime, clientName: client, facilityName,
-                                amountLabel: `${money(isAdmin ? booking.totalPrice : booking.basePrice)} ${booking.currency}`,
-                            })}
                         >
-                            Marcar como pagada
+                            Pagar desde Mis Reservas
                         </Button>
                     )}
                     {cancel.allowed && (
@@ -294,7 +294,6 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
             </div>
 
             <CancelBookingModal booking={toCancel} onClose={() => setToCancel(null)} onCancelled={refresh} />
-            <MarkPaidModal booking={toPay} onClose={() => setToPay(null)} onPaid={refresh} />
         </div>
     );
 }

@@ -62,5 +62,9 @@ Relación clave:
   o más de anticipación. Cancelar la reserva de otra persona no tiene ese límite (ADMIN: cualquiera; VENUE_ADMIN:
   las de su complejo).
 - Precio y comisión son los **normales**; no hay trato especial para el admin ni para su propio complejo.
+- **El pago lo hace solo el titular de la reserva**, desde su vista de cliente. Ni el ADMIN general ni el VENUE_ADMIN
+  pagan ni marcan como pagada la reserva de otra persona: el panel de administración NO ofrece "Marcar como pagada".
+  Un admin sí paga sus propias reservas (ahí actúa como cliente).
 - Regla técnica: la autorización de reservas vive en `supabase/functions/_shared/permissions.ts`
-  (`canManage`, `appliesClientRules`). "Lo mío" siempre se puede; "lo ajeno" depende del rol.
+  (`canManage`, `appliesClientRules`, `canPay`). "Lo mío" siempre se puede; "lo ajeno" depende del rol,
+  salvo el pago (`canPay`): solo el titular.

@@ -56,3 +56,13 @@ export function canManage(actor: Actor, ownerId: string, resourceVenueId: string
 export function appliesClientRules(actor: Actor, ownerId: string): boolean {
   return actor.role === 'CLIENT' || ownerId === actor.id
 }
+
+/**
+ * ¿Puede el actor PAGAR esta reserva?
+ * Solo el titular, desde su vista de cliente. Ningún administrador (ni el general
+ * ni el de sede) puede marcar como pagada la reserva de otra persona.
+ * Un admin sí puede pagar SUS propias reservas, porque ahí actúa como cliente.
+ */
+export function canPay(actor: Actor, ownerId: string): boolean {
+  return ownerId === actor.id
+}

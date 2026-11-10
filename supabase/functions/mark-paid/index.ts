@@ -4,7 +4,7 @@
 import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { notifyBookingPaid } from '../_shared/notifications.ts'
-import { actorFromUser, canManage } from '../_shared/permissions.ts'
+import { actorFromUser, canPay } from '../_shared/permissions.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -35,9 +35,10 @@ Deno.serve(async (req) => {
     if (fetchErr || !booking) return err('Reserva no encontrada', 404)
     if (booking.status === 'CANCELLED') return err('No se puede pagar una reserva cancelada')
 
-    // Lo propio siempre (aun siendo admin y en cualquier complejo); lo ajeno según el rol
-    if (!canManage(actor, booking.user_id, (booking.facility as any)?.venue_id ?? null)) {
-      return err('No autorizado', 403)
+    // Solo el titular paga su reserva (desde la vista de cliente). Ningún admin
+    // puede marcar como pagada la reserva de otra persona, ni en su complejo.
+    if (!canPay(actor, booking.user_id)) {
+      return err('Solo el titular de la reserva puede pagarla', 403)
     }
 
     // Idempotente: si ya está PAID, devolver éxito sin re-procesar

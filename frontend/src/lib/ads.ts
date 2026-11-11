@@ -1,15 +1,20 @@
 // ============================================================
 // lib/ads.ts
-// Tipos y utilidades de la publicidad segmentada por provincia.
+// Tipos y utilidades de la publicidad: nacional o por municipio (localidad).
 // Las reglas de negocio (qué ve cada cliente) viven en la base:
-// RPC get_active_advertisements. Aquí solo hay presentación y
-// utilidades para el panel de gestión.
+// RPC get_active_advertisements (migración 035). Aquí solo hay presentación
+// y utilidades para el panel de gestión.
 // ============================================================
 
+import type { LocalityInfo } from "@/lib/geo/locality-locator";
 import { provinceName } from "@/lib/ar-provinces";
 
 export type AdTheme = "blue" | "emerald" | "violet" | "orange" | "rose" | "slate";
-export type AdScope = "NATIONAL" | "REGIONAL";
+/** NATIONAL = todo el país. LOCAL = solo en los municipios elegidos. */
+export type AdScope = "NATIONAL" | "LOCAL";
+
+/** Máximo de municipios por publicidad (igual que el CHECK ads_scope_localities). Córdoba tiene 427. */
+export const AD_MAX_LOCALITIES = 500;
 export type AdStatus = "ACTIVE" | "SCHEDULED" | "EXPIRED" | "PAUSED";
 
 /**
@@ -53,7 +58,8 @@ export interface Advertisement {
     linkUrl: string | null;
     ctaLabel: string | null;
     scope: AdScope;
-    provinces: string[];
+    /** Códigos de localidad ("mun-<id>" / "dep-<id>"). Vacío si es nacional. */
+    localities: string[];
     priority: number;
     startsAt: string | null;
     endsAt: string | null;
@@ -92,10 +98,18 @@ export const AD_STATUS_META: Record<AdStatus, { label: string; color: "success" 
     PAUSED: { label: "Pausada", color: "default" },
 };
 
-/** "Todo el país" | "Córdoba" | "Córdoba, Santa Fe" (resumen corto para tablas). */
-export function describeTargeting(ad: Pick<Advertisement, "scope" | "provinces">): string {
+/** "Rosario (Santa Fe)" — nombre legible de una localidad. */
+export function localityLabel(code: string, index?: Map<string, LocalityInfo>): string {
+    const l = index?.get(code);
+    return l ? `${l.name} (${provinceName(l.province)})` : code;
+}
+
+/** "Todo el país" | "Rosario (Santa Fe)" | "Rosario (Santa Fe) y 3 más" (resumen corto para tablas). */
+export function describeTargeting(ad: Pick<Advertisement, "scope" | "localities">, index?: Map<string, LocalityInfo>): string {
     if (ad.scope === "NATIONAL") return "Todo el país";
-    return ad.provinces.map(provinceName).join(", ");
+    const [first, ...rest] = ad.localities;
+    if (!first) return "Sin municipios";
+    return rest.length ? `${localityLabel(first, index)} y ${rest.length} más` : localityLabel(first, index);
 }
 
 // ---------- Fechas en hora de Argentina (UTC-3, sin horario de verano) ----------

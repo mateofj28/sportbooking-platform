@@ -3,27 +3,25 @@
 import { Button, Spinner } from "@heroui/react";
 import { Globe, LocateFixed, MapPin } from "lucide-react";
 import { provinceName } from "@/lib/ar-provinces";
-import type { CurrentProvince } from "@/hooks/use-current-province";
+import type { CurrentLocality } from "@/hooks/use-current-locality";
 
 /**
- * Explica qué ubicación se usa para las promociones y, si no es la precisa,
- * cómo mejorarla. Se apoya en useCurrentProvince (GPS, o IP como respaldo).
+ * Explica para qué municipio son las promociones y, si no hay ubicación precisa,
+ * cómo activarla. Se apoya en useCurrentLocality (GPS).
  */
-export function LocationNotice({ location }: { location: CurrentProvince }) {
-    const { province, source, abroad, ready, locating, permission, gpsError, retry } = location;
+export function LocationNotice({ location }: { location: CurrentLocality }) {
+    const { locality, province, located, abroad, locating, permission, gpsError, retry } = location;
 
-    if (!ready) return null;
-
-    // Ubicación precisa: solo contar para qué zona son
-    if (source === "gps" && !locating) {
+    // Ubicado por GPS: contar para qué zona son
+    if (located && !locating) {
         return (
             <p className="flex items-center gap-1.5 text-xs text-default-500">
                 {abroad ? <Globe className="h-3.5 w-3.5" aria-hidden="true" /> : <MapPin className="h-3.5 w-3.5" aria-hidden="true" />}
-                {province
-                    ? `Promociones para ${provinceName(province)}`
+                {locality
+                    ? `Promociones para ${locality.name} (${provinceName(locality.province)})`
                     : abroad
                         ? "Estás fuera de Argentina: te mostramos las promociones nacionales"
-                        : "No pudimos ubicarte en una provincia: te mostramos las promociones nacionales"}
+                        : `No estás dentro de un municipio${province ? ` de ${provinceName(province)}` : ""}: te mostramos las promociones nacionales`}
             </p>
         );
     }
@@ -31,21 +29,19 @@ export function LocationNotice({ location }: { location: CurrentProvince }) {
     // El navegador no tiene GPS: no hay nada que ofrecer
     if (permission === "unsupported") return null;
 
-    const zone = province ? `las de ${provinceName(province)} (ubicación aproximada)` : "las promociones nacionales";
-
     let message: string;
     if (locating) {
         message = "Buscando tu ubicación… Si el navegador te lo pide, permití el acceso.";
     } else if (permission === "denied") {
-        message = `La ubicación está bloqueada para este sitio. Activala desde el candado de la barra de direcciones (o en los permisos del navegador del celular) para ver las promociones de tu zona. Mientras tanto te mostramos ${zone}.`;
+        message = "La ubicación está bloqueada para este sitio. Activala desde el candado de la barra de direcciones (o en los permisos del navegador del celular) para ver las promociones de tu municipio. Mientras tanto te mostramos las nacionales.";
     } else if (gpsError === "timeout") {
-        message = `Tu dispositivo tardó demasiado en darnos la ubicación. Probá de nuevo, mejor al aire libre o con el GPS activado. Mientras tanto te mostramos ${zone}.`;
+        message = "Tu dispositivo tardó demasiado en darnos la ubicación. Probá de nuevo, mejor al aire libre o con el GPS activado. Mientras tanto te mostramos las promociones nacionales.";
     } else if (gpsError === "unavailable") {
-        message = `Tu dispositivo no pudo determinar la ubicación. Revisá que la ubicación (GPS) esté activada en el celular y probá de nuevo. Mientras tanto te mostramos ${zone}.`;
+        message = "Tu dispositivo no pudo determinar la ubicación. Revisá que la ubicación (GPS) esté activada en el celular y probá de nuevo. Mientras tanto te mostramos las promociones nacionales.";
     } else if (gpsError === "limits") {
-        message = `No pudimos procesar tu ubicación. Probá de nuevo en un momento. Mientras tanto te mostramos ${zone}.`;
+        message = "No pudimos procesar tu ubicación. Probá de nuevo en un momento. Mientras tanto te mostramos las promociones nacionales.";
     } else {
-        message = `Compartí tu ubicación para ver las promociones de la provincia en la que estás. Mientras tanto te mostramos ${zone}.`;
+        message = "Compartí tu ubicación para ver las promociones del municipio en el que estás. Mientras tanto te mostramos las nacionales.";
     }
 
     return (
@@ -64,7 +60,7 @@ export function LocationNotice({ location }: { location: CurrentProvince }) {
                     <p className="text-sm font-semibold">Promociones de donde estés</p>
                     <p className="text-xs text-default-500">{message}</p>
                     <p className="mt-1 text-[11px] text-default-400">
-                        Solo usamos la provincia para elegir las promociones; tu ubicación no se guarda.
+                        Solo usamos tu municipio para elegir las promociones; tu ubicación no se guarda.
                     </p>
                 </div>
             </div>

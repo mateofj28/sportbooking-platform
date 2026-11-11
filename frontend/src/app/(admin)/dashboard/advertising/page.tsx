@@ -14,25 +14,32 @@ import { DataTable } from "@/components/shared/data-table";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { DateTimeField } from "@/components/shared/date-time-field";
 import { PromoCarousel, adToSlide, type PromoSlide } from "@/components/shared/promo-carousel";
-import { PROVINCES, provinceName } from "@/lib/ar-provinces";
+import { LocalityPicker, LocalitySearch, useLocalityIndex } from "@/components/shared/locality-picker";
+import type { LocalityInfo } from "@/lib/geo/locality-locator";
 import {
     AD_LIMITS, AD_STATUS_META, AD_THEMES, AD_THEME_KEYS, adGradient, describeSchedule,
-    describeTargeting, getAdStatus, isoToArLocal, maxAdDate, todayAr,
+    AD_MAX_LOCALITIES, describeTargeting, getAdStatus, isoToArLocal, localityLabel, maxAdDate, todayAr,
     type AdStatus, type AdTheme, type Advertisement,
 } from "@/lib/ads";
 import {
     createAdvertisementSchema, EMPTY_AD_FORM, type AdvertisementFormData,
 } from "@/lib/validations/advertisement.schema";
 import {
-    PREVIEW_NO_PROVINCE, useActiveAdvertisements, useAdminAdvertisements,
+    PREVIEW_NO_LOCALITY, useActiveAdvertisements, useAdminAdvertisements,
     useDeleteAdvertisement, useSaveAdvertisement, useToggleAdvertisement,
 } from "@/hooks/use-advertisements";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 
 type StatusFilter = "ALL" | AdStatus;
-/** "ALL" = todos, "NATIONAL" = solo nacionales, o un código de provincia (anuncios que la incluyen). */
-type ScopeFilter = string;
+/** "ALL" = todas, "NATIONAL" = solo nacionales, "LOCAL" = solo por municipio. */
+type ScopeFilter = "ALL" | "NATIONAL" | "LOCAL";
+
+const SCOPE_FILTERS: { key: ScopeFilter; label: string }[] = [
+    { key: "ALL", label: "Todas las zonas" },
+    { key: "NATIONAL", label: "Todo el país" },
+    { key: "LOCAL", label: "Por municipio" },
+];
 
 const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
     { key: "ALL", label: "Todos los estados" },
@@ -64,7 +71,7 @@ function adToForm(ad: Advertisement): AdvertisementFormData {
         linkUrl: ad.linkUrl ?? "",
         ctaLabel: ad.ctaLabel ?? "",
         scope: ad.scope,
-        provinces: ad.provinces,
+        localities: ad.localities,
         priority: ad.priority,
         startsAt: isoToArLocal(ad.startsAt),
         endsAt: isoToArLocal(ad.endsAt),
@@ -95,7 +102,8 @@ export default function AdvertisingPage() {
 
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
     const [scopeFilter, setScopeFilter] = useState<ScopeFilter>("ALL");
-    const [previewProvince, setPreviewProvince] = useState<string>(PREVIEW_NO_PROVINCE);
+    const [previewLocality, setPreviewLocality] = useState<string>(PREVIEW_NO_LOCALITY);
+    const { data: localityIndex } = useLocalityIndex();
 
     // "Ahora" se fija por render para que el estado de toda la tabla sea consistente
     const now = new Date();
@@ -104,8 +112,7 @@ export default function AdvertisingPage() {
         const current = new Date();
         return (ads ?? []).filter((ad) => {
             if (statusFilter !== "ALL" && getAdStatus(ad, current) !== statusFilter) return false;
-            if (scopeFilter === "NATIONAL") return ad.scope === "NATIONAL";
-            if (scopeFilter !== "ALL") return ad.scope === "REGIONAL" && ad.provinces.includes(scopeFilter);
+            if (scopeFilter !== "ALL" && ad.scope !== scopeFilter) return false;
             return true;
         });
     }, [ads, statusFilter, scopeFilter]);
@@ -159,7 +166,7 @@ export default function AdvertisingPage() {
                 <div>
                     <h1 className="text-2xl font-bold">Publicidad</h1>
                     <p className="mt-1 text-sm text-default-500">
-                        Gestioná las promociones que ven los clientes. Cada una puede mostrarse en todo el país o solo en provincias específicas.
+                        Gestioná las promociones que ven los clientes. Cada una puede mostrarse en todo el país o solo en municipios específicos, según dónde esté el cliente.
                     </p>
                 </div>
                 <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={openCreate}>
@@ -181,13 +188,9 @@ export default function AdvertisingPage() {
                     label="Alcance" size="sm" variant="bordered" className="max-w-[260px]"
                     disallowEmptySelection
                     selectedKeys={[scopeFilter]}
-                    onSelectionChange={(keys: unknown) => setScopeFilter(firstKey(keys) || "ALL")}
+                    onSelectionChange={(keys: unknown) => setScopeFilter((firstKey(keys) as ScopeFilter) || "ALL")}
                 >
-                    {[
-                        <SelectItem key="ALL">Todos los alcances</SelectItem>,
-                        <SelectItem key="NATIONAL">Solo nacionales</SelectItem>,
-                        ...PROVINCES.map((p) => <SelectItem key={p.code}>{`Incluye ${p.name}`}</SelectItem>),
-                    ]}
+                    {SCOPE_FILTERS.map((s) => <SelectItem key={s.key}>{s.label}</SelectItem>)}
                 </Select>
                 {hasFilters && (
                     <button
@@ -249,7 +252,7 @@ export default function AdvertisingPage() {
                                             </div>
                                         </div>
                                     </TableCell>
-                                    <TableCell><TargetingCell ad={ad} /></TableCell>
+                                    <TableCell><TargetingCell ad={ad} index={localityIndex} /></TableCell>
                                     <TableCell className="text-default-500">{describeSchedule(ad)}</TableCell>
                                     <TableCell className="text-center text-default-500">{ad.priority}</TableCell>
                                     <TableCell>
@@ -281,8 +284,12 @@ export default function AdvertisingPage() {
                 </DataTable>
             )}
 
-            {/* Simulador: lo que ve un cliente de cada provincia (misma RPC que usa la app) */}
-            <ClientSimulator province={previewProvince} onProvinceChange={setPreviewProvince} />
+            {/* Simulador: lo que ve alguien que está en un municipio (misma RPC que usa la app) */}
+            <ClientSimulator
+                locality={previewLocality}
+                onLocalityChange={setPreviewLocality}
+                index={localityIndex}
+            />
 
             {/* Crear / editar */}
             {isOpen && (
@@ -312,17 +319,18 @@ export default function AdvertisingPage() {
 // ---------------------------------------------------------------
 // Segmentación en la tabla
 // ---------------------------------------------------------------
-function TargetingCell({ ad }: { ad: Advertisement }) {
+function TargetingCell({ ad, index }: { ad: Advertisement; index?: Map<string, LocalityInfo> }) {
     if (ad.scope === "NATIONAL") {
         return <Chip size="sm" variant="flat" color="primary">Todo el país</Chip>;
     }
-    const shown = ad.provinces.slice(0, 2);
-    const rest = ad.provinces.length - shown.length;
+    const shown = ad.localities.slice(0, 2);
+    const rest = ad.localities.length - shown.length;
+    const all = ad.localities.map((c) => localityLabel(c, index)).join(", ");
     return (
-        <Tooltip content={describeTargeting(ad)} delay={200}>
-            <div className="flex items-center gap-1">
+        <Tooltip content={<span className="block max-w-xs">{all}</span>} delay={200}>
+            <div className="flex items-center gap-1" aria-label={describeTargeting(ad, index)}>
                 {shown.map((code) => (
-                    <Chip key={code} size="sm" variant="flat">{provinceName(code)}</Chip>
+                    <Chip key={code} size="sm" variant="flat">{index?.get(code)?.name ?? code}</Chip>
                 ))}
                 {rest > 0 && <Chip size="sm" variant="flat" color="secondary">+{rest}</Chip>}
             </div>
@@ -334,10 +342,11 @@ function TargetingCell({ ad }: { ad: Advertisement }) {
 // Simulador "ver como cliente de …"
 // ---------------------------------------------------------------
 function ClientSimulator({
-    province, onProvinceChange,
-}: { province: string; onProvinceChange: (p: string) => void }) {
-    const { data, isLoading } = useActiveAdvertisements(province);
+    locality, onLocalityChange, index,
+}: { locality: string; onLocalityChange: (code: string) => void; index?: Map<string, LocalityInfo> }) {
+    const { data, isLoading } = useActiveAdvertisements(locality === PREVIEW_NO_LOCALITY ? null : locality);
     const slides = useMemo(() => (data ?? []).map(adToSlide), [data]);
+    const hasLocality = locality !== PREVIEW_NO_LOCALITY;
 
     return (
         <section className="space-y-4 rounded-2xl border border-divider bg-content1 p-5">
@@ -349,21 +358,25 @@ function ClientSimulator({
                     <div>
                         <h2 className="text-base font-semibold">Vista del cliente</h2>
                         <p className="text-xs text-default-500">
-                            Mirá exactamente lo que vería hoy alguien que está en cada provincia (la app usa la ubicación actual, no la del perfil): solo publicidad activa y vigente.
+                            Mirá exactamente lo que vería hoy alguien que está en un municipio (la app usa su ubicación actual): solo publicidad activa y vigente.
                         </p>
                     </div>
                 </div>
-                <Select
-                    label="Ver como cliente de" size="sm" variant="bordered" className="max-w-[300px]"
-                    disallowEmptySelection
-                    selectedKeys={[province]}
-                    onSelectionChange={(keys: unknown) => onProvinceChange(firstKey(keys) || PREVIEW_NO_PROVINCE)}
-                >
-                    {[
-                        <SelectItem key={PREVIEW_NO_PROVINCE}>Sin provincia (solo nacionales)</SelectItem>,
-                        ...PROVINCES.map((p) => <SelectItem key={p.code}>{p.name}</SelectItem>),
-                    ]}
-                </Select>
+            </div>
+
+            <div className="space-y-2">
+                <LocalitySearch onSelect={onLocalityChange} label="Ver como cliente que está en…" />
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span className="text-default-500">Simulando:</span>
+                    <Chip size="sm" variant="flat" color={hasLocality ? "primary" : "default"}>
+                        {hasLocality ? localityLabel(locality, index) : "Sin ubicación (solo nacionales)"}
+                    </Chip>
+                    {hasLocality && (
+                        <Button size="sm" variant="light" onPress={() => onLocalityChange(PREVIEW_NO_LOCALITY)}>
+                            Ver sin ubicación
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {isLoading ? (
@@ -549,57 +562,31 @@ function AdFormModal({ isOpen, onClose, initial, isEditing, isSaving, onSubmit }
                                         value={field.value}
                                         onValueChange={(v) => {
                                             field.onChange(v);
-                                            if (v === "NATIONAL") setValue("provinces", [], { shouldValidate: true });
+                                            if (v === "NATIONAL") setValue("localities", [], { shouldValidate: true });
                                         }}
                                     >
-                                        <Radio value="NATIONAL" description="La ven clientes de todas las provincias, incluso quienes no eligieron una.">
+                                        <Radio value="NATIONAL" description="La ven todos los clientes, estén donde estén (también quienes no compartieron su ubicación).">
                                             Todo el país
                                         </Radio>
-                                        <Radio value="REGIONAL" description="Solo la ven clientes que viven en las provincias que elijas.">
-                                            Provincias específicas
+                                        <Radio value="LOCAL" description="Solo la ven clientes que están en los municipios que elijas, según su ubicación actual.">
+                                            Municipios específicos
                                         </Radio>
                                     </RadioGroup>
                                 )}
                             />
-                            {scope === "REGIONAL" && (
-                                <>
-                                    <Controller
-                                        name="provinces" control={control}
-                                        render={({ field }) => (
-                                            <Select
-                                                label="Provincias" variant="bordered" isRequired
-                                                selectionMode="multiple" isMultiline
-                                                placeholder="Elegí una o más provincias"
-                                                selectedKeys={new Set(field.value)}
-                                                onSelectionChange={(keys: unknown) => field.onChange(Array.from(keys as Set<string>))}
-                                                isInvalid={!!errors.provinces} errorMessage={errors.provinces?.message}
-                                                renderValue={(items: { key?: React.Key | null; textValue?: string }[]) => (
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {items.map((i) => (
-                                                            <Chip key={i.key} size="sm" variant="flat">{i.textValue}</Chip>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            >
-                                                {PROVINCES.map((p) => <SelectItem key={p.code}>{p.name}</SelectItem>)}
-                                            </Select>
-                                        )}
-                                    />
-                                    <div className="flex gap-3 text-xs">
-                                        <button
-                                            type="button" className="text-primary hover:underline"
-                                            onClick={() => setValue("provinces", PROVINCES.map((p) => p.code), { shouldValidate: true })}
-                                        >
-                                            Seleccionar todas
-                                        </button>
-                                        <button
-                                            type="button" className="text-primary hover:underline"
-                                            onClick={() => setValue("provinces", [], { shouldValidate: true })}
-                                        >
-                                            Limpiar
-                                        </button>
-                                    </div>
-                                </>
+                            {scope === "LOCAL" && (
+                                <Controller
+                                    name="localities" control={control}
+                                    render={({ field }) => (
+                                        <LocalityPicker
+                                            value={field.value}
+                                            onChange={(codes) => field.onChange(codes)}
+                                            max={AD_MAX_LOCALITIES}
+                                            isInvalid={!!errors.localities}
+                                            errorMessage={errors.localities?.message}
+                                        />
+                                    )}
+                                />
                             )}
                         </div>
 

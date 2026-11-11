@@ -155,12 +155,11 @@ export default function TermsPage() {
                             confirmaciones, recordatorios y avisos relacionados con el servicio.
                         </p>
                         <p>
-                            Para mostrarte promociones de la provincia en la que estás, la plataforma puede
-                            usar tu ubicación: la del dispositivo, si nos das permiso en el navegador, o una
-                            aproximada según tu conexión a internet. La ubicación del dispositivo se
-                            convierte en provincia dentro del mismo dispositivo; solo se utiliza la
-                            provincia, no se guarda y podés retirar el permiso cuando quieras desde la
-                            configuración de tu navegador.
+                            Para mostrarte promociones del municipio en el que estás, la plataforma puede usar
+                            la ubicación de tu dispositivo, si nos das permiso en el navegador. La ubicación se
+                            convierte en municipio dentro del mismo dispositivo: solo se utiliza el municipio,
+                            no se guarda y podés retirar el permiso cuando quieras desde la configuración de tu
+                            navegador. Si no compartís tu ubicación, ves las promociones nacionales.
                         </p>
                         <p>
                             No compartimos tus datos con terceros ajenos a la operación del servicio sin tu

@@ -7,7 +7,7 @@ import { formatTimeAr } from "@/lib/datetime";
 import { PromoCarousel, adToSlide } from "@/components/shared/promo-carousel";
 import { LocationNotice } from "@/components/shared/location-notice";
 import { useActiveAdvertisements } from "@/hooks/use-advertisements";
-import { useCurrentProvince } from "@/hooks/use-current-province";
+import { useCurrentLocality } from "@/hooks/use-current-locality";
 import { useAuthStore } from "@/stores/auth-store";
 import { useBookings, useMarkBookingPaid, usePriceChanges } from "@/hooks/use-bookings";
 import { PriceChangeNote } from "@/components/shared/price-change-note";
@@ -54,10 +54,11 @@ export default function ClientHomePage() {
 
     const { data: sports } = useSports();
 
-    // Publicidad según dónde está el usuario AHORA (GPS; IP como respaldo), no según su perfil.
-    // Se pide recién con la sesión lista para no disparar el cartel de permiso antes de tiempo.
-    const location = useCurrentProvince(isHydrated && isAuthenticated);
-    const { data: activeAds } = useActiveAdvertisements(location.province, location.ready);
+    // Publicidad según el MUNICIPIO en el que está el usuario AHORA (GPS), no según su perfil.
+    // Sin ubicación precisa se ven las nacionales. Se pide recién con la sesión lista para no
+    // disparar el cartel de permiso antes de tiempo.
+    const location = useCurrentLocality(isHydrated && isAuthenticated);
+    const { data: activeAds } = useActiveAdvertisements(location.locality?.code ?? null, location.ready);
     const slides = useMemo(() => (activeAds ?? []).map(adToSlide), [activeAds]);
 
     // Próximas reservas confirmadas (futuras), ordenadas por fecha

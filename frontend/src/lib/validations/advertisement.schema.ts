@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { PROVINCE_CODES } from "@/lib/ar-provinces";
 import {
-    AD_LIMITS, AD_MAX_FUTURE_YEARS, AD_THEME_KEYS, arLocalToIso, maxAdDate, todayAr,
+    AD_LIMITS, AD_MAX_FUTURE_YEARS, AD_MAX_LOCALITIES, AD_THEME_KEYS, arLocalToIso, maxAdDate, todayAr,
 } from "@/lib/ads";
 
 /**
@@ -48,8 +47,11 @@ export function createAdvertisementSchema(baseline: AdDatesBaseline = { startsAt
                 .max(AD_LIMITS.link, `Máximo ${AD_LIMITS.link} caracteres`)
                 .refine((v) => v === "" || LINK_REGEX.test(v), "Debe empezar con https:// o con / (ruta interna)"),
             ctaLabel: optionalText(AD_LIMITS.cta, "Texto del botón"),
-            scope: z.enum(["NATIONAL", "REGIONAL"]),
-            provinces: z.array(z.enum(PROVINCE_CODES)),
+            scope: z.enum(["NATIONAL", "LOCAL"]),
+            // Códigos de localidad (mismo formato y tope que la base, migraciones 034/035)
+            localities: z
+                .array(z.string().regex(/^(mun|dep)-\d+$/, "Municipio inválido"))
+                .max(AD_MAX_LOCALITIES, `Máximo ${AD_MAX_LOCALITIES} municipios por publicidad`),
             priority: z
                 .number({ message: "La prioridad debe ser un número" })
                 .int("Debe ser un número entero")
@@ -61,8 +63,8 @@ export function createAdvertisementSchema(baseline: AdDatesBaseline = { startsAt
             isActive: z.boolean(),
         })
         .superRefine((v, ctx) => {
-            if (v.scope === "REGIONAL" && v.provinces.length === 0) {
-                ctx.addIssue({ code: "custom", path: ["provinces"], message: "Elegí al menos una provincia" });
+            if (v.scope === "LOCAL" && v.localities.length === 0) {
+                ctx.addIssue({ code: "custom", path: ["localities"], message: "Elegí al menos un municipio" });
             }
             if (v.ctaLabel && !v.linkUrl) {
                 ctx.addIssue({ code: "custom", path: ["linkUrl"], message: "El botón necesita un enlace de destino" });
@@ -118,7 +120,7 @@ export const EMPTY_AD_FORM: AdvertisementFormData = {
     linkUrl: "",
     ctaLabel: "",
     scope: "NATIONAL",
-    provinces: [],
+    localities: [],
     priority: 50,
     startsAt: "",
     endsAt: "",

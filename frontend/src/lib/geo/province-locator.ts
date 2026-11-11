@@ -11,8 +11,8 @@
 
 import { isProvinceCode } from "@/lib/ar-provinces";
 
-type Ring = [number, number][]; // [lon, lat]
-type Polygon = Ring[];          // [exterior, ...huecos]
+export type Ring = [number, number][]; // [lon, lat]
+export type Polygon = Ring[];          // [exterior, ...huecos]
 
 interface ProvinceShape {
     code: string;
@@ -54,8 +54,8 @@ function inRing(lon: number, lat: number, ring: Ring): boolean {
     return inside;
 }
 
-/** Dentro del exterior y fuera de todos los huecos. */
-function inPolygon(lon: number, lat: number, polygon: Polygon): boolean {
+/** Dentro del exterior y fuera de todos los huecos. (Exportada: la usa locality-locator.) */
+export function inPolygon(lon: number, lat: number, polygon: Polygon): boolean {
     if (!inRing(lon, lat, polygon[0])) return false;
     for (let h = 1; h < polygon.length; h++) if (inRing(lon, lat, polygon[h])) return false;
     return true;

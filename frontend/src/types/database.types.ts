@@ -50,7 +50,7 @@ export type Database = {
           is_active: boolean
           link_url: string | null
           priority: number
-          provinces: string[]
+          localities: string[]
           scope: string
           starts_at: string | null
           subtitle: string | null
@@ -68,7 +68,7 @@ export type Database = {
           is_active?: boolean
           link_url?: string | null
           priority?: number
-          provinces?: string[]
+          localities?: string[]
           scope?: string
           starts_at?: string | null
           subtitle?: string | null
@@ -86,7 +86,7 @@ export type Database = {
           is_active?: boolean
           link_url?: string | null
           priority?: number
-          provinces?: string[]
+          localities?: string[]
           scope?: string
           starts_at?: string | null
           subtitle?: string | null
@@ -756,7 +756,7 @@ export type Database = {
         Returns: Json
       }
       get_active_advertisements: {
-        Args: { p_province?: string }
+        Args: { p_locality?: string }
         Returns: {
           cta_label: string
           description: string

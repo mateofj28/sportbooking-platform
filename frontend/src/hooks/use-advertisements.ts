@@ -3,10 +3,10 @@
 // ============================================================
 // hooks/use-advertisements.ts
 //
-// Cliente:  useActiveAdvertisements(province) -> RPC get_active_advertisements.
-//           La provincia es donde está el usuario AHORA (useCurrentProvince:
-//           GPS, o IP como respaldo). El servidor decide qué anuncios le
-//           corresponden a esa provincia; el cliente no filtra nada.
+// Cliente:  useActiveAdvertisements(locality) -> RPC get_active_advertisements.
+//           La localidad (municipio) es donde está el usuario AHORA
+//           (useCurrentLocality, por GPS). El servidor decide qué anuncios le
+//           corresponden; el cliente no filtra nada.
 // Admin:    useAdminAdvertisements() + mutaciones (RLS: solo ADMIN).
 // ============================================================
 
@@ -21,10 +21,10 @@ import type { AdvertisementFormData } from '@/lib/validations/advertisement.sche
 type AdRow = Tables<'advertisements'>
 
 /**
- * Valor para simular a un cliente sin provincia: no coincide con ninguna,
+ * Valor para simular a un cliente sin localidad: no coincide con ninguna,
  * así la RPC devuelve solo los anuncios nacionales.
  */
-export const PREVIEW_NO_PROVINCE = 'NONE'
+export const PREVIEW_NO_LOCALITY = 'NONE'
 
 const ADS_KEY = ['advertisements'] as const
 
@@ -38,7 +38,7 @@ function mapAdminRow(r: AdRow): Advertisement {
     linkUrl: r.link_url,
     ctaLabel: r.cta_label,
     scope: r.scope as AdScope,
-    provinces: r.provinces ?? [],
+    localities: r.localities ?? [],
     priority: r.priority,
     startsAt: r.starts_at,
     endsAt: r.ends_at,
@@ -53,21 +53,21 @@ function mapAdminRow(r: AdRow): Advertisement {
 // ---------------------------------------------------------------
 
 /**
- * Publicidad vigente para una provincia.
- * @param province  Dónde está el usuario AHORA (useCurrentProvince), o la provincia
- *                  simulada en el panel admin. null = solo nacionales.
- *                  La base ya no usa la provincia del perfil (migración 027).
+ * Publicidad vigente para una localidad (municipio).
+ * @param locality  Código de la localidad en la que está el usuario AHORA
+ *                  (useCurrentLocality, por GPS), o la simulada en el panel admin.
+ *                  null = solo nacionales.
  * @param enabled   false mientras todavía no se sabe la ubicación (evita pedir dos veces).
  */
-export function useActiveAdvertisements(province: string | null, enabled = true) {
+export function useActiveAdvertisements(locality: string | null, enabled = true) {
   const userId = useAuthStore((s) => s.user?.id)
 
   return useQuery({
     // userId en la key: al cambiar de cuenta no se reutiliza la caché de otra persona
-    queryKey: [...ADS_KEY, 'active', userId ?? 'anon', province ?? 'NONE'],
+    queryKey: [...ADS_KEY, 'active', userId ?? 'anon', locality ?? 'NONE'],
     queryFn: async (): Promise<ActiveAdvertisement[]> => {
       const { data, error } = await supabase.rpc('get_active_advertisements', {
-        p_province: province ?? undefined,
+        p_locality: locality ?? undefined,
       })
       if (error) throw new Error(error.message)
       return (data ?? []).map((a) => ({
@@ -110,7 +110,7 @@ export function useAdminAdvertisements(enabled = true) {
   })
 }
 
-/** Formulario -> fila de la base. NACIONAL nunca guarda provincias. */
+/** Formulario -> fila de la base. NACIONAL nunca guarda localidades. */
 function toRow(f: AdvertisementFormData) {
   return {
     title: f.title.trim(),
@@ -120,7 +120,7 @@ function toRow(f: AdvertisementFormData) {
     link_url: f.linkUrl.trim() || null,
     cta_label: f.ctaLabel.trim() || null,
     scope: f.scope,
-    provinces: f.scope === 'NATIONAL' ? [] : f.provinces,
+    localities: f.scope === 'NATIONAL' ? [] : f.localities,
     priority: f.priority,
     starts_at: arLocalToIso(f.startsAt),
     ends_at: arLocalToIso(f.endsAt),

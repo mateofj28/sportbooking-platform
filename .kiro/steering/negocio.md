@@ -53,6 +53,18 @@ Relación clave:
   409 si el precio cambió.
 - Implementación: `reprice_pending_recurring` + trigger `pricing_changed_reprice` (migraciones 029 y 030).
 
+## Publicidad
+
+- Se muestra **"Todo el país"** o en **municipios específicos**. No se segmenta por provincia.
+- Unidad local = municipio de Georef (incluye partidos de Buenos Aires y comunas de CABA). En Santiago del Estero y
+  Santa Cruz, que no tienen municipios en Georef, se usan sus departamentos. Catálogo: `ar_localities` (2.116,
+  códigos `mun-<id>` / `dep-<id>`), generado por `frontend/scripts/build-ar-localities.mjs`.
+- Se elige según el municipio en el que el cliente **está ahora**, por GPS (no el perfil). Las coordenadas se
+  convierten a municipio en el dispositivo y no se envían.
+- Sin ubicación precisa (sin permiso de GPS, zona rural fuera de todo municipio o fuera de Argentina) el cliente ve
+  solo las nacionales. La IP no se usa: solo da la provincia.
+- Hasta 500 municipios por publicidad (Córdoba tiene 427).
+
 ## Cancelación
 
 - El cliente solo puede cancelar con **24 horas o más de anticipación** al inicio del turno. Los administradores no tienen ese límite.

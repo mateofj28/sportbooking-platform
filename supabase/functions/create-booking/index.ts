@@ -1,7 +1,10 @@
 // ============================================================
 // create-booking/index.ts
 // Crea una reserva única con todas las validaciones de negocio.
-// POST body: { facility_id, start_datetime, end_datetime, notes? }
+// POST body: { facility_id, start_datetime, end_datetime, notes?, user_id? }
+//   user_id: solo para admins ("Reserva Manual" a nombre de un cliente). La reserva queda
+//   PENDIENTE de pago y la paga el cliente desde su cuenta (solo el titular paga).
+//   Sin user_id es una reserva propia y se registra pagada, como siempre.
 // ============================================================
 
 import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
@@ -9,6 +12,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { bookingToEmailData, sendBookingConfirmation } from '../_shared/email.ts'
 import { notifyBookingCreated } from '../_shared/notifications.ts'
 import { bookingInsertProblem } from '../_shared/booking-errors.ts'
+import { actorFromUser, canManage } from '../_shared/permissions.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -27,7 +31,7 @@ Deno.serve(async (req) => {
 
     // 2. Parsear body
     const body = await req.json()
-    const { facility_id, start_datetime, end_datetime, notes } = body
+    const { facility_id, start_datetime, end_datetime, notes, user_id } = body
     if (!facility_id || !start_datetime || !end_datetime) {
       return err('Faltan campos requeridos: facility_id, start_datetime, end_datetime')
     }
@@ -52,6 +56,22 @@ Deno.serve(async (req) => {
       .single()
     if (fErr || !facility) return err('Cancha no encontrada', 404)
     if (!facility.is_active) return err('La cancha no está disponible')
+
+    // 5b. ¿A nombre de quién? Un admin puede reservar para un cliente ("Reserva Manual"):
+    //     ADMIN en cualquier complejo, VENUE_ADMIN solo en el suyo. Sin user_id (o el propio)
+    //     es una reserva propia, en cualquier complejo.
+    const actor = actorFromUser(user)
+    const forOther = typeof user_id === 'string' && user_id !== '' && user_id !== user.id
+    let targetUserId = user.id
+    if (forOther) {
+      if (actor.role === 'CLIENT' || !canManage(actor, user_id, facility.venue_id)) {
+        return err('No autorizado para reservar a nombre de otra persona', 403)
+      }
+      const { data: target } = await supabase
+        .from('profiles').select('id, is_active').eq('id', user_id).maybeSingle()
+      if (!target?.is_active) return err('Cliente no encontrado', 404)
+      targetUserId = user_id
+    }
 
     // 6. Validación 4: duración dentro de los límites
     const durationMin = Math.round((end.getTime() - start.getTime()) / 60000)
@@ -95,12 +115,14 @@ Deno.serve(async (req) => {
       .from('bookings')
       .insert({
         facility_id,
-        user_id: user.id,
+        user_id: targetUserId,
         start_datetime,
         end_datetime,
         status: 'CONFIRMED',
-        payment_status: 'PAID',
-        paid_at: now.toISOString(),
+        // Reserva propia: se paga al crearla. Reserva manual de un admin para un cliente:
+        // queda PENDIENTE y la paga el titular desde su cuenta (solo el titular paga).
+        payment_status: forOther ? 'PENDING' : 'PAID',
+        paid_at: forOther ? null : now.toISOString(),
         total_price: priceData.total_price,
         base_price: priceData.base_price,
         commission_amount: priceData.commission_amount,
@@ -111,7 +133,7 @@ Deno.serve(async (req) => {
       .select(`
         *,
         facility:facilities!facility_id(id, name, venue:venues!venue_id(id, name)),
-        user:profiles!user_id(id, first_name, last_name, email:id)
+        user:profiles!user_id(id, first_name, last_name, email)
       `)
       .single()
 

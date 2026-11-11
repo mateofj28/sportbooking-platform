@@ -5,8 +5,7 @@ import { Select, SelectItem } from "@heroui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { invokeFunction } from "@/lib/supabase-helpers";
+import { invokeFunction, callRpc } from "@/lib/supabase-helpers";
 import { useFacilities, useFacility } from "@/hooks/use-facilities";
 import { useCreateRecurringBooking } from "@/hooks/use-bookings";
 import { AvailabilityPicker, type AvailabilitySelection, formatPrice } from "@/components/shared/availability-picker";
@@ -84,66 +83,29 @@ export default function NewManualBookingPage() {
         setClientLookupError("");
         setFoundClient(null);
         try {
-            // Search profiles by email or DNI using Supabase
-            let query = supabase
-                .from("profiles")
-                .select("id, first_name, last_name, dni");
-
-            if (clientSearchType === "email") {
-                // Join with auth.users for email lookup via RPC or use profiles with email field
-                // Profiles don't store email directly; use a separate approach:
-                // Query auth via admin functions, or use a view. For now we use the or() approach
-                // with the email from auth joined in the select.
-                query = supabase
-                    .from("profiles")
-                    .select("id, first_name, last_name, dni") as any;
-                // We need to look up by email — email lives in auth.users, not profiles.
-                // Use an RPC or invokeFunction to do an admin lookup.
-                const { data: result, error } = await invokeFunction<FoundClient>("admin-lookup-user", {
-                    type: clientSearchType,
-                    value,
-                });
-                if (error || !result) {
-                    setClientLookupError("No se encontró un cliente con esos datos");
-                    setUserId("");
-                } else {
-                    setFoundClient(result);
-                    setUserId(result.id);
-                }
-                return;
+            // Búsqueda EXACTA en la base (RPC admin_lookup_client, migración 032).
+            // Email: ambos admins. DNI: solo el admin general. Devuelve id, nombre y email.
+            const searchType = isVenueAdmin ? "email" : clientSearchType;
+            const { data, error } = await callRpc<{
+                id: string; first_name: string; last_name: string; email: string | null; dni: string | null;
+            } | null>("admin_lookup_client", searchType === "email" ? { p_email: value } : { p_dni: value });
+            if (error) {
+                setClientLookupError(error);
+                setUserId("");
+            } else if (!data) {
+                setClientLookupError(searchType === "email"
+                    ? "No hay ningún cliente con ese email. Revisá que esté bien escrito."
+                    : "No hay ningún cliente con ese DNI.");
+                setUserId("");
             } else {
-                // Search by DNI directly in profiles
-                const { data, error } = await supabase
-                    .from("profiles")
-                    .select("id, first_name, last_name, dni")
-                    .eq("dni", value)
-                    .maybeSingle();
-                if (error || !data) {
-                    setClientLookupError("No se encontró un cliente con esos datos");
-                    setUserId("");
-                } else {
-                    // Need email — fetch from auth via admin-lookup-user edge function
-                    const { data: fullResult, error: err2 } = await invokeFunction<FoundClient>("admin-lookup-user", {
-                        type: clientSearchType,
-                        value,
-                    });
-                    if (err2 || !fullResult) {
-                        // Fallback: use the partial data
-                        const client: FoundClient = {
-                            id: data.id,
-                            firstName: data.first_name,
-                            lastName: data.last_name,
-                            email: "",
-                            dni: data.dni ?? undefined,
-                        };
-                        setFoundClient(client);
-                        setUserId(client.id);
-                    } else {
-                        setFoundClient(fullResult);
-                        setUserId(fullResult.id);
-                    }
-                }
-                return;
+                setFoundClient({
+                    id: data.id,
+                    firstName: data.first_name,
+                    lastName: data.last_name,
+                    email: data.email ?? "",
+                    dni: data.dni ?? undefined,
+                });
+                setUserId(data.id);
             }
         } catch (err: any) {
             setClientLookupError(err?.message || "No se encontró un cliente con esos datos");
@@ -302,26 +264,31 @@ export default function NewManualBookingPage() {
                                 <div>
                                     <p className="mb-2 text-sm font-medium">Cliente</p>
                                     <div className="flex gap-2">
-                                        <Select
-                                            aria-label="Buscar por"
-                                            variant="bordered"
-                                            size="sm"
-                                            className="max-w-[110px]"
-                                            selectedKeys={[clientSearchType]}
-                                            onSelectionChange={(keys: any) => {
-                                                setClientSearchType((Array.from(keys)[0] as "email" | "dni") || "email");
-                                                setFoundClient(null);
-                                                setClientLookupError("");
-                                            }}
-                                        >
-                                            <SelectItem key="email">Email</SelectItem>
-                                            <SelectItem key="dni">DNI</SelectItem>
-                                        </Select>
+                                                {/* Buscar por DNI es solo del admin general; el admin de sede busca por email */}
+                                                {!isVenueAdmin && (
+                                                    <Select
+                                                        aria-label="Buscar por"
+                                                        variant="bordered"
+                                                        size="sm"
+                                                        className="max-w-[110px]"
+                                                        disallowEmptySelection
+                                                        selectedKeys={[clientSearchType]}
+                                                        onSelectionChange={(keys: any) => {
+                                                            setClientSearchType((Array.from(keys)[0] as "email" | "dni") || "email");
+                                                            setFoundClient(null);
+                                                            setClientLookupError("");
+                                                        }}
+                                                    >
+                                                        <SelectItem key="email">Email</SelectItem>
+                                                        <SelectItem key="dni">DNI</SelectItem>
+                                                    </Select>
+                                                )}
                                         <Input
-                                            aria-label="Valor de búsqueda"
+                                                    aria-label={isVenueAdmin || clientSearchType === "email" ? "Email del cliente" : "DNI del cliente"}
                                             variant="bordered"
                                             size="sm"
-                                            placeholder={clientSearchType === "email" ? "cliente@email.com" : "Número de DNI"}
+                                                    type={isVenueAdmin || clientSearchType === "email" ? "email" : "text"}
+                                                    placeholder={isVenueAdmin || clientSearchType === "email" ? "Email exacto del cliente" : "Número de DNI"}
                                             value={clientSearchValue}
                                             onValueChange={setClientSearchValue}
                                             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleClientLookup(); } }}
@@ -337,7 +304,13 @@ export default function NewManualBookingPage() {
                                                     {foundClient.email && <span className="text-default-500">· {foundClient.email}</span>}
                                         </div>
                                     )}
-                                    {clientLookupError && <p className="mt-2 text-sm text-danger">{clientLookupError}</p>}
+                                            {foundClient && foundClient.id !== user?.id && (
+                                                <p className="mt-2 text-xs text-default-500">
+                                                    La reserva queda a nombre de {foundClient.firstName} y <strong>pendiente de pago</strong>:
+                                                    la paga desde su cuenta, en Mis Reservas.
+                                                </p>
+                                            )}
+                                            {clientLookupError && <p role="alert" className="mt-2 text-sm text-danger">{clientLookupError}</p>}
                                 </div>
                             </CardBody>
                         </Card>

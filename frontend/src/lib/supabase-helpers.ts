@@ -212,8 +212,11 @@ export const BOOKING_SELECT = `
     pricing(*),
     schedules(*)
   ),
-  user:profiles!user_id(id, first_name, last_name)
+  user:profile_directory!user_id(id, first_name, last_name)
 ` as const
+// user: desde la vista profile_directory (migración 032), no desde profiles. Expone solo
+// nombre y email de las personas que cada uno puede ver (lo propio, el admin general, y el
+// admin de sede para sus clientes). profiles completo queda para el titular y el admin general.
 
 /** Select string para recurring_bookings con relaciones */
 export const RECURRING_BOOKING_SELECT = `

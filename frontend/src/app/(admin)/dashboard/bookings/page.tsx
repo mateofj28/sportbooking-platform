@@ -208,7 +208,7 @@ export default function AdminBookingsPage() {
                     aria-label="Buscar reservas"
                     placeholder={isAdmin
                         ? "Buscar por cliente, DNI, teléfono, email, cancha o complejo..."
-                        : "Buscar por cliente o cancha..."}
+                        : "Buscar por cliente, email o cancha..."}
                     variant="bordered"
                     size="sm"
                     value={search}
@@ -315,7 +315,10 @@ export default function AdminBookingsPage() {
                                         <span>{name}</span>
                                         {isOwn && <StatusChip>Tu reserva</StatusChip>}
                                     </div>
-                                    {/* Contacto del cliente: solo el admin general (al admin de sede la RPC ni lo envía) */}
+                                    {/* Admin de sede: email del cliente (lo necesita para ubicarlo). DNI y teléfono: solo el admin general */}
+                                    {!isAdmin && booking.user?.email && (
+                                        <p className="text-xs text-default-400">{booking.user.email}</p>
+                                    )}
                                     {isAdmin && (booking.user?.phone || booking.user?.dni) && (
                                         <p className="text-xs text-default-400">
                                             {booking.user?.phone ?? ""}{booking.user?.phone && booking.user?.dni ? " · " : ""}

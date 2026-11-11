@@ -67,9 +67,10 @@ export function bookingData(b: {
     sede:      b.facility?.venue?.name ?? '',
     fecha:     arDateLabel(b.start_datetime),
     horario:   `${arTime(b.start_datetime)} - ${arTime(b.end_datetime)}`,
-    base:      Number(b.base_price) || 0,
-    total:     Number(b.total_price) || 0,
-    comision:  Number(b.commission_amount) || 0,
+    // Solo el precio base (lo que gana el complejo). Estas notificaciones las ve también el
+    // admin de sede, y la comisión de la empresa es solo para el admin general (que la
+    // recibe aparte en COMMISSION_EARNED). Sin "total": con total - base se deduciría.
+    base: Number(b.base_price) || 0,
   }
 }
 

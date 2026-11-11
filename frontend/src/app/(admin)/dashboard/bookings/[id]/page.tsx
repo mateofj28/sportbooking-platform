@@ -24,18 +24,21 @@ const DAYS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "
 
 // Detalle completo con RLS: el admin de sede solo puede leer reservas de su complejo.
 // Los perfiles que el RLS no deja ver (ej. quién canceló) llegan en null.
-// Datos de contacto del cliente (DNI, teléfono, email): solo el admin general.
-// Al admin de sede ni se le piden, así no viajan en la respuesta.
-const detailSelect = (withContact: boolean) => `
+// Datos del cliente: el admin general ve todo (DNI, teléfono, email) desde profiles; el
+// admin de sede ve nombre y email desde la vista profile_directory (migración 032), que no
+// tiene DNI ni teléfono: no viajan en la respuesta.
+const detailSelect = (isGeneralAdmin: boolean) => `
   *,
   facility:facilities!facility_id(
     id, name, image_url,
     venue:venues!venue_id(id, name, city, address),
     sport:sports!sport_id(id, name)
   ),
-  user:profiles!user_id(id, first_name, last_name${withContact ? ", dni, phone, email" : ""}),
-  created_by_profile:profiles!created_by(id, first_name, last_name),
-  cancelled_by_profile:profiles!cancelled_by(id, first_name, last_name),
+  ${isGeneralAdmin
+        ? "user:profiles!user_id(id, first_name, last_name, dni, phone, email)"
+        : "user:profile_directory!user_id(id, first_name, last_name, email)"},
+  created_by_profile:profile_directory!created_by(id, first_name, last_name),
+  cancelled_by_profile:profile_directory!cancelled_by(id, first_name, last_name),
   recurring:recurring_bookings!recurring_booking_id(id, day_of_week, start_time, end_time, start_date, end_date, is_active)
 `;
 
@@ -214,14 +217,14 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
                         <Divider />
                         <CardBody className="gap-3 text-sm">
                             <Row icon={<User className="h-4 w-4" />} label="Nombre">{client}</Row>
-                            {/* Contacto del cliente: solo el admin general. El admin de sede ve solo el nombre. */}
+                            {/* DNI y teléfono: solo el admin general. Email: ambos admins (032). */}
                             {isAdmin && booking.user?.dni && <Row icon={<IdCard className="h-4 w-4" />} label="DNI">{booking.user.dni}</Row>}
                             {isAdmin && booking.user?.phone && (
                                 <Row icon={<Phone className="h-4 w-4" />} label="Teléfono">
                                     <a className="text-primary hover:underline" href={`tel:${booking.user.phone.replace(/[^\d+]/g, "")}`}>{booking.user.phone}</a>
                                 </Row>
                             )}
-                            {isAdmin && booking.user?.email && (
+                            {booking.user?.email && (
                                 <Row icon={<Mail className="h-4 w-4" />} label="Email">
                                     <a className="text-primary hover:underline break-all" href={`mailto:${booking.user.email}`}>{booking.user.email}</a>
                                 </Row>

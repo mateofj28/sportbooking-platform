@@ -83,6 +83,10 @@ Relación clave:
   `admin_lookup_client` (búsqueda exacta: email para ambos admins, DNI solo el general).
 - **Reserva manual:** un admin puede crear una reserva a nombre de un cliente (ADMIN en cualquier complejo,
   VENUE_ADMIN solo en el suyo). Queda **pendiente de pago** y la paga el cliente desde su cuenta.
+- **Cancelación automática por falta de pago** (`cron-cancel-unpaid`, cada hora): toda reserva sin pagar (fecha de
+  turno fijo o reserva manual) se cancela cuando faltan menos de 24 h para el turno, **solo si existía desde antes
+  de ese límite** (el cliente tuvo tiempo de pagar). Una reserva creada a menos de 24 h del turno no se cancela sola.
+  Nunca se cancela una reserva que se pagó a último momento (el UPDATE vuelve a exigir que siga impaga).
 - **El pago lo hace solo el titular de la reserva**, desde su vista de cliente. Ni el ADMIN general ni el VENUE_ADMIN
   pagan ni marcan como pagada la reserva de otra persona: el panel de administración NO ofrece "Marcar como pagada".
   Un admin sí paga sus propias reservas (ahí actúa como cliente).

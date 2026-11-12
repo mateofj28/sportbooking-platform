@@ -2,46 +2,73 @@
 
 import { Button, Spinner } from "@heroui/react";
 import { Globe, LocateFixed, MapPin } from "lucide-react";
+import { useState } from "react";
 import { provinceName } from "@/lib/ar-provinces";
 import type { CurrentLocality } from "@/hooks/use-current-locality";
+import { LocationChooserModal } from "@/components/shared/location-chooser-modal";
 
 /**
- * Explica para qué municipio son las promociones y, si no hay ubicación precisa,
- * cómo activarla. Se apoya en useCurrentLocality (GPS).
+ * Explica para qué municipio son las promociones y deja elegir la ciudad a mano
+ * ("¿Dónde querés jugar?"), o activar la ubicación. Se apoya en useCurrentLocality.
  */
 export function LocationNotice({ location }: { location: CurrentLocality }) {
-    const { locality, province, located, abroad, locating, permission, gpsError, retry } = location;
+    const { locality, province, located, abroad, manual, locating, permission, gpsError, retry, choose, locateMe } = location;
+    const [chooserOpen, setChooserOpen] = useState(false);
 
-    // Ubicado por GPS: contar para qué zona son
+    // "Buscar cerca de mí" solo si el navegador tiene GPS y no está bloqueado
+    const canLocate = permission !== "unsupported" && permission !== "denied";
+
+    const chooser = (
+        <LocationChooserModal
+            isOpen={chooserOpen}
+            onClose={() => setChooserOpen(false)}
+            onChoose={choose}
+            onLocateMe={canLocate ? () => { setChooserOpen(false); locateMe(); } : undefined}
+            currentCode={locality?.code ?? null}
+        />
+    );
+
+    // Con resultado (elegido a mano o por GPS): contar para qué zona son
     if (located && !locating) {
         return (
-            <p className="flex items-center gap-1.5 text-xs text-default-500">
-                {abroad ? <Globe className="h-3.5 w-3.5" aria-hidden="true" /> : <MapPin className="h-3.5 w-3.5" aria-hidden="true" />}
-                {locality
-                    ? `Promociones para ${locality.name} (${provinceName(locality.province)})`
-                    : abroad
-                        ? "Estás fuera de Argentina: te mostramos las promociones nacionales"
-                        : `No estás dentro de un municipio${province ? ` de ${provinceName(province)}` : ""}: te mostramos las promociones nacionales`}
-            </p>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-default-500">
+                <p className="flex items-center gap-1.5">
+                    {abroad ? <Globe className="h-3.5 w-3.5" aria-hidden="true" /> : <MapPin className="h-3.5 w-3.5" aria-hidden="true" />}
+                    {locality
+                        ? `Promociones para ${locality.name} (${provinceName(locality.province)})`
+                        : abroad
+                            ? "Estás fuera de Argentina: te mostramos las promociones nacionales"
+                            : `No estás dentro de un municipio${province ? ` de ${provinceName(province)}` : ""}: te mostramos las promociones nacionales`}
+                </p>
+                <Button
+                    size="sm"
+                    variant="light"
+                    color="primary"
+                    className="h-6 min-w-0 px-2 text-xs"
+                    onPress={() => setChooserOpen(true)}
+                >
+                    {locality ? "Cambiar" : "Elegir ciudad"}
+                </Button>
+                {chooser}
+            </div>
         );
     }
 
-    // El navegador no tiene GPS: no hay nada que ofrecer
-    if (permission === "unsupported") return null;
-
     let message: string;
-    if (locating) {
+    if (permission === "unsupported") {
+        message = "Elegí tu ciudad para ver sus promociones. Mientras tanto te mostramos las nacionales.";
+    } else if (locating) {
         message = "Buscando tu ubicación… Si el navegador te lo pide, permití el acceso.";
     } else if (permission === "denied") {
-        message = "La ubicación está bloqueada para este sitio. Activala desde el candado de la barra de direcciones (o en los permisos del navegador del celular) para ver las promociones de tu municipio. Mientras tanto te mostramos las nacionales.";
+        message = "La ubicación está bloqueada para este sitio. Elegí tu ciudad, o activá la ubicación desde el candado de la barra de direcciones. Mientras tanto te mostramos las nacionales.";
     } else if (gpsError === "timeout") {
-        message = "Tu dispositivo tardó demasiado en darnos la ubicación. Probá de nuevo, mejor al aire libre o con el GPS activado. Mientras tanto te mostramos las promociones nacionales.";
+        message = "Tu dispositivo tardó demasiado en darnos la ubicación. Probá de nuevo o elegí tu ciudad. Mientras tanto te mostramos las promociones nacionales.";
     } else if (gpsError === "unavailable") {
-        message = "Tu dispositivo no pudo determinar la ubicación. Revisá que la ubicación (GPS) esté activada en el celular y probá de nuevo. Mientras tanto te mostramos las promociones nacionales.";
+        message = "Tu dispositivo no pudo determinar la ubicación. Revisá que el GPS esté activado o elegí tu ciudad. Mientras tanto te mostramos las promociones nacionales.";
     } else if (gpsError === "limits") {
-        message = "No pudimos procesar tu ubicación. Probá de nuevo en un momento. Mientras tanto te mostramos las promociones nacionales.";
+        message = "No pudimos procesar tu ubicación. Probá de nuevo o elegí tu ciudad. Mientras tanto te mostramos las promociones nacionales.";
     } else {
-        message = "Compartí tu ubicación para ver las promociones del municipio en el que estás. Mientras tanto te mostramos las nacionales.";
+        message = "Compartí tu ubicación o elegí tu ciudad para ver sus promociones. Mientras tanto te mostramos las nacionales.";
     }
 
     return (
@@ -60,22 +87,28 @@ export function LocationNotice({ location }: { location: CurrentLocality }) {
                     <p className="text-sm font-semibold">Promociones de donde estés</p>
                     <p className="text-xs text-default-500">{message}</p>
                     <p className="mt-1 text-[11px] text-default-400">
-                        Solo usamos tu municipio para elegir las promociones; tu ubicación no se guarda.
+                        Solo usamos tu ciudad para elegir las promociones; tu ubicación no se guarda.
                     </p>
                 </div>
             </div>
-            {permission !== "denied" && (
-                <Button
-                    size="sm"
-                    color="primary"
-                    variant="flat"
-                    startContent={locating ? undefined : <LocateFixed className="h-4 w-4" />}
-                    onPress={retry}
-                    isLoading={locating}
-                >
-                    {locating ? "Buscando…" : "Usar mi ubicación"}
+            <div className="flex flex-shrink-0 gap-2">
+                <Button size="sm" variant="bordered" startContent={<MapPin className="h-4 w-4" />} onPress={() => setChooserOpen(true)}>
+                    Elegir ciudad
                 </Button>
-            )}
+                {canLocate && (
+                    <Button
+                        size="sm"
+                        color="primary"
+                        variant="flat"
+                        startContent={locating ? undefined : <LocateFixed className="h-4 w-4" />}
+                        onPress={manual ? locateMe : retry}
+                        isLoading={locating}
+                    >
+                        {locating ? "Buscando…" : "Usar mi ubicación"}
+                    </Button>
+                )}
+            </div>
+            {chooser}
         </div>
     );
 }

@@ -6,18 +6,20 @@
 // Localidad (municipio) en la que está el usuario AHORA, para elegir la publicidad.
 // No usa el perfil: alguien de La Plata que hoy está en Rosario ve la de Rosario.
 //
-// Solo GPS del navegador (pide permiso). Las coordenadas se convierten a localidad en
-// el dispositivo (lib/geo/locality-locator.ts) y no se envían: a la base solo viaja el
-// código de la localidad.
+// Dos fuentes, en este orden:
+//   1. La ciudad que el usuario ELIGIÓ a mano ("¿Dónde querés jugar?"). Sirve cuando el
+//      GPS no la da (fuera de Argentina, sin permiso, zona rural) o cuando quiere ver otra.
+//      Se recuerda en localStorage hasta que la cambie o toque "Buscar cerca de mí".
+//      Con una ciudad elegida no se pide el GPS.
+//   2. El GPS del navegador (pide permiso). Las coordenadas se convierten a localidad en
+//      el dispositivo (lib/geo/locality-locator.ts) y no se envían: a la base solo viaja
+//      el código de la localidad.
 //
-// Sin ubicación precisa no hay municipio, y entonces se muestran solo las nacionales:
-//   - sin permiso de GPS o GPS fallido,
-//   - en zona rural fuera de todo municipio,
-//   - fuera de Argentina.
+// Sin ninguna de las dos no hay municipio, y entonces se muestran solo las nacionales.
 // (La IP solo da una provincia aproximada: no sirve para publicidad municipal.)
 //
-// El resultado se recuerda unos minutos en sessionStorage para no repetir el cálculo
-// (ni el cartel de permiso) en cada navegación dentro de la sesión.
+// El resultado del GPS se recuerda unos minutos en sessionStorage para no repetir el
+// cálculo (ni el cartel de permiso) en cada navegación dentro de la sesión.
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -29,25 +31,32 @@ export type GeoPermission = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'u
 export type GpsError = 'timeout' | 'unavailable' | 'limits' | null
 
 export interface CurrentLocality {
-    /** Localidad en la que está, o null si no se pudo determinar. */
+    /** Localidad elegida o detectada, o null si no hay. */
     locality: LocalityInfo | null
     /** Provincia (ISO), aunque no esté dentro de una localidad (zona rural). */
     province: string | null
-    /** true si el GPS respondió (haya o no localidad). */
+    /** true si hay resultado (GPS respondió o el usuario eligió una ciudad). */
     located: boolean
-    /** true si el GPS lo ubicó fuera de Argentina. */
+    /** true si el GPS lo ubicó fuera de Argentina (y no eligió una ciudad). */
     abroad: boolean
+    /** true si la localidad la eligió el usuario a mano. */
+    manual: boolean
     /** Siempre true enseguida: mientras no hay GPS se muestran las nacionales. */
     ready: boolean
     /** true mientras se espera el GPS (incluye el cartel de permiso). */
     locating: boolean
     permission: GeoPermission
     gpsError: GpsError
-    /** Vuelve a intentar (botón "Usar mi ubicación"): espera más y pide una posición nueva. */
+    /** Vuelve a intentar con el GPS: espera más y pide una posición nueva. */
     retry: () => void
+    /** Elige una ciudad a mano (deja de usar el GPS). */
+    choose: (locality: LocalityInfo) => void
+    /** Olvida la ciudad elegida y busca con el GPS ("Buscar cerca de mí"). */
+    locateMe: () => void
 }
 
 const CACHE_KEY = 'sb:current-locality'
+const CHOSEN_KEY = 'sb:chosen-locality'
 const CACHE_TTL_MS = 15 * 60 * 1000
 
 /** Intento automático al entrar: rápido y acepta una posición reciente. */
@@ -79,6 +88,28 @@ function writeCache(v: Omit<Cached, 'at'>) {
     }
 }
 
+/** Ciudad elegida a mano (validada: lo que hay en localStorage no es confiable). */
+function readChosen(): LocalityInfo | null {
+    try {
+        const raw = localStorage.getItem(CHOSEN_KEY)
+        if (!raw) return null
+        const c = JSON.parse(raw) as Partial<LocalityInfo>
+        if (!isLocalityCode(c.code) || !isProvinceCode(c.province) || typeof c.name !== 'string') return null
+        return { code: c.code, name: c.name, category: typeof c.category === 'string' ? c.category : '', province: c.province }
+    } catch {
+        return null
+    }
+}
+
+function writeChosen(v: LocalityInfo | null) {
+    try {
+        if (v) localStorage.setItem(CHOSEN_KEY, JSON.stringify(v))
+        else localStorage.removeItem(CHOSEN_KEY)
+    } catch {
+        // no es crítico
+    }
+}
+
 function getPosition(options: PositionOptions): Promise<GeolocationPosition> {
     return new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, options))
 }
@@ -92,12 +123,34 @@ export function useCurrentLocality(enabled = true): CurrentLocality {
     const [permission, setPermission] = useState<GeoPermission>('unknown')
     const [gpsError, setGpsError] = useState<GpsError>(null)
     const [attempt, setAttempt] = useState(0)
+    // undefined = todavía no se leyó localStorage (evita pedir el GPS antes de saberlo)
+    const [chosen, setChosen] = useState<LocalityInfo | null | undefined>(undefined)
     const resolved = useRef(false)
 
     const retry = useCallback(() => setAttempt((n) => n + 1), [])
 
+    const choose = useCallback((l: LocalityInfo) => {
+        writeChosen(l)
+        setChosen(l)
+    }, [])
+
+    const locateMe = useCallback(() => {
+        writeChosen(null)
+        setChosen(null)
+        setAttempt((n) => n + 1)
+    }, [])
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') setChosen(readChosen())
+    }, [])
+
     useEffect(() => {
         if (!enabled || typeof window === 'undefined') return
+        // Con una ciudad elegida (o sin haber leído todavía si la hay) no se usa el GPS
+        if (chosen !== null) {
+            setLocating(false)
+            return
+        }
         let cancelled = false
         const isManual = attempt > 0
 
@@ -176,7 +229,16 @@ export function useCurrentLocality(enabled = true): CurrentLocality {
             cancelled = true
             permStatus?.removeEventListener('change', onPermChange)
         }
-    }, [enabled, attempt, retry])
+    }, [enabled, attempt, retry, chosen])
 
-    return { locality, province, located, abroad, ready: true, locating, permission, gpsError, retry }
+    if (chosen) {
+        return {
+            locality: chosen, province: chosen.province, located: true, abroad: false, manual: true,
+            ready: true, locating: false, permission, gpsError: null, retry, choose, locateMe,
+        }
+    }
+    return {
+        locality, province, located, abroad, manual: false,
+        ready: true, locating, permission, gpsError, retry, choose, locateMe,
+    }
 }

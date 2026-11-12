@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { translateError } from "@/lib/error-messages";
 
 export interface Toast {
   id: string;
@@ -14,8 +15,12 @@ interface ToastState {
 
 export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
-  addToast: (message, type = "success") => {
-    const id = Date.now().toString();
+  addToast: (raw, type = "success") => {
+    // Red de seguridad: si el texto llega en inglés (error de Supabase o del navegador), traducirlo
+    // (Muchas pantallas muestran errores sin pasar type "error": se traduce siempre;
+    //  lo que ya está en español queda igual.)
+    const message = translateError(raw);
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     set((state) => ({ toasts: [...state.toasts, { id, message, type }] }));
     setTimeout(() => {
       set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));

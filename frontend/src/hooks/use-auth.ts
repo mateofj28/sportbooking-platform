@@ -1,4 +1,5 @@
 'use client'
+import { toAppError } from '@/lib/error-messages'
 
 // ============================================================
 // hooks/use-auth.ts
@@ -29,7 +30,7 @@ export function useAuth() {
                 email: credentials.email,
                 password: credentials.password,
             })
-            if (error) throw new Error(error.message)
+            if (error) throw toAppError(error)
             if (!data.session) throw new Error('No se pudo iniciar sesión')
             return data
         },
@@ -55,7 +56,7 @@ export function useAuth() {
                     },
                 },
             })
-            if (error) throw new Error(error.message)
+            if (error) throw toAppError(error)
             if (!result.user) throw new Error('No se pudo crear el usuario')
             return result
         },

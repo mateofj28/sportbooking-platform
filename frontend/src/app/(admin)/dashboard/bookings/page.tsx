@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import {
     Button, Spinner, Input, DateRangePicker, Tooltip,
@@ -154,7 +155,7 @@ export default function AdminBookingsPage() {
                 p_page: page,
                 p_per_page: PER_PAGE,
             });
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
             const res = camelize((data ?? {}) as Record<string, unknown>) as unknown as Partial<AdminBookingsResult>;
             return {
                 items: res.items ?? [],

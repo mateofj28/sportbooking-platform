@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import { Card, CardBody, CardHeader, Chip, Spinner, Divider, Progress, DatePicker } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
@@ -131,7 +132,7 @@ export default function StatisticsPage() {
                 .select("id, first_name, last_name, email, role, created_at", { count: "exact" })
                 .order("created_at", { ascending: false })
                 .limit(5);
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
             return {
                 data: (data ?? []).map((r: any) => ({
                     id: r.id,

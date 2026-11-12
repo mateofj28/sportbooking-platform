@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import {
     Button, Chip, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
@@ -97,7 +98,7 @@ export default function AdminUsersPage() {
             }
 
             const { data: rows, error, count } = await query;
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
             return {
                 data: (rows ?? []).map((r) => camelize(r as Tables<'profiles'>) as unknown as User),
                 meta: { total: count ?? 0 },
@@ -111,7 +112,7 @@ export default function AdminUsersPage() {
     const deactivateMutation = useMutation({
         mutationFn: async (id: string) => {
             const { error } = await supabase.from("profiles").update({ is_active: false }).eq("id", id);
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["admin-users"] });
@@ -122,7 +123,7 @@ export default function AdminUsersPage() {
     const reactivateMutation = useMutation({
         mutationFn: async (id: string) => {
             const { error } = await supabase.from("profiles").update({ is_active: true }).eq("id", id);
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["admin-users"] });
@@ -136,7 +137,7 @@ export default function AdminUsersPage() {
             const { error } = await supabase.from("profiles")
                 .update({ role: role as any, venue_id: venueId || null })
                 .eq("id", id);
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
             // Actualizar app_metadata para que el JWT refleje el nuevo rol
             const { error: fnErr } = await invokeFunction('admin-set-role', { user_id: id, role, venue_id: venueId || null });
             if (fnErr) console.warn("set_user_role:", fnErr); // best-effort
@@ -185,7 +186,7 @@ export default function AdminUsersPage() {
                 dni: dni || null,
                 phone: phone || null,
             }).eq("id", id);
-            if (profileErr) throw new Error(profileErr.message);
+            if (profileErr) throw toAppError(profileErr);
 
             // Paso 2: sincronizar rol + venue_id en profiles Y en app_metadata del JWT.
             // Siempre a través de admin-set-role para garantizar consistencia.

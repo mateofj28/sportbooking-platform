@@ -1,4 +1,5 @@
 'use client'
+import { toAppError } from '@/lib/error-messages'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -122,7 +123,7 @@ export function useBookings(status?: string) {
             if (status) query = query.eq('status', status as any)
 
           const { data, error, count } = await query
-          if (error) throw new Error(error.message)
+          if (error) throw toAppError(error)
 
             return {
                 data: (data ?? []).map((row) => rowToBooking(row as unknown as BookingRow)),
@@ -142,7 +143,7 @@ export function useBooking(id: string) {
                 .select(BOOKING_SELECT)
                 .eq('id', id)
                 .single()
-            if (error) throw new Error(error.message)
+            if (error) throw toAppError(error)
             return rowToBooking(data as unknown as BookingRow)
         },
         enabled: !!id,
@@ -163,7 +164,7 @@ export function useRecurringBookings() {
                 .eq('user_id', userId!)
                 .order('created_at', { ascending: false })
 
-            if (error) throw new Error(error.message)
+            if (error) throw toAppError(error)
             return (data ?? []).map((row) => rowToRecurring(row as unknown as RecurringBookingRow))
         },
     })
@@ -302,7 +303,7 @@ export function usePriceChanges() {
                 .from('booking_price_changes' as never)
                 .select('booking_id, old_total, new_total, currency')
                 .eq('user_id', userId!)
-            if (error) throw new Error(error.message)
+            if (error) throw toAppError(error)
             const map = new Map<string, PriceChange>()
             for (const r of (data ?? []) as { booking_id: string; old_total: number; new_total: number; currency: string }[]) {
                 map.set(r.booking_id, {

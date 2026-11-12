@@ -1,4 +1,5 @@
 'use client'
+import { toAppError } from '@/lib/error-messages'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -22,7 +23,7 @@ export function useVenues() {
         .select(VENUE_SELECT)
         .eq('is_active', true)
         .order('name')
-      if (error) throw new Error(error.message)
+      if (error) throw toAppError(error)
       return (data ?? []).map((v) => camelize(v as VenueRow) as unknown as Venue)
     },
     staleTime: 10 * 60 * 1000,  // 10 minutos — los complejos cambian con poca frecuencia
@@ -38,7 +39,7 @@ export function useAllVenues() {
         .from('venues')
         .select(VENUE_SELECT)
         .order('name')
-      if (error) throw new Error(error.message)
+      if (error) throw toAppError(error)
       return (data ?? []).map((v) => camelize(v as VenueRow) as unknown as Venue)
     },
     staleTime: 10 * 60 * 1000,
@@ -55,7 +56,7 @@ export function useVenue(id: string) {
         .select(VENUE_SELECT)
         .eq('id', id)
         .single()
-      if (error) throw new Error(error.message)
+      if (error) throw toAppError(error)
       return camelize(data as VenueRow) as unknown as Venue
     },
     enabled: !!id,
@@ -83,7 +84,7 @@ export function useCreateVenue() {
         })
         .select()
         .single()
-      if (error) throw new Error(error.message)
+      if (error) throw toAppError(error)
       return camelize(result as VenueRow) as unknown as Venue
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['venues'] }),
@@ -110,7 +111,7 @@ export function useUpdateVenue() {
         .eq('id', id)
         .select()
         .single()
-      if (error) throw new Error(error.message)
+      if (error) throw toAppError(error)
       return camelize(result as VenueRow) as unknown as Venue
     },
     onSuccess: (_, vars) => {

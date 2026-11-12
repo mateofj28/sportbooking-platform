@@ -1,4 +1,5 @@
 'use client'
+import { toAppError } from '@/lib/error-messages'
 
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -46,7 +47,7 @@ export function useFacilityAvailability(facilityId: string, date: string, enable
               p_facility_id: facilityId,
               p_date: date,
           })
-          if (error) throw new Error(error.message)
+          if (error) throw toAppError(error)
           return data as AvailabilityResponse
       },
       enabled: enabled && !!facilityId && !!date,
@@ -74,7 +75,7 @@ export function useAvailabilitySummary(
               p_sport_id: filters.sportId ?? null,
               p_date: date,
           })
-          if (error) throw new Error(error.message)
+          if (error) throw toAppError(error)
 
           // Normalizar facilityId (snake_case → camelCase)
           return ((data as any[]) ?? []).map((item) => ({

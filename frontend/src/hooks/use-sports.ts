@@ -1,4 +1,5 @@
 'use client'
+import { toAppError } from '@/lib/error-messages'
 
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -19,7 +20,7 @@ export function useSports(activeOnly = true) {
       if (activeOnly) query = query.eq('is_active', true)
 
       const { data, error } = await query
-      if (error) throw new Error(error.message)
+      if (error) throw toAppError(error)
       return (data ?? []).map((s) => camelize(s as SportRow) as unknown as Sport)
     },
     staleTime: 30 * 60 * 1000,  // 30 minutos — los deportes cambian en semanas, no en minutos

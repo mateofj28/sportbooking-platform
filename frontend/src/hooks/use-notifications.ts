@@ -1,4 +1,5 @@
 'use client'
+import { toAppError } from '@/lib/error-messages'
 
 // ============================================================
 // hooks/use-notifications.ts
@@ -62,7 +63,7 @@ export function useNotifications(page = 1, limit = 20) {
                 .order('created_at', { ascending: false })
                 .range(from, to)
 
-            if (error) throw new Error(error.message)
+            if (error) throw toAppError(error)
 
             const total = count ?? 0
             return {
@@ -173,7 +174,7 @@ export function useMarkNotificationRead() {
                     { notification_id: notificationId, user_id: userId },
                     { onConflict: 'notification_id,user_id' }
                 )
-            if (error) throw new Error(error.message)
+            if (error) throw toAppError(error)
             return { ok: true }
         },
         onSuccess: () => {
@@ -215,7 +216,7 @@ export function useMarkAllNotificationsRead() {
             }
 
             const { data: unread, error: fetchError } = await unreadQuery
-            if (fetchError) throw new Error(fetchError.message)
+            if (fetchError) throw toAppError(fetchError)
             if (!unread?.length) return { count: 0 }
 
             // Paso 3: insertar lecturas para todas las no leídas
@@ -226,7 +227,7 @@ export function useMarkAllNotificationsRead() {
                     { onConflict: 'notification_id,user_id' }
                 )
 
-            if (insertError) throw new Error(insertError.message)
+            if (insertError) throw toAppError(insertError)
             return { count: unread.length }
         },
         onSuccess: () => {

@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import {
   Button, Chip, Spinner, Card, CardBody, CardHeader, Divider, Textarea,
@@ -87,7 +88,7 @@ export default function AdminBlockedSlotsPage() {
         .select("id, facility_id, start_datetime, end_datetime, reason")
         .eq("facility_id", selectedFacility)
         .order("start_datetime", { ascending: true });
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
       return (data ?? []).map((r) => camelize(r as Tables<'blocked_slots'>) as unknown as BlockedSlot);
     },
     enabled: !!selectedFacility,
@@ -104,7 +105,7 @@ export default function AdminBlockedSlotsPage() {
           reason: payload.reason || null,
           created_by: user?.id ?? '',
         });
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] });
@@ -132,7 +133,7 @@ export default function AdminBlockedSlotsPage() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("blocked_slots").delete().eq("id", id);
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] });
@@ -150,7 +151,7 @@ export default function AdminBlockedSlotsPage() {
           reason: reason || null,
         })
         .eq("id", id);
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blocked-slots", selectedFacility] });

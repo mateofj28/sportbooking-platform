@@ -12,6 +12,7 @@
 
 import { supabase } from './supabase'
 import type { Tables } from './supabase'
+import { translateError } from './error-messages'
 
 // Re-exportar Tables para que las páginas puedan tipar sus queries inline
 // sin importar directamente desde supabase.ts
@@ -113,10 +114,10 @@ export async function invokeFunction<T>(
     const { data, error } = await supabase.functions.invoke<T>(name, {
       body,
     })
-    if (error) return { data: null, error: await functionErrorMessage(error) }
+    if (error) return { data: null, error: translateError(await functionErrorMessage(error)) }
     return { data, error: null }
   } catch (e) {
-    return { data: null, error: String(e) }
+    return { data: null, error: translateError(e) }
   }
 }
 
@@ -130,10 +131,10 @@ export async function callRpc<T>(
 ): Promise<QueryResult<T>> {
   try {
     const { data, error } = await (supabase.rpc as any)(fn, params)
-    if (error) return { data: null, error: error.message }
+    if (error) return { data: null, error: translateError(error) }
     return { data, error: null }
   } catch (e) {
-    return { data: null, error: String(e) }
+    return { data: null, error: translateError(e) }
   }
 }
 

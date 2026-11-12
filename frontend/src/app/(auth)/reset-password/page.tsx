@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import { Button, Card, CardBody, CardHeader, Input, Link } from "@heroui/react";
 import { useForm } from "react-hook-form";
@@ -15,7 +16,7 @@ function ResetPasswordContent() {
   const mutation = useMutation({
     mutationFn: async (data: ResetPasswordFormData) => {
       const { error } = await supabase.auth.updateUser({ password: data.password });
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
     },
   });
 

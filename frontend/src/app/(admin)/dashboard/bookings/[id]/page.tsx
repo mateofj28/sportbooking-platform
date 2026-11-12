@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -89,7 +90,7 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
         queryKey: ["booking", "admin", id, isAdmin],
         queryFn: async (): Promise<AdminBookingDetail | null> => {
             const { data, error } = await supabase.from("bookings").select(detailSelect(isAdmin)).eq("id", id).maybeSingle();
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
             // El select se arma según el rol, así que supabase-js no puede inferir el tipo
             return data ? (camelize(data as unknown as Record<string, unknown>) as unknown as AdminBookingDetail) : null;
         },

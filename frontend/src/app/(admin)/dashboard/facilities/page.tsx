@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import {
     Button,
@@ -159,7 +160,7 @@ export default function AdminFacilitiesPage() {
                 min_booking_duration: data.minBookingDuration,
                 max_booking_duration: data.maxBookingDuration,
             });
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["facilities"] });
@@ -174,7 +175,7 @@ export default function AdminFacilitiesPage() {
     const deleteMutation = useMutation({
         mutationFn: async (id: string) => {
             const { error } = await supabase.from("facilities").delete().eq("id", id);
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["facilities"] });
@@ -185,7 +186,7 @@ export default function AdminFacilitiesPage() {
     const toggleActiveMutation = useMutation({
         mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
             const { error } = await supabase.from("facilities").update({ is_active: isActive }).eq("id", id);
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
         },
         onSuccess: (_data, variables) => {
             // Invalidate to refresh the list
@@ -209,7 +210,7 @@ export default function AdminFacilitiesPage() {
                 max_booking_duration: data.maxBookingDuration,
                 image_url: data.imageUrl || null,
             }).eq("id", id);
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["facilities"] });
@@ -227,7 +228,7 @@ export default function AdminFacilitiesPage() {
                 amenities: data.amenities,
                 image_url: data.imageUrl || null,
             }).eq("id", id);
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["venues"] });

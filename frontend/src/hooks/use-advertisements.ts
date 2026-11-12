@@ -1,4 +1,5 @@
 'use client'
+import { toAppError } from '@/lib/error-messages'
 
 // ============================================================
 // hooks/use-advertisements.ts
@@ -69,7 +70,7 @@ export function useActiveAdvertisements(locality: string | null, enabled = true)
       const { data, error } = await supabase.rpc('get_active_advertisements', {
         p_locality: locality ?? undefined,
       })
-      if (error) throw new Error(error.message)
+      if (error) throw toAppError(error)
       return (data ?? []).map((a) => ({
         id: a.id,
         title: a.title,
@@ -103,7 +104,7 @@ export function useAdminAdvertisements(enabled = true) {
         .select('*')
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false })
-      if (error) throw new Error(error.message)
+      if (error) throw toAppError(error)
       return (data ?? []).map(mapAdminRow)
     },
     enabled,
@@ -144,7 +145,7 @@ export function useSaveAdvertisement() {
       const { error } = id
         ? await supabase.from('advertisements').update(row).eq('id', id)
         : await supabase.from('advertisements').insert({ ...row, created_by: userId ?? null })
-      if (error) throw new Error(error.message)
+      if (error) throw toAppError(error)
     },
     onSuccess: invalidate,
   })
@@ -156,7 +157,7 @@ export function useToggleAdvertisement() {
   return useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
       const { error } = await supabase.from('advertisements').update({ is_active: isActive }).eq('id', id)
-      if (error) throw new Error(error.message)
+      if (error) throw toAppError(error)
     },
     onSuccess: invalidate,
   })
@@ -167,7 +168,7 @@ export function useDeleteAdvertisement() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('advertisements').delete().eq('id', id)
-      if (error) throw new Error(error.message)
+      if (error) throw toAppError(error)
     },
     onSuccess: invalidate,
   })

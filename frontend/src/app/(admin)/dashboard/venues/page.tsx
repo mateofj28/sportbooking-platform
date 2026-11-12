@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import {
   Button, Chip, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
@@ -111,7 +112,7 @@ export default function AdminVenuesPage() {
         amenities: data.amenities,
         image_url: data.imageUrl || null,
       });
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onClose(); addToast("Complejo creado correctamente"); },
     onError: (error: any) => { addToast(error?.message || "No se pudo crear el complejo"); },
@@ -128,7 +129,7 @@ export default function AdminVenuesPage() {
         amenities: data.amenities,
         image_url: data.imageUrl || null,
       }).eq("id", data.id);
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); onEditClose(); addToast("Complejo actualizado"); },
     onError: (error: any) => { addToast(error?.message || "No se pudo actualizar el complejo"); },
@@ -136,7 +137,7 @@ export default function AdminVenuesPage() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("venues").delete().eq("id", id);
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); addToast("Complejo eliminado"); },
   });

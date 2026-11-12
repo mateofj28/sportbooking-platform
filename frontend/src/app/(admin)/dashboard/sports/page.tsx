@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import {
     Button, Chip, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
@@ -34,7 +35,7 @@ export default function AdminSportsPage() {
                 max_players: data.maxPlayers ?? null,
                 billing_type: data.billingType,
             });
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
         },
         onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); onClose(); setForm({ name: "", description: "", maxPlayers: "", billingType: "PER_SESSION" }); addToast("Deporte creado correctamente"); },
     });
@@ -42,7 +43,7 @@ export default function AdminSportsPage() {
     const deleteMutation = useMutation({
         mutationFn: async (id: string) => {
             const { error } = await supabase.from("sports").delete().eq("id", id);
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
         },
         onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); addToast("Deporte eliminado"); },
     });
@@ -55,7 +56,7 @@ export default function AdminSportsPage() {
                 max_players: data.maxPlayers ?? null,
                 billing_type: data.billingType,
             }).eq("id", id);
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
         },
         onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); onEditClose(); addToast("Deporte actualizado"); },
     });

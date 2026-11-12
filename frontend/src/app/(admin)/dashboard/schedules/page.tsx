@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import {
   Button, Chip, Spinner, Card, CardBody, CardHeader, Divider,
@@ -56,7 +57,7 @@ export default function AdminSchedulesPage() {
         .select("*")
         .eq("facility_id", selectedFacility)
         .order("day_of_week", { ascending: true });
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
       return (data ?? []).map((r) => camelize(r as Tables<'schedules'>) as unknown as Schedule);
     },
     enabled: !!selectedFacility,
@@ -117,7 +118,7 @@ export default function AdminSchedulesPage() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("schedules").delete().eq("id", id);
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["schedules", selectedFacility] }); addToast("Item eliminado correctamente"); },
   });
@@ -129,7 +130,7 @@ export default function AdminSchedulesPage() {
         open_time: data.openTime,
         close_time: data.closeTime,
       }).eq("id", id);
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["schedules", selectedFacility] }); onEditClose(); addToast("Horario actualizado correctamente"); },
     onError: (error: any) => {

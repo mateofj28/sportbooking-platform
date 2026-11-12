@@ -80,3 +80,13 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
 - Modales largos: `scrollBehavior="inside"`.
 - Teléfono, DNI y provincia usan los componentes compartidos (`PhoneInput`, `DniInput`, `ProvinceSelect`),
   nunca un input suelto.
+
+## Mensajes de error
+
+- Todo error que ve el usuario va en **español**. Los de Supabase (Auth, Postgres, Storage, Edge Functions) y del
+  navegador vienen en inglés: se traducen en `lib/error-messages.ts` (`translateError`, `toAppError`).
+- En los hooks, lanzar `throw toAppError(error)`, nunca `throw new Error(error.message)`.
+- Hay redes de seguridad globales (React Query `MutationCache`/`QueryCache`, `addToast`, `invokeFunction`, `callRpc`),
+  pero un error nuevo con texto en inglés se agrega a las reglas de `error-messages.ts`.
+- Los mensajes de Zod sin `message` propio salen en español (`lib/zod-es.ts`).
+- Los `RAISE EXCEPTION` de la base y los `err()` de las Edge Functions se escriben en español.

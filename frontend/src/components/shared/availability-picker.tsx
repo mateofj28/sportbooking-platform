@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import { useMemo, useState, useEffect } from "react";
 import { useQueries } from "@tanstack/react-query";
@@ -160,7 +161,7 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
                     p_facility_id: facility.id,
                     p_date: info.dateStr,
                 })
-                if (error) throw new Error(error.message)
+                if (error) throw toAppError(error)
                 return data as AvailabilityResponse
             },
             enabled: info.hasSchedule,

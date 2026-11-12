@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import { Button, Card, CardBody, CardHeader, Input, Link } from "@heroui/react";
 import { useForm } from "react-hook-form";
@@ -17,7 +18,7 @@ export default function ForgotPasswordPage() {
             const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
                 redirectTo: (typeof window !== "undefined" ? window.location.origin : "") + "/reset-password",
             });
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
         },
     });
 

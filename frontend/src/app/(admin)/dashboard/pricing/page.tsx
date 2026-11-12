@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import {
   Button, Chip, Spinner, Card, CardBody, CardHeader, Divider,
@@ -105,7 +106,7 @@ export default function AdminPricingPage() {
         .select("*")
         .eq("facility_id", selectedFacility)
         .order("day_of_week", { ascending: true });
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
       return (data ?? []).map((r) => camelize(r as Tables<'pricing'>) as unknown as Pricing);
     },
     enabled: !!selectedFacility,
@@ -119,7 +120,7 @@ export default function AdminPricingPage() {
         .from("schedules")
         .select("id, day_of_week, open_time, close_time, is_active")
         .eq("facility_id", selectedFacility);
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
       return (data ?? []).map((r) => camelize(r as Tables<'schedules'>) as unknown as { id: string; dayOfWeek: number; openTime: string; closeTime: string; isActive: boolean });
     },
     enabled: !!selectedFacility,
@@ -210,7 +211,7 @@ export default function AdminPricingPage() {
           ...payloadBase,
           ...(day !== null ? { day_of_week: day } : {}),
         });
-        if (error) throw new Error(error.message);
+        if (error) throw toAppError(error);
         created.push(day !== null ? DAYS[day] : "Todos los días");
       } catch {
         skipped.push(day !== null ? DAYS[day] : "Todos los días");
@@ -226,7 +227,7 @@ export default function AdminPricingPage() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("pricing").delete().eq("id", id);
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pricing", selectedFacility] }); addToast("Tarifa eliminada correctamente"); },
   });
@@ -240,7 +241,7 @@ export default function AdminPricingPage() {
         profit_percent: data.profitPercent,
         day_of_week: data.dayOfWeek,
       }).eq("id", id);
-      if (error) throw new Error(error.message);
+      if (error) throw toAppError(error);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pricing", selectedFacility] }); onEditClose(); addToast("Tarifa actualizada correctamente"); },
     onError: (error: any) => {

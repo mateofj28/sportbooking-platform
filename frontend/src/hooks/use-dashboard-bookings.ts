@@ -1,4 +1,5 @@
 'use client'
+import { toAppError } from '@/lib/error-messages'
 
 // ============================================================
 // hooks/use-dashboard-bookings.ts
@@ -40,7 +41,7 @@ export function useDashboardBookings() {
                 .order('start_datetime', { ascending: false })
                 .limit(1000)
 
-            if (error) throw new Error(error.message)
+            if (error) throw toAppError(error)
             return (data ?? []).map((row) => camelize(row as unknown as BookingRow) as unknown as Booking)
         },
         staleTime: 2 * 60 * 1000,    // 2 minutos

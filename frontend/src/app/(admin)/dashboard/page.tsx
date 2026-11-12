@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import {
     Card, CardBody, Chip, Spinner, DatePicker, Button,
@@ -348,7 +349,7 @@ function TodaySummary() {
                 .select("id, created_at")
                 .order("created_at", { ascending: false })
                 .limit(200);
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
             return (data ?? []).map((r) => camelize(r as Tables<'profiles'>) as unknown as UserType);
         },
     });
@@ -362,7 +363,7 @@ function TodaySummary() {
                 .from("facilities")
                 .select("id, name, is_active, min_booking_duration, schedules(day_of_week, open_time, close_time, is_active)")
                 .eq("is_active", true);
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
             return (data ?? []).map((r) => camelize(r as Pick<Tables<'facilities'>, 'id' | 'name' | 'is_active' | 'min_booking_duration'> & { schedules?: Tables<'schedules'>[] }) as unknown as Facility);
         },
     });
@@ -380,7 +381,7 @@ function TodaySummary() {
                 .select("id, facility_id, start_datetime, end_datetime")
                 .lt("start_datetime", dayEndAR.toISOString())
                 .gt("end_datetime", dayStartAR.toISOString());
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
             return (data ?? []).map((r) => camelize(r as Tables<'blocked_slots'>) as unknown as { id: string; facilityId: string; startDatetime: string; endDatetime: string });
         },
     });

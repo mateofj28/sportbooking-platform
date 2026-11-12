@@ -1,4 +1,5 @@
 "use client";
+import { toAppError } from '@/lib/error-messages'
 
 import { Button, Card, CardBody, CardHeader, Input, Divider, Spinner } from "@heroui/react";
 import { useForm } from "react-hook-form";
@@ -43,7 +44,7 @@ export default function ProfilePage() {
                 .eq("id", user.id)
                 .select()
                 .single();
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
             return result;
         },
         onSuccess: (data) => {
@@ -151,7 +152,7 @@ function ChangePasswordForm() {
     const mutation = useMutation({
         mutationFn: async (password: string) => {
             const { error } = await supabase.auth.updateUser({ password });
-            if (error) throw new Error(error.message);
+            if (error) throw toAppError(error);
         },
         onSuccess: () => {
             addToast("Contraseña actualizada correctamente");

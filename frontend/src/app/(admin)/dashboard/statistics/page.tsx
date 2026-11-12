@@ -160,7 +160,8 @@ export default function StatisticsPage() {
     // Mientras se cargan los datos (o faltan fechas en modo personalizado)
     const showLoader = (isLoading || !stats) && customReady && !isError;
     const t = stats?.totals;
-    const activeCount = t ? t.total - t.cancelled : 0;
+    // "total" ya excluye las canceladas; el reparto lista todas las reservas del período.
+    const activeCount = t ? t.totalAll : 0;
 
     return (
         <div className="space-y-6 animate-fade-in min-w-0">

@@ -7,6 +7,7 @@ import {
     AreaChart, Area,
 } from "recharts";
 import { useTheme } from "@/hooks/use-theme";
+import { todayAr } from "@/lib/ads";
 
 const COLORS = {
     PENDING: "#F59E0B",
@@ -172,18 +173,16 @@ export function RevenueAreaChart({ byDay }: { byDay: StatsByDay[] }) {
     const colors = useChartColors();
     const safeByDay = Array.isArray(byDay) ? byDay : [];
     const revenueByDate = new Map(safeByDay.map((d) => [d.date, d.revenue]));
-    const today = new Date();
-    const last7 = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(today);
-        d.setDate(today.getDate() - (6 - i));
-        return d;
-    });
-    const data = last7.map((date) => {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const key = `${y}-${m}-${day}`;
-        const name = date.toLocaleDateString("es-AR", { day: "2-digit", month: "short" });
+    // Los últimos 7 días se cuentan en hora de ARGENTINA, igual que get_stats: si el
+    // navegador está en otra zona (ej. Colombia a las 22:08, cuando en AR ya es el día
+    // siguiente), con la fecha local el gráfico quedaría corrido un día.
+    const todayKey = todayAr();
+    const [ty, tm, td] = todayKey.split("-").map(Number);
+    const data = Array.from({ length: 7 }, (_, i) => {
+        // Aritmética de calendario en UTC: no depende de la zona del navegador
+        const date = new Date(Date.UTC(ty, tm - 1, td - (6 - i)));
+        const key = date.toISOString().slice(0, 10);
+        const name = date.toLocaleDateString("es-AR", { day: "2-digit", month: "short", timeZone: "UTC" });
         return { name, ingresos: revenueByDate.get(key) || 0 };
     });
 

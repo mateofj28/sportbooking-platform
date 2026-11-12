@@ -36,8 +36,13 @@ Relación clave:
 - El día al que pertenece una reserva se determina en **hora de Argentina** (restar 3h al instante UTC antes de sacar la fecha).
 - **Actividad/conteos** (reservas, realizadas, canceladas, ocupación) se agrupan por el **día de INICIO** del turno (en hora AR).
 - **Dinero** (ingresos, comisión, completadas a efectos de reconocimiento) se reconoce por el **día de FIN** del turno (en hora AR). Un turno que empieza 23:00 y termina 00:30 cuenta su ingreso al día siguiente.
+  - El día de fin se toma del **último instante jugado** (`endDatetime - 1µs`): un turno 23:00 → 00:00 termina ese
+    mismo día y cuenta su ingreso ese día, no el siguiente (migración 036).
 - "¿El turno ya terminó?" se evalúa comparando instantes absolutos (`endDatetime <= now`); esto es correcto sin importar la zona.
 - Los rangos de período (hoy/ayer/semana/mes/personalizado) se cortan a **medianoche hora Argentina**.
+  - "Semana" = hoy + los 6 días anteriores; "Mes" = hoy + los 29 días anteriores (días AR completos, no `now - 7/30 días`).
+- Los gráficos por día del frontend usan días AR (`todayAr()`), nunca la zona del navegador.
+- Admin de sede: en estadísticas todo el dinero es **precio base**; la comisión vale 0 (migración 037).
 
 ## Cambio de tarifa y turnos fijos
 

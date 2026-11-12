@@ -266,7 +266,7 @@ function TodayBookings() {
     );
     // Completadas: TERMINAN hoy, pagadas y cuyo turno ya pasó (se reconoce el día que finaliza)
     const used = notCancelled.filter(
-        (b) => argentinaDay(b.endDatetime) === today
+        (b) => argentinaEndDay(b.endDatetime) === today
             && b.paymentStatus === "PAID"
             && new Date(b.endDatetime).getTime() <= now,
     );
@@ -283,7 +283,7 @@ function TodayBookings() {
                     <div>
                         <h2 className="text-lg font-bold">Reservas realizadas pendientes de uso</h2>
                         <p className="text-xs text-default-500">
-                            {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
+                            {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Argentina/Buenos_Aires" })}
                         </p>
                     </div>
                     {pending.length > 0 && (
@@ -394,7 +394,7 @@ function TodaySummary() {
     // Reservas cuyo turno TERMINA hoy (agrupadas por fecha de fin).
     // Base para "completadas" e "ingresos": la ganancia se reconoce el día que el
     // turno finaliza. Un turno que empieza 23:00 y termina 00:30 cuenta al día siguiente.
-    const endedToday = notCancelled.filter((b) => argentinaDay(b.endDatetime) === today);
+    const endedToday = notCancelled.filter((b) => argentinaEndDay(b.endDatetime) === today);
 
     // Reservas pagadas pendientes de uso: empiezan hoy, pagadas y su turno aún no terminó
     const paidPendingCount = startedToday.filter(
@@ -561,13 +561,21 @@ function TodaySummary() {
     );
 }
 
-/** Fecha de hoy (YYYY-MM-DD) en hora local de Argentina (UTC-3) */
 /** Día (YYYY-MM-DD) en hora local de Argentina (UTC-3) de un instante ISO/Date */
 function argentinaDay(iso: string | Date): string {
     const d = typeof iso === "string" ? new Date(iso) : iso;
     // getTime() es UTC absoluto; AR = UTC - 3h
     const arMs = d.getTime() - 3 * 60 * 60000;
     return new Date(arMs).toISOString().split("T")[0];
+}
+
+/**
+ * Día (AR) en que se JUGÓ un turno, a partir de su fin: el de su último instante.
+ * Un turno de 23:00 a 00:00 termina a las 00:00 del día siguiente, pero se jugó (y su
+ * dinero cuenta) el día anterior. Misma regla que get_stats (migración 036).
+ */
+function argentinaEndDay(endIso: string): string {
+    return argentinaDay(new Date(new Date(endIso).getTime() - 1));
 }
 
 /** Fecha de hoy (YYYY-MM-DD) en hora local de Argentina. Misma base que argentinaDay. */
@@ -600,7 +608,7 @@ function RevenueByVenue() {
         const isCompleted = b.status === "COMPLETED";
         const paidAndUsed = b.paymentStatus === "PAID" && alreadyUsed;
         if (!isCompleted && !paidAndUsed) return false;
-        return argentinaDay(b.endDatetime) === selectedDay;
+        return argentinaEndDay(b.endDatetime) === selectedDay;
     });
 
     // Agrupar por complejo. "earnings" = precio base (lo que se entrega al complejo)

@@ -110,3 +110,11 @@ Relación clave:
 - Regla técnica: la autorización de reservas vive en `supabase/functions/_shared/permissions.ts`
   (`canManage`, `appliesClientRules`, `canPay`). "Lo mío" siempre se puede; "lo ajeno" depende del rol,
   salvo el pago (`canPay`): solo el titular.
+
+## Perfil del usuario
+
+- En "Mi Perfil" el usuario (cliente o admin de sede) solo edita su **teléfono** (con `PhoneInput`: país +
+  validación). Nombre, apellido, DNI y email se muestran como texto y los corrige el admin general.
+- La base lo garantiza (`guard_profile_update`, migración 039): por la API, quien no es ADMIN general solo puede
+  cambiar teléfono, foto y provincia de su propio perfil. Nunca su rol, sede, estado, DNI, email ni nombre.
+- Formato de teléfono guardado: `+<código> <número>` (8 a 11 dígitos en el número).

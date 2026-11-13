@@ -8,6 +8,7 @@ import { bookingToEmailData, sendBookingCancellation } from '../_shared/email.ts
 import { notifyBookingCancelled } from '../_shared/notifications.ts'
 import { actorFromUser, appliesClientRules, canManage } from '../_shared/permissions.ts'
 import { normalizeCancelReason } from '../_shared/cancel-reason.ts'
+import { walletProblem } from '../_shared/wallet-errors.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -39,7 +40,7 @@ Deno.serve(async (req) => {
       .select(`
         *, facility:facilities!facility_id(id, name, venue_id,
           venue:venues!venue_id(id, name)),
-        user:profiles!user_id(id, first_name, last_name)
+        user:profiles!user_id(id, first_name, last_name, email)
       `)
       .eq('id', booking_id)
       .single()
@@ -65,27 +66,24 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Cancelar
-    const now = new Date().toISOString()
-    const { error: updateErr } = await supabase
-      .from('bookings')
-      .update({
-        status: 'CANCELLED',
-        cancelled_at: now,
-        cancelled_by: user.id,
-        cancellation_reason: reason ?? null,
-        updated_at: now,
-      })
-      .eq('id', booking_id)
-
-    if (updateErr) return err(`Error al cancelar: ${updateErr.message}`)
+    // Cancelar y devolver el 100% de los puntos pagados, en una transacción (migración 043)
+    const { data: result, error: cancelErr } = await (supabase.rpc as any)('cancel_booking', {
+      p_booking: booking_id,
+      p_by: user.id,
+      p_reason: reason ?? null,
+    })
+    if (cancelErr) {
+      const problem = walletProblem(cancelErr, 'No se pudo cancelar la reserva')
+      return err(problem.message, problem.status)
+    }
+    const refunded = Number(result?.refunded ?? 0)
 
     // Efectos secundarios (best-effort)
     const emailData = bookingToEmailData(booking as any)
-    if (emailData) void sendBookingCancellation({ ...emailData, reason })
+    if (emailData) void sendBookingCancellation({ ...emailData, reason, refundedPoints: refunded })
     void notifyBookingCancelled(booking as any, reason, false)
 
-    return ok({ id: booking_id, cancelled: true })
+    return ok({ id: booking_id, cancelled: true, refunded })
   } catch (e) {
     console.error('cancel-booking error:', e)
     return err(`Error interno: ${String(e)}`, 500)

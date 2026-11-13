@@ -38,8 +38,8 @@ export function ok(data: unknown, status = 200): Response {
 }
 
 /** Respuesta estándar de error para Edge Functions */
-export function err(message: string, status = 400): Response {
-  return new Response(JSON.stringify({ data: null, error: { message } }), {
+export function err(message: string, status = 400, extra?: Record<string, unknown>): Response {
+  return new Response(JSON.stringify({ data: null, error: { ...extra, message } }), {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })

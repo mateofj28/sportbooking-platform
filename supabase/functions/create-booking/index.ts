@@ -3,8 +3,9 @@
 // Crea una reserva única con todas las validaciones de negocio.
 // POST body: { facility_id, start_datetime, end_datetime, notes?, user_id? }
 //   user_id: solo para admins ("Reserva Manual" a nombre de un cliente). La reserva queda
-//   PENDIENTE de pago y la paga el cliente desde su cuenta (solo el titular paga).
-//   Sin user_id es una reserva propia y se registra pagada, como siempre.
+//   PENDIENTE de pago y la paga el cliente con sus puntos (solo el titular paga).
+//   Sin user_id es una reserva propia: se paga con puntos al crearla (create_booking_paid,
+//   migración 043). Sin saldo suficiente responde 402 y no se crea nada.
 // ============================================================
 
 import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
@@ -12,6 +13,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { bookingToEmailData, sendBookingConfirmation } from '../_shared/email.ts'
 import { notifyBookingCreated } from '../_shared/notifications.ts'
 import { bookingInsertProblem } from '../_shared/booking-errors.ts'
+import { walletProblem } from '../_shared/wallet-errors.ts'
 import { actorFromUser, canManage } from '../_shared/permissions.ts'
 
 Deno.serve(async (req) => {
@@ -103,46 +105,76 @@ Deno.serve(async (req) => {
 
     if ((blockedCount ?? 0) > 0) return err('El horario está bloqueado', 409)
 
-    // 9. Calcular precio via RPC
-    const { data: priceData, error: priceErr } = await (supabase.rpc as any)(
-      'calculate_price',
-      { p_facility_id: facility_id, p_start_datetime: start_datetime }
-    )
-    if (priceErr) return err(`Sin tarifa: ${priceErr.message}`)
+    let bookingId: string
 
-    // 10. Insertar la reserva
-    const { data: booking, error: insertErr } = await supabase
-      .from('bookings')
-      .insert({
-        facility_id,
-        user_id: targetUserId,
-        start_datetime,
-        end_datetime,
-        status: 'CONFIRMED',
-        // Reserva propia: se paga al crearla. Reserva manual de un admin para un cliente:
-        // queda PENDIENTE y la paga el titular desde su cuenta (solo el titular paga).
-        payment_status: forOther ? 'PENDING' : 'PAID',
-        paid_at: forOther ? null : now.toISOString(),
-        total_price: priceData.total_price,
-        base_price: priceData.base_price,
-        commission_amount: priceData.commission_amount,
-        currency: priceData.currency ?? 'ARS',
-        notes: notes ?? null,
-        created_by: user.id,
+    if (!forOther) {
+      // 9a. Reserva propia: se paga con puntos AL CREARLA, en una sola transacción de la
+      //     base (precio + reserva + descuento). Sin saldo -> 402 y no se crea nada.
+      const { data: newId, error: payErr } = await (supabase.rpc as any)('create_booking_paid', {
+        p_facility: facility_id,
+        p_user: targetUserId,
+        p_start: start_datetime,
+        p_end: end_datetime,
+        p_notes: notes ?? null,
+        p_by: user.id,
       })
+      if (payErr) {
+        const problem = walletProblem(payErr, 'No se pudo crear la reserva')
+        return err(problem.message, problem.status, { code: problem.code, ...problem.extra })
+      }
+      bookingId = newId as string
+    } else {
+      // 9b. Reserva manual de un admin para un cliente: queda PENDIENTE y la paga el
+      //     titular con sus puntos desde su cuenta (solo el titular paga).
+      const { data: priceData, error: priceErr } = await (supabase.rpc as any)(
+        'calculate_price',
+        { p_facility_id: facility_id, p_start_datetime: start_datetime }
+      )
+      if (priceErr) {
+        const problem = walletProblem(priceErr, 'No se pudo calcular el precio')
+        return err(problem.message, problem.status)
+      }
+
+      const { data: inserted, error: insertErr } = await supabase
+        .from('bookings')
+        .insert({
+          facility_id,
+          user_id: targetUserId,
+          start_datetime,
+          end_datetime,
+          status: 'CONFIRMED',
+          payment_status: 'PENDING',
+          paid_at: null,
+          total_price: priceData.total_price,
+          base_price: priceData.base_price,
+          commission_amount: priceData.commission_amount,
+          currency: priceData.currency ?? 'ARS',
+          notes: notes ?? null,
+          created_by: user.id,
+        })
+        .select('id')
+        .single()
+
+      // La base es la garantía final (migración 025): superposición concurrente,
+      // fuera de horario o bloqueo llegan acá como error de integridad.
+      if (insertErr || !inserted) {
+        const problem = bookingInsertProblem(insertErr ?? {})
+        return err(problem.message, problem.status)
+      }
+      bookingId = inserted.id
+    }
+
+    // 10. Reserva con sus relaciones (respuesta + email + notificación)
+    const { data: booking } = await supabase
+      .from('bookings')
       .select(`
         *,
         facility:facilities!facility_id(id, name, venue:venues!venue_id(id, name)),
         user:profiles!user_id(id, first_name, last_name, email)
       `)
+      .eq('id', bookingId)
       .single()
-
-    // La base es la garantía final (migración 025): superposición concurrente,
-    // fuera de horario o bloqueo llegan acá como error de integridad.
-    if (insertErr) {
-      const problem = bookingInsertProblem(insertErr)
-      return err(problem.message, problem.status)
-    }
+    if (!booking) return err('No se pudo leer la reserva creada', 500)
 
     // 11. Efectos secundarios: email + notificación (best-effort)
     const emailData = bookingToEmailData(booking as any)

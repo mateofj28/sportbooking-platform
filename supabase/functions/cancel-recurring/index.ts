@@ -3,8 +3,9 @@
 
 import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { actorFromUser, canManage } from '../_shared/permissions.ts'
+import { actorFromUser, appliesClientRules, canManage } from '../_shared/permissions.ts'
 import { normalizeCancelReason } from '../_shared/cancel-reason.ts'
+import { walletProblem } from '../_shared/wallet-errors.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -46,22 +47,41 @@ Deno.serve(async (req) => {
 
     const now = new Date().toISOString()
 
-    // Cancelar reservas futuras CONFIRMED de la serie
-    const { data: cancelled, error: cancelErr } = await supabase
+    // Regla de las 24 h (D1): el cliente (o un admin con su propio turno fijo) solo cancela
+    // las fechas que empiezan dentro de 24 h o más; las más cercanas se mantienen y se juegan.
+    // Un admin cancelando el turno fijo de otra persona no tiene límite.
+    const DAY_MS = 24 * 60 * 60 * 1000
+    const cutoff = appliesClientRules(actor, recurring.user_id)
+      ? new Date(Date.now() + DAY_MS).toISOString()
+      : now
+
+    // Fechas futuras todavía activas de la serie
+    const { data: future, error: listErr } = await supabase
       .from('bookings')
-      .update({
-        status: 'CANCELLED',
-        cancelled_at: now,
-        cancelled_by: user.id,
-        cancellation_reason: reason ?? 'Turno fijo cancelado',
-        updated_at: now,
-      })
+      .select('id')
       .eq('recurring_booking_id', recurring_booking_id)
       .eq('status', 'CONFIRMED')
-      .gt('start_datetime', now)
-      .select('id')
+      .gte('start_datetime', cutoff)
+    if (listErr) return err('No se pudo leer el turno fijo', 500)
 
-    if (cancelErr) return err(`Error al cancelar: ${cancelErr.message}`)
+    // Cada fecha se cancela con cancel_booking: las ya pagadas devuelven el 100% de los
+    // puntos (migración 043). Una que ya se canceló en paralelo se saltea.
+    let cancelledCount = 0
+    let refunded = 0
+    for (const b of future ?? []) {
+      const { data: result, error: cancelErr } = await (supabase.rpc as any)('cancel_booking', {
+        p_booking: b.id,
+        p_by: user.id,
+        p_reason: reason ?? 'Turno fijo cancelado',
+      })
+      if (cancelErr) {
+        if (cancelErr.code === 'WL004') continue
+        const problem = walletProblem(cancelErr, 'No se pudo cancelar el turno fijo')
+        return err(problem.message, problem.status)
+      }
+      cancelledCount += 1
+      refunded += Number(result?.refunded ?? 0)
+    }
 
     // Desactivar la recurrencia
     await supabase
@@ -69,7 +89,7 @@ Deno.serve(async (req) => {
       .update({ is_active: false, updated_at: now })
       .eq('id', recurring_booking_id)
 
-    return ok({ recurringBookingId: recurring_booking_id, cancelledCount: (cancelled ?? []).length })
+    return ok({ recurringBookingId: recurring_booking_id, cancelledCount, refunded })
   } catch (e) {
     console.error('cancel-recurring error:', e)
     return err(`Error interno: ${String(e)}`, 500)

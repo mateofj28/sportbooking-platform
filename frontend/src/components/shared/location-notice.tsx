@@ -8,7 +8,7 @@ import type { CurrentLocality } from "@/hooks/use-current-locality";
 import { LocationChooserModal } from "@/components/shared/location-chooser-modal";
 
 /**
- * Explica para qué municipio son las promociones y deja elegir la ciudad a mano
+ * Explica para qué municipio son las promociones y deja elegir el municipio a mano
  * ("¿Dónde querés jugar?"), o activar la ubicación. Se apoya en useCurrentLocality.
  */
 export function LocationNotice({ location }: { location: CurrentLocality }) {
@@ -47,7 +47,7 @@ export function LocationNotice({ location }: { location: CurrentLocality }) {
                     className="h-6 min-w-0 px-2 text-xs"
                     onPress={() => setChooserOpen(true)}
                 >
-                    {locality ? "Cambiar" : "Elegir ciudad"}
+                    {locality ? "Cambiar" : "Elegir municipio"}
                 </Button>
                 {chooser}
             </div>
@@ -56,19 +56,19 @@ export function LocationNotice({ location }: { location: CurrentLocality }) {
 
     let message: string;
     if (permission === "unsupported") {
-        message = "Elegí tu ciudad para ver sus promociones. Mientras tanto te mostramos las nacionales.";
+        message = "Elegí tu municipio para ver sus promociones. Mientras tanto te mostramos las nacionales.";
     } else if (locating) {
         message = "Buscando tu ubicación… Si el navegador te lo pide, permití el acceso.";
     } else if (permission === "denied") {
-        message = "La ubicación está bloqueada para este sitio. Elegí tu ciudad, o activá la ubicación desde el candado de la barra de direcciones. Mientras tanto te mostramos las nacionales.";
+        message = "La ubicación está bloqueada para este sitio. Elegí tu municipio, o activá la ubicación desde el candado de la barra de direcciones. Mientras tanto te mostramos las nacionales.";
     } else if (gpsError === "timeout") {
-        message = "Tu dispositivo tardó demasiado en darnos la ubicación. Probá de nuevo o elegí tu ciudad. Mientras tanto te mostramos las promociones nacionales.";
+        message = "Tu dispositivo tardó demasiado en darnos la ubicación. Probá de nuevo o elegí tu municipio. Mientras tanto te mostramos las promociones nacionales.";
     } else if (gpsError === "unavailable") {
-        message = "Tu dispositivo no pudo determinar la ubicación. Revisá que el GPS esté activado o elegí tu ciudad. Mientras tanto te mostramos las promociones nacionales.";
+        message = "Tu dispositivo no pudo determinar la ubicación. Revisá que el GPS esté activado o elegí tu municipio. Mientras tanto te mostramos las promociones nacionales.";
     } else if (gpsError === "limits") {
-        message = "No pudimos procesar tu ubicación. Probá de nuevo o elegí tu ciudad. Mientras tanto te mostramos las promociones nacionales.";
+        message = "No pudimos procesar tu ubicación. Probá de nuevo o elegí tu municipio. Mientras tanto te mostramos las promociones nacionales.";
     } else {
-        message = "Compartí tu ubicación o elegí tu ciudad para ver sus promociones. Mientras tanto te mostramos las nacionales.";
+        message = "Compartí tu ubicación o elegí tu municipio para ver sus promociones. Mientras tanto te mostramos las nacionales.";
     }
 
     return (
@@ -87,13 +87,13 @@ export function LocationNotice({ location }: { location: CurrentLocality }) {
                     <p className="text-sm font-semibold">Promociones de donde estés</p>
                     <p className="text-xs text-default-500">{message}</p>
                     <p className="mt-1 text-[11px] text-default-400">
-                        Solo usamos tu ciudad para elegir las promociones; tu ubicación no se guarda.
+                        Solo usamos tu municipio para elegir las promociones; tu ubicación no se guarda.
                     </p>
                 </div>
             </div>
             <div className="flex flex-shrink-0 gap-2">
                 <Button size="sm" variant="bordered" startContent={<MapPin className="h-4 w-4" />} onPress={() => setChooserOpen(true)}>
-                    Elegir ciudad
+                    Elegir municipio
                 </Button>
                 {canLocate && (
                     <Button

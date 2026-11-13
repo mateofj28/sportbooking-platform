@@ -16,24 +16,24 @@ const fold = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").t
 interface LocationChooserModalProps {
     isOpen: boolean;
     onClose: () => void;
-    /** Ciudad elegida en la lista. */
+    /** Municipio elegido en la lista. */
     onChoose: (locality: LocalityInfo) => void;
     /** "Buscar cerca de mí" (GPS). Si es undefined, la opción no se muestra. */
     onLocateMe?: () => void;
-    /** Ciudad actual, para marcarla. */
+    /** Municipio actual, para marcarla. */
     currentCode?: string | null;
 }
 
 /**
- * "¿Dónde querés jugar?": buscador de ciudad (municipio) + "Buscar cerca de mí".
- * Sin texto sugiere las ciudades donde hay complejos.
+ * "¿Dónde querés jugar?": buscador de municipio + "Buscar cerca de mí".
+ * Sin texto sugiere los municipios donde hay complejos.
  */
 export function LocationChooserModal({ isOpen, onClose, onChoose, onLocateMe, currentCode }: LocationChooserModalProps) {
     const { data: index, isLoading } = useLocalityIndex();
     const { data: venues } = useVenues();
     const [text, setText] = useState("");
 
-    // Ciudades con complejos: se cruza el texto "ciudad + provincia" del complejo con el catálogo
+    // Municipios con complejos: se cruza el texto "municipio + provincia" del complejo con el catálogo
     const suggestions = useMemo(() => {
         if (!index || !venues) return [] as LocalityInfo[];
         const provinceByName = new Map(PROVINCES.map((p) => [fold(p.name), p.code]));
@@ -82,8 +82,8 @@ export function LocationChooserModal({ isOpen, onClose, onChoose, onLocateMe, cu
                 <ModalBody className="gap-1 pb-6">
                     <Input
                         autoFocus
-                        aria-label="Ciudad"
-                        placeholder={isLoading ? "Cargando ciudades…" : "Ciudad"}
+                        aria-label="Municipio"
+                        placeholder={isLoading ? "Cargando municipios…" : "Municipio"}
                         variant="underlined"
                         value={text}
                         onValueChange={setText}
@@ -105,14 +105,14 @@ export function LocationChooserModal({ isOpen, onClose, onChoose, onLocateMe, cu
                     )}
 
                     {!searching && suggestions.length > 0 && (
-                        <p className="px-1 pt-2 text-xs text-default-400">Ciudades con complejos</p>
+                        <p className="px-1 pt-2 text-xs text-default-400">Municipios con complejos</p>
                     )}
 
                     {searching && !isLoading && results.length === 0 && (
-                        <p className="px-1 py-4 text-sm text-default-500">No encontramos una ciudad con ese nombre.</p>
+                        <p className="px-1 py-4 text-sm text-default-500">No encontramos un municipio con ese nombre.</p>
                     )}
 
-                    <ul aria-label={searching ? "Resultados" : "Ciudades sugeridas"} className="divide-y divide-divider">
+                    <ul aria-label={searching ? "Resultados" : "Municipios sugeridos"} className="divide-y divide-divider">
                         {list.map((l) => (
                             <li key={l.code}>
                                 <button

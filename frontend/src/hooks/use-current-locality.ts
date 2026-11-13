@@ -7,10 +7,10 @@
 // No usa el perfil: alguien de La Plata que hoy está en Rosario ve la de Rosario.
 //
 // Dos fuentes, en este orden:
-//   1. La ciudad que el usuario ELIGIÓ a mano ("¿Dónde querés jugar?"). Sirve cuando el
+//   1. El municipio que el usuario ELIGIÓ a mano ("¿Dónde querés jugar?"). Sirve cuando el
 //      GPS no la da (fuera de Argentina, sin permiso, zona rural) o cuando quiere ver otra.
 //      Se recuerda en localStorage hasta que la cambie o toque "Buscar cerca de mí".
-//      Con una ciudad elegida no se pide el GPS.
+//      Con un municipio elegido no se pide el GPS.
 //   2. El GPS del navegador (pide permiso). Las coordenadas se convierten a localidad en
 //      el dispositivo (lib/geo/locality-locator.ts) y no se envían: a la base solo viaja
 //      el código de la localidad.
@@ -35,9 +35,9 @@ export interface CurrentLocality {
     locality: LocalityInfo | null
     /** Provincia (ISO), aunque no esté dentro de una localidad (zona rural). */
     province: string | null
-    /** true si hay resultado (GPS respondió o el usuario eligió una ciudad). */
+    /** true si hay resultado (GPS respondió o el usuario eligió un municipio). */
     located: boolean
-    /** true si el GPS lo ubicó fuera de Argentina (y no eligió una ciudad). */
+    /** true si el GPS lo ubicó fuera de Argentina (y no eligió un municipio). */
     abroad: boolean
     /** true si la localidad la eligió el usuario a mano. */
     manual: boolean
@@ -49,9 +49,9 @@ export interface CurrentLocality {
     gpsError: GpsError
     /** Vuelve a intentar con el GPS: espera más y pide una posición nueva. */
     retry: () => void
-    /** Elige una ciudad a mano (deja de usar el GPS). */
+    /** Elige un municipio a mano (deja de usar el GPS). */
     choose: (locality: LocalityInfo) => void
-    /** Olvida la ciudad elegida y busca con el GPS ("Buscar cerca de mí"). */
+    /** Olvida el municipio elegido y busca con el GPS ("Buscar cerca de mí"). */
     locateMe: () => void
 }
 
@@ -88,7 +88,7 @@ function writeCache(v: Omit<Cached, 'at'>) {
     }
 }
 
-/** Ciudad elegida a mano (validada: lo que hay en localStorage no es confiable). */
+/** Municipio elegido a mano (validada: lo que hay en localStorage no es confiable). */
 function readChosen(): LocalityInfo | null {
     try {
         const raw = localStorage.getItem(CHOSEN_KEY)
@@ -146,7 +146,7 @@ export function useCurrentLocality(enabled = true): CurrentLocality {
 
     useEffect(() => {
         if (!enabled || typeof window === 'undefined') return
-        // Con una ciudad elegida (o sin haber leído todavía si la hay) no se usa el GPS
+        // Con un municipio elegido (o sin haber leído todavía si la hay) no se usa el GPS
         if (chosen !== null) {
             setLocating(false)
             return

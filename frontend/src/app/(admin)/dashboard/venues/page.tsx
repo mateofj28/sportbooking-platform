@@ -170,7 +170,7 @@ export default function AdminVenuesPage() {
       {/* Filter */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
         <Input
-          placeholder="Buscar por nombre o ciudad..."
+          placeholder="Buscar por nombre o municipio..."
           variant="bordered"
           size="sm"
           value={search}
@@ -189,7 +189,7 @@ export default function AdminVenuesPage() {
 
       <DataTable aria-label="Complejos">
         <TableHeader>
-          <TableColumn>NOMBRE</TableColumn><TableColumn>DIRECCIÓN</TableColumn><TableColumn>CIUDAD</TableColumn><TableColumn>INSTALACIONES</TableColumn><TableColumn>ESTADO</TableColumn><TableColumn>ACCIONES</TableColumn>
+          <TableColumn>NOMBRE</TableColumn><TableColumn>DIRECCIÓN</TableColumn><TableColumn>MUNICIPIO</TableColumn><TableColumn>INSTALACIONES</TableColumn><TableColumn>ESTADO</TableColumn><TableColumn>ACCIONES</TableColumn>
         </TableHeader>
         <TableBody emptyContent="No hay complejos">
           {filteredVenues.map((v) => (

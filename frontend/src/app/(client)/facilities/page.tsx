@@ -96,7 +96,7 @@ function FacilitiesContent() {
 
                         <div className="mt-6">
                             <Input
-                                placeholder="Buscar complejo por nombre o ciudad..."
+                                placeholder="Buscar complejo por nombre o municipio..."
                                 value={venueSearch}
                                 onValueChange={setVenueSearch}
                                 startContent={<Search className="h-4 w-4 text-default-400" />}

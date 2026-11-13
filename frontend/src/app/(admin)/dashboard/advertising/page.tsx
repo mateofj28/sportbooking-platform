@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
     Button, Chip, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader,
     Radio, RadioGroup, Select, SelectItem, Spinner, Switch, TableBody, TableCell,
-    TableColumn, TableHeader, TableRow, Textarea, Tooltip, useDisclosure,
+    TableColumn, TableHeader, TableRow, Tooltip, useDisclosure,
 } from "@heroui/react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,12 +14,13 @@ import { DataTable } from "@/components/shared/data-table";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { DateTimeField } from "@/components/shared/date-time-field";
 import { PromoCarousel, adToSlide, type PromoSlide } from "@/components/shared/promo-carousel";
+import { AdImageUpload } from "@/components/shared/ad-image-upload";
 import { LocalityPicker, LocalitySearch, useLocalityIndex } from "@/components/shared/locality-picker";
 import type { LocalityInfo } from "@/lib/geo/locality-locator";
 import {
-    AD_LIMITS, AD_STATUS_META, AD_THEMES, AD_THEME_KEYS, adGradient, describeSchedule,
+    AD_LIMITS, AD_STATUS_META, describeSchedule,
     AD_MAX_LOCALITIES, describeTargeting, getAdStatus, isoToArLocal, localityLabel, maxAdDate, todayAr,
-    type AdStatus, type AdTheme, type Advertisement,
+    type AdStatus, type Advertisement,
 } from "@/lib/ads";
 import {
     createAdvertisementSchema, EMPTY_AD_FORM, type AdvertisementFormData,
@@ -65,11 +66,10 @@ const firstKey = (keys: unknown): string | undefined => Array.from(keys as Set<s
 function adToForm(ad: Advertisement): AdvertisementFormData {
     return {
         title: ad.title,
-        subtitle: ad.subtitle ?? "",
-        description: ad.description ?? "",
-        theme: ad.theme,
+        altText: ad.altText,
+        imageUrl: ad.imageUrl,
+        imageMobileUrl: ad.imageMobileUrl ?? "",
         linkUrl: ad.linkUrl ?? "",
-        ctaLabel: ad.ctaLabel ?? "",
         scope: ad.scope,
         localities: ad.localities,
         priority: ad.priority,
@@ -240,15 +240,18 @@ export default function AdvertisingPage() {
                                 <TableRow key={ad.id}>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
-                                            <span
-                                                aria-hidden="true"
-                                                className={`h-8 w-1.5 flex-shrink-0 rounded-full ${AD_THEMES[ad.theme]?.swatch ?? "bg-blue-600"}`}
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={ad.imageUrl}
+                                                alt=""
+                                                loading="lazy"
+                                                className="aspect-[24/5] w-28 flex-shrink-0 rounded-md border border-divider object-cover"
                                             />
                                             <div className="min-w-0">
-                                                <p className="max-w-[260px] truncate font-medium">{ad.title}</p>
-                                                {ad.subtitle && (
-                                                    <p className="max-w-[260px] truncate text-xs text-default-400">{ad.subtitle}</p>
-                                                )}
+                                                <p className="max-w-[220px] truncate font-medium">{ad.title}</p>
+                                                <p className="max-w-[220px] truncate text-xs text-default-400">
+                                                    {ad.imageMobileUrl ? "Con imagen para celular" : "Sin imagen para celular"}
+                                                </p>
                                             </div>
                                         </div>
                                     </TableCell>
@@ -447,111 +450,96 @@ function AdFormModal({ isOpen, onClose, initial, isEditing, isSaving, onSubmit }
     const startDay = values.startsAt.slice(0, 10);
     const endMin = startDay && startDay > endBase ? startDay : endBase;
 
-    // Vista previa en vivo con lo que se está escribiendo
-    const previewSlide: PromoSlide = {
-        title: values.title.trim() || "Título de la publicidad",
-        subtitle: values.subtitle.trim() || null,
-        description: values.description.trim() || null,
-        bg: adGradient(values.theme),
-        href: values.linkUrl.trim() || null,
-        ctaLabel: values.ctaLabel.trim() || null,
-    };
-
+    // Vista previa en vivo con las imágenes subidas
+    const previewSlide: PromoSlide | null = values.imageUrl
+        ? {
+            alt: values.altText.trim() || values.title.trim() || "Publicidad",
+            image: values.imageUrl,
+            imageMobile: values.imageMobileUrl || null,
+            href: values.linkUrl.trim() || null,
+        }
+        : null;
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
             <ModalContent>
                 <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex min-h-0 flex-1 flex-col">
                     <ModalHeader>{isEditing ? "Editar publicidad" : "Nueva publicidad"}</ModalHeader>
                     <ModalBody className="gap-5">
-                        {/* Vista previa */}
-                        <div>
-                            <p className="mb-2 text-xs font-medium text-default-500">Vista previa</p>
-                            <PromoCarousel slides={[previewSlide]} autoPlayMs={0} />
-                        </div>
+                        {/* Imágenes del banner */}
+                        <Controller
+                            name="imageUrl" control={control}
+                            render={({ field }) => (
+                                <AdImageUpload
+                                    kind="desktop" isRequired
+                                    value={field.value}
+                                    onChange={(url) => setValue("imageUrl", url, { shouldValidate: true, shouldDirty: true })}
+                                    errorMessage={errors.imageUrl?.message}
+                                />
+                            )}
+                        />
+                        <Controller
+                            name="imageMobileUrl" control={control}
+                            render={({ field }) => (
+                                <AdImageUpload
+                                    kind="mobile"
+                                    value={field.value}
+                                    onChange={(url) => setValue("imageMobileUrl", url, { shouldValidate: true, shouldDirty: true })}
+                                    errorMessage={errors.imageMobileUrl?.message}
+                                />
+                            )}
+                        />
 
-                        {/* Contenido */}
+                        {/* Vista previa (como la ve el cliente) */}
+                        {previewSlide && (
+                            <div>
+                                <p className="mb-2 text-xs font-medium text-default-500">Vista previa en computadora</p>
+                                <PromoCarousel slides={[{ ...previewSlide, imageMobile: null }]} autoPlayMs={0} />
+                                {previewSlide.imageMobile && (
+                                    <>
+                                        <p className="mb-2 mt-4 text-xs font-medium text-default-500">Vista previa en celular</p>
+                                        <div className="max-w-sm">
+                                            <PromoCarousel slides={[{ ...previewSlide, image: previewSlide.imageMobile, imageMobile: null }]} autoPlayMs={0} />
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Datos */}
                         <Controller
                             name="title" control={control}
                             render={({ field }) => (
                                 <Input
-                                    {...field} label="Título" variant="bordered" isRequired
-                                    placeholder="Ej: 🏆 Torneo de Fútbol 5"
+                                    {...field} label="Nombre interno" variant="bordered" isRequired
+                                    placeholder="Ej: Personal 5G — noviembre"
                                     maxLength={AD_LIMITS.title}
                                     isInvalid={!!errors.title} errorMessage={errors.title?.message}
-                                    description={`${field.value.length}/${AD_LIMITS.title}`}
+                                    description="Solo se ve en este panel, para reconocerla."
                                 />
                             )}
                         />
                         <Controller
-                            name="subtitle" control={control}
+                            name="altText" control={control}
                             render={({ field }) => (
                                 <Input
-                                    {...field} label="Subtítulo (opcional)" variant="bordered"
-                                    placeholder="Ej: Inscripciones abiertas"
-                                    maxLength={AD_LIMITS.subtitle}
-                                    isInvalid={!!errors.subtitle} errorMessage={errors.subtitle?.message}
+                                    {...field} label="¿Qué dice la imagen?" variant="bordered" isRequired
+                                    placeholder="Ej: 5G para todos. Premiados como la red más rápida del país"
+                                    maxLength={AD_LIMITS.alt}
+                                    isInvalid={!!errors.altText} errorMessage={errors.altText?.message}
+                                    description={`Lo leen los lectores de pantalla. ${field.value.length}/${AD_LIMITS.alt}`}
                                 />
                             )}
                         />
                         <Controller
-                            name="description" control={control}
+                            name="linkUrl" control={control}
                             render={({ field }) => (
-                                <Textarea
-                                    {...field} label="Descripción (opcional)" variant="bordered" minRows={2}
-                                    placeholder="Contá en una o dos frases de qué se trata"
-                                    maxLength={AD_LIMITS.description}
-                                    isInvalid={!!errors.description} errorMessage={errors.description?.message}
-                                    description={`${field.value.length}/${AD_LIMITS.description}`}
+                                <Input
+                                    {...field} label="Enlace al tocarla (opcional)" variant="bordered"
+                                    placeholder="https://… o /facilities"
+                                    isInvalid={!!errors.linkUrl} errorMessage={errors.linkUrl?.message}
                                 />
                             )}
                         />
-
-                        {/* Color */}
-                        <div>
-                            <p id="ad-theme-label" className="mb-2 text-sm text-default-600">Color</p>
-                            <div role="radiogroup" aria-labelledby="ad-theme-label" className="flex flex-wrap gap-2">
-                                {AD_THEME_KEYS.map((key: AdTheme) => {
-                                    const selected = values.theme === key;
-                                    return (
-                                        <button
-                                            key={key} type="button" role="radio" aria-checked={selected}
-                                            aria-label={AD_THEMES[key].label}
-                                            onClick={() => setValue("theme", key, { shouldValidate: true })}
-                                            className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors ${selected ? "border-primary bg-primary/10" : "border-divider hover:bg-default-100"}`}
-                                        >
-                                            <span aria-hidden="true" className={`h-4 w-4 rounded-full ${AD_THEMES[key].swatch}`} />
-                                            {AD_THEMES[key].label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Destino */}
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <Controller
-                                name="linkUrl" control={control}
-                                render={({ field }) => (
-                                    <Input
-                                        {...field} label="Enlace (opcional)" variant="bordered"
-                                        placeholder="https://… o /facilities"
-                                        isInvalid={!!errors.linkUrl} errorMessage={errors.linkUrl?.message}
-                                    />
-                                )}
-                            />
-                            <Controller
-                                name="ctaLabel" control={control}
-                                render={({ field }) => (
-                                    <Input
-                                        {...field} label="Texto del botón (opcional)" variant="bordered"
-                                        placeholder="Ej: Ver más"
-                                        maxLength={AD_LIMITS.cta}
-                                        isInvalid={!!errors.ctaLabel} errorMessage={errors.ctaLabel?.message}
-                                    />
-                                )}
-                            />
-                        </div>
-
                         {/* Segmentación */}
                         <div className="space-y-3 rounded-xl border border-divider p-4">
                             <Controller

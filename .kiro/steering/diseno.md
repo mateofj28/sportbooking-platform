@@ -73,6 +73,10 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
 
 - Sin fotos de stock ni URLs externas fijas. Usar `MediaImage` (`components/shared/media-image.tsx`): muestra la foto
   real si existe y, si falta o falla, un fondo por defecto dibujado en SVG.
+- **Publicidad = imagen** (banner diseñado por el anunciante), no texto. Dos imágenes: computadora 1920×400
+  (obligatoria) y celular 1080×540 (opcional; si falta se usa la de computadora). JPG/PNG/WebP hasta 2 MB, bucket
+  `ads`. Se sube con `AdImageUpload`, que valida proporción y ancho mínimo; la base solo acepta URLs de ese bucket
+  (migración 042). Cada publicidad lleva un texto alternativo ("¿Qué dice la imagen?").
 
 ## Formularios
 

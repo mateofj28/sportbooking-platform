@@ -41,56 +41,53 @@ export type Database = {
     Tables: {
       advertisements: {
         Row: {
+          alt_text: string
           created_at: string
           created_by: string | null
-          cta_label: string | null
-          description: string | null
           ends_at: string | null
           id: string
+          image_mobile_url: string | null
+          image_url: string
           is_active: boolean
           link_url: string | null
           priority: number
           localities: string[]
           scope: string
           starts_at: string | null
-          subtitle: string | null
-          theme: string
           title: string
           updated_at: string
         }
         Insert: {
+          alt_text: string
           created_at?: string
           created_by?: string | null
-          cta_label?: string | null
-          description?: string | null
           ends_at?: string | null
           id?: string
+          image_mobile_url?: string | null
+          image_url: string
           is_active?: boolean
           link_url?: string | null
           priority?: number
           localities?: string[]
           scope?: string
           starts_at?: string | null
-          subtitle?: string | null
-          theme?: string
           title: string
           updated_at?: string
         }
         Update: {
+          alt_text?: string
           created_at?: string
           created_by?: string | null
-          cta_label?: string | null
-          description?: string | null
           ends_at?: string | null
           id?: string
+          image_mobile_url?: string | null
+          image_url?: string
           is_active?: boolean
           link_url?: string | null
           priority?: number
           localities?: string[]
           scope?: string
           starts_at?: string | null
-          subtitle?: string | null
-          theme?: string
           title?: string
           updated_at?: string
         }
@@ -762,14 +759,12 @@ export type Database = {
       get_active_advertisements: {
         Args: { p_locality?: string }
         Returns: {
-          cta_label: string
-          description: string
+          alt_text: string
           id: string
-          link_url: string
+          image_mobile_url: string | null
+          image_url: string
+          link_url: string | null
           scope: string
-          subtitle: string
-          theme: string
-          title: string
         }[]
       }
       get_availability: {

@@ -15,7 +15,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth-store'
 import type { Tables } from '@/lib/supabase'
-import type { ActiveAdvertisement, AdScope, AdTheme, Advertisement } from '@/lib/ads'
+import type { ActiveAdvertisement, AdScope, Advertisement } from '@/lib/ads'
 import { arLocalToIso } from '@/lib/ads'
 import type { AdvertisementFormData } from '@/lib/validations/advertisement.schema'
 
@@ -33,11 +33,10 @@ function mapAdminRow(r: AdRow): Advertisement {
   return {
     id: r.id,
     title: r.title,
-    subtitle: r.subtitle,
-    description: r.description,
-    theme: r.theme as AdTheme,
+    altText: r.alt_text,
+    imageUrl: r.image_url,
+    imageMobileUrl: r.image_mobile_url,
     linkUrl: r.link_url,
-    ctaLabel: r.cta_label,
     scope: r.scope as AdScope,
     localities: r.localities ?? [],
     priority: r.priority,
@@ -73,12 +72,10 @@ export function useActiveAdvertisements(locality: string | null, enabled = true)
       if (error) throw toAppError(error)
       return (data ?? []).map((a) => ({
         id: a.id,
-        title: a.title,
-        subtitle: a.subtitle,
-        description: a.description,
-        theme: a.theme as AdTheme,
+        altText: a.alt_text,
+        imageUrl: a.image_url,
+        imageMobileUrl: a.image_mobile_url,
         linkUrl: a.link_url,
-        ctaLabel: a.cta_label,
         scope: a.scope as AdScope,
       }))
     },
@@ -115,11 +112,10 @@ export function useAdminAdvertisements(enabled = true) {
 function toRow(f: AdvertisementFormData) {
   return {
     title: f.title.trim(),
-    subtitle: f.subtitle.trim() || null,
-    description: f.description.trim() || null,
-    theme: f.theme,
+    alt_text: f.altText.trim(),
+    image_url: f.imageUrl.trim(),
+    image_mobile_url: f.imageMobileUrl.trim() || null,
     link_url: f.linkUrl.trim() || null,
-    cta_label: f.ctaLabel.trim() || null,
     scope: f.scope,
     localities: f.scope === 'NATIONAL' ? [] : f.localities,
     priority: f.priority,

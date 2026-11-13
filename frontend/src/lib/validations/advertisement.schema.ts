@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-    AD_LIMITS, AD_MAX_FUTURE_YEARS, AD_MAX_LOCALITIES, AD_THEME_KEYS, arLocalToIso, maxAdDate, todayAr,
+    AD_LIMITS, AD_MAX_FUTURE_YEARS, AD_MAX_LOCALITIES, arLocalToIso, maxAdDate, todayAr,
 } from "@/lib/ads";
 
 /**
@@ -12,11 +12,8 @@ import {
 // https://... o ruta interna "/algo". Bloquea javascript:, data:, http:// y //host.
 const LINK_REGEX = /^(https:\/\/\S+|\/[^/\s]\S*|\/)$/;
 
-const optionalText = (max: number, label: string) =>
-    z
-        .string()
-        .trim()
-        .max(max, `${label}: máximo ${max} caracteres`);
+// Solo imágenes subidas al bucket "ads" de este proyecto (igual que el CHECK de la base, 042)
+const AD_IMAGE_URL = /^https:\/\/olrmhtimfndshayvuowc\.supabase\.co\/storage\/v1\/object\/public\/ads\/\S+$/;
 
 /** Valores con los que se abrió el formulario ("" si estaba vacío). */
 export interface AdDatesBaseline {
@@ -36,17 +33,27 @@ export function createAdvertisementSchema(baseline: AdDatesBaseline = { startsAt
             title: z
                 .string()
                 .trim()
-                .min(1, "El título es obligatorio")
+                .min(1, "Poné un nombre para reconocerla en el panel")
                 .max(AD_LIMITS.title, `Máximo ${AD_LIMITS.title} caracteres`),
-            subtitle: optionalText(AD_LIMITS.subtitle, "Subtítulo"),
-            description: optionalText(AD_LIMITS.description, "Descripción"),
-            theme: z.enum(AD_THEME_KEYS as [string, ...string[]]),
+            altText: z
+                .string()
+                .trim()
+                .min(1, "Escribí qué dice la imagen")
+                .max(AD_LIMITS.alt, `Máximo ${AD_LIMITS.alt} caracteres`),
+            imageUrl: z
+                .string()
+                .trim()
+                .min(1, "Subí la imagen para computadora")
+                .regex(AD_IMAGE_URL, "La imagen tiene que subirse desde este formulario"),
+            imageMobileUrl: z
+                .string()
+                .trim()
+                .refine((v) => v === "" || AD_IMAGE_URL.test(v), "La imagen tiene que subirse desde este formulario"),
             linkUrl: z
                 .string()
                 .trim()
                 .max(AD_LIMITS.link, `Máximo ${AD_LIMITS.link} caracteres`)
                 .refine((v) => v === "" || LINK_REGEX.test(v), "Debe empezar con https:// o con / (ruta interna)"),
-            ctaLabel: optionalText(AD_LIMITS.cta, "Texto del botón"),
             scope: z.enum(["NATIONAL", "LOCAL"]),
             // Códigos de localidad (mismo formato y tope que la base, migraciones 034/035)
             localities: z
@@ -65,9 +72,6 @@ export function createAdvertisementSchema(baseline: AdDatesBaseline = { startsAt
         .superRefine((v, ctx) => {
             if (v.scope === "LOCAL" && v.localities.length === 0) {
                 ctx.addIssue({ code: "custom", path: ["localities"], message: "Elegí al menos un municipio" });
-            }
-            if (v.ctaLabel && !v.linkUrl) {
-                ctx.addIssue({ code: "custom", path: ["linkUrl"], message: "El botón necesita un enlace de destino" });
             }
 
             const now = new Date();
@@ -114,11 +118,10 @@ export type AdvertisementFormData = z.infer<ReturnType<typeof createAdvertisemen
 
 export const EMPTY_AD_FORM: AdvertisementFormData = {
     title: "",
-    subtitle: "",
-    description: "",
-    theme: "blue",
+    altText: "",
+    imageUrl: "",
+    imageMobileUrl: "",
     linkUrl: "",
-    ctaLabel: "",
     scope: "NATIONAL",
     localities: [],
     priority: 50,

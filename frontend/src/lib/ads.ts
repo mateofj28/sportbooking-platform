@@ -9,7 +9,6 @@
 import type { LocalityInfo } from "@/lib/geo/locality-locator";
 import { provinceName } from "@/lib/ar-provinces";
 
-export type AdTheme = "blue" | "emerald" | "violet" | "orange" | "rose" | "slate";
 /** NATIONAL = todo el país. LOCAL = solo en los municipios elegidos. */
 export type AdScope = "NATIONAL" | "LOCAL";
 
@@ -17,46 +16,54 @@ export type AdScope = "NATIONAL" | "LOCAL";
 export const AD_MAX_LOCALITIES = 500;
 export type AdStatus = "ACTIVE" | "SCHEDULED" | "EXPIRED" | "PAUSED";
 
-/**
- * Paletas predefinidas. El admin elige un nombre, nunca CSS libre:
- * evita estilos rotos o inyectados y garantiza contraste con texto blanco.
- * Las clases son literales completas para que Tailwind las detecte.
- */
-export const AD_THEMES: Record<AdTheme, { label: string; gradient: string; swatch: string }> = {
-    blue: { label: "Azul", gradient: "from-blue-500 to-blue-700", swatch: "bg-blue-600" },
-    emerald: { label: "Verde", gradient: "from-emerald-500 to-emerald-700", swatch: "bg-emerald-600" },
-    violet: { label: "Violeta", gradient: "from-violet-500 to-violet-700", swatch: "bg-violet-600" },
-    orange: { label: "Naranja", gradient: "from-orange-500 to-orange-700", swatch: "bg-orange-600" },
-    rose: { label: "Rosa", gradient: "from-rose-500 to-rose-700", swatch: "bg-rose-600" },
-    slate: { label: "Gris oscuro", gradient: "from-slate-600 to-slate-800", swatch: "bg-slate-700" },
-};
-
-export const AD_THEME_KEYS = Object.keys(AD_THEMES) as AdTheme[];
-
-export function adGradient(theme: string): string {
-    return (AD_THEMES[theme as AdTheme] ?? AD_THEMES.blue).gradient;
-}
-
-/** Límites: deben coincidir con los CHECK de la tabla advertisements. */
+/** Límites: deben coincidir con los CHECK de la tabla advertisements (migración 042). */
 export const AD_LIMITS = {
     title: 80,
-    subtitle: 60,
-    description: 200,
-    cta: 24,
+    alt: 150,
     link: 500,
     priorityMin: 0,
     priorityMax: 100,
 } as const;
 
+/**
+ * Medidas de los banners. La imagen se muestra entera en un recuadro de esa proporción,
+ * así que se exige la proporción (con un margen) y un ancho mínimo para que se vea nítida.
+ * Archivo: JPG, PNG o WebP de hasta 2 MB (límite del bucket "ads").
+ */
+export const AD_IMAGE_SPECS = {
+    desktop: { label: "computadora", width: 1920, height: 400, minWidth: 1200 },
+    mobile: { label: "celular", width: 1080, height: 540, minWidth: 600 },
+} as const;
+export type AdImageKind = keyof typeof AD_IMAGE_SPECS;
+export const AD_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+export const AD_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+/** Margen aceptado sobre la proporción (10%). */
+const AD_RATIO_TOLERANCE = 0.1;
+
+/** Valida las medidas de un banner. null = válida; si no, el mensaje para el usuario. */
+export function checkAdImageSize(kind: AdImageKind, width: number, height: number): string | null {
+    const spec = AD_IMAGE_SPECS[kind];
+    const target = spec.width / spec.height;
+    const ratio = width / height;
+    if (Math.abs(ratio - target) / target > AD_RATIO_TOLERANCE) {
+        return `La imagen para ${spec.label} debe medir ${spec.width} × ${spec.height} px (o la misma proporción). La tuya mide ${width} × ${height} px.`;
+    }
+    if (width < spec.minWidth) {
+        return `La imagen para ${spec.label} es muy chica (${width} px de ancho): se vería borrosa. Usá al menos ${spec.minWidth} px de ancho; lo ideal es ${spec.width} × ${spec.height} px.`;
+    }
+    return null;
+}
+
 /** Anuncio completo, tal como lo ve el admin. */
 export interface Advertisement {
     id: string;
+    /** Nombre interno (solo panel). */
     title: string;
-    subtitle: string | null;
-    description: string | null;
-    theme: AdTheme;
+    /** Qué dice la imagen (lectores de pantalla). */
+    altText: string;
+    imageUrl: string;
+    imageMobileUrl: string | null;
     linkUrl: string | null;
-    ctaLabel: string | null;
     scope: AdScope;
     /** Códigos de localidad ("mun-<id>" / "dep-<id>"). Vacío si es nacional. */
     localities: string[];
@@ -71,12 +78,10 @@ export interface Advertisement {
 /** Lo que devuelve la RPC al cliente (solo columnas públicas). */
 export interface ActiveAdvertisement {
     id: string;
-    title: string;
-    subtitle: string | null;
-    description: string | null;
-    theme: AdTheme;
+    altText: string;
+    imageUrl: string;
+    imageMobileUrl: string | null;
     linkUrl: string | null;
-    ctaLabel: string | null;
     scope: AdScope;
 }
 

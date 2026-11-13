@@ -2,33 +2,50 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { adGradient, type ActiveAdvertisement } from "@/lib/ads";
+import type { ActiveAdvertisement } from "@/lib/ads";
 
 export interface PromoSlide {
     /** Identificador estable (key de React). */
     id?: string;
-    title: string;
-    subtitle?: string | null;
-    description?: string | null;
-    /** clases de gradiente tailwind, ej: "from-blue-500 to-blue-700" */
-    bg: string;
+    /** Qué dice la imagen (lectores de pantalla). */
+    alt: string;
+    /** Banner para computadora (proporción 1920×400). */
+    image: string;
+    /** Banner para celular (proporción 1080×540). Si falta, se usa el de computadora. */
+    imageMobile?: string | null;
     /** https://... (se abre en pestaña nueva) o ruta interna "/facilities". */
     href?: string | null;
-    /** Texto del botón. Solo se muestra si hay href. */
-    ctaLabel?: string | null;
 }
 
 /** Anuncio de la base (RPC) -> slide del carrusel. Una sola conversión para toda la app. */
 export function adToSlide(ad: ActiveAdvertisement): PromoSlide {
     return {
         id: ad.id,
-        title: ad.title,
-        subtitle: ad.subtitle,
-        description: ad.description,
-        bg: adGradient(ad.theme),
+        alt: ad.altText,
+        image: ad.imageUrl,
+        imageMobile: ad.imageMobileUrl,
         href: ad.linkUrl,
-        ctaLabel: ad.ctaLabel,
     };
+}
+
+/** Imagen del banner: versión de celular (< 640 px) si existe, y la de computadora. */
+function SlideImage({ slide }: { slide: PromoSlide }) {
+    // Recuadro con la proporción del banner: 1920×400 (24:5) o, en celular, 1080×540 (2:1)
+    const box = slide.imageMobile ? "aspect-[2/1] sm:aspect-[24/5]" : "aspect-[24/5]";
+    return (
+        <picture className={`block w-full overflow-hidden rounded-2xl bg-content2 ${box}`}>
+            {slide.imageMobile && <source media="(max-width: 639px)" srcSet={slide.imageMobile} />}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+                src={slide.image}
+                alt={slide.alt}
+                draggable={false}
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover"
+            />
+        </picture>
+    );
 }
 
 interface PromoCarouselProps {
@@ -137,23 +154,8 @@ export function PromoCarousel({ slides, autoPlayMs = 4000 }: PromoCarouselProps)
                     }}
                 >
                     {slides.map((ad, i) => {
-                        // Los colores llevan "!" porque globals.css fuerza un color oscuro en
-                        // .font-bold/.font-semibold/h3 y pisaría el texto blanco sobre el degradado.
-                        const content = (
-                            <div className="p-6">
-                                {ad.subtitle && (
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-white/80!">{ad.subtitle}</p>
-                                )}
-                                <h3 className="mt-1 text-lg font-bold text-white!">{ad.title}</h3>
-                                {ad.description && <p className="mt-2 text-sm text-white/90!">{ad.description}</p>}
-                                {ad.href && ad.ctaLabel && (
-                                    <span className="mt-4 inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white!">
-                                        {ad.ctaLabel} →
-                                    </span>
-                                )}
-                            </div>
-                        );
-                        const cardClass = `block rounded-2xl bg-gradient-to-r ${ad.bg} border-none shadow-lg`;
+                        const content = <SlideImage slide={ad} />;
+                        const cardClass = "block rounded-2xl";
                         const isExternal = !!ad.href && ad.href.startsWith("https://");
 
                         return (

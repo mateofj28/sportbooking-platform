@@ -119,6 +119,9 @@ export function DateTimeField({
                         aria-label={`${label} — hora`}
                         variant="bordered"
                         granularity="minute"
+                        // 24 h siempre (como en Argentina y en las tablas del panel): sin esto toma el
+                        // formato del navegador (ej. 12 h con a. m./p. m.) y es fácil cargar 11:59 por 23:59
+                        hourCycle={24}
                         isDisabled={!hasDate}
                         isInvalid={isInvalid}
                         value={toTime(time) as any}

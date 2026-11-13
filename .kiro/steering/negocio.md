@@ -113,8 +113,10 @@ Relación clave:
 
 ## Perfil del usuario
 
-- En "Mi Perfil" el usuario (cliente o admin de sede) solo edita su **teléfono** (con `PhoneInput`: país +
-  validación). Nombre, apellido, DNI y email se muestran como texto y los corrige el admin general.
-- La base lo garantiza (`guard_profile_update`, migración 039): por la API, quien no es ADMIN general solo puede
-  cambiar teléfono, foto y provincia de su propio perfil. Nunca su rol, sede, estado, DNI, email ni nombre.
+- En "Mi Perfil" el usuario (cliente o admin de sede) edita su **teléfono** (con `PhoneInput`: país + validación)
+  y su **email**. **Nombre y apellido** se muestran como texto (fijos; los corrige el admin general).
+- El email se cambia por Supabase Auth (`auth.updateUser`), que manda un link de confirmación; al confirmarlo, el
+  trigger `on_auth_user_email_changed` (migración 040) lo copia a `profiles.email`. Nunca escribir `profiles.email` directo.
+- La base lo garantiza (`guard_profile_update`, migraciones 039/040): por la API, quien no es ADMIN general solo puede
+  cambiar teléfono, foto y provincia de su propio perfil. Nunca su rol, sede, estado, DNI ni nombre.
 - Formato de teléfono guardado: `+<código> <número>` (8 a 11 dígitos en el número).

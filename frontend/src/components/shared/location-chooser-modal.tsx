@@ -1,7 +1,7 @@
 "use client";
 
 import { Input, Modal, ModalBody, ModalContent, ModalHeader, Spinner } from "@heroui/react";
-import { ChevronRight, LocateFixed, MapPin } from "lucide-react";
+import { Check, ChevronRight, Globe, LocateFixed, MapPin } from "lucide-react";
 import { useMemo, useState } from "react";
 import { provinceName } from "@/lib/ar-provinces";
 import type { LocalityInfo } from "@/lib/geo/locality-locator";
@@ -20,6 +20,10 @@ interface LocationChooserModalProps {
     onChoose: (locality: LocalityInfo) => void;
     /** "Buscar cerca de mí" (GPS). Si es undefined, la opción no se muestra. */
     onLocateMe?: () => void;
+    /** "Sin municipio": solo promociones nacionales. */
+    onChooseNone?: () => void;
+    /** true si la elección actual es "sin municipio". */
+    noneSelected?: boolean;
     /** Municipio actual, para marcarla. */
     currentCode?: string | null;
 }
@@ -28,7 +32,7 @@ interface LocationChooserModalProps {
  * "¿Dónde querés jugar?": buscador de municipio + "Buscar cerca de mí".
  * Sin texto sugiere los municipios donde hay complejos.
  */
-export function LocationChooserModal({ isOpen, onClose, onChoose, onLocateMe, currentCode }: LocationChooserModalProps) {
+export function LocationChooserModal({ isOpen, onClose, onChoose, onLocateMe, onChooseNone, noneSelected, currentCode }: LocationChooserModalProps) {
     const { data: index, isLoading } = useLocalityIndex();
     const { data: venues } = useVenues();
     const [text, setText] = useState("");
@@ -96,6 +100,22 @@ export function LocationChooserModal({ isOpen, onClose, onChoose, onLocateMe, cu
                         >
                             <LocateFixed className="h-4 w-4" aria-hidden="true" />
                             Buscar cerca de mí
+                        </button>
+                    )}
+
+                    {onChooseNone && !searching && (
+                        <button
+                            type="button"
+                            onClick={() => { onChooseNone(); close(); }}
+                            aria-current={noneSelected ? "true" : undefined}
+                            className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left hover:bg-default-100"
+                        >
+                            <Globe className="h-4 w-4 flex-shrink-0 text-default-400" aria-hidden="true" />
+                            <span className="min-w-0 flex-1 text-sm">
+                                <span className="block text-foreground">Sin municipio</span>
+                                <span className="block text-xs text-default-400">Ver solo las promociones nacionales</span>
+                            </span>
+                            {noneSelected && <Check className="h-4 w-4 flex-shrink-0 text-primary" aria-hidden="true" />}
                         </button>
                     )}
 

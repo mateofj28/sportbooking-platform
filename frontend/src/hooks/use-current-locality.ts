@@ -51,6 +51,8 @@ export interface CurrentLocality {
     retry: () => void
     /** Elige un municipio a mano (deja de usar el GPS). */
     choose: (locality: LocalityInfo) => void
+    /** Sin municipio: solo promociones nacionales, sin usar el GPS (se recuerda). */
+    chooseNone: () => void
     /** Olvida el municipio elegido y busca con el GPS ("Buscar cerca de mí"). */
     locateMe: () => void
 }
@@ -88,12 +90,17 @@ function writeCache(v: Omit<Cached, 'at'>) {
     }
 }
 
-/** Municipio elegido a mano (validada: lo que hay en localStorage no es confiable). */
-function readChosen(): LocalityInfo | null {
+/** Elección a mano: un municipio, o NONE = "sin municipio, solo promociones nacionales". */
+const NONE = 'none' as const
+type Chosen = LocalityInfo | typeof NONE
+
+/** Elección guardada (validada: lo que hay en localStorage no es confiable). */
+function readChosen(): Chosen | null {
     try {
         const raw = localStorage.getItem(CHOSEN_KEY)
         if (!raw) return null
-        const c = JSON.parse(raw) as Partial<LocalityInfo>
+        const c = JSON.parse(raw) as Partial<LocalityInfo> & { none?: boolean }
+        if (c.none === true) return NONE
         if (!isLocalityCode(c.code) || !isProvinceCode(c.province) || typeof c.name !== 'string') return null
         return { code: c.code, name: c.name, category: typeof c.category === 'string' ? c.category : '', province: c.province }
     } catch {
@@ -101,9 +108,10 @@ function readChosen(): LocalityInfo | null {
     }
 }
 
-function writeChosen(v: LocalityInfo | null) {
+function writeChosen(v: Chosen | null) {
     try {
-        if (v) localStorage.setItem(CHOSEN_KEY, JSON.stringify(v))
+        if (v === NONE) localStorage.setItem(CHOSEN_KEY, JSON.stringify({ none: true }))
+        else if (v) localStorage.setItem(CHOSEN_KEY, JSON.stringify(v))
         else localStorage.removeItem(CHOSEN_KEY)
     } catch {
         // no es crítico
@@ -124,7 +132,7 @@ export function useCurrentLocality(enabled = true): CurrentLocality {
     const [gpsError, setGpsError] = useState<GpsError>(null)
     const [attempt, setAttempt] = useState(0)
     // undefined = todavía no se leyó localStorage (evita pedir el GPS antes de saberlo)
-    const [chosen, setChosen] = useState<LocalityInfo | null | undefined>(undefined)
+    const [chosen, setChosen] = useState<Chosen | null | undefined>(undefined)
     const resolved = useRef(false)
 
     const retry = useCallback(() => setAttempt((n) => n + 1), [])
@@ -132,6 +140,11 @@ export function useCurrentLocality(enabled = true): CurrentLocality {
     const choose = useCallback((l: LocalityInfo) => {
         writeChosen(l)
         setChosen(l)
+    }, [])
+
+    const chooseNone = useCallback(() => {
+        writeChosen(NONE)
+        setChosen(NONE)
     }, [])
 
     const locateMe = useCallback(() => {
@@ -231,14 +244,20 @@ export function useCurrentLocality(enabled = true): CurrentLocality {
         }
     }, [enabled, attempt, retry, chosen])
 
+    if (chosen === NONE) {
+        return {
+            locality: null, province: null, located: true, abroad: false, manual: true,
+            ready: true, locating: false, permission, gpsError: null, retry, choose, chooseNone, locateMe,
+        }
+    }
     if (chosen) {
         return {
             locality: chosen, province: chosen.province, located: true, abroad: false, manual: true,
-            ready: true, locating: false, permission, gpsError: null, retry, choose, locateMe,
+            ready: true, locating: false, permission, gpsError: null, retry, choose, chooseNone, locateMe,
         }
     }
     return {
         locality, province, located, abroad, manual: false,
-        ready: true, locating, permission, gpsError, retry, choose, locateMe,
+        ready: true, locating, permission, gpsError, retry, choose, chooseNone, locateMe,
     }
 }

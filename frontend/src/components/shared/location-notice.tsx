@@ -12,7 +12,9 @@ import { LocationChooserModal } from "@/components/shared/location-chooser-modal
  * ("¿Dónde querés jugar?"), o activar la ubicación. Se apoya en useCurrentLocality.
  */
 export function LocationNotice({ location }: { location: CurrentLocality }) {
-    const { locality, province, located, abroad, manual, locating, permission, gpsError, retry, choose, locateMe } = location;
+    const { locality, province, located, abroad, manual, locating, permission, gpsError, retry, choose, chooseNone, locateMe } = location;
+    // Eligió a mano "Sin municipio" (solo nacionales)
+    const noneChosen = manual && !locality;
     const [chooserOpen, setChooserOpen] = useState(false);
 
     // "Buscar cerca de mí" solo si el navegador tiene GPS y no está bloqueado
@@ -24,6 +26,8 @@ export function LocationNotice({ location }: { location: CurrentLocality }) {
             onClose={() => setChooserOpen(false)}
             onChoose={choose}
             onLocateMe={canLocate ? () => { setChooserOpen(false); locateMe(); } : undefined}
+            onChooseNone={chooseNone}
+            noneSelected={noneChosen}
             currentCode={locality?.code ?? null}
         />
     );
@@ -33,9 +37,11 @@ export function LocationNotice({ location }: { location: CurrentLocality }) {
         return (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-default-500">
                 <p className="flex items-center gap-1.5">
-                    {abroad ? <Globe className="h-3.5 w-3.5" aria-hidden="true" /> : <MapPin className="h-3.5 w-3.5" aria-hidden="true" />}
+                    {abroad || noneChosen ? <Globe className="h-3.5 w-3.5" aria-hidden="true" /> : <MapPin className="h-3.5 w-3.5" aria-hidden="true" />}
                     {locality
                         ? `Promociones para ${locality.name} (${provinceName(locality.province)})`
+                        : noneChosen
+                            ? "Te mostramos las promociones nacionales"
                         : abroad
                             ? "Estás fuera de Argentina: te mostramos las promociones nacionales"
                             : `No estás dentro de un municipio${province ? ` de ${provinceName(province)}` : ""}: te mostramos las promociones nacionales`}
@@ -47,7 +53,7 @@ export function LocationNotice({ location }: { location: CurrentLocality }) {
                     className="h-6 min-w-0 px-2 text-xs"
                     onPress={() => setChooserOpen(true)}
                 >
-                    {locality ? "Cambiar" : "Elegir municipio"}
+                    {locality || noneChosen ? "Cambiar" : "Elegir municipio"}
                 </Button>
                 {chooser}
             </div>

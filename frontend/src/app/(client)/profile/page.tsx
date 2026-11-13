@@ -8,7 +8,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { Navbar } from "@/components/layout/navbar";
 import { PhoneInput, COUNTRY_CODES, validatePhoneNumber } from "@/components/shared/phone-input";
-import { User, Mail, Save, Lock, Eye, EyeOff } from "lucide-react";
+import { User, Mail, IdCard, Save, Lock, Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -59,7 +59,7 @@ export default function ProfilePage() {
         queryFn: async () => {
             const { data, error } = await supabase
                 .from("profiles")
-                .select("first_name, last_name, email, phone")
+                .select("first_name, last_name, email, dni, phone")
                 .eq("id", user!.id)
                 .single();
             if (error) throw toAppError(error);
@@ -182,6 +182,7 @@ export default function ProfilePage() {
                                 <dl className="grid gap-4 sm:grid-cols-2">
                                     <ProfileField icon={<User className="h-4 w-4" />} label="Nombre" value={profile.first_name} />
                                         <ProfileField label="Apellido" value={profile.last_name} />
+                                    <ProfileField icon={<IdCard className="h-4 w-4" />} label="DNI" value={profile.dni} />
                                 </dl>
 
                                     <Input

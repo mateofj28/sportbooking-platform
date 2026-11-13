@@ -3,7 +3,9 @@
 import { use, useState } from "react";
 import { Button, Card, CardBody, Chip, Divider, Spinner } from "@heroui/react";
 import { useRouter } from "next/navigation";
-import { useBooking, useMarkBookingPaid, useCancelBooking, usePriceChanges } from "@/hooks/use-bookings";
+import { useBooking, useCancelBooking, usePriceChanges } from "@/hooks/use-bookings";
+import { PayWithPointsButton } from "@/components/shared/pay-with-points-button";
+import { formatPoints } from "@/lib/points";
 import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { getBookingStatusChip } from "@/lib/booking-status";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
@@ -27,7 +29,6 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     const { id } = use(params);
     const router = useRouter();
     const { data: booking, isLoading } = useBooking(id);
-    const markPaid = useMarkBookingPaid();
     const { data: priceChanges } = usePriceChanges();
     const cancelBooking = useCancelBooking();
     const [confirmCancel, setConfirmCancel] = useState(false);
@@ -164,21 +165,12 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                                 {(canPay || canCancel || cancelBlockedByTime) && <Divider />}
 
                                 {canPay && (
-                                    <Button
-                                        color="primary"
-                                        size="lg"
-                                        className="font-semibold"
-                                        startContent={<Check className="h-4 w-4" />}
-                                        isLoading={markPaid.isPending}
-                                        onPress={() => markPaid.mutate({ id: booking.id, expectedTotal: Number(booking.totalPrice) })}
-                                    >
-                                        Pagar ${formatPrice(booking.totalPrice)} {booking.currency}
-                                    </Button>
+                                    <PayWithPointsButton bookingId={booking.id} total={Number(booking.totalPrice)} size="lg" fullWidth />
                                 )}
 
                                 {booking.paymentStatus === "PAID" && booking.status === "CONFIRMED" && (
                                     <div className="flex items-center justify-center gap-2 rounded-lg bg-success/10 py-2 text-sm text-success">
-                                        <ShieldCheck className="h-4 w-4" /> Pago confirmado
+                                        <ShieldCheck className="h-4 w-4" /> Pagada con tus puntos
                                     </div>
                                 )}
 
@@ -216,7 +208,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                     { onSuccess: () => { setConfirmCancel(false); router.push("/bookings"); } },
                 )}
                 title="Cancelar reserva"
-                message={`¿Seguro que deseas cancelar la reserva en ${booking.facility.name} del ${formatDateLong(booking.startDatetime)}? Esta acción no se puede deshacer.`}
+                message={`¿Seguro que deseas cancelar la reserva en ${booking.facility.name} del ${formatDateLong(booking.startDatetime)}?${booking.paymentStatus === "PAID" ? ` Te devolvemos ${formatPoints(Number(booking.totalPrice))} a tu billetera.` : ""} Esta acción no se puede deshacer.`}
                 confirmLabel="Sí, cancelar reserva"
                 isLoading={cancelBooking.isPending}
             />

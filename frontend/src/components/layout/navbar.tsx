@@ -27,7 +27,24 @@ import { useSidebarStore } from "@/stores/sidebar-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { NotificationBell } from "@/components/layout/notification-bell";
-import { Trophy, LogOut, User, Calendar, LayoutDashboard, Eye, Sun, Moon, Menu, ChevronLeft, Monitor, Check } from "lucide-react";
+import { Trophy, LogOut, User, Calendar, LayoutDashboard, Eye, Sun, Moon, Menu, ChevronLeft, Monitor, Check, Wallet } from "lucide-react";
+import { useMyBalance } from "@/hooks/use-wallet";
+import { formatPoints } from "@/lib/points";
+
+/** Saldo de puntos del usuario, con link a "Mi billetera". */
+function NavBalance() {
+    const { data: balance, isLoading } = useMyBalance();
+    return (
+        <Link
+            href="/wallet"
+            aria-label={`Mi billetera: ${formatPoints(balance ?? 0)}`}
+            className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm font-medium text-white hover:bg-white/25"
+        >
+            <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
+            {isLoading ? "…" : formatPoints(balance ?? 0)}
+        </Link>
+    );
+}
 
 export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -131,6 +148,12 @@ export function Navbar() {
                         <NotificationBell />
                     </NavbarItem>
                 )}
+                {/* Saldo de puntos: en la vista de cliente (R1.8) */}
+                {isHydrated && isAuthenticated && !inDashboard && (
+                    <NavbarItem>
+                        <NavBalance />
+                    </NavbarItem>
+                )}
                 {/* Botón de tema: solo visible cuando NO está autenticado */}
                 {mounted && !isAuthenticated && (
                     <NavbarItem>
@@ -176,6 +199,7 @@ export function Navbar() {
                                         <div className="py-1">
                                             <MenuItem href="/profile" icon={<User className="h-4 w-4" />} label="Mi Perfil" />
                                             <MenuItem href="/bookings" icon={<Calendar className="h-4 w-4" />} label="Mis Reservas" />
+                                            <MenuItem href="/wallet" icon={<Wallet className="h-4 w-4" />} label="Mi billetera" />
                                             {isAdminUser && (
                                                 inDashboard
                                                     ? <MenuItem href="/inicio" icon={<Eye className="h-4 w-4" />} label="Vista de cliente" />

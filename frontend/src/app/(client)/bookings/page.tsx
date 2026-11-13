@@ -14,7 +14,9 @@ import {
     Textarea,
     useDisclosure,
 } from "@heroui/react";
-import { useBookings, useCancelBooking, useRecurringBookings, useCancelRecurringBooking, useMarkBookingPaid, usePriceChanges, type RecurringBooking } from "@/hooks/use-bookings";
+import { useBookings, useCancelBooking, useRecurringBookings, useCancelRecurringBooking, usePriceChanges, type RecurringBooking } from "@/hooks/use-bookings";
+import { PayWithPointsButton } from "@/components/shared/pay-with-points-button";
+import { formatPoints } from "@/lib/points";
 import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
@@ -66,7 +68,6 @@ export default function BookingsPage() {
     const { data: bookingsResponse, isLoading } = useBookings();
     const bookings = Array.isArray(bookingsResponse?.data) ? bookingsResponse.data : [];
     const cancelBooking = useCancelBooking();
-    const markPaid = useMarkBookingPaid();
     const { data: priceChanges } = usePriceChanges();
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -287,15 +288,7 @@ export default function BookingsPage() {
                                       <div className="flex flex-col items-end gap-2">
                                           {booking.status === "CONFIRMED" && booking.paymentStatus !== "PAID" && (
                                               <div onClick={(e) => e.stopPropagation()}>
-                                                  <Button
-                                                      color="primary"
-                                                      size="sm"
-                                                      startContent={<DollarSign className="h-4 w-4" />}
-                                                      isLoading={markPaid.isPending && markPaid.variables?.id === booking.id}
-                                                      onPress={() => markPaid.mutate({ id: booking.id, expectedTotal: Number(booking.totalPrice) })}
-                                                  >
-                                                      Pagar
-                                                  </Button>
+                                                  <PayWithPointsButton bookingId={booking.id} total={Number(booking.totalPrice)} label="Pagar" />
                                               </div>
                                           )}
                                           <span className="text-xs text-primary whitespace-nowrap">Ver detalle →</span>
@@ -327,6 +320,11 @@ export default function BookingsPage() {
                   <ModalHeader>Cancelar Reserva</ModalHeader>
                   <ModalBody>
                       <p className="text-default-600">¿Estás seguro que deseas cancelar esta reserva?</p>
+                        {selectedBooking?.paymentStatus === "PAID" && (
+                            <p className="rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
+                                Te devolvemos {formatPoints(Number(selectedBooking.totalPrice))} a tu billetera (el 100% de lo pagado).
+                            </p>
+                        )}
                       <Textarea
                           label="Motivo (opcional)"
                           placeholder="¿Por qué cancelas?"
@@ -352,7 +350,8 @@ export default function BookingsPage() {
                         <p className="text-default-600">
                             Se cancelarán todas las reservas futuras de este turno fijo
                             {seriesToCancel && ` (${seriesToCancel.upcomingCount} próxima${seriesToCancel.upcomingCount !== 1 ? "s" : ""})`}.
-                            Las reservas ya pasadas no se modifican. Esta acción no se puede deshacer.
+                            Las reservas ya pasadas no se modifican, y las que empiezan en menos de 24 h se mantienen.
+                            Las fechas que ya pagaste te devuelven el 100% de los puntos. Esta acción no se puede deshacer.
                         </p>
                     </ModalBody>
                     <ModalFooter>

@@ -365,7 +365,7 @@ export default function AdminBookingsPage() {
                                                     variant="light"
                                                     isIconOnly
                                                     aria-label={`Cancelar la reserva de ${name}`}
-                                                    onPress={() => setToCancel({ id: booking.id, startDatetime: booking.startDatetime, clientName: name, facilityName })}
+                                                    onPress={() => setToCancel({ id: booking.id, startDatetime: booking.startDatetime, clientName: name, facilityName, paidPoints: booking.paymentStatus === "PAID" ? Math.round(Number(booking.totalPrice)) : 0 })}
                                                 >
                                                     <XCircle className="h-4 w-4" />
                                                 </Button>

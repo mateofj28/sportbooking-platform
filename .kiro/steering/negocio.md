@@ -127,3 +127,23 @@ Relación clave:
   "¿Dónde querés jugar?"). Se guarda en `venues.locality_code`; la base completa `city` (nombre del municipio) y
   `state` (provincia) con el trigger `venue_fill_municipality` (migración 041).
 - En la interfaz la palabra es siempre **"Municipio"**, nunca "Ciudad" ni "Localidad". Formularios: `MunicipalityFields`.
+
+## Billetera de puntos (spec `.kiro/specs/billetera-puntos`)
+
+- **1 punto = 1 ARS.** Los puntos son el **único medio de pago** de las reservas y no vencen. Montos siempre enteros:
+  la comisión se redondea al peso y las tarifas son pesos enteros (CHECK en `pricing`).
+- **Recarga manual**: el cliente escribe por WhatsApp a **+54 9 2984 33-9319** ("quiero comprar X puntos"), transfiere,
+  y el admin general carga los puntos en Panel → Puntos con un **motivo obligatorio**. Restar nunca deja saldo negativo.
+- **Reserva propia**: se paga con puntos **al crearla** (`create_booking_paid`); sin saldo se bloquea (402). Sin pago parcial.
+- **Turno fijo y reserva manual de un admin**: quedan pendientes y **el titular las paga con puntos** (botón Pagar,
+  `pay_booking`). Si no se pagan, se cancelan solas a menos de 24 h (como antes).
+- **Cancelación**: se mantiene la regla de 24 h para el cliente (también al cancelar una serie: las fechas a menos de
+  24 h se mantienen). Cancele quien cancele, se devuelve el **100% de lo pagado** (`cancel_booking`).
+- **Sede**: suma el **precio base** recién cuando el turno pasa a *Completada* (trigger `credit_venue_on_complete`, una
+  sola vez). La comisión queda como ganancia de la empresa. Una cancelación nunca toca la billetera de la sede.
+- **Liquidación mensual** (Panel → Balances): solo meses ya terminados (hora AR), por el **monto exacto**, una vez por
+  sede y mes, con número de transferencia y/o comprobante (bucket privado `settlement-receipts`). Un turno de un mes
+  ya liquidado que se completa tarde va al mes en curso.
+- **Integridad**: todo movimiento es una fila inmutable (`wallet_transactions`, `venue_ledger`); nadie escribe por la
+  API. Los puntos solo se mueven con las funciones de la migración 043. Un usuario con movimientos no se borra: se desactiva.
+- Pantallas: cliente "Mi billetera" (`/wallet`, saldo en el navbar); admin de sede "Billetera"; admin general "Puntos" y "Balances".

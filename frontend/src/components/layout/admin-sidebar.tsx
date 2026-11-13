@@ -20,12 +20,21 @@ import {
     HelpCircle,
     BarChart3,
     Megaphone,
+    Wallet,
+    Coins,
+    Landmark,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useSidebarStore } from "@/stores/sidebar-store";
 
-const menuItems = [
+type Role = "ADMIN" | "VENUE_ADMIN";
+
+const menuItems: { href: string; label: string; icon: typeof LayoutDashboard; only?: Role }[] = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    // Billetera de puntos (spec billetera-puntos): justo después del Dashboard
+    { href: "/dashboard/wallet", label: "Billetera", icon: Wallet, only: "VENUE_ADMIN" },
+    { href: "/dashboard/points", label: "Puntos", icon: Coins, only: "ADMIN" },
+    { href: "/dashboard/balances", label: "Balances", icon: Landmark, only: "ADMIN" },
     { href: "/dashboard/bookings", label: "Reservas", icon: Calendar },
     { href: "/dashboard/statistics", label: "Estadísticas", icon: BarChart3 },
     { href: "/dashboard/facilities", label: "Instalaciones", icon: MapPin },
@@ -47,9 +56,10 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
 
     // VENUE_ADMIN can't see: venues, sports, users
-    const visibleItems = isVenueAdmin
-        ? menuItems.filter((item) => !(["/dashboard/venues", "/dashboard/sports", "/dashboard/users", "/dashboard/advertising"].includes(item.href)))
-        : menuItems;
+    const role: Role = isVenueAdmin ? "VENUE_ADMIN" : "ADMIN";
+    const visibleItems = menuItems
+        .filter((item) => !item.only || item.only === role)
+        .filter((item) => !isVenueAdmin || !(["/dashboard/venues", "/dashboard/sports", "/dashboard/users", "/dashboard/advertising"].includes(item.href)));
 
     return (
       <div className="flex h-full flex-col">

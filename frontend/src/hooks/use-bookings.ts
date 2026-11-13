@@ -92,6 +92,8 @@ function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
     queryClient.invalidateQueries({ queryKey: ['bookings'] })
     queryClient.invalidateQueries({ queryKey: ['booking'] })
     queryClient.invalidateQueries({ queryKey: ['recurring-bookings'] })
+    // Reservar, pagar y cancelar mueven puntos (billetera, migración 043)
+    queryClient.invalidateQueries({ queryKey: ['wallet'] })
 }
 
 // ============================================================
@@ -190,6 +192,8 @@ export function useCreateBooking() {
             return result!
         },
         onSuccess: () => invalidateAll(queryClient),
+        // Sin saldo (402) u otro error: refrescar el saldo para mostrar el aviso correcto
+        onError: () => queryClient.invalidateQueries({ queryKey: ['wallet'] }),
     })
 }
 
@@ -224,7 +228,7 @@ export function useCancelBooking() {
                 reason,
             })
             if (error) throw new Error(error)
-            return result
+            return result as { id: string; cancelled: boolean; refunded: number } | null
         },
         onSuccess: () => invalidateAll(queryClient),
     })
@@ -270,11 +274,11 @@ export function useMarkBookingPaid() {
             return result
         },
         onSuccess: () => {
-            addToast('Pago registrado')
+            addToast('Reserva pagada con tus puntos')
             invalidateAll(queryClient)
         },
         onError: (e: Error) => {
-            addToast(e.message || 'No se pudo registrar el pago', 'error')
+            addToast(e.message || 'No se pudo pagar la reserva', 'error')
             // Si fue por un cambio de precio, mostrar el precio nuevo
             invalidateAll(queryClient)
             queryClient.invalidateQueries({ queryKey: ['price-changes'] })

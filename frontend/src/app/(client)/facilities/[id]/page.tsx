@@ -21,6 +21,10 @@ import { useFacility, useFacilities } from "@/hooks/use-facilities";
 import { useCreateBooking, useCreateRecurringBooking } from "@/hooks/use-bookings";
 import { durationOptionsForSport } from "@/components/shared/availability-picker";
 import { finalPricePerTurn } from "@/lib/pricing";
+import { formatPoints } from "@/lib/points";
+import { useMyBalance } from "@/hooks/use-wallet";
+import { InsufficientBalance } from "@/components/shared/insufficient-balance";
+import Link from "next/link";
 import { useFacilityAvailability, useAvailabilitySummary } from "@/hooks/use-availability";
 import { useAvailabilityRealtime } from "@/hooks/use-availability-realtime";
 import { useToastStore } from "@/stores/toast-store";
@@ -174,6 +178,9 @@ export default function FacilityDetailPage({
     // Refresca la disponibilidad solo cuando la base avisa un cambio en esta cancha
     // (reserva, cancelación, bloqueo, horario o tarifa). Sin polling.
     useAvailabilityRealtime(facility ? id : undefined);
+
+    // Saldo de puntos: la reserva única se paga al confirmarla (billetera, migración 043)
+    const { data: balance = 0, isLoading: balanceLoading } = useMyBalance();
 
     // Un error de confirmación se refiere al turno que se intentó reservar. Si el usuario
     // cambia de turno, día, duración o modo, ese mensaje ya no aplica: se limpia.
@@ -631,9 +638,21 @@ export default function FacilityDetailPage({
                                             </span>
                                         </div>
                                         <p className="text-xl font-bold text-success">
-                                            ${formatPrice(price)} ARS {mode === "recurring" && <span className="text-xs font-normal text-default-400">por fecha</span>}
+                                                        {formatPoints(price)} {mode === "recurring" && <span className="text-xs font-normal text-default-400">por fecha</span>}
                                         </p>
-                                                    <p className="text-xs text-default-400">Precio del turno</p>
+                                                    <p className="text-xs text-default-400">Precio del turno · 1 punto = $1</p>
+                                                    {isAuthenticated && (
+                                                        <p className="mt-1 text-xs text-default-500">
+                                                            Tu saldo: <span className="font-semibold text-foreground">{formatPoints(balance)}</span>
+                                                            {" · "}
+                                                            <Link href="/wallet" className="text-primary hover:underline">Mi billetera</Link>
+                                                        </p>
+                                                    )}
+                                                    {mode === "recurring" && isAuthenticated && (
+                                                        <p className="mt-1 text-xs text-default-500">
+                                                            Cada fecha se paga con puntos desde &quot;Mis reservas&quot;, hasta 24 h antes.
+                                                        </p>
+                                                    )}
                                     </div>
 
                                     <div className="flex flex-col gap-2">
@@ -652,6 +671,7 @@ export default function FacilityDetailPage({
                                                 size="lg"
                                                 onPress={handleBooking}
                                                 isLoading={createBooking.isPending}
+                                                            isDisabled={isAuthenticated && (balanceLoading || balance < price)}
                                                 startContent={<Check className="h-4 w-4" />}
                                                 className="font-semibold"
                                             >
@@ -672,7 +692,11 @@ export default function FacilityDetailPage({
                                     </div>
                                 </div>
 
-                                {createBooking.isError && (
+                                            {/* Reserva única: se paga al confirmar. Sin saldo, se bloquea (R2.2, R2.6) */}
+                                            {mode === "single" && isAuthenticated && !balanceLoading && price > 0 && balance < price && (
+                                                <InsufficientBalance needed={price} available={balance} />
+                                            )}
+                                            {createBooking.isError && !(mode === "single" && balance < price) && (
                                     <p className="text-center text-sm text-danger">
                                         {(createBooking.error as any)?.message || "Error al crear la reserva"}
                                     </p>
@@ -743,7 +767,7 @@ export default function FacilityDetailPage({
                                             <Clock className="h-3.5 w-3.5 text-default-500" />
                                             <span className="text-sm">{formatTime12h(price.startTime)} - {formatTime12h(price.endTime)}</span>
                                             <Chip size="sm" color="success" variant="flat">
-                                                ${formatPrice(finalPricePerTurn(price))} por turno
+                                                {formatPoints(finalPricePerTurn(price))} por turno
                                             </Chip>
                                         </div>
                                     ))}

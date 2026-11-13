@@ -7,12 +7,15 @@ import { useCancelBooking } from "@/hooks/use-bookings";
 import { formatDateAr, formatTimeAr } from "@/lib/datetime";
 import { cancelBookingSchema, CANCEL_REASON_MAX } from "@/lib/validations/booking.schema";
 import { useToastStore } from "@/stores/toast-store";
+import { formatPoints } from "@/lib/points";
 
 export interface CancelBookingTarget {
     id: string;
     startDatetime: string;
     clientName: string;
     facilityName: string;
+    /** Puntos pagados (se devuelven al cancelar). 0 o sin valor = reserva pendiente. */
+    paidPoints?: number;
 }
 
 interface CancelBookingModalProps {
@@ -51,8 +54,9 @@ export function CancelBookingModal({ booking, onClose, onCancelled }: CancelBook
         cancelBooking.mutate(
             { id: booking.id, reason: parsed.data.reason || undefined },
             {
-                onSuccess: () => {
-                    addToast("Reserva cancelada");
+                onSuccess: (res) => {
+                    const refunded = Number(res?.refunded ?? 0);
+                    addToast(refunded > 0 ? `Reserva cancelada. Se devolvieron ${formatPoints(refunded)} al cliente` : "Reserva cancelada");
                     onCancelled?.();
                     onClose();
                 },
@@ -75,6 +79,11 @@ export function CancelBookingModal({ booking, onClose, onCancelled }: CancelBook
                             <strong>{booking.facilityName}</strong> del{" "}
                             {formatDateAr(booking.startDatetime, { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}{" "}
                             a las {formatTimeAr(booking.startDatetime)}? Esta acción no se puede deshacer.
+                        </p>
+                    )}
+                    {booking && (booking.paidPoints ?? 0) > 0 && (
+                        <p className="rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
+                            Se le devuelven {formatPoints(booking.paidPoints ?? 0)} a {booking.clientName} (el 100% de lo pagado).
                         </p>
                     )}
                     <Textarea

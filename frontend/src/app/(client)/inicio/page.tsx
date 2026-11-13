@@ -9,7 +9,8 @@ import { LocationNotice } from "@/components/shared/location-notice";
 import { useActiveAdvertisements } from "@/hooks/use-advertisements";
 import { useCurrentLocality } from "@/hooks/use-current-locality";
 import { useAuthStore } from "@/stores/auth-store";
-import { useBookings, useMarkBookingPaid, usePriceChanges } from "@/hooks/use-bookings";
+import { useBookings, usePriceChanges } from "@/hooks/use-bookings";
+import { PayWithPointsButton } from "@/components/shared/pay-with-points-button";
 import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { useSports } from "@/hooks/use-sports";
 import { Navbar } from "@/components/layout/navbar";
@@ -41,7 +42,6 @@ function formatPrice(value: number): string {
 export default function ClientHomePage() {
     const router = useRouter();
     const { user, isAuthenticated, isHydrated } = useAuthStore();
-    const markPaid = useMarkBookingPaid();
     const { data: priceChanges } = usePriceChanges();
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -157,14 +157,7 @@ export default function ClientHomePage() {
                                             </div>
                                             {b.status === "CONFIRMED" && b.paymentStatus !== "PAID" && (
                                                 <div onClick={(e) => e.stopPropagation()}>
-                                                    <Button
-                                                        color="primary"
-                                                        size="sm"
-                                                        isLoading={markPaid.isPending && markPaid.variables?.id === b.id}
-                                                        onPress={() => markPaid.mutate({ id: b.id, expectedTotal: Number(b.totalPrice) })}
-                                                    >
-                                                        Pagar
-                                                    </Button>
+                                                    <PayWithPointsButton bookingId={b.id} total={Number(b.totalPrice)} label="Pagar" />
                                                 </div>
                                             )}
                                         </div>

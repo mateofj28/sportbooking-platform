@@ -3,7 +3,8 @@
 import { use, useMemo } from "react";
 import { Button, Card, CardBody, CardHeader, Chip, Divider, Spinner } from "@heroui/react";
 import { useRouter } from "next/navigation";
-import { useRecurringBookings, useMarkBookingPaid, usePriceChanges } from "@/hooks/use-bookings";
+import { useRecurringBookings, usePriceChanges } from "@/hooks/use-bookings";
+import { PayWithPointsButton } from "@/components/shared/pay-with-points-button";
 import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { getBookingStatusChip } from "@/lib/booking-status";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
@@ -29,7 +30,6 @@ export default function RecurringDetailPage({ params }: { params: Promise<{ id: 
     const { id } = use(params);
     const router = useRouter();
     const { data: list, isLoading } = useRecurringBookings();
-    const markPaid = useMarkBookingPaid();
     const { data: priceChanges } = usePriceChanges();
 
     const recurring = useMemo(() => list?.find((r) => r.id === id), [list, id]);
@@ -132,15 +132,7 @@ export default function RecurringDetailPage({ params }: { params: Promise<{ id: 
                                     <div className="flex items-center gap-2">
                                         {b.status === "CONFIRMED" && b.paymentStatus !== "PAID" && !b.isPast && (
                                             <div onClick={(e) => e.stopPropagation()}>
-                                                <Button
-                                                    color="primary"
-                                                    size="sm"
-                                                    startContent={<DollarSign className="h-4 w-4" />}
-                                                    isLoading={markPaid.isPending && markPaid.variables?.id === b.id}
-                                                    onPress={() => markPaid.mutate({ id: b.id, expectedTotal: Number(b.totalPrice ?? 0) })}
-                                                >
-                                                    Pagar
-                                                </Button>
+                                                <PayWithPointsButton bookingId={b.id} total={Number(b.totalPrice ?? 0)} label="Pagar" />
                                             </div>
                                         )}
                                         <Chip color={chip.color} size="sm" variant="flat">{chip.label}</Chip>

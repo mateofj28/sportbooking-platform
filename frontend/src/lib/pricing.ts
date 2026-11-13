@@ -13,11 +13,14 @@ import type { Pricing } from "@/types";
  * Usar estas funciones en TODA vista del cliente que muestre un precio.
  */
 
-/** Comisión en pesos de una tarifa (sobre el precio del turno). */
+/**
+ * Comisión en pesos de una tarifa (sobre el precio del turno), redondeada al peso:
+ * los puntos son enteros (D9). Igual que calculate_price en la base (migración 043).
+ */
 export function commissionFor(pricing: Pick<Pricing, "pricePerHour" | "profitPercent">): number {
-    const base = Number(pricing.pricePerHour);
+    const base = Math.round(Number(pricing.pricePerHour));
     const pct = Number(pricing.profitPercent) || 0;
-    return base * (pct / 100);
+    return Math.round(base * (pct / 100));
 }
 
 /**
@@ -25,7 +28,7 @@ export function commissionFor(pricing: Pick<Pricing, "pricePerHour" | "profitPer
  * Este es el valor que debe mostrarse en chips de tarifas, "desde $X", etc.
  */
 export function finalPricePerTurn(pricing: Pick<Pricing, "pricePerHour" | "profitPercent">): number {
-    return Number(pricing.pricePerHour) + commissionFor(pricing);
+    return Math.round(Number(pricing.pricePerHour)) + commissionFor(pricing);
 }
 
 /**

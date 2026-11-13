@@ -174,7 +174,7 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
                             color="danger"
                             variant="flat"
                             startContent={<XCircle className="h-4 w-4" />}
-                            onPress={() => setToCancel({ id: booking.id, startDatetime: booking.startDatetime, clientName: client, facilityName })}
+                            onPress={() => setToCancel({ id: booking.id, startDatetime: booking.startDatetime, clientName: client, facilityName, paidPoints: booking.paymentStatus === "PAID" ? Math.round(Number(booking.totalPrice)) : 0 })}
                         >
                             Cancelar
                         </Button>

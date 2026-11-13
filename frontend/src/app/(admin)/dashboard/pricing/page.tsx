@@ -266,14 +266,14 @@ export default function AdminPricingPage() {
   const finalPrice = useMemo(() => {
     const base = parsePriceValue(form.pricePerHour);
     const percent = Number(form.profitPercent) || 0;
-    return base + (base * percent / 100);
+    return base + Math.round(base * percent / 100); // comisión redondeada al peso (D9)
   }, [form.pricePerHour, form.profitPercent]);
 
   // Precio final del formulario de edición
   const editFinalPrice = useMemo(() => {
     const base = parsePriceValue(editForm.pricePerHour);
     const percent = Number(editForm.profitPercent) || 0;
-    return base + (base * percent / 100);
+    return base + Math.round(base * percent / 100); // comisión redondeada al peso (D9)
   }, [editForm.pricePerHour, editForm.profitPercent]);
 
   const handlePriceChange = (value: string) => {

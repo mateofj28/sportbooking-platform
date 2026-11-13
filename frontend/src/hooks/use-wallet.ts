@@ -7,7 +7,7 @@
 // cancelar siguen en use-bookings (Edge Functions) e invalidan la key ['wallet'].
 // ============================================================
 
-import { useEffect } from 'react'
+import { useEffect, useId } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { callRpc } from '@/lib/supabase-helpers'
@@ -128,16 +128,20 @@ async function rpc<T>(fn: string, params?: Record<string, unknown>): Promise<T> 
 export function useMyBalance() {
   const userId = useAuthStore((s) => s.user?.id)
   const queryClient = useQueryClient()
+  // Un canal por componente: si dos componentes de la misma pantalla (navbar y reserva)
+  // usaran el mismo nombre, supabase-js devuelve el canal ya suscripto y agregarle
+  // listeners rompe la pantalla ("cannot add postgres_changes callbacks after subscribe").
+  const instanceId = useId()
 
   useEffect(() => {
     if (!userId) return
     const channel = supabase
-      .channel(`wallet-${userId}`)
+      .channel(`wallet-${userId}-${instanceId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'wallets', filter: `user_id=eq.${userId}` },
         () => queryClient.invalidateQueries({ queryKey: WALLET_KEY }))
       .subscribe()
     return () => { void supabase.removeChannel(channel) }
-  }, [userId, queryClient])
+  }, [userId, queryClient, instanceId])
 
   return useQuery({
     queryKey: [...WALLET_KEY, 'balance', userId],

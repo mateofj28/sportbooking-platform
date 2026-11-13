@@ -10,11 +10,12 @@ import { Search, SlidersHorizontal } from "lucide-react";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";
 import { ReceiptButton } from "@/components/shared/wallet-ui";
+import { PointsInput } from "@/components/shared/points-input";
 import { LedgerFilters, LedgerPagination, type LedgerFilterValue } from "@/components/shared/ledger-filters";
 import { useAdjustPoints, useAdminPointsUsers, useAdminWalletHistory, type PointsUser } from "@/hooks/use-wallet";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
-import { formatArDateTime, formatPoints } from "@/lib/points";
+import { formatArDateTime, formatPesos, formatPoints } from "@/lib/points";
 
 const PAGE_SIZE = 20;
 const MAX_ADJUST = 100_000_000;
@@ -128,23 +129,23 @@ function AdjustModal({ user, onClose }: { user: PointsUser | null; onClose: () =
     const addToast = useToastStore((s) => s.addToast);
     const adjust = useAdjustPoints();
     const [mode, setMode] = useState<"add" | "subtract">("add");
-    const [amountText, setAmountText] = useState("");
+    const [amountValue, setAmountValue] = useState<number | null>(null);
     const [reason, setReason] = useState("");
     const [confirming, setConfirming] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        setMode("add"); setAmountText(""); setReason(""); setConfirming(false); setError(null);
+        setMode("add"); setAmountValue(null); setReason(""); setConfirming(false); setError(null);
     }, [user?.id]);
 
-    const amount = Number(amountText);
+    const amount = amountValue ?? 0;
     const amountOk = Number.isInteger(amount) && amount > 0 && amount <= MAX_ADJUST;
     const reasonOk = reason.trim().length >= 3 && reason.trim().length <= 300;
     const signed = mode === "add" ? amount : -amount;
     const resulting = (user?.balance ?? 0) + (amountOk ? signed : 0);
     const wouldBeNegative = amountOk && resulting < 0;
 
-    const amountError = amountText && !amountOk ? `Ingresá un número entero entre 1 y ${formatPoints(MAX_ADJUST)}` :
+    const amountError = amountValue !== null && !amountOk ? `Ingresá un número entero entre 1 y ${formatPoints(MAX_ADJUST)}` :
         wouldBeNegative ? `Tiene ${formatPoints(user?.balance ?? 0)}: no se le pueden restar ${formatPoints(amount)}` : null;
 
     const submit = () => {
@@ -177,11 +178,10 @@ function AdjustModal({ user, onClose }: { user: PointsUser | null; onClose: () =
                                 <Radio value="add" description="Recarga: dinero recibido">Sumar</Radio>
                                 <Radio value="subtract" description="Corrección">Restar</Radio>
                             </RadioGroup>
-                            <Input
-                                type="number" inputMode="numeric" label="Cantidad de puntos" variant="bordered" isRequired
-                                min={1} max={MAX_ADJUST}
-                                value={amountText}
-                                onValueChange={(v) => { setAmountText(v.replace(/[^\d]/g, "")); setError(null); }}
+                            <PointsInput
+                                label="Cantidad de puntos" isRequired max={MAX_ADJUST}
+                                value={amountValue}
+                                onChange={(v) => { setAmountValue(v); setError(null); }}
                                 isInvalid={!!amountError} errorMessage={amountError ?? undefined}
                             />
                             <Textarea
@@ -195,7 +195,7 @@ function AdjustModal({ user, onClose }: { user: PointsUser | null; onClose: () =
                         </>
                     ) : (
                         <div className="space-y-2 rounded-xl border border-divider p-4 text-sm">
-                            <p>Vas a <strong>{mode === "add" ? "sumar" : "restar"} {formatPoints(amount)}</strong>.</p>
+                            <p>Vas a <strong>{mode === "add" ? "sumar" : "restar"} {formatPoints(amount)}</strong> ({formatPesos(amount)}).</p>
                             <p>Saldo resultante: <strong>{formatPoints(resulting)}</strong></p>
                             <p className="text-default-500">Motivo: {reason.trim()}</p>
                             <p className="text-xs text-default-400">El movimiento no se puede editar ni borrar; para corregirlo, hacé otro ajuste.</p>

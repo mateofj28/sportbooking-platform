@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardBody, Input, Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
+import { Card, CardBody, Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 import { Wallet } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";
 import { WhatsappTopupButton } from "@/components/shared/whatsapp-topup-button";
+import { PointsInput } from "@/components/shared/points-input";
 import { LedgerFilters, LedgerPagination, type LedgerFilterValue } from "@/components/shared/ledger-filters";
 import { useMyWalletHistory } from "@/hooks/use-wallet";
 import { useAuthStore } from "@/stores/auth-store";
@@ -28,7 +29,7 @@ export default function WalletPage() {
     const { isAuthenticated, isHydrated } = useAuthStore();
     const [filters, setFilters] = useState<LedgerFilterValue>({ from: "", to: "", kind: "ALL" });
     const [page, setPage] = useState(1);
-    const [buyText, setBuyText] = useState("");
+    const [buyPoints, setBuyPoints] = useState<number | null>(null);
 
     useEffect(() => {
         if (isHydrated && !isAuthenticated) router.replace("/login");
@@ -36,8 +37,6 @@ export default function WalletPage() {
 
     const { data, isLoading, isError, error } = useMyWalletHistory({ ...filters, page, size: PAGE_SIZE });
 
-    const buyPoints = Number(buyText);
-    const buyValid = buyText === "" || (Number.isInteger(buyPoints) && buyPoints > 0 && buyPoints <= MAX_TOPUP);
 
     if (!isHydrated) return <div className="flex min-h-screen items-center justify-center"><Spinner size="lg" /></div>;
     if (!isAuthenticated) return null;
@@ -71,21 +70,15 @@ export default function WalletPage() {
                                 Escribinos por WhatsApp al {WHATSAPP_TOPUP_LABEL}, hacé la transferencia y te cargamos los puntos.
                             </p>
                             <div className="flex flex-wrap items-start gap-2">
-                                <Input
-                                    type="number"
-                                    inputMode="numeric"
+                                <PointsInput
                                     label="¿Cuántos puntos?"
                                     size="sm"
-                                    variant="bordered"
-                                    className="max-w-[180px]"
-                                    min={1}
+                                    className="max-w-[200px]"
                                     max={MAX_TOPUP}
-                                    value={buyText}
-                                    onValueChange={(v) => setBuyText(v.replace(/[^\d]/g, ""))}
-                                    isInvalid={!buyValid}
-                                    errorMessage={!buyValid ? "Ingresá un número entero mayor que 0" : undefined}
+                                    value={buyPoints}
+                                    onChange={setBuyPoints}
                                 />
-                                <WhatsappTopupButton points={buyValid && buyText ? buyPoints : null} isDisabled={!buyValid} />
+                                <WhatsappTopupButton points={buyPoints} />
                             </div>
                         </CardBody>
                     </Card>

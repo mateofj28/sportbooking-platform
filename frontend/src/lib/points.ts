@@ -10,12 +10,17 @@ export const WHATSAPP_TOPUP_NUMBER = "5492984339319";
 /** El mismo número, legible. */
 export const WHATSAPP_TOPUP_LABEL = "+54 9 2984 33-9319";
 
-/** 63000 -> "63.000" */
+/** 63000 -> "63,000" (miles con coma, igual que los precios de la app: lib/pricing formatPrice). */
 export function formatPointsNumber(n: number): string {
-    return Math.round(Number(n) || 0).toLocaleString("es-AR");
+    return Math.round(Number(n) || 0).toLocaleString("en-US");
 }
 
-/** 63000 -> "63.000 pts" */
+/** 63000 -> "$63,000 ARS" (1 punto = 1 peso). */
+export function formatPesos(n: number): string {
+    return `$${formatPointsNumber(n)} ARS`;
+}
+
+/** 63000 -> "63,000 pts" */
 export function formatPoints(n: number): string {
     return `${formatPointsNumber(n)} pts`;
 }

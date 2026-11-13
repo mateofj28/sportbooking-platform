@@ -40,7 +40,7 @@ export function bookingToEmailData(booking: {
     timeLabel: `${arTime(booking.start_datetime)} - ${arTime(booking.end_datetime)}`,
     // Billetera de puntos (043): 1 punto = 1 ARS
     priceLabel: booking.total_price != null
-      ? `${Math.round(booking.total_price).toLocaleString('es-AR')} puntos`
+      ? `${Math.round(booking.total_price).toLocaleString('en-US')} puntos`
       : undefined,
     paymentPending: booking.payment_status === 'PENDING',
   }
@@ -131,7 +131,7 @@ export async function sendBookingCancellation(
   data: BookingEmailData & { reason?: string; refundedPoints?: number },
 ): Promise<void> {
   const refund = data.refundedPoints && data.refundedPoints > 0
-    ? `<p style="margin:0 0 12px;font-size:13px;color:#047857;background:#d1fae5;padding:12px;border-radius:8px;">✅ Te devolvimos ${Math.round(data.refundedPoints).toLocaleString('es-AR')} puntos a tu billetera.</p>`
+    ? `<p style="margin:0 0 12px;font-size:13px;color:#047857;background:#d1fae5;padding:12px;border-radius:8px;">✅ Te devolvimos ${Math.round(data.refundedPoints).toLocaleString('en-US')} puntos a tu billetera.</p>`
     : ''
   const body = `
     <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b7280;">

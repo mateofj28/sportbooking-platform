@@ -10,8 +10,7 @@
 // Usado en: registro de usuario, edición de usuario (admin)
 // ============================================================
 
-import { useState } from 'react'
-import { Input } from '@heroui/react'
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input } from '@heroui/react'
 
 export interface CountryCode {
     code: string
@@ -77,7 +76,6 @@ export function PhoneInput({
     label = "Teléfono",
     isRequired = false,
 }: PhoneInputProps) {
-    const [showCodes, setShowCodes] = useState(false)
     const selectedCountry = COUNTRY_CODES.find((c) => c.code === countryCode) ?? COUNTRY_CODES[0]
 
     const handleBlur = () => {
@@ -89,11 +87,10 @@ export function PhoneInput({
     const handleCountryChange = (code: string) => {
         onCountryCodeChange(code)
         if (onError) onError(null) // reset error al cambiar de país
-        setShowCodes(false)
     }
 
     return (
-        <div className="relative">
+        <div>
             <Input
                 label={`${label}${isRequired ? "" : " (opcional)"}`}
                 placeholder={selectedCountry.placeholder}
@@ -110,34 +107,41 @@ export function PhoneInput({
                 onKeyPress={(e) => { if (!/[\d\s\-]/.test(e.key)) e.preventDefault() }}
                 classNames={{ inputWrapper: "bg-default-50" }}
                 startContent={
-                    <div className="relative">
-                        <button
-                            type="button"
-                            onClick={() => setShowCodes(!showCodes)}
-                            className="flex items-center gap-1 text-sm font-medium text-default-600 hover:text-primary transition-colors pr-2 border-r border-default-200 mr-2"
+                    // Dropdown de HeroUI: se abre en un portal, por encima de la tarjeta
+                    // (no queda recortado ni genera scroll dentro del formulario)
+                    <Dropdown placement="bottom-start">
+                        <DropdownTrigger>
+                            <button
+                                type="button"
+                                aria-label={`Código de país: ${selectedCountry.country} ${countryCode}. Cambiar`}
+                                className="flex items-center gap-1 text-sm font-medium text-default-600 hover:text-primary pr-2 border-r border-default-200 mr-2"
+                            >
+                                <span>{selectedCountry.flag}</span>
+                                <span className="text-xs">{countryCode}</span>
+                            </button>
+                        </DropdownTrigger>
+                        <DropdownMenu
+                            aria-label="Código de país"
+                            selectionMode="single"
+                            disallowEmptySelection
+                            selectedKeys={[countryCode]}
+                            onAction={(key) => handleCountryChange(String(key))}
+                            classNames={{ base: "max-h-64 overflow-y-auto" }}
                         >
-                            <span>{selectedCountry.flag}</span>
-                            <span className="text-xs">{countryCode}</span>
-                        </button>
-                    </div>
+                            {COUNTRY_CODES.map((c) => (
+                                <DropdownItem
+                                    key={c.code}
+                                    textValue={`${c.country} ${c.code}`}
+                                    startContent={<span className="text-base">{c.flag}</span>}
+                                    endContent={<span className="text-xs text-default-400">{c.code}</span>}
+                                >
+                                    {c.country}
+                                </DropdownItem>
+                            ))}
+                        </DropdownMenu>
+                    </Dropdown>
                 }
             />
-            {showCodes && (
-                <div className="absolute top-full left-0 z-50 mt-1 w-56 max-h-48 overflow-y-auto rounded-xl border border-divider bg-background shadow-xl">
-                    {COUNTRY_CODES.map((c) => (
-                        <button
-                            key={c.code}
-                            type="button"
-                            onClick={() => handleCountryChange(c.code)}
-                            className={`flex w-full items-center gap-3 px-3 py-2 text-sm hover:bg-default-100 transition-colors ${countryCode === c.code ? "bg-primary-50 text-primary" : ""}`}
-                        >
-                            <span className="text-base">{c.flag}</span>
-                            <span className="font-medium">{c.country}</span>
-                            <span className="text-default-400 ml-auto">{c.code}</span>
-                        </button>
-                    ))}
-                </div>
-            )}
         </div>
     )
 }

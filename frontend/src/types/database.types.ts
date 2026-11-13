@@ -696,6 +696,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           latitude: number | null
+          locality_code: string | null
           longitude: number | null
           name: string
           phone: string | null
@@ -706,7 +707,8 @@ export type Database = {
         Insert: {
           address: string
           amenities?: string[]
-          city: string
+          // La completa la base desde locality_code (trigger venue_fill_municipality, 041)
+          city?: string
           country: string
           created_at?: string
           description?: string | null
@@ -715,6 +717,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           latitude?: number | null
+          locality_code?: string | null
           longitude?: number | null
           name: string
           phone?: string | null
@@ -734,6 +737,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           latitude?: number | null
+          locality_code?: string | null
           longitude?: number | null
           name?: string
           phone?: string | null

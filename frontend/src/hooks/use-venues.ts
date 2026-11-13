@@ -8,7 +8,7 @@ import type { VenueRow } from '@/lib/supabase-helpers'
 import type { Venue } from '@/types'
 
 const VENUE_SELECT = `
-  id, name, slug, description, address, city, state, country,
+  id, name, slug, description, address, city, state, country, locality_code,
   latitude, longitude, phone, email, image_url, amenities, is_active,
   created_at, updated_at
 `

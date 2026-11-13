@@ -3,7 +3,7 @@
 import { Input, Modal, ModalBody, ModalContent, ModalHeader, Spinner } from "@heroui/react";
 import { ChevronRight, LocateFixed, MapPin } from "lucide-react";
 import { useMemo, useState } from "react";
-import { provinceName, PROVINCES } from "@/lib/ar-provinces";
+import { provinceName } from "@/lib/ar-provinces";
 import type { LocalityInfo } from "@/lib/geo/locality-locator";
 import { useLocalityIndex } from "@/components/shared/locality-picker";
 import { useVenues } from "@/hooks/use-venues";
@@ -33,21 +33,16 @@ export function LocationChooserModal({ isOpen, onClose, onChoose, onLocateMe, cu
     const { data: venues } = useVenues();
     const [text, setText] = useState("");
 
-    // Municipios con complejos: se cruza el texto "municipio + provincia" del complejo con el catálogo
+    // Municipios con complejos: por el municipio guardado en cada complejo (venues.locality_code)
     const suggestions = useMemo(() => {
         if (!index || !venues) return [] as LocalityInfo[];
-        const provinceByName = new Map(PROVINCES.map((p) => [fold(p.name), p.code]));
         const seen = new Set<string>();
         const out: LocalityInfo[] = [];
         for (const v of venues) {
-            if (!v.city) continue;
-            const city = fold(v.city);
-            const prov = v.state ? provinceByName.get(fold(v.state)) : undefined;
-            for (const l of index.values()) {
-                if (fold(l.name) !== city || (prov && l.province !== prov) || seen.has(l.code)) continue;
-                seen.add(l.code);
-                out.push(l);
-            }
+            const l = v.localityCode ? index.get(v.localityCode) : undefined;
+            if (!l || seen.has(l.code)) continue;
+            seen.add(l.code);
+            out.push(l);
         }
         return out.sort((a, b) => a.name.localeCompare(b.name, "es"));
     }, [index, venues]);

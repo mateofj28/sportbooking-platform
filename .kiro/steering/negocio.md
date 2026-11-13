@@ -120,3 +120,10 @@ Relación clave:
 - La base lo garantiza (`guard_profile_update`, migraciones 039/040): por la API, quien no es ADMIN general solo puede
   cambiar teléfono, foto y provincia de su propio perfil. Nunca su rol, sede, estado, DNI ni nombre.
 - Formato de teléfono guardado: `+<código> <número>` (8 a 11 dígitos en el número).
+
+## Ubicación de los complejos
+
+- Cada complejo pertenece a un **municipio** del catálogo oficial (`ar_localities`, el mismo de la publicidad y de
+  "¿Dónde querés jugar?"). Se guarda en `venues.locality_code`; la base completa `city` (nombre del municipio) y
+  `state` (provincia) con el trigger `venue_fill_municipality` (migración 041).
+- En la interfaz la palabra es siempre **"Municipio"**, nunca "Ciudad" ni "Localidad". Formularios: `MunicipalityFields`.

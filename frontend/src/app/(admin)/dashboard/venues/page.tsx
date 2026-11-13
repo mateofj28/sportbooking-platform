@@ -6,7 +6,6 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, useDisclosure, Link,
 } from "@heroui/react";
 import { DataTable } from "@/components/shared/data-table";
-import { Autocomplete, AutocompleteItem } from "@heroui/autocomplete";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize } from "@/lib/supabase-helpers";
@@ -16,7 +15,9 @@ import { useToastStore } from "@/stores/toast-store";
 import { Plus, Trash2, Pencil, Search } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useFacilities } from "@/hooks/use-facilities";
-import { fetchProvinces, fetchLocalities } from "@/lib/argentina-locations";
+import { MunicipalityFields } from "@/components/shared/municipality-fields";
+import { useLocalityIndex } from "@/components/shared/locality-picker";
+import { PROVINCES } from "@/lib/ar-provinces";
 import { ImageUpload } from "@/components/shared/image-upload";
 import type { Venue } from "@/types";
 
@@ -46,9 +47,10 @@ export default function AdminVenuesPage() {
   const addToast = useToastStore((s) => s.addToast);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
-  // province = id de Georef (para buscar localidades); provinceName = nombre (para guardar)
-  const [form, setForm] = useState({ name: "", slug: "", address: "", province: "", provinceName: "", city: "", description: "", amenities: [] as string[], imageUrl: "" });
-  const [editForm, setEditForm] = useState({ id: "", name: "", address: "", province: "", provinceName: "", city: "", description: "", amenities: [] as string[], imageUrl: "" });
+  // Ubicación = provincia (ISO) + municipio del catálogo. La base completa city/state desde
+  // locality_code (trigger venue_fill_municipality, migración 041).
+  const [form, setForm] = useState({ name: "", slug: "", address: "", provinceCode: "", localityCode: "", description: "", amenities: [] as string[], imageUrl: "" });
+  const [editForm, setEditForm] = useState({ id: "", name: "", address: "", provinceCode: "", localityCode: "", description: "", amenities: [] as string[], imageUrl: "" });
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const toggleCreateAmenity = (a: string) =>
@@ -59,28 +61,8 @@ export default function AdminVenuesPage() {
   const { data: venues, isLoading } = useAllVenues();
   const { data: facilities } = useFacilities();
 
-  // Provincias (API Georef). Se cargan una vez y se cachean.
-  const { data: provinces } = useQuery({
-    queryKey: ["ar-provinces"],
-    queryFn: fetchProvinces,
-    staleTime: 1000 * 60 * 60 * 24, // 24h
-  });
-
-  // Localidades según la provincia del formulario de creación
-  const { data: createLocalities, isFetching: loadingCreateLoc } = useQuery({
-    queryKey: ["ar-localities", form.province],
-    queryFn: () => fetchLocalities(form.province),
-    enabled: !!form.province,
-    staleTime: 1000 * 60 * 60 * 24,
-  });
-
-  // Localidades según la provincia del formulario de edición
-  const { data: editLocalities, isFetching: loadingEditLoc } = useQuery({
-    queryKey: ["ar-localities", editForm.province],
-    queryFn: () => fetchLocalities(editForm.province),
-    enabled: !!editForm.province,
-    staleTime: 1000 * 60 * 60 * 24,
-  });
+  // Catálogo de municipios (mismo de la publicidad), para ubicar los complejos existentes
+  const { data: localityIndex } = useLocalityIndex();
 
   const [search, setSearch] = useState("");
 
@@ -105,8 +87,7 @@ export default function AdminVenuesPage() {
         name: data.name,
         slug: data.slug,
         address: data.address,
-        state: data.provinceName,
-        city: data.city,
+        locality_code: data.localityCode || null,
         country: COUNTRY,
         description: data.description || null,
         amenities: data.amenities,
@@ -122,8 +103,7 @@ export default function AdminVenuesPage() {
       const { error } = await supabase.from("venues").update({
         name: data.name,
         address: data.address,
-        state: data.provinceName,
-        city: data.city,
+        locality_code: data.localityCode || null,
         country: COUNTRY,
         description: data.description || null,
         amenities: data.amenities,
@@ -143,14 +123,15 @@ export default function AdminVenuesPage() {
   });
 
   const handleEdit = (venue: Venue) => {
-    const prov = (provinces || []).find((p) => p.nombre === venue.state);
+    // Provincia: la del municipio guardado; si todavía no tiene, la que coincide por nombre
+    const loc = venue.localityCode ? localityIndex?.get(venue.localityCode) : undefined;
+    const provinceCode = loc?.province ?? PROVINCES.find((p) => p.name === venue.state)?.code ?? "";
     setEditForm({
       id: venue.id,
       name: venue.name,
       address: venue.address,
-      province: prov?.id || "",
-      provinceName: venue.state || "",
-      city: venue.city,
+      provinceCode,
+      localityCode: venue.localityCode ?? "",
       description: venue.description || "",
       amenities: venue.amenities || [],
       imageUrl: venue.imageUrl || "",
@@ -164,7 +145,7 @@ export default function AdminVenuesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold">Complejos</h1><p className="text-sm text-default-500 mt-1">Gestiona los complejos deportivos</p></div>
-        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", province: "", provinceName: "", city: "", description: "", amenities: [], imageUrl: "" }); onOpen(); }}>Nuevo Complejo</Button>
+        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", provinceCode: "", localityCode: "", description: "", amenities: [], imageUrl: "" }); onOpen(); }}>Nuevo Complejo</Button>
       </div>
 
       {/* Filter */}
@@ -220,36 +201,11 @@ export default function AdminVenuesPage() {
           <ModalBody className="gap-4">
             <Input label="Nombre" variant="bordered" value={form.name} onValueChange={(v) => setForm({ ...form, name: v, slug: v.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })} />
             <Input label="Dirección" variant="bordered" value={form.address} onValueChange={(v) => setForm({ ...form, address: v })} />
-            <div className="grid grid-cols-2 gap-4">
-              <Autocomplete
-                label="Provincia"
-                placeholder="Buscar provincia..."
-                variant="bordered"
-                selectedKey={form.province || null}
-                onSelectionChange={(key) => {
-                  const id = (key as string) || "";
-                  const name = (provinces || []).find((p) => p.id === id)?.nombre || "";
-                  setForm({ ...form, province: id, provinceName: name, city: "" });
-                }}
-              >
-                {(provinces || []).map((p) => (
-                  <AutocompleteItem key={p.id}>{p.nombre}</AutocompleteItem>
-                ))}
-              </Autocomplete>
-              <Autocomplete
-                label="Localidad"
-                placeholder={form.province ? "Buscar localidad..." : "Elige una provincia primero"}
-                variant="bordered"
-                isDisabled={!form.province}
-                isLoading={loadingCreateLoc}
-                selectedKey={form.city || null}
-                onSelectionChange={(key) => setForm({ ...form, city: (key as string) || "" })}
-              >
-                {(createLocalities || []).map((c) => (
-                  <AutocompleteItem key={c.nombre}>{c.nombre}</AutocompleteItem>
-                ))}
-              </Autocomplete>
-            </div>
+            <MunicipalityFields
+              isRequired
+              value={{ provinceCode: form.provinceCode, localityCode: form.localityCode }}
+              onChange={(v) => setForm({ ...form, ...v })}
+            />
             <Textarea label="Descripción" variant="bordered" value={form.description} onValueChange={(v) => setForm({ ...form, description: v })} />
             <ImageUpload value={form.imageUrl} onChange={(url) => setForm({ ...form, imageUrl: url })} />
             <div>
@@ -271,7 +227,7 @@ export default function AdminVenuesPage() {
               </div>
             </div>
           </ModalBody>
-          <ModalFooter><Button variant="light" onPress={onClose}>Cancelar</Button><Button color="primary" onPress={() => createMutation.mutate(form)} isLoading={createMutation.isPending} isDisabled={!form.name || !form.province || !form.city}>Crear</Button></ModalFooter>
+          <ModalFooter><Button variant="light" onPress={onClose}>Cancelar</Button><Button color="primary" onPress={() => createMutation.mutate(form)} isLoading={createMutation.isPending} isDisabled={!form.name || !form.localityCode}>Crear</Button></ModalFooter>
         </ModalContent>
       </Modal>
 
@@ -281,36 +237,11 @@ export default function AdminVenuesPage() {
           <ModalBody className="gap-4">
             <Input label="Nombre" variant="bordered" value={editForm.name} onValueChange={(v) => setEditForm({ ...editForm, name: v })} />
             <Input label="Dirección" variant="bordered" value={editForm.address} onValueChange={(v) => setEditForm({ ...editForm, address: v })} />
-            <div className="grid grid-cols-2 gap-4">
-              <Autocomplete
-                label="Provincia"
-                placeholder="Buscar provincia..."
-                variant="bordered"
-                selectedKey={editForm.province || null}
-                onSelectionChange={(key) => {
-                  const id = (key as string) || "";
-                  const name = (provinces || []).find((p) => p.id === id)?.nombre || "";
-                  setEditForm({ ...editForm, province: id, provinceName: name, city: "" });
-                }}
-              >
-                {(provinces || []).map((p) => (
-                  <AutocompleteItem key={p.id}>{p.nombre}</AutocompleteItem>
-                ))}
-              </Autocomplete>
-              <Autocomplete
-                label="Localidad"
-                placeholder={editForm.province ? "Buscar localidad..." : "Elige una provincia primero"}
-                variant="bordered"
-                isDisabled={!editForm.province}
-                isLoading={loadingEditLoc}
-                selectedKey={editForm.city || null}
-                onSelectionChange={(key) => setEditForm({ ...editForm, city: (key as string) || "" })}
-              >
-                {(editLocalities || []).map((c) => (
-                  <AutocompleteItem key={c.nombre}>{c.nombre}</AutocompleteItem>
-                ))}
-              </Autocomplete>
-            </div>
+            <MunicipalityFields
+              isRequired
+              value={{ provinceCode: editForm.provinceCode, localityCode: editForm.localityCode }}
+              onChange={(v) => setEditForm({ ...editForm, ...v })}
+            />
             <Textarea label="Descripción" variant="bordered" value={editForm.description} onValueChange={(v) => setEditForm({ ...editForm, description: v })} />
             <ImageUpload value={editForm.imageUrl} onChange={(url) => setEditForm({ ...editForm, imageUrl: url })} />
             <div>
@@ -332,7 +263,7 @@ export default function AdminVenuesPage() {
               </div>
             </div>
           </ModalBody>
-          <ModalFooter><Button variant="light" onPress={onEditClose}>Cancelar</Button><Button color="primary" onPress={() => editMutation.mutate(editForm)} isLoading={editMutation.isPending}>Guardar</Button></ModalFooter>
+          <ModalFooter><Button variant="light" onPress={onEditClose}>Cancelar</Button><Button color="primary" onPress={() => editMutation.mutate(editForm)} isLoading={editMutation.isPending} isDisabled={!editForm.name || !editForm.localityCode}>Guardar</Button></ModalFooter>
         </ModalContent>
       </Modal>
 

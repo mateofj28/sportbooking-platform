@@ -53,9 +53,12 @@ export interface Venue {
     slug: string;
     description?: string;
     address: string;
+    /** Nombre del municipio (lo completa la base desde localityCode). */
     city: string;
     state?: string;
     country: string;
+    /** Código del municipio (ar_localities: "mun-<id>" / "dep-<id>"). */
+    localityCode?: string | null;
     latitude?: number;
     longitude?: number;
     phone?: string;

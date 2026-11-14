@@ -141,9 +141,13 @@ Relación clave:
   24 h se mantienen). Cancele quien cancele, se devuelve el **100% de lo pagado** (`cancel_booking`).
 - **Sede**: suma el **precio base** recién cuando el turno pasa a *Completada* (trigger `credit_venue_on_complete`, una
   sola vez). La comisión queda como ganancia de la empresa. Una cancelación nunca toca la billetera de la sede.
-- **Liquidación mensual** (Panel → Balances): solo meses ya terminados (hora AR), por el **monto exacto**, una vez por
-  sede y mes, con número de transferencia y/o comprobante (bucket privado `settlement-receipts`). Un turno de un mes
-  ya liquidado que se completa tarde va al mes en curso.
+- **Pagos a complejos a pedido** (migración 045; reemplaza la liquidación mensual):
+  - Saldo de la sede = turnos jugados − pagos recibidos. **Disponible** = saldo − lo ya solicitado.
+  - El admin de sede **solicita el pago cuando quiera** (Panel → Billetera): todo lo disponible u otro monto (> 0,
+    hasta lo disponible). **Una sola solicitud pendiente** por complejo a la vez.
+  - El admin general (Panel → Balances) la **paga** por el monto pedido, o la **rechaza con motivo** (el monto
+    vuelve al disponible). También puede **pagar sin solicitud**, hasta lo disponible (no toca lo ya solicitado).
+  - Todo pago lleva número de transferencia y/o comprobante (bucket privado `settlement-receipts`).
 - **Integridad**: todo movimiento es una fila inmutable (`wallet_transactions`, `venue_ledger`); nadie escribe por la
   API. Los puntos solo se mueven con las funciones de la migración 043. Un usuario con movimientos no se borra: se desactiva.
 - Pantallas: cliente "Mi billetera" (`/wallet`, saldo en el navbar); admin de sede "Billetera"; admin general "Puntos" y "Balances".

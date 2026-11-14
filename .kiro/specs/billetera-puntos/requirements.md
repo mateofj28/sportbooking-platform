@@ -21,7 +21,7 @@ Decisiones tomadas con el dueño del negocio (respuestas a las preguntas abierta
 | D3 | Turnos fijos | Se crean pendientes; **cada fecha se paga con puntos** desde "Mis reservas" (botón Pagar). Si no se paga, se cancela sola como hoy (menos de 24 h antes). |
 | D4 | Reserva manual de un admin para un cliente | Queda pendiente; **el cliente la paga con sus puntos**. |
 | D5 | Admins que reservan como clientes | **Pagan con puntos**, con las mismas reglas que un cliente. |
-| D6 | Liquidación mensual | El sistema calcula lo del mes (turnos completados del 1 al último día, hora AR); el admin registra el pago por **ese monto exacto** con comprobante. Sin pagos parciales. |
+| D6 | Pagos a complejos | ~~Liquidación mensual por monto exacto~~ **Reemplazado (migración 045):** la sede solicita su pago cuando quiera (todo lo disponible u otro monto > 0), una solicitud pendiente a la vez; el admin general la paga o la rechaza con motivo, y también puede pagar sin solicitud. Ver Requisito 8. |
 | D7 | Ajustes manuales | Una resta nunca deja el saldo en negativo. "Recaudado" = recargas − restas. |
 | D8 | Reservas existentes | **Se borran todas** para arrancar en limpio. |
 | D9 | Redondeo | La comisión se redondea al peso; las tarifas base son pesos enteros. |
@@ -148,19 +148,23 @@ cargados, cobro automático de turnos fijos, vencimiento de puntos, recarga onli
 4. LOS montos DEBEN cuadrar: Recaudado = En billeteras + (puntos gastados en turnos jugados) +
    (puntos gastados en turnos todavía no jugados). Si no cuadra, la base tiene un error y debe detectarse en las pruebas.
 
-## Requisito 8 — Liquidación mensual
+## Requisito 8 — Pagos a complejos a pedido (reemplaza la liquidación mensual, migración 045)
 
-**Historia:** como admin general, quiero registrar el pago mensual a cada complejo con su comprobante.
+**Historia:** como admin de sede, quiero cobrar lo que generó mi complejo cuando lo necesite; como admin general,
+quiero pagar o rechazar esos pedidos, y poder pagar por mi cuenta.
 
-1. EL admin general DEBE poder "Registrar pago a sede" para un complejo y un **mes ya terminado** (hora AR).
-2. EL monto DEBE ser exactamente lo acreditado a esa sede en ese mes y todavía no liquidado; no se puede editar (D6).
-3. DEBE exigir el comprobante: archivo (imagen o PDF, máx. 5 MB) y/o número de transferencia; al menos uno.
-4. AL registrarlo, EL sistema DEBE crear el movimiento rojo en la billetera de la sede y dejar ese mes en cero.
-5. UN mismo complejo y mes NO DEBE poder liquidarse dos veces. Un mes con monto 0 no se liquida.
-6. LOS comprobantes DEBEN ser privados: solo el admin general y el admin de esa sede pueden verlos.
-7. SI después de liquidar se completa tarde un turno de ese mes (ej. el cron no corrió), DEBE sumarse al mes
-   en que se acreditó y no reabrir el mes ya pagado.
-
+1. EL saldo de la sede DEBE ser turnos jugados − pagos recibidos; el **disponible** DEBE ser el saldo menos lo que
+   está en una solicitud pendiente.
+2. EL admin de sede DEBE poder **solicitar el pago** cuando quiera, las veces que quiera, eligiendo **todo lo
+   disponible** u **otro monto** (entero mayor que 0, hasta lo disponible).
+3. UN complejo NO DEBE poder tener más de **una solicitud pendiente** a la vez.
+4. EL admin general DEBE poder **pagar** una solicitud por el monto pedido (no editable), con número de
+   transferencia y/o comprobante (al menos uno). Al pagarla, DEBE restarse de la billetera de la sede.
+5. EL admin general DEBE poder **rechazar** una solicitud con motivo obligatorio; el monto vuelve al disponible y
+   el complejo ve el motivo.
+6. EL admin general DEBE poder **pagar sin solicitud**, hasta lo disponible (sin tocar lo ya solicitado).
+7. UNA solicitud NO DEBE poder pagarse ni rechazarse dos veces.
+8. LOS comprobantes DEBEN ser privados: solo el admin general y el admin de esa sede pueden verlos.
 ## Requisito 9 — Arranque en limpio (D8)
 
 1. AL instalar la billetera, EL sistema DEBE borrar todas las reservas existentes, los turnos fijos, los

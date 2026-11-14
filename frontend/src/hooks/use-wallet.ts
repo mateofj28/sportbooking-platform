@@ -76,19 +76,52 @@ export interface GlobalHistoryItem {
   createdAt: string
 }
 
-export interface BalanceMonth {
+export type PayoutStatus = 'PENDING' | 'PAID' | 'REJECTED'
+
+/** Solicitud de pago de un complejo (migración 045). */
+export interface PayoutRequest {
+  id: string
+  amount: number
+  status: PayoutStatus
+  requestedAt: string
+  resolvedAt: string | null
+  rejectReason: string | null
+}
+
+/** Saldo de un complejo (Balances). */
+export interface VenueBalance {
   venueId: string
   venueName: string
-  period: string
-  amount: number
+  /** Turnos jugados − pagos recibidos. */
+  balance: number
+  /** Monto de la solicitud pendiente. */
+  reserved: number
+  /** balance − reserved: lo que se puede pagar sin solicitud. */
+  available: number
+  earned: number
   commission: number
-  bookings: number
-  status: 'PAID' | 'PENDING' | 'IN_PROGRESS'
-  settlementId: string | null
-  paidAt: string | null
-  paidAmount: number | null
+  lastPaidAt: string | null
+}
+
+export interface PendingPayoutRequest {
+  id: string
+  venueId: string
+  venueName: string
+  amount: number
+  requestedAt: string
+  requestedBy: string
+}
+
+export interface VenuePayment {
+  id: string
+  venueId: string
+  venueName: string
+  amount: number
+  paidAt: string
   transferRef: string | null
   receiptPath: string | null
+  /** true si se pagó a partir de una solicitud del complejo. */
+  requested: boolean
 }
 
 export interface Balances {
@@ -99,9 +132,22 @@ export interface Balances {
   commission: number
   paidToVenues: number
   pendingToVenues: number
+  requestedByVenues: number
   balanced: boolean
-  currentMonth: string
-  months: BalanceMonth[]
+  venues: VenueBalance[]
+  requests: PendingPayoutRequest[]
+  payments: VenuePayment[]
+}
+
+export interface VenueWallet extends Page<VenueLedgerItem> {
+  venueId: string
+  /** Saldo sin cobrar (turnos jugados − pagos). */
+  pending: number
+  reserved: number
+  available: number
+  thisMonth: number
+  pendingRequest: { id: string; amount: number; requestedAt: string } | null
+  requests: PayoutRequest[]
 }
 
 function filterParams(f: HistoryFilters) {
@@ -175,8 +221,7 @@ export function useVenueWallet(venueId: string | null, filters: HistoryFilters, 
     queryKey: [...WALLET_KEY, 'venue', venueId, filters],
     enabled,
     placeholderData: keepPreviousData,
-    queryFn: () => rpc<Page<VenueLedgerItem> & { venueId: string; pending: number; thisMonth: number }>(
-      'venue_wallet', { p_venue: venueId, ...filterParams(filters) }),
+    queryFn: () => rpc<VenueWallet>('venue_wallet', { p_venue: venueId, ...filterParams(filters) }),
   })
 }
 
@@ -221,29 +266,51 @@ export function useAdjustPoints() {
 
 const RECEIPTS_BUCKET = 'settlement-receipts'
 
-/** Registrar el pago mensual a una sede: sube el comprobante (si hay) y liquida. */
-export function useSettleVenueMonth() {
+/** Admin de sede: solicitar el pago. amount null = todo lo disponible. */
+export function useRequestPayout() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ venueId, period, transferRef, file }: {
-      venueId: string; period: string; transferRef: string; file: File | null
+    mutationFn: (amount: number | null) => rpc<{ id: string; amount: number }>('request_venue_payout', { p_amount: amount }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: WALLET_KEY }),
+  })
+}
+
+/** Admin general: rechazar una solicitud con motivo (el monto vuelve al disponible). */
+export function useRejectPayout() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ requestId, reason }: { requestId: string; reason: string }) =>
+      rpc<{ id: string }>('reject_venue_payout', { p_request: requestId, p_reason: reason }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: WALLET_KEY }),
+  })
+}
+
+/**
+ * Admin general: pagar a un complejo. Con requestId paga esa solicitud (monto fijo);
+ * sin requestId paga por su cuenta (amount null = todo lo disponible). Sube el comprobante si hay.
+ */
+export function usePayVenue() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ venueId, amount, requestId, transferRef, file }: {
+      venueId: string; amount: number | null; requestId: string | null; transferRef: string; file: File | null
     }) => {
       let path: string | null = null
       if (file) {
         const ext = (file.name.split('.').pop() || 'pdf').toLowerCase().replace(/[^a-z0-9]/g, '')
-        path = `${venueId}/${period}/${Date.now()}.${ext}`
+        path = `${venueId}/${Date.now()}.${ext}`
         const { error: upErr } = await supabase.storage.from(RECEIPTS_BUCKET)
           .upload(path, file, { upsert: false, contentType: file.type })
         if (upErr) throw toAppError(upErr, 'No se pudo subir el comprobante')
       }
-      return rpc<{ settlement_id: string; amount: number }>('settle_venue_month', {
-        p_venue: venueId, p_period: period, p_transfer_ref: transferRef.trim() || null, p_receipt_path: path,
+      return rpc<{ settlement_id: string; amount: number }>('pay_venue', {
+        p_venue: venueId, p_amount: requestId ? null : amount, p_request: requestId,
+        p_transfer_ref: transferRef.trim() || null, p_receipt_path: path,
       })
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: WALLET_KEY }),
   })
 }
-
 /** URL temporal (5 min) para ver un comprobante privado. */
 export async function getReceiptUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage.from(RECEIPTS_BUCKET).createSignedUrl(path, 300)

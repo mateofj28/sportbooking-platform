@@ -2,15 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
-import { CalendarCheck, Wallet } from "lucide-react";
+import {
+    Button, Chip, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Radio, RadioGroup,
+    Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow,
+} from "@heroui/react";
+import { CalendarCheck, Clock, HandCoins, Wallet } from "lucide-react";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";
+import { PointsInput } from "@/components/shared/points-input";
 import { LedgerFilters, LedgerPagination, type LedgerFilterValue } from "@/components/shared/ledger-filters";
-import { useVenueWallet } from "@/hooks/use-wallet";
 import { ReceiptButton, SummaryCard } from "@/components/shared/wallet-ui";
+import { useRequestPayout, useVenueWallet, type PayoutStatus } from "@/hooks/use-wallet";
 import { useAuthStore } from "@/stores/auth-store";
-import { formatArDateTime, formatPeriod, formatPoints, VENUE_LEDGER_LABEL } from "@/lib/points";
+import { useToastStore } from "@/stores/toast-store";
+import { formatDateTimeAr } from "@/lib/datetime";
+import { formatPesos, formatPoints, VENUE_LEDGER_LABEL } from "@/lib/points";
 
 const KINDS = [
     { key: "ALL", label: "Todos los movimientos" },
@@ -19,7 +25,13 @@ const KINDS = [
 ];
 const PAGE_SIZE = 20;
 
-/** Billetera de la sede (admin de sede): lo que generó con turnos jugados y lo que le pagó la empresa. */
+const REQUEST_STATUS: Record<PayoutStatus, { label: string; color: "warning" | "success" | "danger" }> = {
+    PENDING: { label: "Pendiente", color: "warning" },
+    PAID: { label: "Pagada", color: "success" },
+    REJECTED: { label: "Rechazada", color: "danger" },
+};
+
+/** Billetera de la sede (admin de sede): lo que generó con turnos jugados, lo que cobró y sus solicitudes de pago. */
 export default function VenueWalletPage() {
     const router = useRouter();
     const user = useAuthStore((s) => s.user);
@@ -27,8 +39,9 @@ export default function VenueWalletPage() {
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
     const [filters, setFilters] = useState<LedgerFilterValue>({ from: "", to: "", kind: "ALL" });
     const [page, setPage] = useState(1);
+    const [requestOpen, setRequestOpen] = useState(false);
 
-    // El admin general ve esto por sede en Balances
+    // El admin general ve los saldos de cada sede en Balances
     useEffect(() => {
         if (isHydrated && user && !isVenueAdmin) router.replace(user.role === "ADMIN" ? "/dashboard/balances" : "/dashboard");
     }, [isHydrated, user, isVenueAdmin, router]);
@@ -37,21 +50,73 @@ export default function VenueWalletPage() {
 
     if (!isVenueAdmin) return <div className="flex justify-center py-12"><Spinner size="lg" /></div>;
 
+    const pendingRequest = data?.pendingRequest ?? null;
+    const available = data?.available ?? 0;
+
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold">Billetera</h1>
-                <p className="mt-1 text-sm text-default-500">
-                    Tu complejo suma el precio de cada turno cuando se juega. La empresa te paga cada mes lo acumulado. 1 punto = $1.
-                </p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h1 className="text-2xl font-bold">Billetera</h1>
+                    <p className="mt-1 text-sm text-default-500">
+                        Tu complejo suma el precio de cada turno cuando se juega. Podés pedir que te paguen cuando quieras. 1 punto = $1.
+                    </p>
+                </div>
+                <Button
+                    color="primary"
+                    startContent={<HandCoins className="h-4 w-4" aria-hidden="true" />}
+                    isDisabled={!data || !!pendingRequest || available <= 0}
+                    onPress={() => setRequestOpen(true)}
+                >
+                    Solicitar pago
+                </Button>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-                <SummaryCard icon={<Wallet className="h-5 w-5 text-primary" />} label="Pendiente de cobro" value={data ? formatPoints(data.pending) : "…"} hint="Lo acumulado que la empresa todavía no te pagó" />
+            {pendingRequest && (
+                <div role="status" className="flex items-start gap-2 rounded-xl border border-warning-200 bg-warning-50 p-3 text-sm text-warning-700">
+                    <Clock className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
+                    <span>
+                        Pediste el pago de <strong>{formatPoints(pendingRequest.amount)}</strong> ({formatPesos(pendingRequest.amount)}) el{" "}
+                        {formatDateTimeAr(pendingRequest.requestedAt)}. Está pendiente: cuando se pague o se rechace, podés pedir otro.
+                    </span>
+                </div>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-3">
+                <SummaryCard icon={<Wallet className="h-5 w-5 text-primary" />} label="Disponible para cobrar" value={data ? formatPoints(available) : "…"} hint={data ? formatPesos(available) : undefined} />
+                <SummaryCard icon={<Clock className="h-5 w-5 text-warning" />} label="Solicitado (pendiente)" value={data ? formatPoints(data.reserved) : "…"} hint="Lo que pediste y todavía no se pagó" />
                 <SummaryCard icon={<CalendarCheck className="h-5 w-5 text-success" />} label="Acreditado este mes" value={data ? formatPoints(data.thisMonth) : "…"} hint="Turnos jugados en el mes en curso" />
             </div>
 
+            {(data?.requests.length ?? 0) > 0 && (
+                <section className="space-y-3" aria-label="Solicitudes de pago">
+                    <h2 className="text-lg font-semibold">Solicitudes de pago</h2>
+                    <DataTable aria-label="Solicitudes de pago">
+                        <TableHeader>
+                            <TableColumn>SOLICITADA</TableColumn>
+                            <TableColumn align="end">MONTO</TableColumn>
+                            <TableColumn>ESTADO</TableColumn>
+                            <TableColumn>RESUELTA</TableColumn>
+                        </TableHeader>
+                        <TableBody>
+                            {(data?.requests ?? []).map((r) => (
+                                <TableRow key={r.id}>
+                                    <TableCell className="text-default-500">{formatDateTimeAr(r.requestedAt)}</TableCell>
+                                    <TableCell className="text-right font-semibold tabular-nums">{formatPoints(r.amount)}</TableCell>
+                                    <TableCell>
+                                        <Chip size="sm" variant="flat" color={REQUEST_STATUS[r.status].color}>{REQUEST_STATUS[r.status].label}</Chip>
+                                        {r.rejectReason && <p className="mt-0.5 max-w-[320px] truncate text-xs text-default-400">Motivo: {r.rejectReason}</p>}
+                                    </TableCell>
+                                    <TableCell className="text-default-500">{r.resolvedAt ? formatDateTimeAr(r.resolvedAt) : "—"}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </DataTable>
+                </section>
+            )}
+
             <section className="space-y-3" aria-label="Movimientos de la sede">
+                <h2 className="text-lg font-semibold">Movimientos</h2>
                 <LedgerFilters value={filters} onChange={(v) => { setFilters(v); setPage(1); }} kinds={KINDS} />
                 {isError ? (
                     <p role="alert" className="text-sm text-danger">{error?.message}</p>
@@ -67,12 +132,9 @@ export default function VenueWalletPage() {
                             <TableBody isLoading={isLoading} loadingContent={<Spinner />} emptyContent="Todavía no hay movimientos">
                                 {(data?.items ?? []).map((m) => (
                                     <TableRow key={m.id}>
-                                        <TableCell className="text-default-500">{formatArDateTime(m.createdAt)}</TableCell>
+                                        <TableCell className="text-default-500">{formatDateTimeAr(m.createdAt)}</TableCell>
                                         <TableCell>
-                                            <p className="font-medium">
-                                                {VENUE_LEDGER_LABEL[m.kind]}
-                                                {m.kind === "SETTLEMENT" && ` — ${formatPeriod(m.period)}`}
-                                            </p>
+                                            <p className="font-medium">{m.kind === "SETTLEMENT" ? m.detail : VENUE_LEDGER_LABEL[m.kind]}</p>
                                             <p className="max-w-[420px] truncate text-xs text-default-400">
                                                 {m.kind === "BOOKING_CREDIT" ? m.detail.replace(/^Turno jugado — /, "") : (m.transferRef ? `Transferencia ${m.transferRef}` : "")}
                                             </p>
@@ -89,6 +151,71 @@ export default function VenueWalletPage() {
                     </>
                 )}
             </section>
+
+            <RequestPayoutModal isOpen={requestOpen} available={available} onClose={() => setRequestOpen(false)} />
         </div>
+    );
+}
+
+/** "Solicitar pago": todo lo disponible o el monto que elija (mayor que 0, hasta lo disponible). */
+function RequestPayoutModal({ isOpen, available, onClose }: { isOpen: boolean; available: number; onClose: () => void }) {
+    const addToast = useToastStore((s) => s.addToast);
+    const request = useRequestPayout();
+    const [mode, setMode] = useState<"all" | "custom">("all");
+    const [amount, setAmount] = useState<number | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (isOpen) { setMode("all"); setAmount(null); setError(null); }
+    }, [isOpen]);
+
+    const customError = mode === "custom" && amount !== null && (amount <= 0 || amount > available)
+        ? `Podés pedir entre 1 y ${formatPoints(available)}` : null;
+    const canSubmit = mode === "all" ? available > 0 : amount !== null && !customError;
+    const toRequest = mode === "all" ? available : amount ?? 0;
+
+    const submit = () => {
+        request.mutate(mode === "all" ? null : amount, {
+            onSuccess: (r) => {
+                addToast(`Pediste el pago de ${formatPoints(r.amount)}. Te avisamos cuando se resuelva.`);
+                onClose();
+            },
+            onError: (e: Error) => setError(e.message),
+        });
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={() => !request.isPending && onClose()} size="md" placement="center">
+            <ModalContent>
+                <ModalHeader>Solicitar pago</ModalHeader>
+                <ModalBody className="gap-4">
+                    <p className="text-sm text-default-600">
+                        Disponible para cobrar: <strong>{formatPoints(available)}</strong> ({formatPesos(available)})
+                    </p>
+                    <RadioGroup label="¿Cuánto querés cobrar?" value={mode} onValueChange={(v) => { setMode(v as "all" | "custom"); setError(null); }}>
+                        <Radio value="all" description={formatPesos(available)}>Todo lo disponible</Radio>
+                        <Radio value="custom">Otro monto</Radio>
+                    </RadioGroup>
+                    {mode === "custom" && (
+                        <PointsInput
+                            label="Monto a cobrar" isRequired max={available}
+                            value={amount}
+                            onChange={(v) => { setAmount(v); setError(null); }}
+                            isInvalid={!!customError} errorMessage={customError ?? undefined}
+                        />
+                    )}
+                    <p className="text-xs text-default-400">
+                        Solo podés tener una solicitud pendiente a la vez. Si se rechaza, el monto vuelve a tu disponible.
+                    </p>
+                    {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+                </ModalBody>
+                <ModalFooter>
+                    <Button variant="light" onPress={onClose} isDisabled={request.isPending}>Cancelar</Button>
+                    <Button color="primary" onPress={submit} isDisabled={!canSubmit} isLoading={request.isPending}>
+                        Solicitar {canSubmit ? formatPoints(toRequest) : ""}
+                    </Button>
+                </ModalFooter>
+            </ModalContent>
+        </Modal>
     );
 }

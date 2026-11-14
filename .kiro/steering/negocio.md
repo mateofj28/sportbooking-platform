@@ -148,6 +148,8 @@ Relación clave:
   - El admin general (Panel → Balances) la **paga** por el monto pedido, o la **rechaza con motivo** (el monto
     vuelve al disponible). También puede **pagar sin solicitud**, hasta lo disponible (no toca lo ya solicitado).
   - Todo pago lleva número de transferencia y/o comprobante (bucket privado `settlement-receipts`).
+  - Avisos in-app (migración 047, por triggers): `PAYOUT_REQUESTED` al admin general; `PAYOUT_PAID` y
+    `PAYOUT_REJECTED` (con el motivo) al admin de la sede. A quien hizo la acción se le marca como leído.
 - **Integridad**: todo movimiento es una fila inmutable (`wallet_transactions`, `venue_ledger`); nadie escribe por la
   API. Los puntos solo se mueven con las funciones de la migración 043. Un usuario con movimientos no se borra: se desactiva.
 - Pantallas: cliente "Mi billetera" (`/wallet`, saldo en el navbar); admin de sede "Billetera"; admin general "Puntos" y "Balances".

@@ -3,7 +3,7 @@
 import { Button, Spinner, Chip } from "@heroui/react";
 import { formatDateShortAr } from "@/lib/datetime";
 import {
-  Bell, Calendar, DollarSign, XCircle, Repeat, UserPlus, TrendingUp, Building2, CheckCheck,
+  Bell, Calendar, DollarSign, XCircle, Repeat, UserPlus, TrendingUp, Building2, CheckCheck, HandCoins, BadgeCheck, Ban,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -30,7 +30,17 @@ const TYPE_META: Record<NotificationType, {
   COMMISSION_EARNED: { icon: <TrendingUp className="h-4 w-4 text-emerald-500" />, iconBg: "bg-emerald-500/10", accent: "border-l-emerald-500", label: "Comisión" },
   VENUE_OR_FACILITY_CREATED: { icon: <Building2 className="h-4 w-4 text-warning" />, iconBg: "bg-warning/10", accent: "border-l-warning", label: "Nueva instalación" },
   USER_REGISTERED: { icon: <UserPlus className="h-4 w-4 text-secondary" />, iconBg: "bg-secondary/10", accent: "border-l-secondary", label: "Nuevo usuario" },
+  PAYOUT_REQUESTED: { icon: <HandCoins className="h-4 w-4 text-warning" />, iconBg: "bg-warning/10", accent: "border-l-warning", label: "Solicitud de pago" },
+  PAYOUT_PAID: { icon: <BadgeCheck className="h-4 w-4 text-success" />, iconBg: "bg-success/10", accent: "border-l-success", label: "Pago recibido" },
+  PAYOUT_REJECTED: { icon: <Ban className="h-4 w-4 text-danger" />, iconBg: "bg-danger/10", accent: "border-l-danger", label: "Solicitud rechazada" },
 };
+
+/** A dónde lleva cada aviso al tocarlo (los de reservas, al detalle de la reserva). */
+function notificationHref(n: AppNotification): string | null {
+  if (n.type === "PAYOUT_REQUESTED") return "/dashboard/balances";
+  if (n.type === "PAYOUT_PAID" || n.type === "PAYOUT_REJECTED") return "/dashboard/wallet";
+  return n.bookingId ? `/bookings/${n.bookingId}` : null;
+}
 
 /** "hace X" en español */
 function timeAgo(iso: string): string {
@@ -60,7 +70,8 @@ export default function NotificationsPage() {
 
   const handleClick = (n: AppNotification) => {
     if (!n.read) markRead.mutate(n.id);
-    if (n.bookingId) router.push(`/bookings/${n.bookingId}`);
+    const href = notificationHref(n);
+    if (href) router.push(href);
   };
 
   return (
@@ -98,7 +109,7 @@ export default function NotificationsPage() {
             </div>
             <p className="font-semibold text-default-600">Sin notificaciones</p>
             <p className="mt-1 text-sm text-default-400 max-w-xs">
-              Aquí verás nuevas reservas, cancelaciones y alertas del sistema.
+              Aquí verás nuevas reservas, cancelaciones, pagos y alertas del sistema.
             </p>
           </div>
         ) : (

@@ -818,6 +818,9 @@ export type Database = {
         | "COMMISSION_EARNED"
         | "VENUE_OR_FACILITY_CREATED"
         | "USER_REGISTERED"
+        | "PAYOUT_REQUESTED"
+        | "PAYOUT_PAID"
+        | "PAYOUT_REJECTED"
       payment_status: "PENDING" | "PAID"
       role: "CLIENT" | "ADMIN" | "VENUE_ADMIN"
     }
@@ -962,6 +965,9 @@ export const Constants = {
         "COMMISSION_EARNED",
         "VENUE_OR_FACILITY_CREATED",
         "USER_REGISTERED",
+        "PAYOUT_REQUESTED",
+        "PAYOUT_PAID",
+        "PAYOUT_REJECTED",
       ],
       payment_status: ["PENDING", "PAID"],
       role: ["CLIENT", "ADMIN", "VENUE_ADMIN"],

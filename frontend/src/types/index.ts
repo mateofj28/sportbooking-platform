@@ -174,7 +174,10 @@ export type NotificationType =
     | "NEW_CLIENT"
     | "COMMISSION_EARNED"
     | "VENUE_OR_FACILITY_CREATED"
-    | "USER_REGISTERED";
+    | "USER_REGISTERED"
+    | "PAYOUT_REQUESTED"
+    | "PAYOUT_PAID"
+    | "PAYOUT_REJECTED";
 
 export interface AppNotification {
     id: string;

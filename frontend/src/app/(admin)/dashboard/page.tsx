@@ -15,12 +15,12 @@ import { supabase } from "@/lib/supabase";
 import { camelize, Tables } from "@/lib/supabase-helpers";
 import { useDashboardBookings } from "@/hooks/use-dashboard-bookings";
 import { useVenues } from "@/hooks/use-venues";
-import { formatTimeAr, formatDateAr } from "@/lib/datetime";
+import { formatTimeAr, formatDateAr, formatDateShortAr } from "@/lib/datetime";
 import { useState, useEffect, useCallback } from "react";
 import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp, CheckCircle2, ChevronRight, Search } from "lucide-react";
 import type { Booking, Facility, PaginatedResult, User as UserType, Venue } from "@/types";
 
-/** Hora 12h en español sin cero adelante: "9:00 a. m." */
+/** Hora 12 h sin cero adelante: "9:00 am" */
 const formatTime12h = formatTimeAr;
 
 /** Precio con separador de miles con coma: 25000 -> "25,000" */
@@ -747,7 +747,7 @@ function OverviewModal({
                                     <TableRow key={b.id}>
                                         <TableCell className="font-medium">{b.facility.name}</TableCell>
                                         <TableCell className="whitespace-nowrap">{b.user ? `${b.user.firstName} ${b.user.lastName}` : "Cliente"}</TableCell>
-                                        <TableCell className="whitespace-nowrap">{formatDateAr(b.startDatetime, { day: "numeric", month: "short", year: "numeric" })}</TableCell>
+                                        <TableCell className="whitespace-nowrap">{formatDateShortAr(b.startDatetime)}</TableCell>
                                         <TableCell className="whitespace-nowrap">{formatTime12h(b.startDatetime)} — {formatTime12h(b.endDatetime)}</TableCell>
                                         <TableCell className="whitespace-nowrap font-semibold text-success">${formatPrice(basePriceOf(b))}</TableCell>
                                         <TableCell>

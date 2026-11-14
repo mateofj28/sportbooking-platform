@@ -9,7 +9,7 @@ import { parseDate, type CalendarDate } from "@internationalized/date";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize } from "@/lib/supabase-helpers";
-import { formatTimeAr, formatDateAr } from "@/lib/datetime";
+import { formatTimeAr, formatDateAr, formatDateShortAr } from "@/lib/datetime";
 import { todayAr, addYearsToDate } from "@/lib/ads";
 import { bookingRangeSchema, BOOKING_RANGE_YEARS } from "@/lib/validations/booking.schema";
 import { ADMIN_BOOKING_STATES, getAdminBookingState, type AdminBookingState } from "@/lib/booking-status";
@@ -77,7 +77,7 @@ function resolveRange(preset: DatePreset, custom: { start: CalendarDate; end: Ca
     }
 }
 
-const formatDate = (d: string) => formatDateAr(d, { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
+const formatDate = (d: string) => formatDateShortAr(d);
 const formatMoney = (v: number | null | undefined) => Math.round(Number(v ?? 0)).toLocaleString("en-US");
 
 export default function AdminBookingsPage() {

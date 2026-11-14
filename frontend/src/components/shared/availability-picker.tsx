@@ -2,6 +2,7 @@
 import { toAppError } from '@/lib/error-messages'
 
 import { useMemo, useState, useEffect } from "react";
+import { formatClock } from "@/lib/datetime";
 import { useQueries } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import type { Facility } from "@/types";
@@ -61,15 +62,8 @@ export function generateTimeSlots(openTime: string, closeTime: string, durationM
     return slots;
 }
 
-/** "09:00" -> "9:00 a. m." (sin cero adelante, formato español) */
-export function formatTime12h(time: string): string {
-    if (!time) return "";
-    const [rawH, m] = time.split(":").map(Number);
-    const h = ((rawH % 24) + 24) % 24;
-    const ampm = h < 12 ? "a. m." : "p. m.";
-    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
-}
+/** "20:45" -> "8:45 pm" (formato único, lib/datetime) */
+export const formatTime12h = formatClock;
 
 /** 25000 -> "25,000" */
 export function formatPrice(value: number): string {

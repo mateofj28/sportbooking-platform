@@ -7,20 +7,14 @@ import { useRecurringBookings, usePriceChanges } from "@/hooks/use-bookings";
 import { PayWithPointsButton } from "@/components/shared/pay-with-points-button";
 import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { getBookingStatusChip } from "@/lib/booking-status";
-import { formatTimeAr, formatDateAr } from "@/lib/datetime";
+import { formatTimeAr, formatDateAr, formatClock } from "@/lib/datetime";
 import { Navbar } from "@/components/layout/navbar";
 import { ArrowLeft, MapPin, Clock, Repeat, Calendar, DollarSign } from "lucide-react";
 
 const DAYS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
 
-function formatTime12h(time: string): string {
-    if (!time) return "";
-    const [rawH, m] = time.split(":").map(Number);
-    const h = ((rawH % 24) + 24) % 24;
-    const ampm = h < 12 ? "a. m." : "p. m.";
-    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
-}
+/** "20:45" -> "8:45 pm" (formato único, lib/datetime) */
+const formatTime12h = formatClock;
 function formatDateLong(dateStr: string): string {
     return formatDateAr(dateStr);
 }

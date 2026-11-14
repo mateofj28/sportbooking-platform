@@ -41,6 +41,17 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
 - Las fechas de negocio se interpretan en **hora de Argentina (UTC-3)**. Ver `lib/ads.ts`
   (`arLocalToIso` / `isoToArLocal`) y `lib/datetime.ts`.
 
+## Formato de fecha, hora y montos (al mostrar)
+
+- **Fecha y hora**: `13 nov 2026, 8:45 pm` — en tablas, historiales, vigencias y detalles. Usar `formatDateTimeAr(iso)`.
+- **Fecha sola**: `13 nov 2026` → `formatDateShortAr(iso)`.
+- **Hora sola**: `8:45 pm` (12 h, sin cero adelante, `am`/`pm` en minúscula, sin puntos) → `formatTimeAr(iso)` para un
+  instante, `formatClock("20:45")` para horas de reloj (horarios, tarifas, slots, opciones de selectores).
+- Todo sale de `lib/datetime.ts`, siempre en hora de Argentina. **No armar fechas ni horas a mano** en las pantallas
+  (`toLocaleString`, `"AM"/"PM"`, `"a. m."`): si hace falta un formato nuevo, se agrega ahí.
+- **Montos**: miles con coma. Precios `$63,000` (`formatPrice`), puntos `63,000 pts` (`formatPoints`), y cuando
+  ayude, el equivalente en pesos `$63,000 ARS` (`formatPesos`). Campos de cantidad de puntos: `PointsInput`.
+
 ## Tema y colores
 
 - Modo claro: fondo de página `#ffffff`, tarjetas `#f8f8f8` (token `content1`).

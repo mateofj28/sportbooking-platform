@@ -8,6 +8,7 @@
 
 import type { LocalityInfo } from "@/lib/geo/locality-locator";
 import { provinceName } from "@/lib/ar-provinces";
+import { formatDateTimeAr } from "@/lib/datetime";
 
 /** NATIONAL = todo el país. LOCAL = solo en los municipios elegidos. */
 export type AdScope = "NATIONAL" | "LOCAL";
@@ -169,18 +170,9 @@ export function isoToArLocal(iso: string | null | undefined): string {
     return Number.isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 16);
 }
 
-/** "9 nov 2026, 20:30" en hora AR. */
+/** "9 nov 2026, 8:30 pm" en hora AR (formato único, lib/datetime). */
 export function formatAdDate(iso: string | null): string {
-    if (!iso) return "";
-    return new Date(iso).toLocaleString("es-AR", {
-        timeZone: "America/Argentina/Buenos_Aires",
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-    });
+    return formatDateTimeAr(iso);
 }
 
 /** Resumen de vigencia para tablas. */

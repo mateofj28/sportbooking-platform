@@ -4,7 +4,7 @@ import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Texta
 import { AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useCancelBooking } from "@/hooks/use-bookings";
-import { formatDateAr, formatTimeAr } from "@/lib/datetime";
+import { formatDateAr, formatTimeAr, formatDateShortAr } from "@/lib/datetime";
 import { cancelBookingSchema, CANCEL_REASON_MAX } from "@/lib/validations/booking.schema";
 import { useToastStore } from "@/stores/toast-store";
 import { formatPoints } from "@/lib/points";
@@ -77,7 +77,7 @@ export function CancelBookingModal({ booking, onClose, onCancelled }: CancelBook
                         <p className="text-sm text-default-600">
                             ¿Seguro que deseas cancelar la reserva de <strong>{booking.clientName}</strong> en{" "}
                             <strong>{booking.facilityName}</strong> del{" "}
-                            {formatDateAr(booking.startDatetime, { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}{" "}
+                            {formatDateShortAr(booking.startDatetime)}{" "}
                             a las {formatTimeAr(booking.startDatetime)}? Esta acción no se puede deshacer.
                         </p>
                     )}

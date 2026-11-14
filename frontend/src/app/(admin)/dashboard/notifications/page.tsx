@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, Spinner, Chip } from "@heroui/react";
+import { formatDateShortAr } from "@/lib/datetime";
 import {
   Bell, Calendar, DollarSign, XCircle, Repeat, UserPlus, TrendingUp, Building2, CheckCheck,
 } from "lucide-react";
@@ -42,9 +43,7 @@ function timeAgo(iso: string): string {
   if (h < 24) return `hace ${h} h`;
   const d = Math.floor(h / 24);
   if (d < 7) return `hace ${d} día${d !== 1 ? "s" : ""}`;
-  return new Date(iso).toLocaleDateString("es-AR", {
-    day: "numeric", month: "short", timeZone: "America/Argentina/Buenos_Aires",
-  });
+  return formatDateShortAr(iso);
 }
 
 export default function NotificationsPage() {

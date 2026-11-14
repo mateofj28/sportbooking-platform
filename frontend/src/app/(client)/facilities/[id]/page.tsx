@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState, useMemo, useEffect } from "react";
+import { formatClock } from "@/lib/datetime";
 import {
     Button,
     Card,
@@ -84,15 +85,8 @@ function generateTimeSlots(openTime: string, closeTime: string, durationMin: num
     return slots;
 }
 
-/** Convierte "09:00" -> "9:00 a. m." (sin cero adelante, formato español; envuelve horas >= 24 para cruces de medianoche) */
-function formatTime12h(time: string): string {
-    if (!time) return "";
-    const [rawH, m] = time.split(":").map(Number);
-    const h = ((rawH % 24) + 24) % 24;
-    const ampm = h < 12 ? "a. m." : "p. m.";
-    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
-}
+/** "20:45" -> "8:45 pm" (formato único, lib/datetime) */
+const formatTime12h = formatClock;
 
 /** Formatea un precio con separador de miles con coma: 25000 -> "25,000" */
 function formatPrice(value: number): string {

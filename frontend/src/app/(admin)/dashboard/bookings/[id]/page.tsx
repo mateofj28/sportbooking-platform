@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { camelize } from "@/lib/supabase-helpers";
-import { formatDateAr, formatTimeAr } from "@/lib/datetime";
+import { formatDateAr, formatTimeAr, formatDateTimeAr } from "@/lib/datetime";
 import { ADMIN_BOOKING_STATES, getAdminBookingState } from "@/lib/booking-status";
 import { checkCancel, canPay } from "@/lib/booking-permissions";
 import { useAuthStore } from "@/stores/auth-store";
@@ -75,7 +75,7 @@ interface AdminBookingDetail {
 
 const money = (v: number | null | undefined) => `$${Math.round(Number(v ?? 0)).toLocaleString("en-US")}`;
 const fullName = (p: PersonRef | AdminBookingDetail["user"]) => (p ? `${p.firstName} ${p.lastName}`.trim() : null);
-const dateTime = (iso: string) => `${formatDateAr(iso, { day: "2-digit", month: "short", year: "numeric" })} · ${formatTimeAr(iso)}`;
+const dateTime = (iso: string) => formatDateTimeAr(iso);
 
 export default function AdminBookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);

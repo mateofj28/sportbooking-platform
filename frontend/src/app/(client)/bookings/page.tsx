@@ -15,6 +15,7 @@ import {
     useDisclosure,
 } from "@heroui/react";
 import { useBookings, useCancelBooking, useRecurringBookings, useCancelRecurringBooking, usePriceChanges, type RecurringBooking } from "@/hooks/use-bookings";
+import { formatClock } from "@/lib/datetime";
 import { PayWithPointsButton } from "@/components/shared/pay-with-points-button";
 import { formatPoints } from "@/lib/points";
 import { PriceChangeNote } from "@/components/shared/price-change-note";
@@ -28,15 +29,8 @@ import type { Booking, BookingStatus } from "@/types";
 
 const DAYS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
 
-/** "20:00" -> "8:00 p. m." (formato español sin cero adelante) */
-function formatTime12h(time: string): string {
-    if (!time) return "";
-    const [rawH, m] = time.split(":").map(Number);
-    const h = ((rawH % 24) + 24) % 24;
-    const ampm = h < 12 ? "a. m." : "p. m.";
-    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
-}
+/** "20:45" -> "8:45 pm" (formato único, lib/datetime) */
+const formatTime12h = formatClock;
 
 type BookingFilter = "UPCOMING" | "ALL" | "PENDING_PAYMENT" | "PAID" | BookingStatus;
 

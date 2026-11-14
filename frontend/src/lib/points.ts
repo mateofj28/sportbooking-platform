@@ -5,6 +5,8 @@
 // el cliente transfiere y el admin general le carga los puntos).
 // ============================================================
 
+import { formatDateTimeAr } from "@/lib/datetime";
+
 /** Número de WhatsApp para comprar puntos, en formato internacional sin "+" ni espacios. */
 export const WHATSAPP_TOPUP_NUMBER = "5492984339319";
 /** El mismo número, legible. */
@@ -70,11 +72,5 @@ export function formatPeriod(period: string): string {
     return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-/** Fecha y hora AR de un instante: "14/11/2026 18:00". */
-export function formatArDateTime(iso: string): string {
-    return new Date(iso).toLocaleString("es-AR", {
-        timeZone: "America/Argentina/Buenos_Aires",
-        day: "2-digit", month: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit", hour12: false,
-    });
-}
+/** Fecha y hora AR de un instante: "13 nov 2026, 8:45 pm" (formato único, lib/datetime). */
+export const formatArDateTime = formatDateTimeAr;

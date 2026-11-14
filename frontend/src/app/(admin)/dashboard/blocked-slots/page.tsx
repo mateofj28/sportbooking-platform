@@ -6,6 +6,7 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, DatePicker,
 } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
+import { formatDateTimeAr } from "@/lib/datetime";
 import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
 
 // El DatePicker de HeroUI requiere instancias de CalendarDate
@@ -34,7 +35,7 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const minutes = i % 2 === 0 ? "00" : "30";
   const value = `${hours.toString().padStart(2, "0")}:${minutes}`;
   const h12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-  const ampm = hours < 12 ? "AM" : "PM";
+  const ampm = hours < 12 ? "am" : "pm";
   return { value, label: `${h12}:${minutes} ${ampm}` };
 });
 
@@ -191,7 +192,7 @@ export default function AdminBlockedSlotsPage() {
     });
   };
 
-  const formatDT = (dt: string) => new Date(dt).toLocaleString("es-AR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const formatDT = (dt: string) => formatDateTimeAr(dt);
 
   return (
     <div className="space-y-6">

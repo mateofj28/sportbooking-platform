@@ -6,6 +6,7 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
 } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
+import { formatClock } from "@/lib/datetime";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize, Tables } from "@/lib/supabase-helpers";
@@ -25,17 +26,12 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const minutes = i % 2 === 0 ? "00" : "30";
   const value = `${hours.toString().padStart(2, "0")}:${minutes}`;
   const h12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-  const ampm = hours < 12 ? "AM" : "PM";
+  const ampm = hours < 12 ? "am" : "pm";
   return { value, label: `${h12}:${minutes} ${ampm}` };
 });
 
-/** Convierte "08:00" -> "8:00 AM" */
-function formatTime12h(time: string): string {
-  const [h, m] = time.split(":").map(Number);
-  const ampm = h < 12 ? "AM" : "PM";
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
-}
+/** "20:45" -> "8:45 pm" (formato único, lib/datetime) */
+const formatTime12h = formatClock;
 
 export default function AdminSchedulesPage() {
   const queryClient = useQueryClient();

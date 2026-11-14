@@ -12,3 +12,6 @@ tsconfig.tsbuildinfo
 next-env.d.ts
 # Estado local de la CLI de Supabase (versión, ref del proyecto vinculado): cambia en cada uso
 supabase/.temp/
+
+# Banners de prueba de la publicidad (solo locales)
+docs/banners-de-prueba/

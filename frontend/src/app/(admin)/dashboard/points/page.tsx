@@ -140,7 +140,8 @@ function AdjustModal({ user, onClose }: { user: PointsUser | null; onClose: () =
 
     const amount = amountValue ?? 0;
     const amountOk = Number.isInteger(amount) && amount > 0 && amount <= MAX_ADJUST;
-    const reasonOk = reason.trim().length >= 3 && reason.trim().length <= 300;
+    // Motivo opcional (migración 048): solo se limita el largo
+    const reasonOk = reason.trim().length <= 300;
     const signed = mode === "add" ? amount : -amount;
     const resulting = (user?.balance ?? 0) + (amountOk ? signed : 0);
     const wouldBeNegative = amountOk && resulting < 0;
@@ -185,11 +186,11 @@ function AdjustModal({ user, onClose }: { user: PointsUser | null; onClose: () =
                                 isInvalid={!!amountError} errorMessage={amountError ?? undefined}
                             />
                             <Textarea
-                                label="Motivo" variant="bordered" isRequired minRows={2} maxLength={300}
+                                label="Motivo (opcional)" variant="bordered" minRows={2} maxLength={300}
                                 placeholder="Ej: Transferencia comprobante #123"
                                 value={reason}
                                 onValueChange={(v) => { setReason(v); setError(null); }}
-                                description={`${reason.trim().length}/300 · obligatorio (mínimo 3 caracteres)`}
+                                description={`${reason.trim().length}/300`}
                                 isInvalid={reason.length > 0 && !reasonOk}
                             />
                         </>
@@ -197,7 +198,7 @@ function AdjustModal({ user, onClose }: { user: PointsUser | null; onClose: () =
                         <div className="space-y-2 rounded-xl border border-divider p-4 text-sm">
                             <p>Vas a <strong>{mode === "add" ? "sumar" : "restar"} {formatPoints(amount)}</strong> ({formatPesos(amount)}).</p>
                             <p>Saldo resultante: <strong>{formatPoints(resulting)}</strong></p>
-                            <p className="text-default-500">Motivo: {reason.trim()}</p>
+                            {reason.trim() && <p className="text-default-500">Motivo: {reason.trim()}</p>}
                             <p className="text-xs text-default-400">El movimiento no se puede editar ni borrar; para corregirlo, hacé otro ajuste.</p>
                         </div>
                     )}

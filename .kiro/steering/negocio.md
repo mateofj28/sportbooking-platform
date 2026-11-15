@@ -133,7 +133,7 @@ Relación clave:
 - **1 punto = 1 ARS.** Los puntos son el **único medio de pago** de las reservas y no vencen. Montos siempre enteros:
   la comisión se redondea al peso y las tarifas son pesos enteros (CHECK en `pricing`).
 - **Recarga manual**: el cliente escribe por WhatsApp a **+54 9 2984 33-9319** ("quiero comprar X puntos"), transfiere,
-  y el admin general carga los puntos en Panel → Puntos con un **motivo obligatorio**. Restar nunca deja saldo negativo.
+  y el admin general carga los puntos en Panel → Puntos (motivo **opcional**, migración 048). Restar nunca deja saldo negativo.
 - **Reserva propia**: se paga con puntos **al crearla** (`create_booking_paid`); sin saldo se bloquea (402). Sin pago parcial.
 - **Turno fijo y reserva manual de un admin**: quedan pendientes y **el titular las paga con puntos** (botón Pagar,
   `pay_booking`). Si no se pagan, se cancelan solas a menos de 24 h (como antes).

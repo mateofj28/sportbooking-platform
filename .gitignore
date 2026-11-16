@@ -15,3 +15,6 @@ supabase/.temp/
 
 # Banners de prueba de la publicidad (solo locales)
 docs/banners-de-prueba/
+
+# Imágenes de prueba de complejos y canchas (solo locales)
+docs/imagenes-de-prueba/

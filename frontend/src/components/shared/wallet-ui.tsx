@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Button, Card, CardBody } from "@heroui/react";
-import { FileText } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, FileText, Sigma } from "lucide-react";
+import { formatPoints } from "@/lib/points";
 import { getReceiptUrl } from "@/hooks/use-wallet";
 import { useToastStore } from "@/stores/toast-store";
 
@@ -29,6 +30,27 @@ export function ReceiptButton({ path }: { path: string }) {
         >
             Ver comprobante
         </Button>
+    );
+}
+
+/**
+ * Total de la columna "Créditos" de un historial: entradas, salidas y neto de TODOS los
+ * movimientos que cumplen los filtros (lo calcula la base, no solo la página visible).
+ */
+export function LedgerTotals({ sumIn, sumOut, sumNet, count, filtered, inHint, outHint }: {
+    sumIn: number; sumOut: number; sumNet: number; count: number; filtered: boolean; inHint: string; outHint: string;
+}) {
+    return (
+        <div className="grid gap-4 sm:grid-cols-3" aria-label="Total de la columna Créditos">
+            <SummaryCard icon={<ArrowUpRight className="h-5 w-5 text-success" />} label="Entradas" value={`+${formatPoints(sumIn)}`} hint={inHint} />
+            <SummaryCard icon={<ArrowDownRight className="h-5 w-5 text-danger" />} label="Salidas" value={`−${formatPoints(sumOut)}`} hint={outHint} />
+            <SummaryCard
+                icon={<Sigma className="h-5 w-5 text-primary" />}
+                label="Total"
+                value={`${sumNet < 0 ? "−" : ""}${formatPoints(Math.abs(sumNet))}`}
+                hint={`${count} movimiento${count !== 1 ? "s" : ""}${filtered ? " con los filtros aplicados" : ""}`}
+            />
+        </div>
     );
 }
 

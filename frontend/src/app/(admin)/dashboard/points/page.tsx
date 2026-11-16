@@ -6,10 +6,10 @@ import {
     Button, Chip, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Radio, RadioGroup,
     Spinner, Tab, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, Textarea,
 } from "@heroui/react";
-import { ArrowDownRight, ArrowUpRight, Search, Sigma, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";
-import { ReceiptButton, SummaryCard } from "@/components/shared/wallet-ui";
+import { LedgerTotals, ReceiptButton } from "@/components/shared/wallet-ui";
 import { PointsInput } from "@/components/shared/points-input";
 import { LedgerFilters, LedgerPagination, type LedgerFilterValue } from "@/components/shared/ledger-filters";
 import { useAdjustPoints, useAdminPointsUsers, useAdminWalletHistory, type PointsUser } from "@/hooks/use-wallet";
@@ -237,26 +237,11 @@ function HistoryTab() {
             <LedgerFilters value={filters} onChange={(v) => { setFilters(v); setPage(1); }} kinds={HISTORY_KINDS} />
             {/* Total de la columna Créditos: todos los movimientos que cumplen los filtros, no solo esta página */}
             {data && (
-                <div className="grid gap-4 sm:grid-cols-3" aria-label="Total de la columna Créditos">
-                    <SummaryCard
-                        icon={<ArrowUpRight className="h-5 w-5 text-success" />}
-                        label="Entradas"
-                        value={`+${formatPoints(data.sumIn)}`}
-                        hint="Cargas de créditos"
-                    />
-                    <SummaryCard
-                        icon={<ArrowDownRight className="h-5 w-5 text-danger" />}
-                        label="Salidas"
-                        value={`−${formatPoints(data.sumOut)}`}
-                        hint="Ajustes y pagos a complejos"
-                    />
-                    <SummaryCard
-                        icon={<Sigma className="h-5 w-5 text-primary" />}
-                        label="Total"
-                        value={`${data.sumNet < 0 ? "−" : ""}${formatPoints(Math.abs(data.sumNet))}`}
-                        hint={`${data.total} movimiento${data.total !== 1 ? "s" : ""}${filters.from || filters.kind !== "ALL" ? " con los filtros aplicados" : ""}`}
-                    />
-                </div>
+                <LedgerTotals
+                    sumIn={data.sumIn} sumOut={data.sumOut} sumNet={data.sumNet} count={data.total}
+                    filtered={!!filters.from || filters.kind !== "ALL"}
+                    inHint="Cargas de créditos" outHint="Ajustes y pagos a complejos"
+                />
             )}
             {isError ? (
                 <p role="alert" className="text-sm text-danger">{error?.message}</p>

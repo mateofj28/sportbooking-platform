@@ -147,6 +147,10 @@ export interface VenueWallet extends Page<VenueLedgerItem> {
   available: number
   thisMonth: number
   pendingRequest: { id: string; amount: number; requestedAt: string } | null
+  /** Total de la columna Créditos con los filtros aplicados (todas las páginas). */
+  sumIn: number
+  sumOut: number
+  sumNet: number
   requests: PayoutRequest[]
 }
 

@@ -11,7 +11,7 @@ import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";
 import { PointsInput } from "@/components/shared/points-input";
 import { LedgerFilters, LedgerPagination, type LedgerFilterValue } from "@/components/shared/ledger-filters";
-import { ReceiptButton, SummaryCard } from "@/components/shared/wallet-ui";
+import { LedgerTotals, ReceiptButton, SummaryCard } from "@/components/shared/wallet-ui";
 import { useRequestPayout, useVenueWallet, type PayoutStatus } from "@/hooks/use-wallet";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
@@ -118,6 +118,13 @@ export default function VenueWalletPage() {
             <section className="space-y-3" aria-label="Movimientos de la sede">
                 <h2 className="text-lg font-semibold">Movimientos</h2>
                 <LedgerFilters value={filters} onChange={(v) => { setFilters(v); setPage(1); }} kinds={KINDS} />
+                {data && (
+                    <LedgerTotals
+                        sumIn={data.sumIn} sumOut={data.sumOut} sumNet={data.sumNet} count={data.total}
+                        filtered={!!filters.from || filters.kind !== "ALL"}
+                        inHint="Turnos jugados" outHint="Pagos de la empresa"
+                    />
+                )}
                 {isError ? (
                     <p role="alert" className="text-sm text-danger">{error?.message}</p>
                 ) : (

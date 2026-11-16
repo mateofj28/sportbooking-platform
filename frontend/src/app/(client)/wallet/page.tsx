@@ -47,7 +47,7 @@ export default function WalletPage() {
             <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-6 py-8">
                 <div>
                     <h1 className="text-2xl font-bold">Mi billetera</h1>
-                    <p className="mt-1 text-sm text-default-500">Pagás tus reservas con puntos. 1 punto = $1.</p>
+                    <p className="mt-1 text-sm text-default-500">Pagás tus reservas con créditos. 1 crédito = $1.</p>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -65,13 +65,13 @@ export default function WalletPage() {
 
                     <Card shadow="none" className="bg-content1">
                         <CardBody className="gap-3 p-6">
-                            <p className="text-sm font-semibold">Cargar puntos</p>
+                            <p className="text-sm font-semibold">Cargar créditos</p>
                             <p className="text-xs text-default-500">
-                                Escribinos por WhatsApp al {WHATSAPP_TOPUP_LABEL}, hacé la transferencia y te cargamos los puntos.
+                                Escribinos por WhatsApp al {WHATSAPP_TOPUP_LABEL}, hacé la transferencia y te cargamos los créditos.
                             </p>
                             <div className="flex flex-wrap items-start gap-2">
                                 <PointsInput
-                                    label="¿Cuántos puntos?"
+                                    label="¿Cuántos créditos?"
                                     size="sm"
                                     className="max-w-[200px]"
                                     max={MAX_TOPUP}
@@ -96,7 +96,7 @@ export default function WalletPage() {
                                 <TableHeader>
                                     <TableColumn>FECHA Y HORA</TableColumn>
                                     <TableColumn>DETALLE</TableColumn>
-                                    <TableColumn align="end">PUNTOS</TableColumn>
+                                    <TableColumn align="end">CRÉDITOS</TableColumn>
                                     <TableColumn align="end">SALDO</TableColumn>
                                 </TableHeader>
                                 <TableBody

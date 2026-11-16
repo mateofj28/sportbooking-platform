@@ -31,9 +31,9 @@ type Role = "ADMIN" | "VENUE_ADMIN";
 
 const menuItems: { href: string; label: string; icon: typeof LayoutDashboard; only?: Role }[] = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    // Billetera de puntos (spec billetera-puntos): justo después del Dashboard
+    // Billetera de créditos (spec billetera-créditos): justo después del Dashboard
     { href: "/dashboard/wallet", label: "Billetera", icon: Wallet, only: "VENUE_ADMIN" },
-    { href: "/dashboard/points", label: "Puntos", icon: Coins, only: "ADMIN" },
+    { href: "/dashboard/points", label: "Créditos", icon: Coins, only: "ADMIN" },
     { href: "/dashboard/balances", label: "Balances", icon: Landmark, only: "ADMIN" },
     { href: "/dashboard/bookings", label: "Reservas", icon: Calendar },
     { href: "/dashboard/statistics", label: "Estadísticas", icon: BarChart3 },

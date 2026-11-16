@@ -11,7 +11,7 @@ export function PointsAmount({ amount, className = "" }: { amount: number; class
         <span className={`font-semibold tabular-nums ${positive ? "text-success!" : "text-danger!"} ${className}`}>
             <span className="sr-only">{positive ? "Suma " : "Resta "}</span>
             {formatSignedPoints(amount)}
-            <span className="ml-1 text-xs font-normal text-default-400">pts</span>
+            <span className="ml-1 text-xs font-normal text-default-400">créditos</span>
         </span>
     );
 }

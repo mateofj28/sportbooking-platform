@@ -50,7 +50,7 @@ export default function BalancesPage() {
             <div>
                 <h1 className="text-2xl font-bold">Balances</h1>
                 <p className="mt-1 text-sm text-default-500">
-                    Dinero real ingresado por la compra de puntos (1 punto = $1) y pagos a los complejos.
+                    Dinero real ingresado por la compra de créditos (1 crédito = $1) y pagos a los complejos.
                 </p>
             </div>
 
@@ -63,7 +63,7 @@ export default function BalancesPage() {
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <SummaryCard icon={<Banknote className="h-5 w-5 text-success" />} label="Recaudado" value={formatPoints(data.collected)} hint="Recargas menos ajustes (dinero real ingresado)" />
-                <SummaryCard icon={<Wallet className="h-5 w-5 text-primary" />} label="En billeteras de clientes" value={formatPoints(data.inWallets)} hint="Puntos cargados que todavía no se usaron" />
+                <SummaryCard icon={<Wallet className="h-5 w-5 text-primary" />} label="En billeteras de clientes" value={formatPoints(data.inWallets)} hint="Créditos cargados que todavía no se usaron" />
                 <SummaryCard icon={<PiggyBank className="h-5 w-5 text-secondary" />} label="Comisión de la empresa" value={formatPoints(data.commission)} hint="De los turnos ya jugados" />
                 <SummaryCard icon={<BadgeDollarSign className="h-5 w-5 text-success" />} label="Pagado a complejos" value={formatPoints(data.paidToVenues)} />
                 <SummaryCard icon={<Building2 className="h-5 w-5 text-warning" />} label="Pendiente de pagar a complejos" value={formatPoints(data.pendingToVenues)} hint={`${formatPoints(data.requestedByVenues)} ya solicitados`} />

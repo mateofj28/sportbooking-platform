@@ -6,7 +6,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { whatsappTopupUrl } from "@/lib/points";
 
 interface WhatsappTopupButtonProps {
-    /** Puntos a comprar (se escriben en el mensaje). Sin valor: "quiero comprar puntos". */
+    /** Créditos a comprar (se escriben en el mensaje). Sin valor: "quiero comprar créditos". */
     points?: number | null;
     size?: "sm" | "md" | "lg";
     fullWidth?: boolean;
@@ -14,8 +14,8 @@ interface WhatsappTopupButtonProps {
     label?: string;
 }
 
-/** Abre WhatsApp con "Hola, quiero comprar X puntos. Mi cuenta: email" (R11). */
-export function WhatsappTopupButton({ points, size = "md", fullWidth, isDisabled, label = "Cargar puntos por WhatsApp" }: WhatsappTopupButtonProps) {
+/** Abre WhatsApp con "Hola, quiero comprar X créditos. Mi cuenta: email" (R11). */
+export function WhatsappTopupButton({ points, size = "md", fullWidth, isDisabled, label = "Cargar créditos por WhatsApp" }: WhatsappTopupButtonProps) {
     const email = useAuthStore((s) => s.user?.email);
     return (
         <Button

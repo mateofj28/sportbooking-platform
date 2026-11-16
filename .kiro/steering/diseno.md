@@ -49,8 +49,9 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
   instante, `formatClock("20:45")` para horas de reloj (horarios, tarifas, slots, opciones de selectores).
 - Todo sale de `lib/datetime.ts`, siempre en hora de Argentina. **No armar fechas ni horas a mano** en las pantallas
   (`toLocaleString`, `"AM"/"PM"`, `"a. m."`): si hace falta un formato nuevo, se agrega ahí.
-- **Montos**: miles con coma. Precios `$63,000` (`formatPrice`), puntos `63,000 pts` (`formatPoints`), y cuando
-  ayude, el equivalente en pesos `$63,000 ARS` (`formatPesos`). Campos de cantidad de puntos: `PointsInput`.
+- **La moneda interna se llama "créditos"** (1 crédito = $1), nunca "puntos".
+- **Montos**: miles con coma. Precios `$63,000` (`formatPrice`), créditos `63,000 créditos` (`formatPoints`), y cuando
+  ayude, el equivalente en pesos `$63,000 ARS` (`formatPesos`). Campos de cantidad de créditos: `PointsInput`.
 
 ## Tema y colores
 

@@ -2,8 +2,8 @@
 
 // ============================================================
 // hooks/use-wallet.ts
-// Billetera de puntos (migración 043). Lecturas por RPC (paginadas en el servidor) y
-// las dos acciones del admin general (ajustar puntos, liquidar un mes). Pagar, reservar y
+// Billetera de créditos (migración 043). Lecturas por RPC (paginadas en el servidor) y
+// las dos acciones del admin general (ajustar créditos, liquidar un mes). Pagar, reservar y
 // cancelar siguen en use-bookings (Edge Functions) e invalidan la key ['wallet'].
 // ============================================================
 
@@ -254,7 +254,7 @@ export function useAdminBalances() {
   })
 }
 
-/** Sumar (recarga) o restar (ajuste) puntos a un usuario, con motivo obligatorio. */
+/** Sumar (recarga) o restar (ajuste) créditos a un usuario, con motivo obligatorio. */
 export function useAdjustPoints() {
   const queryClient = useQueryClient()
   return useMutation({

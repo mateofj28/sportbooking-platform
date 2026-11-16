@@ -345,7 +345,7 @@ export default function BookingsPage() {
                             Se cancelarán todas las reservas futuras de este turno fijo
                             {seriesToCancel && ` (${seriesToCancel.upcomingCount} próxima${seriesToCancel.upcomingCount !== 1 ? "s" : ""})`}.
                             Las reservas ya pasadas no se modifican, y las que empiezan en menos de 24 h se mantienen.
-                            Las fechas que ya pagaste te devuelven el 100% de los puntos. Esta acción no se puede deshacer.
+                            Las fechas que ya pagaste te devuelven el 100% de los créditos. Esta acción no se puede deshacer.
                         </p>
                     </ModalBody>
                     <ModalFooter>

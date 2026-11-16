@@ -13,12 +13,12 @@ interface PayWithPointsButtonProps {
     total: number;
     size?: "sm" | "md" | "lg";
     fullWidth?: boolean;
-    /** Texto del botón; por defecto "Pagar X pts". */
+    /** Texto del botón; por defecto "Pagar X créditos". */
     label?: string;
 }
 
 /**
- * "Pagar con puntos" para reservas pendientes (turno fijo o reserva manual de un admin).
+ * "Pagar con créditos" para reservas pendientes (turno fijo o reserva manual de un admin).
  * Confirma mostrando el saldo antes y después; si no alcanza, muestra el aviso con WhatsApp.
  */
 export function PayWithPointsButton({ bookingId, total, size = "sm", fullWidth, label }: PayWithPointsButtonProps) {
@@ -42,7 +42,7 @@ export function PayWithPointsButton({ bookingId, total, size = "sm", fullWidth, 
 
             <Modal isOpen={isOpen} onClose={onClose} size="sm" placement="center">
                 <ModalContent>
-                    <ModalHeader>Pagar con puntos</ModalHeader>
+                    <ModalHeader>Pagar con créditos</ModalHeader>
                     <ModalBody className="gap-3">
                         <dl className="space-y-2 text-sm">
                             <div className="flex justify-between"><dt className="text-default-500">Precio</dt><dd className="font-semibold">{formatPoints(price)}</dd></div>

@@ -23,7 +23,7 @@ interface LedgerFiltersProps {
 const HISTORY_YEARS = 2;
 
 /**
- * Filtros de los historiales de puntos: rango de fechas (hora AR) y tipo de movimiento.
+ * Filtros de los historiales de créditos: rango de fechas (hora AR) y tipo de movimiento.
  * Cambiar un filtro vuelve a la página 1 (lo maneja quien lo usa).
  */
 export function LedgerFilters({ value, onChange, kinds, children }: LedgerFiltersProps) {
@@ -77,12 +77,14 @@ export function LedgerFilters({ value, onChange, kinds, children }: LedgerFilter
     );
 }
 
-/** Paginación del historial ("X movimientos" + páginas). */
-export function LedgerPagination({ total, page, size, onPage }: { total: number; page: number; size: number; onPage: (p: number) => void }) {
+/** Paginación de las tablas ("X movimientos" + páginas). noun = [singular, plural]. */
+export function LedgerPagination({ total, page, size, onPage, noun = ["movimiento", "movimientos"] }: {
+    total: number; page: number; size: number; onPage: (p: number) => void; noun?: [string, string];
+}) {
     const pages = Math.max(1, Math.ceil(total / size));
     return (
         <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs text-default-500">{total} movimiento{total !== 1 ? "s" : ""}</p>
+            <p className="text-xs text-default-500">{total} {total === 1 ? noun[0] : noun[1]}</p>
             {pages > 1 && <Pagination size="sm" total={pages} page={page} onChange={onPage} showControls />}
         </div>
     );

@@ -6,13 +6,13 @@ import {
     Button, Chip, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Radio, RadioGroup,
     Spinner, Tab, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, Textarea,
 } from "@heroui/react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Banknote, Receipt, Search, SlidersHorizontal, Wallet } from "lucide-react";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";
-import { ReceiptButton } from "@/components/shared/wallet-ui";
+import { ReceiptButton, SummaryCard } from "@/components/shared/wallet-ui";
 import { PointsInput } from "@/components/shared/points-input";
 import { LedgerFilters, LedgerPagination, type LedgerFilterValue } from "@/components/shared/ledger-filters";
-import { useAdjustPoints, useAdminPointsUsers, useAdminWalletHistory, type PointsUser } from "@/hooks/use-wallet";
+import { useAdjustPoints, useAdminBalances, useAdminPointsUsers, useAdminWalletHistory, type PointsUser } from "@/hooks/use-wallet";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { formatArDateTime, formatPesos, formatPoints } from "@/lib/points";
@@ -22,12 +22,12 @@ const MAX_ADJUST = 100_000_000;
 const ROLE_LABEL: Record<string, string> = { CLIENT: "Cliente", VENUE_ADMIN: "Admin de sede", ADMIN: "Admin general" };
 const HISTORY_KINDS = [
     { key: "ALL", label: "Todos los movimientos" },
-    { key: "TOPUP", label: "Cargas de puntos" },
+    { key: "TOPUP", label: "Cargas de créditos" },
     { key: "ADJUSTMENT", label: "Ajustes (restas)" },
     { key: "SETTLEMENT", label: "Pagos a complejos" },
 ];
 
-/** Gestión de puntos (admin general): cargar/ajustar puntos y ver el historial global. */
+/** Gestión de créditos (admin general): cargar/ajustar créditos y ver el historial global. */
 export default function PointsPage() {
     const router = useRouter();
     const user = useAuthStore((s) => s.user);
@@ -43,15 +43,44 @@ export default function PointsPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold">Puntos</h1>
+                <h1 className="text-2xl font-bold">Créditos</h1>
                 <p className="mt-1 text-sm text-default-500">
-                    Cargá los puntos que compran los clientes (1 punto = $1) y corregí errores. Cada movimiento queda registrado con su motivo.
+                    Cargá los créditos que compran los clientes (1 crédito = $1) y corregí errores. Cada movimiento queda registrado.
                 </p>
             </div>
-            <Tabs aria-label="Secciones de puntos" variant="underlined">
+            <CreditTotals />
+            <Tabs aria-label="Secciones de créditos" variant="underlined">
                 <Tab key="users" title="Clientes"><UsersTab /></Tab>
                 <Tab key="history" title="Historial global"><HistoryTab /></Tab>
             </Tabs>
+        </div>
+    );
+}
+
+/** Totales de créditos (1 crédito = $1). */
+function CreditTotals() {
+    const { data } = useAdminBalances();
+    const spent = data ? data.spentPlayed + data.spentNotPlayed : 0;
+    return (
+        <div className="grid gap-4 sm:grid-cols-3">
+            <SummaryCard
+                icon={<Wallet className="h-5 w-5 text-primary" />}
+                label="Créditos en billeteras"
+                value={data ? formatPoints(data.inWallets) : "…"}
+                hint={data ? `${formatPesos(data.inWallets)} · cargados y todavía sin usar` : undefined}
+            />
+            <SummaryCard
+                icon={<Banknote className="h-5 w-5 text-success" />}
+                label="Total cargado"
+                value={data ? formatPoints(data.collected) : "…"}
+                hint="Recargas menos ajustes (dinero real ingresado)"
+            />
+            <SummaryCard
+                icon={<Receipt className="h-5 w-5 text-default-500" />}
+                label="Total gastado en reservas"
+                value={data ? formatPoints(spent) : "…"}
+                hint="Pagado por los clientes, sin contar devoluciones"
+            />
         </div>
     );
 }
@@ -88,7 +117,7 @@ function UsersTab() {
                 <p role="alert" className="text-sm text-danger">{error?.message}</p>
             ) : (
                 <>
-                    <DataTable aria-label="Clientes y sus puntos">
+                    <DataTable aria-label="Clientes y sus créditos">
                         <TableHeader>
                             <TableColumn>CLIENTE</TableColumn>
                             <TableColumn>ROL</TableColumn>
@@ -110,14 +139,14 @@ function UsersTab() {
                                         <Button size="sm" variant="flat" color="primary"
                                             startContent={<SlidersHorizontal className="h-4 w-4" aria-hidden="true" />}
                                             onPress={() => setTarget(u)}>
-                                            Ajustar puntos
+                                            Ajustar créditos
                                         </Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </DataTable>
-                    <LedgerPagination total={data?.total ?? 0} page={page} size={PAGE_SIZE} onPage={setPage} />
+                    <LedgerPagination total={data?.total ?? 0} page={page} size={PAGE_SIZE} onPage={setPage} noun={["usuario", "usuarios"]} />
                 </>
             )}
             <AdjustModal user={target} onClose={() => setTarget(null)} />
@@ -166,7 +195,7 @@ function AdjustModal({ user, onClose }: { user: PointsUser | null; onClose: () =
     return (
         <Modal isOpen={!!user} onClose={() => !adjust.isPending && onClose()} size="md" placement="center">
             <ModalContent>
-                <ModalHeader>Ajustar puntos</ModalHeader>
+                <ModalHeader>Ajustar créditos</ModalHeader>
                 <ModalBody className="gap-4">
                     {user && (
                         <p className="text-sm text-default-600">
@@ -180,7 +209,7 @@ function AdjustModal({ user, onClose }: { user: PointsUser | null; onClose: () =
                                 <Radio value="subtract" description="Corrección">Restar</Radio>
                             </RadioGroup>
                             <PointsInput
-                                label="Cantidad de puntos" isRequired max={MAX_ADJUST}
+                                label="Cantidad de créditos" isRequired max={MAX_ADJUST}
                                 value={amountValue}
                                 onChange={(v) => { setAmountValue(v); setError(null); }}
                                 isInvalid={!!amountError} errorMessage={amountError ?? undefined}
@@ -239,11 +268,11 @@ function HistoryTab() {
                 <p role="alert" className="text-sm text-danger">{error?.message}</p>
             ) : (
                 <>
-                    <DataTable aria-label="Historial global de puntos">
+                    <DataTable aria-label="Historial global de créditos">
                         <TableHeader>
                             <TableColumn>FECHA Y HORA</TableColumn>
                             <TableColumn>DETALLE</TableColumn>
-                            <TableColumn align="end">PUNTOS</TableColumn>
+                            <TableColumn align="end">CRÉDITOS</TableColumn>
                             <TableColumn align="end">COMPROBANTE</TableColumn>
                         </TableHeader>
                         <TableBody isLoading={isLoading} loadingContent={<Spinner />} emptyContent="Todavía no hay movimientos">

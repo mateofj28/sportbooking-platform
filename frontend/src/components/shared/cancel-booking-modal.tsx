@@ -14,7 +14,7 @@ export interface CancelBookingTarget {
     startDatetime: string;
     clientName: string;
     facilityName: string;
-    /** Puntos pagados (se devuelven al cancelar). 0 o sin valor = reserva pendiente. */
+    /** Créditos pagados (se devuelven al cancelar). 0 o sin valor = reserva pendiente. */
     paidPoints?: number;
 }
 

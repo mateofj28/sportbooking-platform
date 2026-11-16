@@ -38,9 +38,9 @@ export function bookingToEmailData(booking: {
     facilityName: booking.facility?.name || '',
     dateLabel: arDateLabel(booking.start_datetime),
     timeLabel: `${arTime(booking.start_datetime)} - ${arTime(booking.end_datetime)}`,
-    // Billetera de puntos (043): 1 punto = 1 ARS
+    // Billetera de créditos (043): 1 crédito = 1 ARS
     priceLabel: booking.total_price != null
-      ? `${Math.round(booking.total_price).toLocaleString('en-US')} puntos`
+      ? `${Math.round(booking.total_price).toLocaleString('en-US')} créditos`
       : undefined,
     paymentPending: booking.payment_status === 'PENDING',
   }
@@ -121,8 +121,8 @@ export async function sendBookingConfirmation(data: BookingEmailData): Promise<v
       ${summaryRows(data)}
     </table>
     ${data.paymentPending
-    ? `<p style="margin:0;font-size:13px;color:#b45309;background:#fef3c7;padding:12px;border-radius:8px;">⚠️ Pendiente de pago. Pagala con tus puntos desde "Mis reservas" (botón Pagar) hasta 24 h antes del turno; si no, se cancela sola.</p>`
-    : `<p style="margin:0;font-size:13px;color:#047857;background:#d1fae5;padding:12px;border-radius:8px;">✅ Pagada con tus puntos.</p>`
+    ? `<p style="margin:0;font-size:13px;color:#b45309;background:#fef3c7;padding:12px;border-radius:8px;">⚠️ Pendiente de pago. Pagala con tus créditos desde "Mis reservas" (botón Pagar) hasta 24 h antes del turno; si no, se cancela sola.</p>`
+    : `<p style="margin:0;font-size:13px;color:#047857;background:#d1fae5;padding:12px;border-radius:8px;">✅ Pagada con tus créditos.</p>`
     }`
   await send(data.email, 'Reserva confirmada - SportBooking', '¡Reserva confirmada!', body, '#10B981')
 }
@@ -131,7 +131,7 @@ export async function sendBookingCancellation(
   data: BookingEmailData & { reason?: string; refundedPoints?: number },
 ): Promise<void> {
   const refund = data.refundedPoints && data.refundedPoints > 0
-    ? `<p style="margin:0 0 12px;font-size:13px;color:#047857;background:#d1fae5;padding:12px;border-radius:8px;">✅ Te devolvimos ${Math.round(data.refundedPoints).toLocaleString('en-US')} puntos a tu billetera.</p>`
+    ? `<p style="margin:0 0 12px;font-size:13px;color:#047857;background:#d1fae5;padding:12px;border-radius:8px;">✅ Te devolvimos ${Math.round(data.refundedPoints).toLocaleString('en-US')} créditos a tu billetera.</p>`
     : ''
   const body = `
     <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b7280;">

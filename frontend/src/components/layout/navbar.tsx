@@ -31,7 +31,7 @@ import { Trophy, LogOut, User, Calendar, LayoutDashboard, Eye, Sun, Moon, Menu, 
 import { useMyBalance } from "@/hooks/use-wallet";
 import { formatPoints } from "@/lib/points";
 
-/** Saldo de puntos del usuario, con link a "Mi billetera". */
+/** Saldo de créditos del usuario, con link a "Mi billetera". */
 function NavBalance() {
     const { data: balance, isLoading } = useMyBalance();
     return (
@@ -148,7 +148,7 @@ export function Navbar() {
                         <NotificationBell />
                     </NavbarItem>
                 )}
-                {/* Saldo de puntos: en la vista de cliente (R1.8) */}
+                {/* Saldo de créditos: en la vista de cliente (R1.8) */}
                 {isHydrated && isAuthenticated && !inDashboard && (
                     <NavbarItem>
                         <NavBalance />

@@ -173,7 +173,7 @@ export default function FacilityDetailPage({
     // (reserva, cancelación, bloqueo, horario o tarifa). Sin polling.
     useAvailabilityRealtime(facility ? id : undefined);
 
-    // Saldo de puntos: la reserva única se paga al confirmarla (billetera, migración 043)
+    // Saldo de créditos: la reserva única se paga al confirmarla (billetera, migración 043)
     const { data: balance = 0, isLoading: balanceLoading } = useMyBalance();
 
     // Un error de confirmación se refiere al turno que se intentó reservar. Si el usuario
@@ -634,7 +634,7 @@ export default function FacilityDetailPage({
                                         <p className="text-xl font-bold text-success">
                                                         {formatPoints(price)} {mode === "recurring" && <span className="text-xs font-normal text-default-400">por fecha</span>}
                                         </p>
-                                                    <p className="text-xs text-default-400">Precio del turno · 1 punto = $1</p>
+                                                    <p className="text-xs text-default-400">Precio del turno · 1 crédito = $1</p>
                                                     {isAuthenticated && (
                                                         <p className="mt-1 text-xs text-default-500">
                                                             Tu saldo: <span className="font-semibold text-foreground">{formatPoints(balance)}</span>
@@ -644,7 +644,7 @@ export default function FacilityDetailPage({
                                                     )}
                                                     {mode === "recurring" && isAuthenticated && (
                                                         <p className="mt-1 text-xs text-default-500">
-                                                            Cada fecha se paga con puntos desde &quot;Mis reservas&quot;, hasta 24 h antes.
+                                                            Cada fecha se paga con créditos desde &quot;Mis reservas&quot;, hasta 24 h antes.
                                                         </p>
                                                     )}
                                     </div>

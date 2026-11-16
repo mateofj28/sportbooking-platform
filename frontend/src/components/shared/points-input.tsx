@@ -17,7 +17,7 @@ interface PointsInputProps {
 }
 
 /**
- * Cantidad de puntos con separador de miles mientras se escribe ("5,000") y su
+ * Cantidad de créditos con separador de miles mientras se escribe ("5,000") y su
  * equivalente en pesos debajo ("= $5,000 ARS"). Solo enteros positivos.
  * Es un campo de texto numérico (sin flechas), como pide la regla de diseño.
  */
@@ -38,7 +38,7 @@ export function PointsInput({ label, value, onChange, max = 100_000_000, isRequi
                 if (!digits) return onChange(null);
                 onChange(Math.min(Number(digits), max));
             }}
-            endContent={<span className="text-xs text-default-400">pts</span>}
+            endContent={<span className="text-xs text-default-400">créditos</span>}
             isInvalid={isInvalid}
             errorMessage={errorMessage}
             description={!isInvalid && value ? `= ${formatPesos(value)}` : undefined}

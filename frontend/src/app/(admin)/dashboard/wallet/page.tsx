@@ -59,7 +59,7 @@ export default function VenueWalletPage() {
                 <div>
                     <h1 className="text-2xl font-bold">Billetera</h1>
                     <p className="mt-1 text-sm text-default-500">
-                        Tu complejo suma el precio de cada turno cuando se juega. Podés pedir que te paguen cuando quieras. 1 punto = $1.
+                        Tu complejo suma el precio de cada turno cuando se juega. Podés pedir que te paguen cuando quieras. 1 crédito = $1.
                     </p>
                 </div>
                 <Button
@@ -126,7 +126,7 @@ export default function VenueWalletPage() {
                             <TableHeader>
                                 <TableColumn>FECHA Y HORA</TableColumn>
                                 <TableColumn>DETALLE</TableColumn>
-                                <TableColumn align="end">PUNTOS</TableColumn>
+                                <TableColumn align="end">CRÉDITOS</TableColumn>
                                 <TableColumn align="end">COMPROBANTE</TableColumn>
                             </TableHeader>
                             <TableBody isLoading={isLoading} loadingContent={<Spinner />} emptyContent="Todavía no hay movimientos">

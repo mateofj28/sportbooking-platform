@@ -1,13 +1,13 @@
 // ============================================================
 // lib/points.ts
-// Billetera de puntos (spec billetera-puntos): 1 punto = 1 peso argentino.
-// Formato de montos y link de WhatsApp para comprar puntos (la recarga es manual:
-// el cliente transfiere y el admin general le carga los puntos).
+// Billetera de créditos (spec billetera-créditos): 1 crédito = 1 peso argentino.
+// Formato de montos y link de WhatsApp para comprar créditos (la recarga es manual:
+// el cliente transfiere y el admin general le carga los créditos).
 // ============================================================
 
 import { formatDateTimeAr } from "@/lib/datetime";
 
-/** Número de WhatsApp para comprar puntos, en formato internacional sin "+" ni espacios. */
+/** Número de WhatsApp para comprar créditos, en formato internacional sin "+" ni espacios. */
 export const WHATSAPP_TOPUP_NUMBER = "5492984339319";
 /** El mismo número, legible. */
 export const WHATSAPP_TOPUP_LABEL = "+54 9 2984 33-9319";
@@ -17,14 +17,14 @@ export function formatPointsNumber(n: number): string {
     return Math.round(Number(n) || 0).toLocaleString("en-US");
 }
 
-/** 63000 -> "$63,000 ARS" (1 punto = 1 peso). */
+/** 63000 -> "$63,000 ARS" (1 crédito = 1 peso). */
 export function formatPesos(n: number): string {
     return `$${formatPointsNumber(n)} ARS`;
 }
 
-/** 63000 -> "63,000 pts" */
+/** 63000 -> "63,000 créditos" */
 export function formatPoints(n: number): string {
-    return `${formatPointsNumber(n)} pts`;
+    return `${formatPointsNumber(n)} créditos`;
 }
 
 /** Monto con signo: 63000 -> "+63.000", -63000 -> "−63.000" (signo menos tipográfico). */
@@ -37,10 +37,10 @@ export function formatSignedPoints(n: number): string {
 
 /**
  * Link de WhatsApp con el mensaje ya escrito (R11):
- * "Hola, quiero comprar X puntos. Mi cuenta: email@ejemplo.com"
+ * "Hola, quiero comprar X créditos. Mi cuenta: email@ejemplo.com"
  */
 export function whatsappTopupUrl(points?: number | null, email?: string | null): string {
-    const amount = points && points > 0 ? `${formatPointsNumber(points)} puntos` : "puntos";
+    const amount = points && points > 0 ? `${formatPointsNumber(points)} créditos` : "créditos";
     const account = email ? ` Mi cuenta: ${email}` : "";
     const text = `Hola, quiero comprar ${amount}.${account}`;
     return `https://wa.me/${WHATSAPP_TOPUP_NUMBER}?text=${encodeURIComponent(text)}`;

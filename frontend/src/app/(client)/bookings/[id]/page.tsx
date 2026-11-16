@@ -170,7 +170,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
 
                                 {booking.paymentStatus === "PAID" && booking.status === "CONFIRMED" && (
                                     <div className="flex items-center justify-center gap-2 rounded-lg bg-success/10 py-2 text-sm text-success">
-                                        <ShieldCheck className="h-4 w-4" /> Pagada con tus puntos
+                                        <ShieldCheck className="h-4 w-4" /> Pagada con tus créditos
                                     </div>
                                 )}
 

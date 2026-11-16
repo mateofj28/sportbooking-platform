@@ -92,7 +92,7 @@ function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
     queryClient.invalidateQueries({ queryKey: ['bookings'] })
     queryClient.invalidateQueries({ queryKey: ['booking'] })
     queryClient.invalidateQueries({ queryKey: ['recurring-bookings'] })
-    // Reservar, pagar y cancelar mueven puntos (billetera, migración 043)
+    // Reservar, pagar y cancelar mueven créditos (billetera, migración 043)
     queryClient.invalidateQueries({ queryKey: ['wallet'] })
 }
 
@@ -274,7 +274,7 @@ export function useMarkBookingPaid() {
             return result
         },
         onSuccess: () => {
-            addToast('Reserva pagada con tus puntos')
+            addToast('Reserva pagada con tus créditos')
             invalidateAll(queryClient)
         },
         onError: (e: Error) => {

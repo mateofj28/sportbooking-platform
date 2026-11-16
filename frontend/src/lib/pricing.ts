@@ -15,7 +15,7 @@ import type { Pricing } from "@/types";
 
 /**
  * Comisión en pesos de una tarifa (sobre el precio del turno), redondeada al peso:
- * los puntos son enteros (D9). Igual que calculate_price en la base (migración 043).
+ * los créditos son enteros (D9). Igual que calculate_price en la base (migración 043).
  */
 export function commissionFor(pricing: Pick<Pricing, "pricePerHour" | "profitPercent">): number {
     const base = Math.round(Number(pricing.pricePerHour));

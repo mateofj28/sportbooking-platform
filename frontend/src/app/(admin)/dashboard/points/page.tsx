@@ -6,13 +6,13 @@ import {
     Button, Chip, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Radio, RadioGroup,
     Spinner, Tab, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, Textarea,
 } from "@heroui/react";
-import { Banknote, Receipt, Search, SlidersHorizontal, Wallet } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Search, Sigma, SlidersHorizontal } from "lucide-react";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";
 import { ReceiptButton, SummaryCard } from "@/components/shared/wallet-ui";
 import { PointsInput } from "@/components/shared/points-input";
 import { LedgerFilters, LedgerPagination, type LedgerFilterValue } from "@/components/shared/ledger-filters";
-import { useAdjustPoints, useAdminBalances, useAdminPointsUsers, useAdminWalletHistory, type PointsUser } from "@/hooks/use-wallet";
+import { useAdjustPoints, useAdminPointsUsers, useAdminWalletHistory, type PointsUser } from "@/hooks/use-wallet";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { formatArDateTime, formatPesos, formatPoints } from "@/lib/points";
@@ -48,39 +48,10 @@ export default function PointsPage() {
                     Cargá los créditos que compran los clientes (1 crédito = $1) y corregí errores. Cada movimiento queda registrado.
                 </p>
             </div>
-            <CreditTotals />
             <Tabs aria-label="Secciones de créditos" variant="underlined">
                 <Tab key="users" title="Clientes"><UsersTab /></Tab>
                 <Tab key="history" title="Historial global"><HistoryTab /></Tab>
             </Tabs>
-        </div>
-    );
-}
-
-/** Totales de créditos (1 crédito = $1). */
-function CreditTotals() {
-    const { data } = useAdminBalances();
-    const spent = data ? data.spentPlayed + data.spentNotPlayed : 0;
-    return (
-        <div className="grid gap-4 sm:grid-cols-3">
-            <SummaryCard
-                icon={<Wallet className="h-5 w-5 text-primary" />}
-                label="Créditos en billeteras"
-                value={data ? formatPoints(data.inWallets) : "…"}
-                hint={data ? `${formatPesos(data.inWallets)} · cargados y todavía sin usar` : undefined}
-            />
-            <SummaryCard
-                icon={<Banknote className="h-5 w-5 text-success" />}
-                label="Total cargado"
-                value={data ? formatPoints(data.collected) : "…"}
-                hint="Recargas menos ajustes (dinero real ingresado)"
-            />
-            <SummaryCard
-                icon={<Receipt className="h-5 w-5 text-default-500" />}
-                label="Total gastado en reservas"
-                value={data ? formatPoints(spent) : "…"}
-                hint="Pagado por los clientes, sin contar devoluciones"
-            />
         </div>
     );
 }
@@ -264,6 +235,29 @@ function HistoryTab() {
     return (
         <div className="space-y-3">
             <LedgerFilters value={filters} onChange={(v) => { setFilters(v); setPage(1); }} kinds={HISTORY_KINDS} />
+            {/* Total de la columna Créditos: todos los movimientos que cumplen los filtros, no solo esta página */}
+            {data && (
+                <div className="grid gap-4 sm:grid-cols-3" aria-label="Total de la columna Créditos">
+                    <SummaryCard
+                        icon={<ArrowUpRight className="h-5 w-5 text-success" />}
+                        label="Entradas"
+                        value={`+${formatPoints(data.sumIn)}`}
+                        hint="Cargas de créditos"
+                    />
+                    <SummaryCard
+                        icon={<ArrowDownRight className="h-5 w-5 text-danger" />}
+                        label="Salidas"
+                        value={`−${formatPoints(data.sumOut)}`}
+                        hint="Ajustes y pagos a complejos"
+                    />
+                    <SummaryCard
+                        icon={<Sigma className="h-5 w-5 text-primary" />}
+                        label="Total"
+                        value={`${data.sumNet < 0 ? "−" : ""}${formatPoints(Math.abs(data.sumNet))}`}
+                        hint={`${data.total} movimiento${data.total !== 1 ? "s" : ""}${filters.from || filters.kind !== "ALL" ? " con los filtros aplicados" : ""}`}
+                    />
+                </div>
+            )}
             {isError ? (
                 <p role="alert" className="text-sm text-danger">{error?.message}</p>
             ) : (

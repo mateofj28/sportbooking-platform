@@ -241,7 +241,7 @@ export function useAdminWalletHistory(filters: HistoryFilters & { userId?: strin
   return useQuery({
     queryKey: [...WALLET_KEY, 'admin-history', filters],
     placeholderData: keepPreviousData,
-    queryFn: () => rpc<Page<GlobalHistoryItem>>('admin_wallet_history', {
+    queryFn: () => rpc<Page<GlobalHistoryItem> & { sumIn: number; sumOut: number; sumNet: number }>('admin_wallet_history', {
       ...filterParams(filters), p_user: filters.userId ?? null, p_venue: filters.venueId ?? null,
     }),
   })

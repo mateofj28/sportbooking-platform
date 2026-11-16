@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardBody, CardFooter, Chip, Button, Link } from "@heroui/react";
+import { Card, CardBody, Chip, Link } from "@heroui/react";
 import { MapPin, Users, Clock } from "lucide-react";
 import type { Facility } from "@/types";
 import { finalPricePerTurn, formatPrice } from "@/lib/pricing";
@@ -93,14 +93,7 @@ export function FacilityCard({ facility, availabilityToday }: FacilityCardProps)
                       {facility.minBookingDuration === facility.maxBookingDuration ? facility.minBookingDuration : `${facility.minBookingDuration}–${facility.maxBookingDuration}`} min
                   </Chip>
               </div>
-          </CardBody>
-
-          <CardFooter className="justify-between border-t border-divider px-4 py-2.5">
-                <span className="text-xs text-default-400">{facility.venue?.city ?? ""}</span>
-              <Button size="sm" color="primary" variant="flat">
-                  Ver disponibilidad
-              </Button>
-          </CardFooter>
+            </CardBody>
       </Card>
   );
 }

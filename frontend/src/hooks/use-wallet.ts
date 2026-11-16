@@ -251,9 +251,10 @@ export function useAdminWalletHistory(filters: HistoryFilters & { userId?: strin
   })
 }
 
-export function useAdminBalances() {
+export function useAdminBalances(enabled = true) {
   return useQuery({
     queryKey: [...WALLET_KEY, 'balances'],
+    enabled,
     queryFn: () => rpc<Balances>('admin_balances'),
   })
 }

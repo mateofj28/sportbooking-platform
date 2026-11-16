@@ -10,9 +10,10 @@ import { Search, SlidersHorizontal } from "lucide-react";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";
 import { LedgerTotals, ReceiptButton } from "@/components/shared/wallet-ui";
+import { PayoutRequestsPanel } from "@/components/shared/payout-admin";
 import { PointsInput } from "@/components/shared/points-input";
 import { LedgerFilters, LedgerPagination, type LedgerFilterValue } from "@/components/shared/ledger-filters";
-import { useAdjustPoints, useAdminPointsUsers, useAdminWalletHistory, type PointsUser } from "@/hooks/use-wallet";
+import { useAdjustPoints, useAdminBalances, useAdminPointsUsers, useAdminWalletHistory, type PointsUser } from "@/hooks/use-wallet";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { formatArDateTime, formatPesos, formatPoints } from "@/lib/points";
@@ -38,6 +39,10 @@ export default function PointsPage() {
         if (isHydrated && user && !isAdmin) router.replace("/dashboard");
     }, [isHydrated, user, isAdmin, router]);
 
+    // Cantidad de solicitudes de pago pendientes (indicador en la pestaña)
+    const { data: balances } = useAdminBalances(isAdmin);
+    const pendingRequests = balances?.requests.length ?? 0;
+
     if (!isAdmin) return <div className="flex justify-center py-12"><Spinner size="lg" /></div>;
 
     return (
@@ -50,6 +55,19 @@ export default function PointsPage() {
             </div>
             <Tabs aria-label="Secciones de créditos" variant="underlined">
                 <Tab key="users" title="Clientes"><UsersTab /></Tab>
+                <Tab
+                    key="payouts"
+                    title={
+                        <span className="flex items-center gap-2">
+                            Solicitudes de pago
+                            {pendingRequests > 0 && (
+                                <Chip size="sm" color="warning" variant="flat" aria-label={`${pendingRequests} pendientes`}>{pendingRequests}</Chip>
+                            )}
+                        </span>
+                    }
+                >
+                    <PayoutRequestsPanel />
+                </Tab>
                 <Tab key="history" title="Historial global"><HistoryTab /></Tab>
             </Tabs>
         </div>

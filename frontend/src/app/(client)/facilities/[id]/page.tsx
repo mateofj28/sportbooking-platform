@@ -460,15 +460,15 @@ export default function FacilityDetailPage({
                         <p className="mt-3 text-sm text-default-600">{facility.description}</p>
                     )}
                     <div className="mt-3 flex flex-wrap gap-2">
-                        {facility.surfaceType && <Chip size="sm" variant="bordered">{facility.surfaceType}</Chip>}
-                        {facility.isIndoor && <Chip size="sm" variant="bordered" color="secondary">Indoor</Chip>}
+                        {facility.surfaceType && <Chip size="sm" variant="flat">{facility.surfaceType}</Chip>}
+                        {facility.isIndoor && <Chip size="sm" variant="flat" color="secondary">Indoor</Chip>}
                         {facility.capacity && (
-                            <Chip size="sm" variant="bordered" startContent={<Users className="h-3 w-3" />}>
+                            <Chip size="sm" variant="flat" startContent={<Users className="h-3 w-3" />}>
                                 {facility.capacity} jugadores
                             </Chip>
                         )}
-                        <Chip size="sm" variant="bordered" startContent={<Clock className="h-3 w-3" />}>
-                            {facility.minBookingDuration}-{facility.maxBookingDuration} min
+                        <Chip size="sm" variant="flat" startContent={<Clock className="h-3 w-3" />}>
+                            {facility.minBookingDuration === facility.maxBookingDuration ? facility.minBookingDuration : `${facility.minBookingDuration}–${facility.maxBookingDuration}`} min
                         </Chip>
                     </div>
                 </div>

@@ -355,20 +355,32 @@ export default function FacilityDetailPage({
         confirmBooking();
     };
 
+    /**
+     * Día calendario REAL (hora AR, como Date en UTC) en que empieza el turno. Un slot de
+     * madrugada (ej. 1:00 am en la grilla del jueves) es del día siguiente, igual que en la
+     * reserva única (buildArIso). Antes se usaba el día de la grilla y la serie quedaba un día antes.
+     */
+    const recurringFirstDayAr = (slot: string): Date =>
+        new Date(new Date(buildArIso(selectedDate, slot)).getTime() - 3 * 60 * 60 * 1000);
+
     /** Crea el turno fijo con la forma de pago elegida (todo, la próxima o nada). */
     const confirmRecurringBooking = (payMode: RecurringPayMode) => {
         if (!selectedSlot) return;
 
-        const startDate = selectedDate.toISOString().split("T")[0];
-        // dayOfWeek AR: usamos el día de la fecha seleccionada (0=Lunes..6=Domingo)
-        const dow = (selectedDate.getDay() + 6) % 7;
+        const firstStartAr = recurringFirstDayAr(selectedSlot);
+        const startDate = firstStartAr.toISOString().slice(0, 10);
+        const dow = (firstStartAr.getUTCDay() + 6) % 7; // 0=Lunes..6=Domingo
+
+        // Hora de fin de reloj: "24:00" -> "00:00", "25:00" -> "01:00"
+        const [endH, endM] = endTime.split(":").map(Number);
+        const endClock = `${String(endH % 24).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
 
         createRecurring.mutate(
             {
                 facilityId: id,
                 dayOfWeek: dow,
                 startTime: selectedSlot,
-                endTime: endTime,
+                endTime: endClock,
                 startDate,
                 notes: notes || undefined,
                 payMode,
@@ -627,7 +639,7 @@ export default function FacilityDetailPage({
                                         <div className="flex flex-wrap items-center gap-3 text-sm text-default-600">
                                             <span className="flex items-center gap-1">
                                                 📅 {mode === "recurring"
-                                                    ? `Todos los ${selectedDate.toLocaleDateString("es-AR", { weekday: "long" })}`
+                                                                ? `Todos los ${recurringFirstDayAr(selectedSlot).toLocaleDateString("es-AR", { weekday: "long", timeZone: "UTC" })}`
                                                     : selectedDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
                                             </span>
                                             <span className="flex items-center gap-1">

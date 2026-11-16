@@ -42,6 +42,17 @@ Deno.serve(async (req) => {
     if (pay_mode !== undefined && !['NONE', 'NEXT', 'ALL'].includes(pay_mode)) {
       return err('Forma de pago inválida')
     }
+    // Horas de reloj "HH:MM"; "24:00" o más se normaliza ("24:00" -> "00:00")
+    const CLOCK = /^\d{1,2}:\d{2}$/
+    if (!CLOCK.test(String(start_time)) || !CLOCK.test(String(end_time)) || !/^\d{4}-\d{2}-\d{2}$/.test(String(start_date))) {
+      return err('Formato de fecha u hora inválido')
+    }
+    const clock = (t: string) => {
+      const [h, m] = t.split(':').map(Number)
+      return `${String(h % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+    }
+    const startClock = clock(start_time)
+    const endClock = clock(end_time)
 
     const supabase = createAdminClient()
     const actor = actorFromUser(user)
@@ -64,8 +75,8 @@ Deno.serve(async (req) => {
     }
 
     // Calcular horarios en UTC desde hora AR
-    const [startH, startM] = start_time.split(':').map(Number)
-    const [endH, endM] = end_time.split(':').map(Number)
+    const [startH, startM] = startClock.split(':').map(Number)
+    const [endH, endM] = endClock.split(':').map(Number)
     let startMin = startH * 60 + startM
     let endMin = endH * 60 + endM
     if (endMin <= startMin) endMin += 24 * 60
@@ -93,8 +104,8 @@ Deno.serve(async (req) => {
         facility_id,
         user_id: targetUserId,
         day_of_week,
-        start_time,
-        end_time,
+        start_time: startClock,
+        end_time: endClock,
         start_date: firstDate.toISOString(),
         end_date: lastDate.toISOString(),
         created_by: user.id,
@@ -209,7 +220,7 @@ Deno.serve(async (req) => {
       venueName: (facility as any).venue?.name ?? '',
       facilityName: (facility as any).name ?? '',
       dateLabel: `Todos los días (${created.length} fechas)`,
-      timeLabel: `${start_time} - ${end_time}`,
+      timeLabel: `${startClock} - ${endClock}`,
       paymentPending: paidCount < created.length,
     })
 
@@ -218,8 +229,8 @@ Deno.serve(async (req) => {
       facilityName: (facility as any).name,
       clientName: `${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim(),
       dayOfWeek: day_of_week,
-      startTime: start_time,
-      endTime: end_time,
+      startTime: startClock,
+      endTime: endClock,
       createdCount: created.length,
     })
 

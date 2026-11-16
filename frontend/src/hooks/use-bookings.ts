@@ -47,13 +47,19 @@ export interface CreateRecurringBookingData {
     startDate: string
     userId?: string
     notes?: string
+    /** Cómo se paga al crearlo: todas las fechas, solo la próxima o ninguna (se paga después). */
+    payMode?: RecurringPayMode
 }
+
+export type RecurringPayMode = 'ALL' | 'NEXT' | 'NONE'
 
 export interface RecurringBookingResult {
     recurringBookingId: string
     totalDates: number
     createdCount: number
     skippedCount: number
+    paidCount: number
+    paidTotal: number
     created: { date: string; bookingId: string }[]
     skipped: { date: string; reason: string }[]
 }
@@ -210,11 +216,13 @@ export function useCreateRecurringBooking() {
                 start_date: data.startDate,
                 user_id: data.userId,
                 notes: data.notes,
+                pay_mode: data.payMode ?? 'NONE',
             })
             if (error) throw new Error(error)
             return result!
         },
         onSuccess: () => invalidateAll(queryClient),
+        onError: () => queryClient.invalidateQueries({ queryKey: ['wallet'] }),
     })
 }
 

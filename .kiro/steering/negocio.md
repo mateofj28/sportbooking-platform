@@ -137,8 +137,10 @@ Relación clave:
 - **Recarga manual**: el cliente escribe por WhatsApp a **+54 9 2984 33-9319** ("quiero comprar X créditos"), transfiere,
   y el admin general carga los créditos en Panel → Créditos (motivo **opcional**, migración 048). Restar nunca deja saldo negativo.
 - **Reserva propia**: se paga con créditos **al crearla** (`create_booking_paid`); sin saldo se bloquea (402). Sin pago parcial.
-- **Turno fijo y reserva manual de un admin**: quedan pendientes y **el titular las paga con créditos** (botón Pagar,
-  `pay_booking`). Si no se pagan, se cancelan solas a menos de 24 h (como antes).
+- **Turno fijo propio**: al crearlo el cliente elige **pagar todo**, **pagar solo la próxima fecha** o **solo crearlo**
+  (`create-recurring` `pay_mode` ALL/NEXT/NONE, migración 054). El cobro es todo o nada con el turno: si el saldo no
+  alcanza, no se crea nada. Las fechas sin pagar se pagan con el botón Pagar y se cancelan solas a menos de 24 h.
+- **Reserva manual o turno fijo de un admin para un cliente**: quedan pendientes y **el titular los paga** con créditos.
 - **Cancelación**: se mantiene la regla de 24 h para el cliente (también al cancelar una serie: las fechas a menos de
   24 h se mantienen). Cancele quien cancele, se devuelve el **100% de lo pagado** (`cancel_booking`).
 - **Sede**: suma el **precio base** recién cuando el turno pasa a *Completada* (trigger `credit_venue_on_complete`, una

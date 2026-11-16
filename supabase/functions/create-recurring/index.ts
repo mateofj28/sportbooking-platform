@@ -1,5 +1,12 @@
 // create-recurring/index.ts
-// Crea un turno fijo (8 ocurrencias semanales). PENDING hasta que el cliente pague.
+// Crea un turno fijo (8 ocurrencias semanales).
+//
+// pay_mode (solo para un turno fijo PROPIO; el de un admin para otra persona siempre queda
+// pendiente y lo paga el titular):
+//   'NONE' (por defecto) -> se crean pendientes; cada fecha se paga después.
+//   'NEXT'               -> se paga la próxima fecha (la primera creada).
+//   'ALL'                -> se pagan todas las fechas creadas.
+// El pago es TODO O NADA con el turno: si el saldo no alcanza, no se crea nada (402).
 
 import { createAdminClient, ok, err, corsHeaders } from '../_shared/db.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -8,6 +15,7 @@ import { notifyRecurringCreated } from '../_shared/notifications.ts'
 import { arMidnightUtc } from '../_shared/ar-time.ts'
 import { actorFromUser, canManage } from '../_shared/permissions.ts'
 import { bookingInsertProblem } from '../_shared/booking-errors.ts'
+import { walletProblem } from '../_shared/wallet-errors.ts'
 
 const AR_OFFSET_MIN = 3 * 60
 const OCCURRENCES = 8
@@ -27,15 +35,20 @@ Deno.serve(async (req) => {
     if (authError || !user) return err('No autorizado', 401)
 
     const body = await req.json()
-    const { facility_id, day_of_week, start_time, end_time, start_date, user_id, notes } = body
+    const { facility_id, day_of_week, start_time, end_time, start_date, user_id, notes, pay_mode } = body
     if (!facility_id || day_of_week === undefined || !start_time || !end_time || !start_date) {
       return err('Faltan campos requeridos')
+    }
+    if (pay_mode !== undefined && !['NONE', 'NEXT', 'ALL'].includes(pay_mode)) {
+      return err('Forma de pago inválida')
     }
 
     const supabase = createAdminClient()
     const actor = actorFromUser(user)
     // Un admin puede crear el turno a nombre de otra persona (user_id); si no, es a nombre propio.
     const targetUserId = (actor.role !== 'CLIENT' && user_id) ? user_id : user.id
+    // Solo el titular paga: el turno de un admin para otra persona queda siempre pendiente
+    const payMode: 'NONE' | 'NEXT' | 'ALL' = targetUserId === user.id ? (pay_mode ?? 'NONE') : 'NONE'
 
     // Verificar cancha
     const { data: facility } = await supabase
@@ -151,10 +164,36 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Deshace el turno fijo recién creado (fechas pendientes, sin movimientos de créditos)
+    const rollback = async () => {
+      if (created.length > 0) {
+        await supabase.from('bookings').delete().in('id', created.map((c) => c.bookingId)).eq('payment_status', 'PENDING')
+      }
+      await supabase.from('recurring_bookings').delete().eq('id', recurring.id)
+    }
+
     // Si ninguna fecha fue creada, rollback de la recurrencia
     if (created.length === 0) {
-      await supabase.from('recurring_bookings').delete().eq('id', recurring.id)
+      await rollback()
       return err(`No se pudo crear ninguna fecha: ${skipped[0]?.reason}`)
+    }
+
+    // Pago con créditos, todo o nada: si no alcanza, no queda el turno fijo creado
+    let paidCount = 0
+    let paidTotal = 0
+    if (payMode !== 'NONE') {
+      const toPay = payMode === 'ALL' ? created.map((c) => c.bookingId) : [created[0].bookingId]
+      const { data: paid, error: payErr } = await (supabase.rpc as any)('pay_bookings_batch', {
+        p_bookings: toPay,
+        p_user: targetUserId,
+      })
+      if (payErr) {
+        await rollback()
+        const problem = walletProblem(payErr, 'No se pudo pagar el turno fijo')
+        return err(problem.message, problem.status, { code: problem.code, ...problem.extra })
+      }
+      paidCount = Number(paid?.paidCount ?? 0)
+      paidTotal = Number(paid?.total ?? 0)
     }
 
     // Efectos secundarios (best-effort)
@@ -171,7 +210,7 @@ Deno.serve(async (req) => {
       facilityName: (facility as any).name ?? '',
       dateLabel: `Todos los días (${created.length} fechas)`,
       timeLabel: `${start_time} - ${end_time}`,
-      paymentPending: true,
+      paymentPending: paidCount < created.length,
     })
 
     void notifyRecurringCreated({
@@ -189,6 +228,8 @@ Deno.serve(async (req) => {
       totalDates: created.length + skipped.length,
       createdCount: created.length,
       skippedCount: skipped.length,
+      paidCount,
+      paidTotal,
       created,
       skipped,
     }, 201)

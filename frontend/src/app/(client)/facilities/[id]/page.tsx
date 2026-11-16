@@ -19,12 +19,13 @@ import {
     useDisclosure,
 } from "@heroui/react";
 import { useFacility, useFacilities } from "@/hooks/use-facilities";
-import { useCreateBooking, useCreateRecurringBooking } from "@/hooks/use-bookings";
+import { useCreateBooking, useCreateRecurringBooking, type RecurringPayMode } from "@/hooks/use-bookings";
 import { durationOptionsForSport } from "@/components/shared/availability-picker";
 import { finalPricePerTurn } from "@/lib/pricing";
 import { formatPoints } from "@/lib/points";
 import { useMyBalance } from "@/hooks/use-wallet";
 import { InsufficientBalance } from "@/components/shared/insufficient-balance";
+import { RecurringPayModal } from "@/components/shared/recurring-pay-modal";
 import Link from "next/link";
 import { useFacilityAvailability, useAvailabilitySummary } from "@/hooks/use-availability";
 import { useAvailabilityRealtime } from "@/hooks/use-availability-realtime";
@@ -145,7 +146,11 @@ export default function FacilityDetailPage({
         createdCount: number;
         skippedCount: number;
         skipped: { date: string; reason: string }[];
+        paidCount: number;
+        paidTotal: number;
     }>(null);
+    // Modal "¿Cómo querés pagar el turno fijo?"
+    const [payChoiceOpen, setPayChoiceOpen] = useState(false);
 
     // Modal de advertencia al reservar para HOY (no se podrá cancelar).
     // "pendingAction" indica qué confirmar al aceptar: reserva única o turno fijo.
@@ -346,12 +351,12 @@ export default function FacilityDetailPage({
     /** Aceptar en el modal de hoy: cierra y procede con la acción pendiente. */
     const handleConfirmToday = () => {
         onTodayWarnClose();
-        if (pendingAction === "recurring") confirmRecurringBooking();
-        else confirmBooking();
+        // El turno fijo ya no pasa por acá: su aviso de 24 h está en el modal de pago
+        confirmBooking();
     };
 
-    /** Crea el turno fijo (pago/confirmación real de las 8 fechas). */
-    const confirmRecurringBooking = () => {
+    /** Crea el turno fijo con la forma de pago elegida (todo, la próxima o nada). */
+    const confirmRecurringBooking = (payMode: RecurringPayMode) => {
         if (!selectedSlot) return;
 
         const startDate = selectedDate.toISOString().split("T")[0];
@@ -366,13 +371,17 @@ export default function FacilityDetailPage({
                 endTime: endTime,
                 startDate,
                 notes: notes || undefined,
+                payMode,
             },
             {
                 onSuccess: (res) => {
+                    setPayChoiceOpen(false);
                     setRecurringResult({
                         createdCount: res.createdCount,
                         skippedCount: res.skippedCount,
                         skipped: res.skipped,
+                        paidCount: res.paidCount ?? 0,
+                        paidTotal: res.paidTotal ?? 0,
                     });
                 },
             }
@@ -391,12 +400,9 @@ export default function FacilityDetailPage({
         }
         if (!selectedSlot) return;
 
-        if (startsWithinCancelWindow) {
-            setPendingAction("recurring");
-            onTodayWarnOpen();
-            return;
-        }
-        confirmRecurringBooking();
+        // Pregunta cómo pagar (y avisa si la primera fecha es en menos de 24 h)
+        createRecurring.reset();
+        setPayChoiceOpen(true);
     };
 
     if (isLoading) {
@@ -644,7 +650,7 @@ export default function FacilityDetailPage({
                                                     )}
                                                     {mode === "recurring" && isAuthenticated && (
                                                         <p className="mt-1 text-xs text-default-500">
-                                                            Cada fecha se paga con créditos desde &quot;Mis reservas&quot;, hasta 24 h antes.
+                                                            Al crearlo elegís si pagás todas las fechas, solo la próxima o cada una después.
                                                         </p>
                                                     )}
                                     </div>
@@ -710,6 +716,13 @@ export default function FacilityDetailPage({
                                 <div className="rounded-lg bg-success/10 p-4">
                                     <p className="text-sm font-semibold text-success">
                                         Turno fijo creado: {recurringResult.createdCount} reserva{recurringResult.createdCount !== 1 ? "s" : ""} confirmada{recurringResult.createdCount !== 1 ? "s" : ""}.
+                                    </p>
+                                    <p className="mt-1 text-xs text-default-600">
+                                        {recurringResult.paidCount === 0
+                                            ? "Ninguna fecha pagada: pagalas desde «Mis reservas», hasta 24 h antes de cada una."
+                                            : recurringResult.paidCount === recurringResult.createdCount
+                                                ? `Pagaste todas las fechas: ${formatPoints(recurringResult.paidTotal)}.`
+                                                : `Pagaste la próxima fecha (${formatPoints(recurringResult.paidTotal)}). Las otras ${recurringResult.createdCount - recurringResult.paidCount} las pagás desde «Mis reservas».`}
                                     </p>
                                     {recurringResult.skippedCount > 0 && (
                                         <div className="mt-2">
@@ -789,6 +802,18 @@ export default function FacilityDetailPage({
             </main>
 
             {/* Aviso: el turno empieza en menos de 24h, no se podrá cancelar */}
+            <RecurringPayModal
+                isOpen={payChoiceOpen}
+                onClose={() => setPayChoiceOpen(false)}
+                pricePerDate={price}
+                dates={8}
+                balance={balance}
+                firstWithin24h={startsWithinCancelWindow}
+                isLoading={createRecurring.isPending}
+                error={createRecurring.isError ? ((createRecurring.error as Error)?.message ?? "No se pudo crear el turno fijo") : null}
+                onConfirm={confirmRecurringBooking}
+            />
+
             <Modal isOpen={isTodayWarnOpen} onClose={onTodayWarnClose} placement="center" size="md">
                 <ModalContent>
                     <ModalHeader className="flex items-center gap-2">

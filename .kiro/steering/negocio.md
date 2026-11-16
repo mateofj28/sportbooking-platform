@@ -140,7 +140,8 @@ Relación clave:
 - **Cancelación**: se mantiene la regla de 24 h para el cliente (también al cancelar una serie: las fechas a menos de
   24 h se mantienen). Cancele quien cancele, se devuelve el **100% de lo pagado** (`cancel_booking`).
 - **Sede**: suma el **precio base** recién cuando el turno pasa a *Completada* (trigger `credit_venue_on_complete`, una
-  sola vez). La comisión queda como ganancia de la empresa. Una cancelación nunca toca la billetera de la sede.
+  sola vez). Los turnos pagados pasan a *Completada* hasta 5 minutos después de terminar (`complete_past_bookings`,
+  pg_cron cada 5 min, dentro de la base; migración 050). La comisión queda como ganancia de la empresa. Una cancelación nunca toca la billetera de la sede.
 - **Pagos a complejos a pedido** (migración 045; reemplaza la liquidación mensual):
   - Saldo de la sede = turnos jugados − pagos recibidos. **Disponible** = saldo − lo ya solicitado.
   - El admin de sede **solicita el pago cuando quiera** (Panel → Billetera): todo lo disponible u otro monto (> 0,

@@ -559,7 +559,7 @@ supabase/
     ├── mark-paid/
     ├── cron-cancel-unpaid/
     ├── cron-send-reminders/
-    └── cron-complete-bookings/
+    (completar turnos jugados: función SQL complete_past_bookings() en pg_cron cada 5 min, migración 050)
 ```
 
 ### Edge cases críticos a cubrir siempre

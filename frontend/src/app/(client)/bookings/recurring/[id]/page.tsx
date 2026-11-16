@@ -5,6 +5,8 @@ import { Button, Card, CardBody, CardHeader, Chip, Divider, Spinner } from "@her
 import { useRouter } from "next/navigation";
 import { useRecurringBookings, usePriceChanges } from "@/hooks/use-bookings";
 import { PayWithPointsButton } from "@/components/shared/pay-with-points-button";
+import { PayAllButton } from "@/components/shared/pay-all-button";
+import { formatPoints } from "@/lib/points";
 import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { getBookingStatusChip } from "@/lib/booking-status";
 import { formatTimeAr, formatDateAr, formatClock } from "@/lib/datetime";
@@ -42,6 +44,14 @@ export default function RecurringDetailPage({ params }: { params: Promise<{ id: 
             return new Date(a.startDatetime).getTime() - new Date(b.startDatetime).getTime();
         });
     }, [recurring]);
+
+    // Fechas que se pueden pagar ahora: confirmadas, sin pagar y que todavía no empezaron
+    const pendingDates = useMemo(
+        () => sortedBookings
+            .filter((b) => b.status === "CONFIRMED" && b.paymentStatus !== "PAID" && !b.isPast)
+            .map((b) => ({ id: b.id, total: Number(b.totalPrice ?? 0) })),
+        [sortedBookings],
+    );
 
     if (isLoading) {
         return <div className="flex min-h-screen items-center justify-center"><Spinner size="lg" /></div>;
@@ -88,7 +98,10 @@ export default function RecurringDetailPage({ params }: { params: Promise<{ id: 
                 </Card>
 
                 {/* Lista de reservas */}
-                <h2 className="mb-3 mt-6 text-base font-semibold">Reservas del turno fijo</h2>
+                <div className="mb-3 mt-6 flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-base font-semibold">Reservas del turno fijo</h2>
+                    <PayAllButton dates={pendingDates} />
+                </div>
                 <div className="space-y-2">
                     {sortedBookings.map((b) => {
                         const chip = getBookingStatusChip({
@@ -114,7 +127,7 @@ export default function RecurringDetailPage({ params }: { params: Promise<{ id: 
                                                 <>
                                                     {b.totalPrice != null && (
                                                         <p className="text-xs font-medium text-default-600">
-                                                            ${Math.round(Number(b.totalPrice)).toLocaleString("en-US")} ARS
+                                                            {formatPoints(Number(b.totalPrice))}
                                                         </p>
                                                     )}
                                                     <PriceChangeNote change={priceChanges?.get(b.id)} />

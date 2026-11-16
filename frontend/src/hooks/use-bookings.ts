@@ -294,6 +294,34 @@ export function useMarkBookingPaid() {
     })
 }
 
+/**
+ * Paga varias fechas propias de una vez ("Pagar todo" del turno fijo). Todo o nada:
+ * si el saldo no alcanza para todas, no se cobra ninguna. expectedTotal = la suma que ve
+ * el cliente; si cambió (cambio de tarifa), no se cobra (409).
+ */
+export function useMarkBookingsPaid() {
+    const queryClient = useQueryClient()
+    const addToast = useToastStore((s) => s.addToast)
+    return useMutation({
+        mutationFn: async ({ ids, expectedTotal }: { ids: string[]; expectedTotal: number }) => {
+            const { data: result, error } = await invokeFunction<{ paidCount: number; total: number }>('mark-paid', {
+                booking_ids: ids,
+                expected_total: expectedTotal,
+            })
+            if (error) throw new Error(error)
+            return result!
+        },
+        onSuccess: (r) => {
+            addToast(`Pagaste ${r.paidCount} fecha${r.paidCount !== 1 ? 's' : ''} con tus créditos`)
+            invalidateAll(queryClient)
+        },
+        onError: () => {
+            invalidateAll(queryClient)
+            queryClient.invalidateQueries({ queryKey: ['price-changes'] })
+        },
+    })
+}
+
 /** Cambio de precio pendiente de una reserva (tarifa actualizada; migración 029). */
 export interface PriceChange {
     bookingId: string

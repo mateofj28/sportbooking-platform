@@ -85,12 +85,36 @@ function basePriceOf(b: Booking): number {
     return Number(b.totalPrice) - (Number(b.commissionAmount) || 0);
 }
 
-/** Tarjeta de una reserva del día (muestra el precio base). */
+/**
+ * Precio de una reserva del día.
+ * - Admin de sede: solo el precio base (lo que recibe; la comisión no la ve).
+ * - Admin general: lo que pagó el cliente y, debajo, cómo se reparte (complejo + comisión),
+ *   igual que en "Ganancia por complejo".
+ */
+function BookingPrice({ booking, isVenueAdmin, align }: { booking: Booking; isVenueAdmin: boolean; align: "end" | "start" }) {
+    const base = basePriceOf(booking);
+    if (isVenueAdmin) {
+        return <span className="text-sm font-bold text-success whitespace-nowrap">${formatPrice(base)}</span>;
+    }
+    const total = Number(booking.totalPrice);
+    const commission = Math.max(total - base, 0);
+    return (
+        <div className={`flex flex-col ${align === "end" ? "items-end text-right" : "items-start"}`}>
+            <span className="text-[11px] text-default-400">Pagó el cliente</span>
+            <span className="text-sm font-bold text-success whitespace-nowrap">${formatPrice(total)}</span>
+            <span className="text-[11px] text-default-500 whitespace-nowrap">
+                Complejo ${formatPrice(base)} · Comisión ${formatPrice(commission)}
+            </span>
+        </div>
+    );
+}
+
+/** Tarjeta de una reserva del día. */
 function BookingRow({ booking }: { booking: Booking }) {
     const { user } = useAuthStore();
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
-    // Admin de sede: precio base (sin comisión). Admin general: precio completo (base + comisión).
-    const displayPrice = isVenueAdmin ? basePriceOf(booking) : Number(booking.totalPrice);
+    // El admin de sede solo ve su complejo: el nombre no aporta
+    const venueName = isVenueAdmin ? null : booking.facility.venue?.name;
 
     return (
         <Card className="border border-divider">
@@ -106,6 +130,12 @@ function BookingRow({ booking }: { booking: Booking }) {
 
                         {/* Metadatos: apilados en móvil, en línea desde sm */}
                         <div className="mt-1 flex flex-col gap-1 text-xs text-default-500 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
+                            {venueName && (
+                                <span className="flex items-center gap-1.5 min-w-0">
+                                    <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                                    <span className="truncate">{venueName}</span>
+                                </span>
+                            )}
                             <span className="flex items-center gap-1.5 min-w-0">
                                 <User className="h-3.5 w-3.5 flex-shrink-0" />
                                 <span className="truncate">{booking.user ? `${booking.user.firstName} ${booking.user.lastName}` : "Cliente"}</span>
@@ -121,9 +151,7 @@ function BookingRow({ booking }: { booking: Booking }) {
 
                     {/* Precio + estado: visibles a la derecha solo en desktop */}
                     <div className="hidden sm:flex flex-col items-end gap-1.5 flex-shrink-0">
-                        <span className="text-sm font-bold text-success whitespace-nowrap">
-                            ${formatPrice(displayPrice)}
-                        </span>
+                        <BookingPrice booking={booking} isVenueAdmin={isVenueAdmin} align="end" />
                         <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
                             {STATUS_LABELS[booking.status]}
                         </Chip>
@@ -132,9 +160,7 @@ function BookingRow({ booking }: { booking: Booking }) {
 
                 {/* Precio + estado: fila inferior en móvil, separada con borde */}
                 <div className="mt-3 flex items-center justify-between border-t border-divider pt-3 sm:hidden">
-                    <span className="text-base font-bold text-success">
-                        ${formatPrice(displayPrice)}
-                    </span>
+                    <BookingPrice booking={booking} isVenueAdmin={isVenueAdmin} align="start" />
                     <Chip size="sm" variant="flat" color={STATUS_COLORS[booking.status]}>
                         {STATUS_LABELS[booking.status]}
                     </Chip>

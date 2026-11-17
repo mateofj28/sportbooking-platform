@@ -6,7 +6,7 @@ import NextLink from "next/link";
 import { Spinner } from "@heroui/react";
 import { AlertTriangle, BadgeDollarSign, Banknote, Building2, PiggyBank, Wallet } from "lucide-react";
 import { SummaryCard } from "@/components/shared/wallet-ui";
-import { useAdminBalances } from "@/hooks/use-wallet";
+import { useAdminBalancesSummary } from "@/hooks/use-wallet";
 import { useAuthStore } from "@/stores/auth-store";
 import { formatPoints } from "@/lib/points";
 
@@ -21,7 +21,7 @@ export default function BalancesPage() {
         if (isHydrated && user && !isAdmin) router.replace("/dashboard");
     }, [isHydrated, user, isAdmin, router]);
 
-    const { data, isLoading, isError, error } = useAdminBalances();
+    const { data, isLoading, isError, error } = useAdminBalancesSummary(isAdmin);
 
     if (!isAdmin || isLoading) return <div className="flex justify-center py-12"><Spinner size="lg" /></div>;
     if (isError || !data) return <p role="alert" className="text-sm text-danger">{error?.message ?? "No se pudieron cargar los balances"}</p>;

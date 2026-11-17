@@ -124,7 +124,8 @@ export interface VenuePayment {
   requested: boolean
 }
 
-export interface Balances {
+/** Tarjetas de Balances (migración 056). */
+export interface BalancesSummary {
   collected: number
   inWallets: number
   spentPlayed: number
@@ -134,9 +135,27 @@ export interface Balances {
   pendingToVenues: number
   requestedByVenues: number
   balanced: boolean
-  venues: VenueBalance[]
-  requests: PendingPayoutRequest[]
-  payments: VenuePayment[]
+}
+
+/** Saldo por complejo: una página + totales de todos los complejos filtrados. */
+export interface VenueBalancesPage extends Page<VenueBalance> {
+  totals: { balance: number; reserved: number; available: number; commission: number }
+}
+
+/** Pagos realizados: una página + total del monto con los filtros aplicados. */
+export interface VenuePaymentsPage extends Page<VenuePayment> {
+  sumAmount: number
+}
+
+export interface VenuePaymentFilters {
+  venueId: string | null
+  /** "YYYY-MM-DD" (día AR) o "" */
+  from: string
+  to: string
+  /** Parte del número de transferencia. */
+  search: string
+  page: number
+  size: number
 }
 
 export interface VenueWallet extends Page<VenueLedgerItem> {
@@ -251,11 +270,62 @@ export function useAdminWalletHistory(filters: HistoryFilters & { userId?: strin
   })
 }
 
-export function useAdminBalances(enabled = true) {
+// Pagos a complejos (migración 056). Cada parte de la pantalla pide solo lo que muestra,
+// paginado y filtrado en la base. Todas las keys cuelgan de ['wallet'], así que pagar,
+// rechazar o solicitar las invalida juntas. 60 s de caché: volver a una página ya vista no
+// consulta la base, y keepPreviousData mantiene la página anterior mientras llega la nueva.
+const PAYOUTS_STALE = 60_000
+
+/** Tarjetas de Balances. */
+export function useAdminBalancesSummary(enabled = true) {
   return useQuery({
-    queryKey: [...WALLET_KEY, 'balances'],
+    queryKey: [...WALLET_KEY, 'balances-summary'],
     enabled,
-    queryFn: () => rpc<Balances>('admin_balances'),
+    staleTime: PAYOUTS_STALE,
+    queryFn: () => rpc<BalancesSummary>('admin_balances_summary'),
+  })
+}
+
+/** Solo la cantidad de solicitudes pendientes (indicador de la pestaña). */
+export function useAdminPendingPayoutCount(enabled = true) {
+  return useQuery({
+    queryKey: [...WALLET_KEY, 'payout-pending-count'],
+    enabled,
+    staleTime: PAYOUTS_STALE,
+    queryFn: () => rpc<number>('admin_payout_pending_count'),
+  })
+}
+
+/** Saldo por complejo, ordenado por lo disponible para pagar (mayor primero). */
+export function useAdminVenueBalances(venueId: string | null, page: number, size = 20) {
+  return useQuery({
+    queryKey: [...WALLET_KEY, 'venue-balances', venueId, page, size],
+    staleTime: PAYOUTS_STALE,
+    placeholderData: keepPreviousData,
+    queryFn: () => rpc<VenueBalancesPage>('admin_venue_balances', { p_venue: venueId, p_page: page, p_size: size }),
+  })
+}
+
+/** Solicitudes pendientes (a lo sumo una por complejo, no necesita paginar). */
+export function useAdminPayoutRequests(venueId: string | null) {
+  return useQuery({
+    queryKey: [...WALLET_KEY, 'payout-requests', venueId],
+    staleTime: PAYOUTS_STALE,
+    placeholderData: keepPreviousData,
+    queryFn: () => rpc<PendingPayoutRequest[]>('admin_payout_requests', { p_venue: venueId }),
+  })
+}
+
+/** Pagos realizados con filtros (complejo, fechas AR, nº de transferencia), paginados. */
+export function useAdminVenuePayments(f: VenuePaymentFilters) {
+  return useQuery({
+    queryKey: [...WALLET_KEY, 'venue-payments', f],
+    staleTime: PAYOUTS_STALE,
+    placeholderData: keepPreviousData,
+    queryFn: () => rpc<VenuePaymentsPage>('admin_venue_payments', {
+      p_venue: f.venueId, p_from: f.from || null, p_to: f.to || null,
+      p_search: f.search || null, p_page: f.page, p_size: f.size,
+    }),
   })
 }
 

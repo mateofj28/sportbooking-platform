@@ -14,9 +14,13 @@ export interface LedgerFilterValue {
 interface LedgerFiltersProps {
     value: LedgerFilterValue;
     onChange: (v: LedgerFilterValue) => void;
-    /** Opciones de tipo; la primera debe ser { key: "ALL", label: "Todos los movimientos" }. */
-    kinds: { key: string; label: string }[];
+    /** Opciones de tipo; la primera debe ser { key: "ALL", label: "Todos los movimientos" }. Sin opciones no se muestra. */
+    kinds?: { key: string; label: string }[];
     children?: React.ReactNode;
+    /** Hay filtros activos en `children` (ej. una búsqueda): muestra "Quitar filtros". */
+    extraActive?: boolean;
+    /** Se llama además de limpiar fechas y tipo (para limpiar lo de `children`). */
+    onClearExtra?: () => void;
 }
 
 /** Historial: hasta 2 años hacia atrás y nunca en el futuro (hora AR). */
@@ -26,13 +30,13 @@ const HISTORY_YEARS = 2;
  * Filtros de los historiales de créditos: rango de fechas (hora AR) y tipo de movimiento.
  * Cambiar un filtro vuelve a la página 1 (lo maneja quien lo usa).
  */
-export function LedgerFilters({ value, onChange, kinds, children }: LedgerFiltersProps) {
+export function LedgerFilters({ value, onChange, kinds, children, extraActive = false, onClearExtra }: LedgerFiltersProps) {
     const today = todayAr();
     const minDay = addYearsToDate(today, -HISTORY_YEARS);
     const minDate = useMemo(() => parseDate(minDay), [minDay]);
     const maxDate = useMemo(() => parseDate(today), [today]);
     const range = value.from && value.to ? { start: parseDate(value.from), end: parseDate(value.to) } : null;
-    const hasFilters = !!value.from || value.kind !== "ALL";
+    const hasFilters = !!value.from || value.kind !== "ALL" || extraActive;
 
     return (
         <div className="flex flex-wrap items-end gap-3" role="group" aria-label="Filtros del historial">
@@ -56,20 +60,22 @@ export function LedgerFilters({ value, onChange, kinds, children }: LedgerFilter
                     onChange({ ...value, from, to });
                 }}
             />
-            <Select
-                label="Tipo"
-                size="sm"
-                variant="bordered"
-                className="w-full max-w-[220px]"
-                disallowEmptySelection
-                selectedKeys={[value.kind]}
-                onSelectionChange={(keys: unknown) => onChange({ ...value, kind: (Array.from(keys as Set<string>)[0] as string) || "ALL" })}
-            >
-                {kinds.map((k) => <SelectItem key={k.key}>{k.label}</SelectItem>)}
-            </Select>
+            {kinds && kinds.length > 0 && (
+                <Select
+                    label="Tipo"
+                    size="sm"
+                    variant="bordered"
+                    className="w-full max-w-[220px]"
+                    disallowEmptySelection
+                    selectedKeys={[value.kind]}
+                    onSelectionChange={(keys: unknown) => onChange({ ...value, kind: (Array.from(keys as Set<string>)[0] as string) || "ALL" })}
+                >
+                    {kinds.map((k) => <SelectItem key={k.key}>{k.label}</SelectItem>)}
+                </Select>
+            )}
             {children}
             {hasFilters && (
-                <Button size="sm" variant="light" onPress={() => onChange({ from: "", to: "", kind: "ALL" })}>
+                <Button size="sm" variant="light" onPress={() => { onChange({ from: "", to: "", kind: "ALL" }); onClearExtra?.(); }}>
                     Quitar filtros
                 </Button>
             )}

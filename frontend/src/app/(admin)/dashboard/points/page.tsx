@@ -10,10 +10,10 @@ import { Search, SlidersHorizontal } from "lucide-react";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";
 import { LedgerTotals, ReceiptButton } from "@/components/shared/wallet-ui";
-import { PayoutRequestsPanel } from "@/components/shared/payout-admin";
+import { PayoutRequestsPanel } from "@/components/shared/payout-panel";
 import { PointsInput } from "@/components/shared/points-input";
 import { LedgerFilters, LedgerPagination, type LedgerFilterValue } from "@/components/shared/ledger-filters";
-import { useAdjustPoints, useAdminBalances, useAdminPointsUsers, useAdminWalletHistory, type PointsUser } from "@/hooks/use-wallet";
+import { useAdjustPoints, useAdminPendingPayoutCount, useAdminPointsUsers, useAdminWalletHistory, type PointsUser } from "@/hooks/use-wallet";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { formatArDateTime, formatPesos, formatPoints } from "@/lib/points";
@@ -40,8 +40,8 @@ export default function PointsPage() {
     }, [isHydrated, user, isAdmin, router]);
 
     // Cantidad de solicitudes de pago pendientes (indicador en la pestaña)
-    const { data: balances } = useAdminBalances(isAdmin);
-    const pendingRequests = balances?.requests.length ?? 0;
+    const { data: pendingCount } = useAdminPendingPayoutCount(isAdmin);
+    const pendingRequests = pendingCount ?? 0;
 
     // Pestaña inicial desde ?tab= (ej. el enlace de Balances abre "Solicitudes de pago")
     const [tab, setTab] = useState<string>("users");

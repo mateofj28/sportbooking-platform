@@ -2,30 +2,26 @@
 
 // ============================================================
 // components/shared/payout-admin.tsx
-// Pagos a complejos (admin general, migración 045): saldo por complejo, solicitudes pendientes,
-// pagos realizados y los modales "Registrar pago" (de una solicitud o directo) y "Rechazar".
-// Se usan en la pestaña "Solicitudes de pago" de Créditos.
+// Pagos a complejos (admin general, migración 045): tabla de solicitudes pendientes y los
+// modales "Registrar pago" (de una solicitud o directo) y "Rechazar". La pantalla que los usa
+// está en payout-panel.tsx (pestaña "Solicitudes de pago" de Créditos).
 // ============================================================
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Select, SelectItem } from "@heroui/select";
+import { useEffect, useRef, useState } from "react";
 import {
     Button, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Radio, RadioGroup,
     Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow, Textarea,
 } from "@heroui/react";
-import { Clock, Paperclip } from "lucide-react";
+import { Paperclip } from "lucide-react";
 import { DataTable } from "@/components/shared/data-table";
-import { ReceiptButton } from "@/components/shared/wallet-ui";
 import { PointsInput } from "@/components/shared/points-input";
-import { useAdminBalances, usePayVenue, useRejectPayout, type PendingPayoutRequest, type VenueBalance } from "@/hooks/use-wallet";
+import { usePayVenue, useRejectPayout, type PendingPayoutRequest, type VenueBalance } from "@/hooks/use-wallet";
 import { useToastStore } from "@/stores/toast-store";
 import { formatDateTimeAr } from "@/lib/datetime";
 import { formatPesos, formatPoints } from "@/lib/points";
 
 const RECEIPT_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const RECEIPT_MAX = 5 * 1024 * 1024;
-/** Opción "Todos los complejos" del filtro. */
-const ALL_KEY = "ALL";
 
 /** A quién se paga: una solicitud (monto fijo) o un complejo por iniciativa propia. */
 export type PayTarget =
@@ -33,10 +29,11 @@ export type PayTarget =
     | { kind: "direct"; venue: VenueBalance };
 
 /** Tabla de solicitudes de pago pendientes con "Registrar pago" y "Rechazar". */
-export function PayoutRequestsTable({ requests, onPay, onReject }: {
+export function PayoutRequestsTable({ requests, onPay, onReject, isLoading = false }: {
     requests: PendingPayoutRequest[];
     onPay: (r: PendingPayoutRequest) => void;
     onReject: (r: PendingPayoutRequest) => void;
+    isLoading?: boolean;
 }) {
     return (
         <DataTable aria-label="Solicitudes de pago pendientes">
@@ -46,7 +43,7 @@ export function PayoutRequestsTable({ requests, onPay, onReject }: {
                 <TableColumn align="end">MONTO</TableColumn>
                 <TableColumn align="end">ACCIONES</TableColumn>
             </TableHeader>
-            <TableBody emptyContent="No hay solicitudes pendientes">
+            <TableBody isLoading={isLoading} loadingContent={<Spinner />} emptyContent={isLoading ? " " : "No hay solicitudes pendientes"}>
                 {requests.map((r) => (
                     <TableRow key={r.id}>
                         <TableCell>
@@ -65,140 +62,6 @@ export function PayoutRequestsTable({ requests, onPay, onReject }: {
                 ))}
             </TableBody>
         </DataTable>
-    );
-}
-
-/**
- * Pagos a complejos (pestaña "Solicitudes de pago" de Créditos): saldo por complejo con pago
- * directo, solicitudes pendientes y pagos realizados, con sus modales.
- */
-export function PayoutRequestsPanel() {
-    const { data, isLoading, isError, error } = useAdminBalances();
-    const [payTarget, setPayTarget] = useState<PayTarget | null>(null);
-    const [toReject, setToReject] = useState<PendingPayoutRequest | null>(null);
-    const [venueFilter, setVenueFilter] = useState<string>(ALL_KEY);
-
-    // Complejos con saldo, solicitudes o pagos (orden alfabético)
-    const venueOptions = useMemo(() => {
-        if (!data) return [];
-        const m = new Map<string, string>();
-        data.venues.forEach((v) => m.set(v.venueId, v.venueName));
-        data.requests.forEach((r) => m.set(r.venueId, r.venueName));
-        data.payments.forEach((p) => m.set(p.venueId, p.venueName));
-        return [...m].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, "es"));
-    }, [data]);
-
-    if (isLoading) return <div className="flex justify-center py-8"><Spinner /></div>;
-    if (isError || !data) return <p role="alert" className="text-sm text-danger">{error?.message ?? "No se pudieron cargar los pagos a complejos"}</p>;
-
-    // Si el complejo elegido deja de figurar (ej. se le pagó todo), se vuelve a "Todos"
-    const selected = venueOptions.some((v) => v.id === venueFilter) ? venueFilter : ALL_KEY;
-    const matches = (venueId: string) => selected === ALL_KEY || venueId === selected;
-    const venues = data.venues.filter((v) => matches(v.venueId));
-    const requests = data.requests.filter((r) => matches(r.venueId));
-    const payments = data.payments.filter((p) => matches(p.venueId));
-
-    return (
-        <div className="space-y-8">
-            <Select
-                label="Complejo" size="sm" variant="bordered" className="max-w-xs"
-                disallowEmptySelection
-                selectedKeys={[selected]}
-                onSelectionChange={(keys: "all" | Set<React.Key>) => {
-                    const k = keys === "all" ? undefined : Array.from(keys)[0];
-                    setVenueFilter(k ? String(k) : ALL_KEY);
-                }}
-            >
-                {[
-                    <SelectItem key={ALL_KEY}>Todos los complejos</SelectItem>,
-                    ...venueOptions.map((v) => <SelectItem key={v.id}>{v.name}</SelectItem>),
-                ]}
-            </Select>
-
-            {/* Saldo por complejo */}
-            <section className="space-y-3" aria-label="Saldo por complejo">
-                <h2 className="text-lg font-semibold">Saldo por complejo</h2>
-                <DataTable aria-label="Saldo por complejo">
-                    <TableHeader>
-                        <TableColumn>COMPLEJO</TableColumn>
-                        <TableColumn align="end">SIN COBRAR</TableColumn>
-                        <TableColumn align="end">SOLICITADO</TableColumn>
-                        <TableColumn align="end">DISPONIBLE</TableColumn>
-                        <TableColumn align="end">COMISIÓN</TableColumn>
-                        <TableColumn>ÚLTIMO PAGO</TableColumn>
-                        <TableColumn align="end">ACCIONES</TableColumn>
-                    </TableHeader>
-                    <TableBody emptyContent="Todavía no hay turnos jugados">
-                        {venues.map((v) => (
-                            <TableRow key={v.venueId}>
-                                <TableCell className="font-medium">{v.venueName}</TableCell>
-                                <TableCell className="text-right tabular-nums">{formatPoints(v.balance)}</TableCell>
-                                <TableCell className="text-right tabular-nums text-default-500">{formatPoints(v.reserved)}</TableCell>
-                                <TableCell className="text-right font-semibold tabular-nums">{formatPoints(v.available)}</TableCell>
-                                <TableCell className="text-right tabular-nums text-default-500">{formatPoints(v.commission)}</TableCell>
-                                <TableCell className="text-default-500">{v.lastPaidAt ? formatDateTimeAr(v.lastPaidAt) : "—"}</TableCell>
-                                <TableCell className="text-right">
-                                    <Button size="sm" variant="bordered" isDisabled={v.available <= 0} onPress={() => setPayTarget({ kind: "direct", venue: v })}>
-                                        Pagar
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </DataTable>
-                <p className="text-xs text-default-400">
-                    &quot;Pagar&quot; paga sin que el complejo lo pida, hasta lo disponible. Lo ya solicitado se paga desde la solicitud.
-                </p>
-            </section>
-
-            {/* Solicitudes pendientes */}
-            <section className="space-y-3" aria-label="Solicitudes de pago pendientes">
-                <h2 className="flex items-center gap-2 text-lg font-semibold">
-                    <Clock className="h-5 w-5 text-warning" aria-hidden="true" /> Solicitudes de pago pendientes
-                </h2>
-                <p className="text-sm text-default-500">
-                    Pagá por el monto pedido o rechazá con un motivo (el monto vuelve a su disponible).
-                </p>
-                <PayoutRequestsTable
-                    requests={requests}
-                    onPay={(r) => setPayTarget({ kind: "request", request: r })}
-                    onReject={setToReject}
-                />
-            </section>
-
-            {/* Pagos realizados */}
-            <section className="space-y-3" aria-label="Pagos realizados">
-                <h2 className="text-lg font-semibold">Pagos realizados</h2>
-                <DataTable aria-label="Pagos realizados a complejos">
-                    <TableHeader>
-                        <TableColumn>FECHA Y HORA</TableColumn>
-                        <TableColumn>COMPLEJO</TableColumn>
-                        <TableColumn align="end">MONTO</TableColumn>
-                        <TableColumn>ORIGEN</TableColumn>
-                        <TableColumn align="end">COMPROBANTE</TableColumn>
-                    </TableHeader>
-                    <TableBody emptyContent="Todavía no hay pagos">
-                        {payments.map((p) => (
-                            <TableRow key={p.id}>
-                                <TableCell className="text-default-500">{formatDateTimeAr(p.paidAt)}</TableCell>
-                                <TableCell className="font-medium">{p.venueName}</TableCell>
-                                <TableCell className="text-right font-semibold tabular-nums">{formatPoints(p.amount)}</TableCell>
-                                <TableCell className="text-default-500">
-                                    {p.requested ? "Solicitado por el complejo" : "Pago directo"}
-                                    {p.transferRef && <p className="text-xs text-default-400">Transferencia {p.transferRef}</p>}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    {p.receiptPath ? <ReceiptButton path={p.receiptPath} /> : <span className="text-xs text-default-300">—</span>}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </DataTable>
-            </section>
-
-            <PayModal target={payTarget} onClose={() => setPayTarget(null)} />
-            <RejectModal request={toReject} onClose={() => setToReject(null)} />
-        </div>
     );
 }
 

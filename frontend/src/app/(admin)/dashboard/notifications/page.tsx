@@ -37,7 +37,7 @@ const TYPE_META: Record<NotificationType, {
 
 /** A dónde lleva cada aviso al tocarlo (los de reservas, al detalle de la reserva). */
 function notificationHref(n: AppNotification): string | null {
-  if (n.type === "PAYOUT_REQUESTED") return "/dashboard/balances";
+  if (n.type === "PAYOUT_REQUESTED") return "/dashboard/points?tab=payouts";
   if (n.type === "PAYOUT_PAID" || n.type === "PAYOUT_REJECTED") return "/dashboard/wallet";
   return n.bookingId ? `/bookings/${n.bookingId}` : null;
 }

@@ -7,9 +7,14 @@
 // ============================================================
 
 import { createAdminClient } from '../_shared/db.ts'
+import { requireCron } from '../_shared/cron-auth.ts'
 import { bookingToEmailData, sendBookingReminder } from '../_shared/email.ts'
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  // Solo pg_cron (Authorization: Bearer CRON_SECRET, migración 060)
+  const denied = requireCron(req)
+  if (denied) return denied
+
   try {
     const supabase = createAdminClient()
     const now = new Date()

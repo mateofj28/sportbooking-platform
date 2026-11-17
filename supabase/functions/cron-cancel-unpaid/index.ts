@@ -18,13 +18,18 @@
 // ============================================================
 
 import { createAdminClient } from '../_shared/db.ts'
+import { requireCron } from '../_shared/cron-auth.ts'
 import { bookingToEmailData, sendBookingCancellation } from '../_shared/email.ts'
 import { notifyBookingCancelled } from '../_shared/notifications.ts'
 
 const REASON = 'Cancelada automáticamente por falta de pago (menos de 24h de antelación)'
 const DAY_MS = 24 * 60 * 60 * 1000
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  // Solo pg_cron (Authorization: Bearer CRON_SECRET, migración 060)
+  const denied = requireCron(req)
+  if (denied) return denied
+
   try {
     const supabase = createAdminClient()
     const now = new Date()

@@ -14,6 +14,7 @@
 // ============================================================
 
 import { createAdminClient } from '../_shared/db.ts'
+import { requireCron } from '../_shared/cron-auth.ts'
 import { sendPriceChangeNotice, type PriceChangeLine } from '../_shared/email.ts'
 import { arDateLabel, arTime } from '../_shared/ar-time.ts'
 
@@ -21,7 +22,11 @@ const QUIET_MINUTES = 5
 
 const money = (n: number, currency: string) => `$${Math.round(n).toLocaleString('es-AR')} ${currency}`
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  // Solo pg_cron (Authorization: Bearer CRON_SECRET, migración 060)
+  const denied = requireCron(req)
+  if (denied) return denied
+
   try {
     const supabase = createAdminClient()
     const now = new Date()

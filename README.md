@@ -49,7 +49,13 @@ SUPABASE_URL=https://olrmhtimfndshayvuowc.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=sb_secret_...
 RESEND_API_KEY=re_...
 RESEND_FROM_EMAIL=SportBooking <onboarding@resend.dev>
+CRON_SECRET=...   # 64 hex; el mismo valor que el secreto 'cron_secret' de Supabase Vault (migración 060)
 ```
+
+Los cron de Edge Functions solo aceptan llamadas con `Authorization: Bearer <CRON_SECRET>`.
+pg_cron lo lee de Vault en cada corrida, así que ningún comando guardado tiene claves.
+Para cambiarlo: generar uno nuevo, actualizarlo en Vault (`vault.update_secret`) y en
+`supabase secrets set CRON_SECRET=...`, en ese orden lo más juntos posible.
 
 ## Base de datos
 

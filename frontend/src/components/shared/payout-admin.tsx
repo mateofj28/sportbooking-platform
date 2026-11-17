@@ -2,9 +2,9 @@
 
 // ============================================================
 // components/shared/payout-admin.tsx
-// Pagos a complejos (admin general, migración 045): tabla de solicitudes pendientes y los
-// modales "Registrar pago" (de una solicitud o directo) y "Rechazar". Se usan en Balances
-// y en la pestaña "Solicitudes de pago" de Créditos.
+// Pagos a complejos (admin general, migración 045): saldo por complejo, solicitudes pendientes,
+// pagos realizados y los modales "Registrar pago" (de una solicitud o directo) y "Rechazar".
+// Se usan en la pestaña "Solicitudes de pago" de Créditos.
 // ============================================================
 
 import { useEffect, useRef, useState } from "react";
@@ -12,8 +12,9 @@ import {
     Button, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Radio, RadioGroup,
     Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow, Textarea,
 } from "@heroui/react";
-import { Paperclip } from "lucide-react";
+import { Clock, Paperclip } from "lucide-react";
 import { DataTable } from "@/components/shared/data-table";
+import { ReceiptButton } from "@/components/shared/wallet-ui";
 import { PointsInput } from "@/components/shared/points-input";
 import { useAdminBalances, usePayVenue, useRejectPayout, type PendingPayoutRequest, type VenueBalance } from "@/hooks/use-wallet";
 import { useToastStore } from "@/stores/toast-store";
@@ -64,26 +65,101 @@ export function PayoutRequestsTable({ requests, onPay, onReject }: {
     );
 }
 
-/** Solicitudes pendientes listas para usar (datos + modales). Pestaña de Créditos. */
+/**
+ * Pagos a complejos (pestaña "Solicitudes de pago" de Créditos): saldo por complejo con pago
+ * directo, solicitudes pendientes y pagos realizados, con sus modales.
+ */
 export function PayoutRequestsPanel() {
     const { data, isLoading, isError, error } = useAdminBalances();
     const [payTarget, setPayTarget] = useState<PayTarget | null>(null);
     const [toReject, setToReject] = useState<PendingPayoutRequest | null>(null);
 
     if (isLoading) return <div className="flex justify-center py-8"><Spinner /></div>;
-    if (isError || !data) return <p role="alert" className="text-sm text-danger">{error?.message ?? "No se pudieron cargar las solicitudes"}</p>;
+    if (isError || !data) return <p role="alert" className="text-sm text-danger">{error?.message ?? "No se pudieron cargar los pagos a complejos"}</p>;
 
     return (
-        <div className="space-y-3">
-            <p className="text-sm text-default-500">
-                Pedidos de pago de los complejos. Pagá por el monto pedido o rechazá con un motivo (el monto vuelve a su disponible).
-                Para pagar sin solicitud, andá a Balances.
-            </p>
-            <PayoutRequestsTable
-                requests={data.requests}
-                onPay={(r) => setPayTarget({ kind: "request", request: r })}
-                onReject={setToReject}
-            />
+        <div className="space-y-8">
+            {/* Saldo por complejo */}
+            <section className="space-y-3" aria-label="Saldo por complejo">
+                <h2 className="text-lg font-semibold">Saldo por complejo</h2>
+                <DataTable aria-label="Saldo por complejo">
+                    <TableHeader>
+                        <TableColumn>COMPLEJO</TableColumn>
+                        <TableColumn align="end">SIN COBRAR</TableColumn>
+                        <TableColumn align="end">SOLICITADO</TableColumn>
+                        <TableColumn align="end">DISPONIBLE</TableColumn>
+                        <TableColumn align="end">COMISIÓN</TableColumn>
+                        <TableColumn>ÚLTIMO PAGO</TableColumn>
+                        <TableColumn align="end">ACCIONES</TableColumn>
+                    </TableHeader>
+                    <TableBody emptyContent="Todavía no hay turnos jugados">
+                        {data.venues.map((v) => (
+                            <TableRow key={v.venueId}>
+                                <TableCell className="font-medium">{v.venueName}</TableCell>
+                                <TableCell className="text-right tabular-nums">{formatPoints(v.balance)}</TableCell>
+                                <TableCell className="text-right tabular-nums text-default-500">{formatPoints(v.reserved)}</TableCell>
+                                <TableCell className="text-right font-semibold tabular-nums">{formatPoints(v.available)}</TableCell>
+                                <TableCell className="text-right tabular-nums text-default-500">{formatPoints(v.commission)}</TableCell>
+                                <TableCell className="text-default-500">{v.lastPaidAt ? formatDateTimeAr(v.lastPaidAt) : "—"}</TableCell>
+                                <TableCell className="text-right">
+                                    <Button size="sm" variant="bordered" isDisabled={v.available <= 0} onPress={() => setPayTarget({ kind: "direct", venue: v })}>
+                                        Pagar
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </DataTable>
+                <p className="text-xs text-default-400">
+                    &quot;Pagar&quot; paga sin que el complejo lo pida, hasta lo disponible. Lo ya solicitado se paga desde la solicitud.
+                </p>
+            </section>
+
+            {/* Solicitudes pendientes */}
+            <section className="space-y-3" aria-label="Solicitudes de pago pendientes">
+                <h2 className="flex items-center gap-2 text-lg font-semibold">
+                    <Clock className="h-5 w-5 text-warning" aria-hidden="true" /> Solicitudes de pago pendientes
+                </h2>
+                <p className="text-sm text-default-500">
+                    Pagá por el monto pedido o rechazá con un motivo (el monto vuelve a su disponible).
+                </p>
+                <PayoutRequestsTable
+                    requests={data.requests}
+                    onPay={(r) => setPayTarget({ kind: "request", request: r })}
+                    onReject={setToReject}
+                />
+            </section>
+
+            {/* Pagos realizados */}
+            <section className="space-y-3" aria-label="Pagos realizados">
+                <h2 className="text-lg font-semibold">Pagos realizados</h2>
+                <DataTable aria-label="Pagos realizados a complejos">
+                    <TableHeader>
+                        <TableColumn>FECHA Y HORA</TableColumn>
+                        <TableColumn>COMPLEJO</TableColumn>
+                        <TableColumn align="end">MONTO</TableColumn>
+                        <TableColumn>ORIGEN</TableColumn>
+                        <TableColumn align="end">COMPROBANTE</TableColumn>
+                    </TableHeader>
+                    <TableBody emptyContent="Todavía no hay pagos">
+                        {data.payments.map((p) => (
+                            <TableRow key={p.id}>
+                                <TableCell className="text-default-500">{formatDateTimeAr(p.paidAt)}</TableCell>
+                                <TableCell className="font-medium">{p.venueName}</TableCell>
+                                <TableCell className="text-right font-semibold tabular-nums">{formatPoints(p.amount)}</TableCell>
+                                <TableCell className="text-default-500">
+                                    {p.requested ? "Solicitado por el complejo" : "Pago directo"}
+                                    {p.transferRef && <p className="text-xs text-default-400">Transferencia {p.transferRef}</p>}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    {p.receiptPath ? <ReceiptButton path={p.receiptPath} /> : <span className="text-xs text-default-300">—</span>}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </DataTable>
+            </section>
+
             <PayModal target={payTarget} onClose={() => setPayTarget(null)} />
             <RejectModal request={toReject} onClose={() => setToReject(null)} />
         </div>

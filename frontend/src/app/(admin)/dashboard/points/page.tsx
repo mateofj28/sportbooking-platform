@@ -43,6 +43,13 @@ export default function PointsPage() {
     const { data: balances } = useAdminBalances(isAdmin);
     const pendingRequests = balances?.requests.length ?? 0;
 
+    // Pestaña inicial desde ?tab= (ej. el enlace de Balances abre "Solicitudes de pago")
+    const [tab, setTab] = useState<string>("users");
+    useEffect(() => {
+        const t = new URLSearchParams(window.location.search).get("tab");
+        if (t === "users" || t === "payouts" || t === "history") setTab(t);
+    }, []);
+
     if (!isAdmin) return <div className="flex justify-center py-12"><Spinner size="lg" /></div>;
 
     return (
@@ -53,7 +60,7 @@ export default function PointsPage() {
                     Cargá los créditos que compran los clientes (1 crédito = $1) y corregí errores. Cada movimiento queda registrado.
                 </p>
             </div>
-            <Tabs aria-label="Secciones de créditos" variant="underlined">
+            <Tabs aria-label="Secciones de créditos" variant="underlined" selectedKey={tab} onSelectionChange={(k) => setTab(String(k))}>
                 <Tab key="users" title="Clientes"><UsersTab /></Tab>
                 <Tab
                     key="payouts"

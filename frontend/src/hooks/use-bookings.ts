@@ -112,7 +112,7 @@ function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
  * Filtra SIEMPRE por el usuario actual. No alcanza con confiar en RLS: un ADMIN o VENUE_ADMIN
  * puede leer las reservas de otros (todas / las de su complejo), y "Mis Reservas" mostraría
  * reservas ajenas. Para un cliente común el resultado es el mismo que antes.
- * El panel de administración usa useDashboardBookings(), que sí ve el alcance completo.
+ * El panel de administración usa los hooks de use-dashboard-bookings, que sí ven el alcance completo.
  */
 export function useBookings(status?: string) {
     const userId = useAuthStore((s) => s.user?.id)

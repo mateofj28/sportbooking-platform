@@ -13,7 +13,8 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize, Tables } from "@/lib/supabase-helpers";
-import { useDashboardBookings } from "@/hooks/use-dashboard-bookings";
+import { useAdminBookingStateCounts, useAdminBookingsByState, useDashboardDayBookings } from "@/hooks/use-dashboard-bookings";
+import { addYearsToDate } from "@/lib/ads";
 import { useVenues } from "@/hooks/use-venues";
 import { formatTimeAr, formatDateAr, formatDateShortAr } from "@/lib/datetime";
 import { useState, useEffect, useCallback } from "react";
@@ -174,8 +175,8 @@ function TodayBookings() {
     const today = argentinaToday();
     const now = Date.now();
 
-    // Hook compartido: una sola query ["bookings", "dashboard"] para todo el dashboard
-    const { data: allBookings = [], isLoading } = useDashboardBookings();
+    // Reservas de hoy (misma consulta y caché que el resumen del día)
+    const { data: allBookings = [], isLoading } = useDashboardDayBookings(today);
 
     // Pendientes de uso: EMPIEZAN hoy, pagadas y cuyo turno aún no terminó
     const notCancelled = allBookings.filter((b) => b.status !== "CANCELLED");
@@ -257,8 +258,8 @@ function TodaySummary() {
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
     const today = argentinaToday();
 
-    // Hook compartido: reutiliza la misma query ["bookings", "dashboard"]
-    const { data: allBookings = [] } = useDashboardBookings();
+    // Reservas de hoy (misma consulta y caché que las listas del día)
+    const { data: allBookings = [] } = useDashboardDayBookings(today);
 
     const { data: usersData } = useQuery({
         queryKey: ["admin-users"],
@@ -515,8 +516,8 @@ function RevenueByVenue() {
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
     const [selectedDay, setSelectedDay] = useState<string>(argentinaToday());
 
-    // Hook compartido: reutiliza la misma query ["bookings", "dashboard"]
-    const { data: allBookings = [], isLoading } = useDashboardBookings();
+    // Reservas del día elegido (si es hoy, comparte caché con las listas de arriba)
+    const { data: allBookings = [], isLoading } = useDashboardDayBookings(selectedDay);
     const now = Date.now();
 
     // Ganancia = turno pagado y YA USADO (su horario de fin ya pasó), por FECHA DE FIN del turno.
@@ -591,6 +592,8 @@ function RevenueByVenue() {
                             const iso = `${v.year}-${String(v.month).padStart(2, "0")}-${String(v.day).padStart(2, "0")}`;
                             setSelectedDay(iso);
                         }}
+                        // Hasta 2 años hacia atrás y nunca en el futuro (hora AR)
+                        minValue={parseDate(addYearsToDate(argentinaToday(), -2)) as any}
                         maxValue={parseDate(argentinaToday()) as any}
                         showMonthAndYearPickers
                     />
@@ -681,7 +684,7 @@ interface OverviewResponse {
 
 const PAGE_SIZE = 10;
 
-/** Modal con tabla paginada + buscador. Filtra en cliente sobre useDashboardBookings. */
+/** Modal con tabla paginada + buscador. Filtra, busca y pagina la base (admin_list_bookings). */
 function OverviewModal({
     isOpen, onClose, kind, title,
 }: {
@@ -693,9 +696,8 @@ function OverviewModal({
     const [page, setPage] = useState(1);
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
-    const now = Date.now();
 
-    // Debounce de la búsqueda (evita un re-render por tecla)
+    // Debounce de la búsqueda (una consulta al dejar de escribir, no una por tecla)
     useEffect(() => {
         const t = setTimeout(() => { setSearch(searchInput.trim()); setPage(1); }, 350);
         return () => clearTimeout(t);
@@ -706,28 +708,13 @@ function OverviewModal({
         if (isOpen) { setPage(1); setSearchInput(""); setSearch(""); }
     }, [isOpen]);
 
-    // Reutiliza la query del dashboard (ya cacheada, sin fetch extra)
-    const { data: allBookings = [], isFetching } = useDashboardBookings();
+    // Solo la página visible, y solo con el modal abierto
+    const state = kind === "realizadas" ? "REALIZADA" : "COMPLETADA";
+    const { data, isFetching } = useAdminBookingsByState(state, search, page, PAGE_SIZE, isOpen);
 
-    // Filtrar por tipo
-    const filtered = allBookings.filter((b) => {
-        if (b.status === "CANCELLED") return false;
-        if (b.paymentStatus !== "PAID") return false;
-        const ended = new Date(b.endDatetime).getTime() <= now;
-        if (kind === "realizadas" && ended) return false;
-        if (kind === "completadas" && !ended) return false;
-        if (search) {
-            const q = search.toLowerCase();
-            const name = `${b.user?.firstName ?? ""} ${b.user?.lastName ?? ""}`.toLowerCase();
-            const facility = (b.facility?.name ?? "").toLowerCase();
-            if (!name.includes(q) && !facility.includes(q)) return false;
-        }
-        return true;
-    });
-
-    const total = filtered.length;
+    const total = data?.total ?? 0;
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-    const rows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    const rows = data?.items ?? [];
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="4xl" scrollBehavior="inside" placement="center">
@@ -815,15 +802,10 @@ function OverviewCard({
     iconBg: string;
 }) {
     const { isOpen, onOpen, onClose } = useDisclosure();
-    const now = Date.now();
 
-    // Conteo liviano reutilizando el cache del dashboard (sin fetch extra)
-    const { data: allBookings = [] } = useDashboardBookings();
-    const shownTotal = allBookings.filter((b) => {
-        if (b.status === "CANCELLED" || b.paymentStatus !== "PAID") return false;
-        const ended = new Date(b.endDatetime).getTime() <= now;
-        return kind === "realizadas" ? !ended : ended;
-    }).length;
+    // Las dos tarjetas comparten una sola consulta de contadores (misma key)
+    const { data: counts } = useAdminBookingStateCounts();
+    const shownTotal = counts ? (kind === "realizadas" ? counts.REALIZADA : counts.COMPLETADA) : 0;
 
     return (
         <>

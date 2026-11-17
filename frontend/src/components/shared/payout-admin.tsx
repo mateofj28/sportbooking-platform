@@ -7,7 +7,8 @@
 // Se usan en la pestaña "Solicitudes de pago" de Créditos.
 // ============================================================
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Select, SelectItem } from "@heroui/select";
 import {
     Button, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Radio, RadioGroup,
     Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow, Textarea,
@@ -23,6 +24,8 @@ import { formatPesos, formatPoints } from "@/lib/points";
 
 const RECEIPT_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const RECEIPT_MAX = 5 * 1024 * 1024;
+/** Opción "Todos los complejos" del filtro. */
+const ALL_KEY = "ALL";
 
 /** A quién se paga: una solicitud (monto fijo) o un complejo por iniciativa propia. */
 export type PayTarget =
@@ -73,12 +76,45 @@ export function PayoutRequestsPanel() {
     const { data, isLoading, isError, error } = useAdminBalances();
     const [payTarget, setPayTarget] = useState<PayTarget | null>(null);
     const [toReject, setToReject] = useState<PendingPayoutRequest | null>(null);
+    const [venueFilter, setVenueFilter] = useState<string>(ALL_KEY);
+
+    // Complejos con saldo, solicitudes o pagos (orden alfabético)
+    const venueOptions = useMemo(() => {
+        if (!data) return [];
+        const m = new Map<string, string>();
+        data.venues.forEach((v) => m.set(v.venueId, v.venueName));
+        data.requests.forEach((r) => m.set(r.venueId, r.venueName));
+        data.payments.forEach((p) => m.set(p.venueId, p.venueName));
+        return [...m].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, "es"));
+    }, [data]);
 
     if (isLoading) return <div className="flex justify-center py-8"><Spinner /></div>;
     if (isError || !data) return <p role="alert" className="text-sm text-danger">{error?.message ?? "No se pudieron cargar los pagos a complejos"}</p>;
 
+    // Si el complejo elegido deja de figurar (ej. se le pagó todo), se vuelve a "Todos"
+    const selected = venueOptions.some((v) => v.id === venueFilter) ? venueFilter : ALL_KEY;
+    const matches = (venueId: string) => selected === ALL_KEY || venueId === selected;
+    const venues = data.venues.filter((v) => matches(v.venueId));
+    const requests = data.requests.filter((r) => matches(r.venueId));
+    const payments = data.payments.filter((p) => matches(p.venueId));
+
     return (
         <div className="space-y-8">
+            <Select
+                label="Complejo" size="sm" variant="bordered" className="max-w-xs"
+                disallowEmptySelection
+                selectedKeys={[selected]}
+                onSelectionChange={(keys: "all" | Set<React.Key>) => {
+                    const k = keys === "all" ? undefined : Array.from(keys)[0];
+                    setVenueFilter(k ? String(k) : ALL_KEY);
+                }}
+            >
+                {[
+                    <SelectItem key={ALL_KEY}>Todos los complejos</SelectItem>,
+                    ...venueOptions.map((v) => <SelectItem key={v.id}>{v.name}</SelectItem>),
+                ]}
+            </Select>
+
             {/* Saldo por complejo */}
             <section className="space-y-3" aria-label="Saldo por complejo">
                 <h2 className="text-lg font-semibold">Saldo por complejo</h2>
@@ -93,7 +129,7 @@ export function PayoutRequestsPanel() {
                         <TableColumn align="end">ACCIONES</TableColumn>
                     </TableHeader>
                     <TableBody emptyContent="Todavía no hay turnos jugados">
-                        {data.venues.map((v) => (
+                        {venues.map((v) => (
                             <TableRow key={v.venueId}>
                                 <TableCell className="font-medium">{v.venueName}</TableCell>
                                 <TableCell className="text-right tabular-nums">{formatPoints(v.balance)}</TableCell>
@@ -124,7 +160,7 @@ export function PayoutRequestsPanel() {
                     Pagá por el monto pedido o rechazá con un motivo (el monto vuelve a su disponible).
                 </p>
                 <PayoutRequestsTable
-                    requests={data.requests}
+                    requests={requests}
                     onPay={(r) => setPayTarget({ kind: "request", request: r })}
                     onReject={setToReject}
                 />
@@ -142,7 +178,7 @@ export function PayoutRequestsPanel() {
                         <TableColumn align="end">COMPROBANTE</TableColumn>
                     </TableHeader>
                     <TableBody emptyContent="Todavía no hay pagos">
-                        {data.payments.map((p) => (
+                        {payments.map((p) => (
                             <TableRow key={p.id}>
                                 <TableCell className="text-default-500">{formatDateTimeAr(p.paidAt)}</TableCell>
                                 <TableCell className="font-medium">{p.venueName}</TableCell>

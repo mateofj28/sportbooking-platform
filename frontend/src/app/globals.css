@@ -12,6 +12,12 @@
     box-shadow: none !important;
 }
 
+/* Borde de las tarjetas (modo claro): 1 px #E5E5E5 en todas, tengan o no
+ * className de borde. Se respetan las que marcan un estado con un borde de
+ * color (aviso, error, éxito, destacado) y las que lo quitan a propósito. */
+.light .flex-col.relative.h-auto.text-foreground.box-border:not([class*="border-warning"]):not([class*="border-danger"]):not([class*="border-success"]):not([class*="border-primary"]):not([class*="border-secondary"]):not(.border-0):not(.border-none) {
+    border: 1px solid #e5e5e5;
+}
 /* Sin efecto de elevaci�n/opacidad al pasar el mouse o presionar */
 .flex-col.relative.h-auto.text-foreground.box-border[data-hover="true"],
 .flex-col.relative.h-auto.text-foreground.box-border[data-pressed="true"] {

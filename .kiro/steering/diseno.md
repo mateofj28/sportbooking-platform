@@ -95,6 +95,10 @@ conservan su tamaño.
 ## Tarjetas y movimiento
 
 - Tarjetas **planas**: sin sombra y sin efecto hover (elevación, escala u opacidad).
+- Borde de las tarjetas en modo claro: **1 px `#E5E5E5`**, en todas. Resuelto globalmente en `globals.css`, así
+  que no hace falta poner `border border-divider` en cada `Card`. Para marcar un estado se puede usar un borde de
+  color (`border-warning/40`, `border-danger-200`, `border-success/30`, `border-primary…`), y `border-0` o
+  `border-none` lo quitan.
 - Sin animaciones: `HeroUIProvider` usa `disableAnimation`. No agregar transiciones llamativas.
 
 ## Desplegables (Select, Dropdown, Autocomplete)

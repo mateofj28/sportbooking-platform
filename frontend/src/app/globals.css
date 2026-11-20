@@ -62,7 +62,13 @@ h5,
 h6,
 .font-bold,
 .font-semibold {
-    color: #1e3a5f;
+    color: #111111;
+    }
+    
+    /* Botones (y chips) secundarios "bordered" del modo claro: borde #E5E5E5.
+     * HeroUI les pone border-default (el gris del tema); solo esa clase cambia. */
+    .light .border-default {
+        border-color: #e5e5e5;
 }
 
 .dark h1,

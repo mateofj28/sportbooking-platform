@@ -55,8 +55,22 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
 
 ## Tema y colores
 
-- Modo claro: fondo de página `#ffffff`, tarjetas `#f8f8f8` (token `content1`).
-- Modo oscuro: fondo `#1f1f21`.
+- Paleta del **modo claro** (definida en `tailwind.config.ts` y `globals.css`):
+
+  | Color | Uso | Token |
+  |---|---|---|
+  | `#2F54D6` | Botones principales | `primary` |
+  | `#FFFFFF` | Fondo general de la página | `background` |
+  | `#FAFAFA` | Fondo de las tarjetas | `content1` |
+  | `#111111` | Títulos y texto principal | `foreground` (y `h1–h6`, `.font-bold`, `.font-semibold` en `globals.css`) |
+  | `#6B6B6B` | Texto secundario (descripciones, subtítulos) | `text-default-500` |
+  | `#FFFFFF` | Texto sobre botones y sobre el banner azul | `primary-foreground` |
+  | `#E5E5E5` | Líneas divisorias y bordes de botones secundarios | `divider` y `.border-default` |
+
+- **Menú lateral del panel** (sidebar de escritorio y drawer de móvil), en modo claro: fondo `#2F54D6`,
+  íconos y textos `#FFFFFF`. El ítem activo se marca con `bg-white/20` y el hover con `bg-white/10`.
+  "Cerrar sesión" también va en blanco (el rojo no se lee sobre el azul).
+- Modo oscuro: fondo `#1f1f21`; el menú lateral usa `content1` y los colores de siempre.
 - Los colores salen de los tokens del tema (`bg-background`, `bg-content1`, `text-foreground`, `text-default-*`),
   definidos en `tailwind.config.ts`. No hardcodear hex en componentes salvo casos puntuales.
 - Cuidado con `globals.css`: fuerza `color` en `h1–h6`, `.font-bold` y `.font-semibold`. Si ese texto va sobre un

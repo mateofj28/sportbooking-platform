@@ -65,12 +65,13 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       <div className="flex h-full flex-col">
           <div className="mb-6 flex items-center justify-between px-3 pt-2">
               <div>
-                  <h2 className="text-lg font-bold text-foreground">Admin Panel</h2>
-                  <p className="text-xs text-default-500">Gestión de SportBooking</p>
+                    {/* text-white! porque globals.css fuerza el color de h2 / .font-bold */}
+                    <h2 className="text-lg font-bold text-white! dark:text-foreground!">Admin Panel</h2>
+                    <p className="text-xs text-white/80 dark:text-default-500">Gestión de SportBooking</p>
               </div>
               {onClose && (
-                  <button onClick={onClose} className="lg:hidden p-1 rounded-lg hover:bg-default-100">
-                      <X className="h-5 w-5 text-default-500" />
+                    <button onClick={onClose} aria-label="Cerrar menú" className="lg:hidden p-1 rounded-lg hover:bg-white/10 dark:hover:bg-default-100">
+                        <X className="h-5 w-5 text-white dark:text-default-500" />
                   </button>
               )}
           </div>
@@ -84,9 +85,10 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
                           key={item.href}
                           href={item.href}
                     onPress={onClose}
+                          aria-current={isActive ? "page" : undefined}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                            ? "bg-primary/10 text-primary"
-                            : "text-default-600 hover:bg-default-100 hover:text-foreground"
+                        ? "bg-white/20 text-white dark:bg-primary/10 dark:text-primary"
+                        : "text-white hover:bg-white/10 dark:text-default-600 dark:hover:bg-default-100 dark:hover:text-foreground"
                         }`}
                 >
                     <Icon className="h-4 w-4" />
@@ -96,18 +98,19 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         })}
           </nav>
 
-          <div className="space-y-1 border-t border-divider pt-4">
+            <div className="space-y-1 border-t border-white/20 pt-4 dark:border-divider">
                 {/* Salida del panel hacia la vista de cliente (reservar, ver mis reservas) */}
               <Link
                     href="/inicio"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-default-600 hover:bg-default-100"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white hover:bg-white/10 dark:text-default-600 dark:hover:bg-default-100"
               >
                   <ArrowLeft className="h-4 w-4" />
                     Vista de cliente
               </Link>
+                {/* Sobre el azul, el rojo no se lee: en claro va en blanco como el resto */}
               <button
                   onClick={logout}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-danger hover:bg-danger/10 transition-colors"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white hover:bg-white/10 dark:text-danger dark:hover:bg-danger/10 transition-colors"
               >
                   <LogOut className="h-4 w-4" />
                   Cerrar Sesión
@@ -137,14 +140,14 @@ export function AdminSidebar() {
                         onClick={close}
                     />
                     {/* Drawer */}
-                    <aside className="absolute left-0 top-0 h-full w-72 bg-content1 p-4 shadow-xl animate-slide-in-right overflow-y-auto scrollbar-hide">
+                    <aside className="absolute left-0 top-0 h-full w-72 bg-[#2F54D6] dark:bg-content1 p-4 shadow-xl animate-slide-in-right overflow-y-auto scrollbar-hide">
                         <SidebarContent onClose={close} />
                     </aside>
                 </div>
             )}
 
             {/* Desktop sidebar */}
-            <aside className="hidden lg:block sticky top-0 h-full w-64 flex-shrink-0 border-r border-divider bg-content1 p-4 overflow-y-auto scrollbar-hide">
+            <aside className="hidden lg:block sticky top-0 h-full w-64 flex-shrink-0 border-r border-divider bg-[#2F54D6] dark:bg-content1 p-4 overflow-y-auto scrollbar-hide">
                 <SidebarContent />
             </aside>
       </>

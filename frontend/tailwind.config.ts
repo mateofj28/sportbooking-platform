@@ -66,23 +66,25 @@ const config: Config = {
                             large: "none",
                         },
                     },
+                    // Paleta del modo claro: ver .kiro/steering/diseno.md ("Tema y colores")
                     colors: {
-                        background: "#ffffff",
-                        foreground: "#1e3a5f",
-                        content1: "#f8f8f8",
+                        background: "#FFFFFF",   // fondo general de la página
+                        foreground: "#111111",   // títulos y texto principal
+                        content1: "#FAFAFA",     // fondo de las tarjetas
+                        divider: "#E5E5E5",      // líneas divisorias
                         primary: {
-                            50: "#EEF6FF",
-                            100: "#D9EBFF",
-                            200: "#BCD9FF",
-                            300: "#8EC2FF",
-                            400: "#59A0FF",
-                            500: "#3B82F6",
-                            600: "#2563EB",
-                            700: "#1D4ED8",
-                            800: "#1E40AF",
-                            900: "#1E3A8A",
-                            DEFAULT: "#3B82F6",
-                            foreground: "#FFFFFF",
+                            50: "#EEF2FD",
+                            100: "#DCE4FA",
+                            200: "#B9C9F5",
+                            300: "#8DA6EE",
+                            400: "#5F7FE3",
+                            500: "#2F54D6",
+                            600: "#2644B3",
+                            700: "#1F3790",
+                            800: "#182B6F",
+                            900: "#121F50",
+                            DEFAULT: "#2F54D6",  // botones principales
+                            foreground: "#FFFFFF", // texto sobre botones
                         },
                         secondary: {
                             50: "#F5F3FF",
@@ -138,13 +140,13 @@ const config: Config = {
                             200: "#e2e8f0",
                             300: "#cbd5e1",
                             400: "#94a3b8",
-                            500: "#64748b",
+                            500: "#6B6B6B",      // texto secundario (text-default-500)
                             600: "#475569",
                             700: "#334155",
                             800: "#1e293b",
                             900: "#0f172a",
                             DEFAULT: "#64748b",
-                            foreground: "#1e3a5f",
+                            foreground: "#111111",
                         },
                     },
                 },

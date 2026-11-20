@@ -12,7 +12,7 @@ import { camelize } from "@/lib/supabase-helpers";
 import { useSports } from "@/hooks/use-sports";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil } from "@/components/icons";
 import { useState } from "react";
 import type { Sport } from "@/types";
 

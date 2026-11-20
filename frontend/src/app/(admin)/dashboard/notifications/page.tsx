@@ -2,9 +2,7 @@
 
 import { Button, Spinner, Chip } from "@heroui/react";
 import { formatDateShortAr } from "@/lib/datetime";
-import {
-  Bell, Calendar, DollarSign, XCircle, Repeat, UserPlus, TrendingUp, Building2, CheckCheck, HandCoins, BadgeCheck, Ban,
-} from "lucide-react";
+import { Bell, Calendar, DollarSign, XCircle, Repeat, UserPlus, TrendingUp, Building2, CheckCheck, HandCoins, BadgeCheck, Ban } from "@/components/icons";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {

@@ -11,7 +11,7 @@
 
 import { useState } from 'react'
 import { Input } from '@heroui/react'
-import { CreditCard } from 'lucide-react'
+import { CreditCard } from "@/components/icons"
 import { supabase } from '@/lib/supabase'
 
 interface DniInputProps {

@@ -1,14 +1,10 @@
-import {
-    DoorOpen, ShowerHead, Toilet, Wifi, ParkingSquare, Flame,
-    UtensilsCrossed, Lightbulb, Shirt, Coffee, Armchair, Snowflake,
-    Store, ShieldCheck, Accessibility, Tag, type LucideIcon,
-} from "lucide-react";
+import { DoorOpen, ShowerHead, Toilet, Wifi, ParkingSquare, Flame, UtensilsCrossed, Lightbulb, Shirt, Coffee, Armchair, Snowflake, Store, ShieldCheck, Accessibility, Tag, type IconComponent } from "@/components/icons";
 
 /**
- * Mapea cada servicio (amenity) a su ícono de lucide-react.
+ * Mapea cada servicio (amenity) a su ícono (Heroicons, ver components/icons.ts).
  * Normaliza el nombre (sin acentos, minúsculas) para tolerar variaciones.
  */
-const ICONS: Record<string, LucideIcon> = {
+const ICONS: Record<string, IconComponent> = {
     vestuarios: DoorOpen,
     duchas: ShowerHead,
     banos: Toilet,
@@ -53,7 +49,7 @@ function normalize(name: string): string {
 }
 
 /** Devuelve el ícono del servicio, o un ícono genérico si no hay match. */
-export function amenityIcon(name: string): LucideIcon {
+export function amenityIcon(name: string): IconComponent {
     return ICONS[normalize(name)] || Tag;
 }
 

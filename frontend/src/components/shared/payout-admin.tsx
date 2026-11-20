@@ -12,7 +12,7 @@ import {
     Button, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Radio, RadioGroup,
     Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow, Textarea,
 } from "@heroui/react";
-import { Paperclip } from "lucide-react";
+import { Paperclip } from "@/components/icons";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsInput } from "@/components/shared/points-input";
 import { usePayVenue, useRejectPayout, type PendingPayoutRequest, type VenueBalance } from "@/hooks/use-wallet";

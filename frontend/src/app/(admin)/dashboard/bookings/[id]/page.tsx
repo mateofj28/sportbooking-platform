@@ -5,10 +5,7 @@ import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Card, CardBody, CardHeader, Divider, Spinner } from "@heroui/react";
-import {
-    ArrowLeft, MapPin, Calendar, Clock, User, Phone, Mail, IdCard, Repeat, XCircle,
-    BadgeDollarSign, History, StickyNote, AlertTriangle,
-} from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Clock, User, Phone, Mail, IdCard, Repeat, XCircle, BadgeDollarSign, History, StickyNote, AlertTriangle } from "@/components/icons";
 import { supabase } from "@/lib/supabase";
 import { camelize } from "@/lib/supabase-helpers";
 import { formatDateAr, formatTimeAr, formatDateTimeAr } from "@/lib/datetime";

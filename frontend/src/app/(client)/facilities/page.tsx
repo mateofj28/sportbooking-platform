@@ -11,7 +11,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { FacilityCard } from "@/components/cards/facility-card";
 import { useAvailabilitySummary, localDateStr } from "@/hooks/use-availability";
 import { amenityEmoji } from "@/lib/amenities";
-import { Search, MapPin, ArrowLeft, Building2 } from "lucide-react";
+import { Search, MapPin, ArrowLeft, Building2 } from "@/components/icons";
 import { MediaImage } from "@/components/shared/media-image";
 
 

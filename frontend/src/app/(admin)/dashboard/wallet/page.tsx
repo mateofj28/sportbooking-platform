@@ -6,7 +6,7 @@ import {
     Button, Chip, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Radio, RadioGroup,
     Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow,
 } from "@heroui/react";
-import { CalendarCheck, Clock, HandCoins, Wallet } from "lucide-react";
+import { CalendarCheck, Clock, HandCoins, Wallet } from "@/components/icons";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";
 import { PointsInput } from "@/components/shared/points-input";

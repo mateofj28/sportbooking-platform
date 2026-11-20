@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@heroui/react";
-import { Wallet } from "lucide-react";
+import { Wallet } from "@/components/icons";
 import { useMarkBookingsPaid } from "@/hooks/use-bookings";
 import { useMyBalance } from "@/hooks/use-wallet";
 import { formatPoints } from "@/lib/points";

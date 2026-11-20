@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Spinner } from "@heroui/react";
-import { Globe, LocateFixed, MapPin } from "lucide-react";
+import { Globe, LocateFixed, MapPin } from "@/components/icons";
 import { useState } from "react";
 import { provinceName } from "@/lib/ar-provinces";
 import type { CurrentLocality } from "@/hooks/use-current-locality";

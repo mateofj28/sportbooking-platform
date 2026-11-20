@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Spinner } from "@heroui/react";
-import { ImagePlus, X } from "lucide-react";
+import { ImagePlus, X } from "@/components/icons";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";

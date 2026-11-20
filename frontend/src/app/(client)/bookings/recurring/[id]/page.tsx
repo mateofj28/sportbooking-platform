@@ -11,7 +11,7 @@ import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { getBookingStatusChip } from "@/lib/booking-status";
 import { formatTimeAr, formatDateAr, formatClock } from "@/lib/datetime";
 import { Navbar } from "@/components/layout/navbar";
-import { ArrowLeft, MapPin, Clock, Repeat, Calendar, DollarSign } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Repeat, Calendar, DollarSign } from "@/components/icons";
 
 const DAYS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
 

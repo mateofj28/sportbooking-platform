@@ -12,7 +12,7 @@ import { camelize } from "@/lib/supabase-helpers";
 import { useAllVenues } from "@/hooks/use-venues";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
-import { Plus, Trash2, Pencil, Search } from "lucide-react";
+import { Plus, Trash2, Pencil, Search } from "@/components/icons";
 import { useState, useMemo } from "react";
 import { useFacilities } from "@/hooks/use-facilities";
 import { MunicipalityFields } from "@/components/shared/municipality-fields";

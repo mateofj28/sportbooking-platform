@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "@/components/icons";
 import { formatPoints } from "@/lib/points";
 import { WhatsappTopupButton } from "@/components/shared/whatsapp-topup-button";
 

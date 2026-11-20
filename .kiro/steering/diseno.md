@@ -115,6 +115,14 @@ conservan su tamaño.
 - El avatar del usuario no lleva borde.
 - Notificaciones sin leer: punto azul pequeño, sin número.
 
+## Íconos
+
+- Librería única: **Heroicons** (`@heroicons/react`, outline 24 px). `lucide-react` no está instalado.
+- Importar siempre desde `@/components/icons` (un nombre por concepto: `Calendar`, `Wallet`, `AlertTriangle`…),
+  nunca directo de `@heroicons/react`. Si falta un concepto, agregarlo en ese archivo eligiendo el ícono de
+  Heroicons más parecido (los aproximados van marcados con "≈").
+- Tamaño con clases (`h-4 w-4`, `h-5 w-5`); íconos decorativos con `aria-hidden="true"`.
+
 ## Imágenes
 
 - Sin fotos de stock ni URLs externas fijas. Usar `MediaImage` (`components/shared/media-image.tsx`): muestra la foto

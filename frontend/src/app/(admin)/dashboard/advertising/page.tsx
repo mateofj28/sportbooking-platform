@@ -9,7 +9,7 @@ import {
 } from "@heroui/react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, Megaphone, Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Megaphone, Pencil, Plus, Trash2 } from "@/components/icons";
 import { DataTable } from "@/components/shared/data-table";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { DateTimeField } from "@/components/shared/date-time-field";

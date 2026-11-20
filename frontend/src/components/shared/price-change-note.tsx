@@ -1,6 +1,6 @@
 "use client";
 
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { TrendingDown, TrendingUp } from "@/components/icons";
 import type { PriceChange } from "@/hooks/use-bookings";
 
 const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;

@@ -7,7 +7,7 @@ import { loginSchema, type LoginFormData } from "@/lib/validations/auth.schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRouter } from "next/navigation";
-import { Trophy, Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Trophy, Mail, Lock, ArrowRight, Eye, EyeOff } from "@/components/icons";
 import { useState } from "react";
 
 export default function LoginPage() {

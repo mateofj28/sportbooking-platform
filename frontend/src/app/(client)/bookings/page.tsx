@@ -21,7 +21,7 @@ import { formatPoints } from "@/lib/points";
 import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
-import { Calendar, MapPin, Clock, X, Repeat, DollarSign } from "lucide-react";
+import { Calendar, MapPin, Clock, X, Repeat, DollarSign } from "@/components/icons";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getBookingStatusChip } from "@/lib/booking-status";

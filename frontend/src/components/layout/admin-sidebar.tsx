@@ -4,26 +4,7 @@ import { Link, Button } from "@heroui/react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthStore } from "@/stores/auth-store";
-import {
-    LayoutDashboard,
-    Calendar,
-    MapPin,
-    Users,
-    Trophy,
-    ArrowLeft,
-    LogOut,
-    Clock,
-    DollarSign,
-    Ban,
-    X,
-    Bell,
-    HelpCircle,
-    BarChart3,
-    Megaphone,
-    Wallet,
-    Coins,
-    Landmark,
-} from "lucide-react";
+import { LayoutDashboard, Calendar, MapPin, Users, Trophy, ArrowLeft, LogOut, Clock, DollarSign, Ban, X, Bell, HelpCircle, BarChart3, Megaphone, Wallet, Coins, Landmark } from "@/components/icons";
 import { useEffect } from "react";
 import { useSidebarStore } from "@/stores/sidebar-store";
 

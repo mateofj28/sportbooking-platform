@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Link } from "@heroui/react";
-import { Trophy, ArrowLeft, Search } from "lucide-react";
+import { Trophy, ArrowLeft, Search } from "@/components/icons";
 
 export default function NotFound() {
   return (

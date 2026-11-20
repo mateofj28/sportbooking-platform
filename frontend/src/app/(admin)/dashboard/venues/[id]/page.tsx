@@ -5,7 +5,7 @@ import { Card, CardBody, Chip, Spinner, Button, Link, Input } from "@heroui/reac
 import { Select, SelectItem } from "@heroui/select";
 import { useVenue } from "@/hooks/use-venues";
 import { useFacilities } from "@/hooks/use-facilities";
-import { ArrowLeft, MapPin, Search, Trophy } from "lucide-react";
+import { ArrowLeft, MapPin, Search, Trophy } from "@/components/icons";
 import type { Facility } from "@/types";
 
 /** Devuelve el emoji correspondiente al deporte (por nombre normalizado) */

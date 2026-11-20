@@ -12,7 +12,7 @@ import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { Navbar } from "@/components/layout/navbar";
 import { MediaImage } from "@/components/shared/media-image";
-import { ArrowLeft, MapPin, Calendar, Clock, User, Check, X, Repeat, ShieldCheck, AlertTriangle } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Clock, User, Check, X, Repeat, ShieldCheck, AlertTriangle } from "@/components/icons";
 
 function formatDateLong(dateStr: string): string {
     return formatDateAr(dateStr);

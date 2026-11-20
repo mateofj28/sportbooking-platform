@@ -10,7 +10,7 @@ import {
 } from "@/lib/validations/auth.schema";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { Trophy, Mail, ArrowLeft } from "lucide-react";
+import { Trophy, Mail, ArrowLeft } from "@/components/icons";
 
 export default function ForgotPasswordPage() {
     const mutation = useMutation({

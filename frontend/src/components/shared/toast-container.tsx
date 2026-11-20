@@ -1,7 +1,7 @@
 "use client";
 
 import { useToastStore } from "@/stores/toast-store";
-import { CheckCircle2, XCircle, Info, X } from "lucide-react";
+import { CheckCircle2, XCircle, Info, X } from "@/components/icons";
 
 const ICONS = {
   success: <CheckCircle2 className="h-4 w-4 text-success" />,

@@ -11,7 +11,7 @@ import { useCreateRecurringBooking } from "@/hooks/use-bookings";
 import { AvailabilityPicker, type AvailabilitySelection, formatPrice } from "@/components/shared/availability-picker";
 import { useToastStore } from "@/stores/toast-store";
 import { useAuthStore } from "@/stores/auth-store";
-import { ArrowLeft, Search, User, Check, CalendarDays } from "lucide-react";
+import { ArrowLeft, Search, User, Check, CalendarDays } from "@/components/icons";
 import { useState as useReactState } from "react";
 
 interface FoundClient {

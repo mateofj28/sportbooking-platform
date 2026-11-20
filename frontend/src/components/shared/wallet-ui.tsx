@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button, Card, CardBody } from "@heroui/react";
-import { ArrowDownRight, ArrowUpRight, FileText, Sigma } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, FileText, Sigma } from "@/components/icons";
 import { formatPoints } from "@/lib/points";
 import { getReceiptUrl } from "@/hooks/use-wallet";
 import { useToastStore } from "@/stores/toast-store";

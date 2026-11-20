@@ -9,7 +9,7 @@ import {
 } from "@/lib/validations/auth.schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
-import { Trophy, Mail, Lock, User, ArrowRight, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { Trophy, Mail, Lock, User, ArrowRight, CheckCircle2, Eye, EyeOff } from "@/components/icons";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { PhoneInput, COUNTRY_CODES, validatePhoneNumber } from "@/components/shared/phone-input";

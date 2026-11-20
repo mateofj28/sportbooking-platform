@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@heroui/react";
-import { Trophy, ArrowLeft } from "lucide-react";
+import { Trophy, ArrowLeft } from "@/components/icons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 

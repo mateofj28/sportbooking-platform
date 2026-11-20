@@ -27,7 +27,7 @@ import { useSidebarStore } from "@/stores/sidebar-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { NotificationBell } from "@/components/layout/notification-bell";
-import { Trophy, LogOut, User, Calendar, LayoutDashboard, Eye, Sun, Moon, Menu, ChevronLeft, Monitor, Check, Wallet } from "lucide-react";
+import { Trophy, LogOut, User, Calendar, LayoutDashboard, Eye, Sun, Moon, Menu, ChevronLeft, Monitor, Check, Wallet } from "@/components/icons";
 import { useMyBalance } from "@/hooks/use-wallet";
 import { formatPoints } from "@/lib/points";
 

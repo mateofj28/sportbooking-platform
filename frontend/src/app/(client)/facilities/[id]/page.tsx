@@ -33,16 +33,7 @@ import { useToastStore } from "@/stores/toast-store";
 import type { Facility } from "@/types";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
-import {
-    MapPin,
-    Clock,
-    Users,
-    ChevronLeft,
-    ChevronRight,
-    DollarSign,
-    Check,
-    AlertTriangle,
-} from "lucide-react";
+import { MapPin, Clock, Users, ChevronLeft, ChevronRight, DollarSign, Check, AlertTriangle } from "@/components/icons";
 import { useRouter } from "next/navigation";
 
 const DAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];

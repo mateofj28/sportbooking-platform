@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import { Button, Spinner } from "@heroui/react";
-import { ImagePlus, RefreshCw, Trash2 } from "lucide-react";
+import { ImagePlus, RefreshCw, Trash2 } from "@/components/icons";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/auth-store";
 import { translateError } from "@/lib/error-messages";

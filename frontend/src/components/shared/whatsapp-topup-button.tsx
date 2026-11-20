@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@heroui/react";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle } from "@/components/icons";
 import { useAuthStore } from "@/stores/auth-store";
 import { whatsappTopupUrl } from "@/lib/points";
 

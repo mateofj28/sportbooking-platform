@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trophy } from "lucide-react";
+import { Trophy } from "@/components/icons";
 
 interface MediaImageProps {
     /** URL de la foto real (Supabase Storage). Si falta o falla al cargar, se muestra el fondo por defecto. */

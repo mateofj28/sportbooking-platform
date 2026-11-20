@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Radio, RadioGroup } from "@heroui/react";
-import { AlertTriangle, Check } from "lucide-react";
+import { AlertTriangle, Check } from "@/components/icons";
 import type { RecurringPayMode } from "@/hooks/use-bookings";
 import { InsufficientBalance } from "@/components/shared/insufficient-balance";
 import { formatPoints } from "@/lib/points";

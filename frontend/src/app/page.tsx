@@ -2,19 +2,7 @@
 
 import { Button, Link, Input, Card, CardBody, Avatar } from "@heroui/react";
 import { Navbar } from "@/components/layout/navbar";
-import {
-    Search,
-    MapPin,
-    Calendar,
-    Clock,
-    CheckCircle2,
-    Star,
-    ArrowRight,
-    Trophy,
-    Users,
-    Zap,
-    Shield,
-} from "lucide-react";
+import { Search, MapPin, Calendar, Clock, CheckCircle2, Star, ArrowRight, Trophy, Users, Zap, Shield } from "@/components/icons";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 

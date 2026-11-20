@@ -10,7 +10,7 @@ import { formatClock } from "@/lib/datetime";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize, Tables } from "@/lib/supabase-helpers";
-import { Plus, Trash2, DollarSign, Percent, Pencil, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, DollarSign, Percent, Pencil, AlertTriangle } from "@/components/icons";
 import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";

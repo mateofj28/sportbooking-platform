@@ -1,7 +1,7 @@
 "use client";
 
 import { Select, SelectItem } from "@heroui/react";
-import { MapPin } from "lucide-react";
+import { MapPin } from "@/components/icons";
 import { PROVINCES, isProvinceCode } from "@/lib/ar-provinces";
 
 interface ProvinceSelectProps {

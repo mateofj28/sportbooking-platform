@@ -15,7 +15,7 @@ import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { useSports } from "@/hooks/use-sports";
 import { Navbar } from "@/components/layout/navbar";
 import { useRouter } from "next/navigation";
-import { Search, Calendar, Clock, MapPin, ArrowRight, RotateCcw } from "lucide-react";
+import { Search, Calendar, Clock, MapPin, ArrowRight, RotateCcw } from "@/components/icons";
 import type { Booking } from "@/types";
 
 /** ⚽ 🎾 etc. según el nombre del deporte */

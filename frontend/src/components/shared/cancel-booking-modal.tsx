@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea } from "@heroui/react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "@/components/icons";
 import { useEffect, useState } from "react";
 import { useCancelBooking } from "@/hooks/use-bookings";
 import { formatDateAr, formatTimeAr, formatDateShortAr } from "@/lib/datetime";

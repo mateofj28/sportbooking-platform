@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import NextLink from "next/link";
 import { Spinner } from "@heroui/react";
-import { AlertTriangle, BadgeDollarSign, Banknote, Building2, PiggyBank, Wallet } from "lucide-react";
+import { AlertTriangle, BadgeDollarSign, Banknote, Building2, PiggyBank, Wallet } from "@/components/icons";
 import { SummaryCard } from "@/components/shared/wallet-ui";
 import { useAdminBalancesSummary } from "@/hooks/use-wallet";
 import { useAuthStore } from "@/stores/auth-store";

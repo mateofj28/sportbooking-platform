@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@heroui/react";
-import { AlertTriangle, ArrowLeft, RotateCcw } from "lucide-react";
+import { AlertTriangle, ArrowLeft, RotateCcw } from "@/components/icons";
 import { useEffect } from "react";
 
 /**

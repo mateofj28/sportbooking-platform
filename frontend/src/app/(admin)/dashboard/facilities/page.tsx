@@ -26,7 +26,7 @@ import { supabase } from "@/lib/supabase";
 import { useFacilities } from "@/hooks/use-facilities";
 import { useSports } from "@/hooks/use-sports";
 import { useAllVenues } from "@/hooks/use-venues";
-import { Plus, Trash2, Pencil, Search, Building2 } from "lucide-react";
+import { Plus, Trash2, Pencil, Search, Building2 } from "@/components/icons";
 import { useState, useMemo } from "react";
 import { Select, SelectItem } from "@heroui/select";
 import { ConfirmModal } from "@/components/shared/confirm-modal";

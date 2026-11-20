@@ -8,7 +8,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { Navbar } from "@/components/layout/navbar";
 import { PhoneInput, COUNTRY_CODES, validatePhoneNumber } from "@/components/shared/phone-input";
-import { User, Mail, IdCard, Save, Lock, Eye, EyeOff } from "lucide-react";
+import { User, Mail, IdCard, Save, Lock, Eye, EyeOff } from "@/components/icons";
 import { z } from "zod";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";

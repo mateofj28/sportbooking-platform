@@ -9,7 +9,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Autocomplete, AutocompleteItem, Input, Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow, Button } from "@heroui/react";
-import { Clock, Search } from "lucide-react";
+import { Clock, Search } from "@/components/icons";
 import { DataTable } from "@/components/shared/data-table";
 import { ReceiptButton } from "@/components/shared/wallet-ui";
 import { LedgerFilters, LedgerPagination, type LedgerFilterValue } from "@/components/shared/ledger-filters";

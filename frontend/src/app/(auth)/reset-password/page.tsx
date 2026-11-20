@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { resetPasswordSchema, type ResetPasswordFormData } from "@/lib/validations/auth.schema";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { Trophy, Lock, ArrowLeft, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { Trophy, Lock, ArrowLeft, CheckCircle2, Eye, EyeOff } from "@/components/icons";
 import { useState, Suspense } from "react";
 
 function ResetPasswordContent() {

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Badge } from "@heroui/react";
-import { Bell } from "lucide-react";
+import { Bell } from "@/components/icons";
 import { useRouter } from "next/navigation";
 import { useUnreadCount } from "@/hooks/use-notifications";
 

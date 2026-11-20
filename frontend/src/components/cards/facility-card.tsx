@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardBody, Chip, Link } from "@heroui/react";
-import { MapPin, Users, Clock } from "lucide-react";
+import { MapPin, Users, Clock } from "@/components/icons";
 import type { Facility } from "@/types";
 import { finalPricePerTurn, formatPrice } from "@/lib/pricing";
 import { MediaImage } from "@/components/shared/media-image";

@@ -18,7 +18,7 @@ import { addYearsToDate } from "@/lib/ads";
 import { useVenues } from "@/hooks/use-venues";
 import { formatTimeAr, formatDateAr, formatDateShortAr } from "@/lib/datetime";
 import { useState, useEffect, useCallback } from "react";
-import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp, CheckCircle2, ChevronRight, Search } from "lucide-react";
+import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp, CheckCircle2, ChevronRight, Search } from "@/components/icons";
 import type { Booking, Facility, PaginatedResult, User as UserType, Venue } from "@/types";
 
 /** Hora 12 h sin cero adelante: "9:00 am" */

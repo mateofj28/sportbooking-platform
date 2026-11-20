@@ -11,7 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize, invokeFunction, Tables } from "@/lib/supabase-helpers";
 import { useVenues } from "@/hooks/use-venues";
-import { UserX, UserCheck, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { UserX, UserCheck, Pencil, Plus, Search, Trash2 } from "@/components/icons";
 import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { PhoneInput } from "@/components/shared/phone-input";

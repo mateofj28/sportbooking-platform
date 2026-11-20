@@ -1,7 +1,7 @@
 "use client";
 
 import { Input, Modal, ModalBody, ModalContent, ModalHeader, Spinner } from "@heroui/react";
-import { Check, ChevronRight, Globe, LocateFixed, MapPin } from "lucide-react";
+import { Check, ChevronRight, Globe, LocateFixed, MapPin } from "@/components/icons";
 import { useMemo, useState } from "react";
 import { provinceName } from "@/lib/ar-provinces";
 import type { LocalityInfo } from "@/lib/geo/locality-locator";

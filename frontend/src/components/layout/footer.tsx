@@ -1,7 +1,7 @@
 "use client";
 
 import { Link } from "@heroui/react";
-import { Trophy } from "lucide-react";
+import { Trophy } from "@/components/icons";
 
 export function Footer() {
     return (

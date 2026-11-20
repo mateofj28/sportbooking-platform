@@ -10,9 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { useFacilities } from "@/hooks/use-facilities";
 import { useSports } from "@/hooks/use-sports";
 import { useAuthStore } from "@/stores/auth-store";
-import {
-    Calendar, MapPin, TrendingUp, Activity, ArrowUpRight, ArrowDownRight, Users, Filter, CheckCircle2,
-} from "lucide-react";
+import { Calendar, MapPin, TrendingUp, Activity, ArrowUpRight, ArrowDownRight, Users, Filter, CheckCircle2 } from "@/components/icons";
 import Link from "next/link";
 import { useState } from "react";
 import {

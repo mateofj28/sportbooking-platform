@@ -20,7 +20,7 @@ import { DataTable } from "@/components/shared/data-table";
 import { FilterChip } from "@/components/shared/filter-chip";
 import { StatusChip } from "@/components/shared/status-chip";
 import { CancelBookingModal, type CancelBookingTarget } from "@/components/shared/cancel-booking-modal";
-import { XCircle, Plus, Search, Repeat, Eye, Lock } from "lucide-react";
+import { XCircle, Plus, Search, Repeat, Eye, Lock } from "@/components/icons";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";

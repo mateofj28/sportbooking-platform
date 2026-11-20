@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
-import { Wallet } from "lucide-react";
+import { Wallet } from "@/components/icons";
 import { Navbar } from "@/components/layout/navbar";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";

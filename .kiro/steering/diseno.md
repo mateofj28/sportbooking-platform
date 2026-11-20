@@ -61,15 +61,14 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
   |---|---|---|
   | `#2F54D6` | Botones principales | `primary` |
   | `#FFFFFF` | Fondo general de la página | `background` |
-  | `#FAFAFA` | Fondo de las tarjetas | `content1` |
+  | `#F6F6F6` (= `lab(97 0.02 0)`) | Fondo de las tarjetas | `content1` |
   | `#111111` | Títulos y texto principal | `foreground` (y `h1–h6`, `.font-bold`, `.font-semibold` en `globals.css`) |
   | `#6B6B6B` | Texto secundario (descripciones, subtítulos) | `text-default-500` |
   | `#FFFFFF` | Texto sobre botones y sobre el banner azul | `primary-foreground` |
   | `#E5E5E5` | Líneas divisorias y bordes de botones secundarios | `divider` y `.border-default` |
 
-- **Barra superior** (navbar), en modo claro: fondo `#FFFFFF` con borde inferior `#E5E5E5`, textos e íconos
-  `#111111` (hover `primary`), el saldo de créditos en `primary`. En modo oscuro mantiene el degradado azul
-  con texto blanco.
+- **Barra superior** (navbar), en modo claro: fondo `#2F54D6` (el azul de los botones primarios), textos e
+  íconos `#FFFFFF`. En modo oscuro mantiene el degradado azul con texto blanco.
 - **Menú lateral del panel** (sidebar de escritorio y drawer de móvil), en modo claro: fondo `#2F54D6`,
   íconos y textos `#FFFFFF`. El ítem activo se marca con `bg-white/20` y el hover con `bg-white/10`.
   "Cerrar sesión" también va en blanco (el rojo no se lee sobre el azul).

@@ -38,7 +38,7 @@ function NavBalance() {
         <Link
             href="/wallet"
             aria-label={`Mi billetera: ${formatPoints(balance ?? 0)}`}
-            className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary hover:bg-primary/15 dark:bg-white/15 dark:text-white dark:hover:bg-white/25"
+            className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm font-medium text-white hover:bg-white/25"
         >
             <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
             {isLoading ? "…" : formatPoints(balance ?? 0)}
@@ -73,8 +73,8 @@ export function Navbar() {
             onMenuOpenChange={setIsMenuOpen}
             maxWidth="xl"
             classNames={{
-                base: "bg-white border-b border-divider dark:bg-gradient-to-r dark:from-blue-400 dark:to-blue-900 dark:border-blue-800",
-                content: "text-foreground dark:text-white",
+                base: "bg-[#2F54D6] border-b border-[#2F54D6] dark:bg-gradient-to-r dark:from-blue-400 dark:to-blue-900 dark:border-blue-800",
+                content: "text-white",
             }}
         >
             <NavbarContent>
@@ -82,7 +82,7 @@ export function Navbar() {
                     <button
                         onClick={openSidebar}
                         aria-label="Abrir menú"
-                        className="flex items-center justify-center rounded-lg p-1 text-foreground hover:bg-default-100 dark:text-white dark:hover:bg-white/10 lg:hidden"
+                        className="flex items-center justify-center rounded-lg p-1 text-white hover:bg-white/10 lg:hidden"
                     >
                         <Menu className="h-6 w-6" />
                     </button>
@@ -93,11 +93,11 @@ export function Navbar() {
                     />
                 )}
                 <NavbarBrand>
-                    <Link href="/" className="flex items-center gap-2 text-foreground dark:text-white">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 dark:bg-white/20">
-                            <Trophy className="h-4 w-4 text-primary dark:text-white" />
+                    <Link href="/" className="flex items-center gap-2 text-white">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20">
+                            <Trophy className="h-4 w-4 text-white" />
                         </div>
-                        <p className="font-bold text-foreground text-lg dark:text-white!">SportBooking</p>
+                        <p className="font-bold text-lg text-white!">SportBooking</p>
                     </Link>
                 </NavbarBrand>
             </NavbarContent>
@@ -106,21 +106,21 @@ export function Navbar() {
                 {/* Vista de cliente: la ven los clientes y también los admins fuera del panel */}
                 {showClientLinks && isAuthenticated && (
                     <NavbarItem>
-                        <Link href="/inicio" className="text-sm font-medium text-foreground hover:text-primary dark:text-white dark:hover:text-blue-200">
+                        <Link href="/inicio" className="text-sm font-medium text-white hover:text-white/80">
                             Inicio
                         </Link>
                     </NavbarItem>
                 )}
                 {showClientLinks && (
                     <NavbarItem>
-                        <Link href="/facilities" className="text-sm font-medium text-foreground hover:text-primary dark:text-white dark:hover:text-blue-200">
+                        <Link href="/facilities" className="text-sm font-medium text-white hover:text-white/80">
                             Instalaciones
                         </Link>
                     </NavbarItem>
                 )}
                 {showClientLinks && isAuthenticated && (
                     <NavbarItem>
-                        <Link href="/bookings" className="text-sm font-medium text-foreground hover:text-primary dark:text-white dark:hover:text-blue-200">
+                        <Link href="/bookings" className="text-sm font-medium text-white hover:text-white/80">
                             Mis Reservas
                         </Link>
                     </NavbarItem>
@@ -130,7 +130,7 @@ export function Navbar() {
                     <NavbarItem>
                         <Link
                             href={inDashboard ? "/inicio" : "/dashboard"}
-                            className="flex items-center gap-1.5 rounded-full border border-divider px-3 py-1 text-sm font-medium text-foreground hover:bg-default-100 dark:border-white/40 dark:text-white dark:hover:bg-white/10"
+                            className="flex items-center gap-1.5 rounded-full border border-white/40 px-3 py-1 text-sm font-medium text-white hover:bg-white/10"
                         >
                             {inDashboard
                                 ? <Eye className="h-3.5 w-3.5" aria-hidden="true" />
@@ -158,7 +158,7 @@ export function Navbar() {
                 {mounted && !isAuthenticated && (
                     <NavbarItem>
                         <Button isIconOnly variant="light" size="sm" onPress={toggleTheme} aria-label="Cambiar tema">
-                            {isDark ? <Sun className="h-4 w-4 text-yellow-300" /> : <Moon className="h-4 w-4 text-default-500" />}
+                            {isDark ? <Sun className="h-4 w-4 text-yellow-300" /> : <Moon className="h-4 w-4 text-white/80" />}
                         </Button>
                     </NavbarItem>
                 )}
@@ -270,12 +270,12 @@ export function Navbar() {
                 ) : (
                     <>
                         <NavbarItem className="hidden sm:flex">
-                                    <Link href="/login" className="text-sm font-medium text-foreground hover:text-primary dark:text-white dark:hover:text-blue-200">
+                                    <Link href="/login" className="text-sm font-medium text-white hover:text-white/80">
                                 Iniciar Sesión
                             </Link>
                         </NavbarItem>
                         <NavbarItem>
-                                    <Button as={Link} href="/register" variant="bordered" size="sm" className="dark:border-white/40 dark:text-white dark:hover:bg-white/10">
+                                    <Button as={Link} href="/register" variant="bordered" size="sm" className="border-white/40 text-white hover:bg-white/10">
                                 Registrarse
                             </Button>
                         </NavbarItem>

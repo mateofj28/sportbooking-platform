@@ -33,7 +33,7 @@ export function NotificationBell() {
                 aria-label="Notificaciones"
                 onPress={() => router.push("/dashboard/notifications")}
             >
-                <Bell className="h-4 w-4 text-default-600 dark:text-white/90" />
+                <Bell className="h-4 w-4 text-white/90" />
             </Button>
         </Badge>
     );

@@ -70,7 +70,7 @@ const config: Config = {
                     colors: {
                         background: "#FFFFFF",   // fondo general de la página
                         foreground: "#111111",   // títulos y texto principal
-                        content1: "#FAFAFA",     // fondo de las tarjetas
+                        content1: "#F6F6F6",     // fondo de las tarjetas = lab(97 0.02 0)
                         divider: "#E5E5E5",      // líneas divisorias
                         primary: {
                             50: "#EEF2FD",

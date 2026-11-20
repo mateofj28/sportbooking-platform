@@ -76,6 +76,20 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
 - Cuidado con `globals.css`: fuerza `color` en `h1–h6`, `.font-bold` y `.font-semibold`. Si ese texto va sobre un
   fondo de color (banners, etiquetas sobre imágenes), forzar el color con `!` (ej. `text-white!`).
 
+## Botones
+
+Resuelto globalmente en `globals.css` (no repetir clases en cada pantalla). Aplica a los `Button` de HeroUI
+de tamaño `md` (por defecto) y `lg`. Los `size="sm"` (filas de tabla, barras compactas) y los `isIconOnly`
+conservan su tamaño.
+
+- **Primario** = `color="primary"` (variant `solid`): alto 44 px (`h-11`), padding horizontal 20 px (`px-5`),
+  borde 1 px transparente, radio 12 px, texto 14 px peso 500. Fondo `#2F54D6`, texto blanco.
+- **Secundario** = `variant="bordered"` (color `default`): mismas medidas; borde 1 px `#E5E5E5`, fondo `#FFFFFF`
+  (`background-clip: padding-box`) en modo claro.
+- **Ancho**: en móvil (< 640 px) ocupan el 100% del contenedor; desde 640 px se ajustan al contenido.
+- Para que un botón tome este estilo, usar esas props. Otras variantes (`flat`, `light`, `bordered` con color)
+  no son primario ni secundario y mantienen el estilo de HeroUI.
+
 ## Tarjetas y movimiento
 
 - Tarjetas **planas**: sin sombra y sin efecto hover (elevación, escala u opacidad).

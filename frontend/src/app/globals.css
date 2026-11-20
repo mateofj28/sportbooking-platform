@@ -83,6 +83,53 @@ h6,
 }
 
 /* ============================================================
+ * Botones primarios y secundarios (regla de diseño: ver diseno.md).
+ * Se identifican por las clases que pone HeroUI, así aplica a todos los
+ * botones presentes y futuros sin tocar cada pantalla:
+ *   - .group.inline-flex           -> es un Button de HeroUI (no un Chip)
+ *   - .min-w-20 / .min-w-24        -> tamaño md o lg (sm e isIconOnly quedan
+ *                                     afuera: filas de tabla, barras compactas)
+ *   - primario:   variant solid + color primary  -> bg-primary text-primary-foreground
+ *   - secundario: variant bordered + color default -> border-default bg-transparent
+ * Las reglas están fuera de @layer, así que ganan a las utilidades de HeroUI.
+ * ============================================================ */
+.group.inline-flex.bg-primary.text-primary-foreground:is(.min-w-20, .min-w-24),
+.group.inline-flex.border-default.bg-transparent:is(.min-w-20, .min-w-24) {
+    height: 2.75rem;
+    /* 44 px (h-11) */
+    padding-left: 1.25rem;
+    /* 20 px (px-5) */
+    padding-right: 1.25rem;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    /* 14 px */
+    line-height: 1.25rem;
+    font-weight: 500;
+}
+
+/* Primario: borde de 1 px transparente (mismo alto que el secundario) */
+.group.inline-flex.bg-primary.text-primary-foreground:is(.min-w-20, .min-w-24) {
+    border-color: transparent;
+}
+
+/* Secundario (modo claro): fondo blanco y borde #E5E5E5 */
+.light .group.inline-flex.border-default.bg-transparent:is(.min-w-20, .min-w-24) {
+    background-color: #ffffff;
+    background-clip: padding-box;
+    border-color: #e5e5e5;
+}
+
+/* Móvil (< 640 px): ocupan todo el ancho del contenedor; desde 640 px, el del contenido */
+@media (max-width: 639.98px) {
+
+    .group.inline-flex.bg-primary.text-primary-foreground:is(.min-w-20, .min-w-24),
+    .group.inline-flex.border-default.bg-transparent:is(.min-w-20, .min-w-24) {
+        width: 100%;
+    }
+}
+/* ============================================================
  * Campos numéricos SIN flechas de aumentar/disminuir (spinners).
  * Regla de diseño global: aplica a cualquier input type="number",
  * incluidos los de HeroUI, presentes y futuros.

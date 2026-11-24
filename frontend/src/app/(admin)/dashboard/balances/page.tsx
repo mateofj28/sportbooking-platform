@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import NextLink from "next/link";
 import { Spinner } from "@heroui/react";
-import { AlertTriangle, BadgeDollarSign, Banknote, Building2, PiggyBank, Wallet } from "@/components/icons";
+import { BanknotesIcon, BuildingOffice2Icon, ChartPieIcon, CurrencyDollarIcon, ExclamationTriangleIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { SummaryCard } from "@/components/shared/wallet-ui";
 import { useAdminBalancesSummary } from "@/hooks/use-wallet";
 import { useAuthStore } from "@/stores/auth-store";
@@ -37,18 +37,18 @@ export default function BalancesPage() {
 
             {!data.balanced && (
                 <div role="alert" className="flex items-start gap-2 rounded-xl border border-danger-200 bg-danger-50 p-3 text-sm text-danger">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
+                    <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
                     Los saldos no cuadran (recaudado ≠ en billeteras + gastado). Avisá a soporte técnico antes de pagar.
                 </div>
             )}
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <SummaryCard icon={<Banknote className="h-5 w-5 text-success" />} label="Recaudado" value={formatPoints(data.collected)} hint="Recargas menos ajustes (dinero real ingresado)" />
-                <SummaryCard icon={<Wallet className="h-5 w-5 text-primary" />} label="En billeteras de clientes" value={formatPoints(data.inWallets)} hint="Créditos cargados que todavía no se usaron" />
-                <SummaryCard icon={<PiggyBank className="h-5 w-5 text-secondary" />} label="Comisión de la empresa" value={formatPoints(data.commission)} hint="De los turnos ya jugados" />
-                <SummaryCard icon={<BadgeDollarSign className="h-5 w-5 text-success" />} label="Pagado a complejos" value={formatPoints(data.paidToVenues)} />
-                <SummaryCard icon={<Building2 className="h-5 w-5 text-warning" />} label="Pendiente de pagar a complejos" value={formatPoints(data.pendingToVenues)} hint={`${formatPoints(data.requestedByVenues)} ya solicitados`} />
-                <SummaryCard icon={<Wallet className="h-5 w-5 text-default-500" />} label="Pagado en turnos por jugar" value={formatPoints(data.spentNotPlayed)} hint="Reservas pagadas que todavía no se jugaron" />
+                <SummaryCard icon={<BanknotesIcon className="h-5 w-5 text-success" />} label="Recaudado" value={formatPoints(data.collected)} hint="Recargas menos ajustes (dinero real ingresado)" />
+                <SummaryCard icon={<WalletIcon className="h-5 w-5 text-primary" />} label="En billeteras de clientes" value={formatPoints(data.inWallets)} hint="Créditos cargados que todavía no se usaron" />
+                <SummaryCard icon={<ChartPieIcon className="h-5 w-5 text-secondary" />} label="Comisión de la empresa" value={formatPoints(data.commission)} hint="De los turnos ya jugados" />
+                <SummaryCard icon={<CurrencyDollarIcon className="h-5 w-5 text-success" />} label="Pagado a complejos" value={formatPoints(data.paidToVenues)} />
+                <SummaryCard icon={<BuildingOffice2Icon className="h-5 w-5 text-warning" />} label="Pendiente de pagar a complejos" value={formatPoints(data.pendingToVenues)} hint={`${formatPoints(data.requestedByVenues)} ya solicitados`} />
+                <SummaryCard icon={<WalletIcon className="h-5 w-5 text-default-500" />} label="Pagado en turnos por jugar" value={formatPoints(data.spentNotPlayed)} hint="Reservas pagadas que todavía no se jugaron" />
             </div>
 
             <p className="text-sm text-default-500">

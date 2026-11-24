@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Spinner } from "@heroui/react";
-import { Globe, LocateFixed, MapPin } from "@/components/icons";
+import { GlobeAltIcon, MapPinIcon, ViewfinderCircleIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import { provinceName } from "@/lib/ar-provinces";
 import type { CurrentLocality } from "@/hooks/use-current-locality";
@@ -37,7 +37,7 @@ export function LocationNotice({ location }: { location: CurrentLocality }) {
         return (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-default-500">
                 <p className="flex items-center gap-1.5">
-                    {abroad || noneChosen ? <Globe className="h-3.5 w-3.5" aria-hidden="true" /> : <MapPin className="h-3.5 w-3.5" aria-hidden="true" />}
+                    {abroad || noneChosen ? <GlobeAltIcon className="h-3.5 w-3.5" aria-hidden="true" /> : <MapPinIcon className="h-3.5 w-3.5" aria-hidden="true" />}
                     {locality
                         ? `Promociones para ${locality.name} (${provinceName(locality.province)})`
                         : noneChosen
@@ -87,7 +87,7 @@ export function LocationNotice({ location }: { location: CurrentLocality }) {
                 <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
                     {locating
                         ? <Spinner size="sm" aria-hidden="true" />
-                        : <LocateFixed className="h-4 w-4 text-primary" aria-hidden="true" />}
+                        : <ViewfinderCircleIcon className="h-4 w-4 text-primary" aria-hidden="true" />}
                 </div>
                 <div>
                     <p className="text-sm font-semibold">Promociones de donde estés</p>
@@ -98,7 +98,7 @@ export function LocationNotice({ location }: { location: CurrentLocality }) {
                 </div>
             </div>
             <div className="flex flex-shrink-0 gap-2">
-                <Button size="sm" variant="bordered" startContent={<MapPin className="h-4 w-4" />} onPress={() => setChooserOpen(true)}>
+                <Button size="sm" variant="bordered" startContent={<MapPinIcon className="h-4 w-4" />} onPress={() => setChooserOpen(true)}>
                     Elegir municipio
                 </Button>
                 {canLocate && (
@@ -106,7 +106,7 @@ export function LocationNotice({ location }: { location: CurrentLocality }) {
                         size="sm"
                         color="primary"
                         variant="flat"
-                        startContent={locating ? undefined : <LocateFixed className="h-4 w-4" />}
+                        startContent={locating ? undefined : <ViewfinderCircleIcon className="h-4 w-4" />}
                         onPress={manual ? locateMe : retry}
                         isLoading={locating}
                     >

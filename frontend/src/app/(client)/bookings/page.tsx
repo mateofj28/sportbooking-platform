@@ -21,7 +21,7 @@ import { formatPoints } from "@/lib/points";
 import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
-import { Calendar, MapPin, Clock, X, Repeat, DollarSign } from "@/components/icons";
+import { ArrowPathRoundedSquareIcon, CalendarIcon, ClockIcon, CurrencyDollarIcon, MapPinIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getBookingStatusChip } from "@/lib/booking-status";
@@ -141,7 +141,7 @@ export default function BookingsPage() {
                             : "border-transparent text-default-500 hover:text-default-700"
                             }`}
                     >
-                        <Repeat className="h-4 w-4" />
+                        <ArrowPathRoundedSquareIcon className="h-4 w-4" />
                         Turnos fijos
                         {recurringList && recurringList.length > 0 && (
                             <span className="rounded-full bg-default-200 px-1.5 text-xs font-bold">
@@ -168,15 +168,15 @@ export default function BookingsPage() {
                                             </div>
                                             <div className="mt-2 flex flex-wrap gap-4 text-sm text-default-500">
                                                 <span className="flex items-center gap-1">
-                                                    <Repeat className="h-3 w-3" />
+                                                    <ArrowPathRoundedSquareIcon className="h-3 w-3" />
                                                     Todos los {DAYS_ES[r.dayOfWeek]}
                                                 </span>
                                                 <span className="flex items-center gap-1">
-                                                    <Clock className="h-3 w-3" />
+                                                    <ClockIcon className="h-3 w-3" />
                                                     {formatTime12h(r.startTime)} — {formatTime12h(r.endTime)}
                                                 </span>
                                                 <span className="flex items-center gap-1">
-                                                    <MapPin className="h-3 w-3" />
+                                                    <MapPinIcon className="h-3 w-3" />
                                                     {r.facility?.venue?.name ?? ""}
                                                 </span>
                                             </div>
@@ -191,7 +191,7 @@ export default function BookingsPage() {
                                                     color="danger"
                                                     variant="light"
                                                     size="sm"
-                                                    startContent={<X className="h-4 w-4" />}
+                                                    startContent={<XMarkIcon className="h-4 w-4" />}
                                                     onPress={() => setSeriesToCancel(r)}
                                                 >
                                                     Cancelar todo
@@ -203,7 +203,7 @@ export default function BookingsPage() {
                             ))
                         ) : (
                             <div className="py-12 text-center">
-                                <Repeat className="mx-auto h-12 w-12 text-default-300" />
+                                <ArrowPathRoundedSquareIcon className="mx-auto h-12 w-12 text-default-300" />
                                 <p className="mt-4 text-lg text-default-500">No tienes turnos fijos</p>
                                 <Button color="primary" variant="flat" className="mt-4" as="a" href="/facilities">
                                     Explorar instalaciones
@@ -260,15 +260,15 @@ export default function BookingsPage() {
                               </div>
                               <div className="mt-2 flex flex-wrap gap-4 text-sm text-default-500">
                                   <span className="flex items-center gap-1">
-                                      <Calendar className="h-3 w-3" />
+                                      <CalendarIcon className="h-3 w-3" />
                                       {formatDate(booking.startDatetime)}
                                   </span>
                                   <span className="flex items-center gap-1">
-                                      <Clock className="h-3 w-3" />
+                                      <ClockIcon className="h-3 w-3" />
                                       {formatTime(booking.startDatetime)} — {formatTime(booking.endDatetime)}
                                   </span>
                                   <span className="flex items-center gap-1">
-                                      <MapPin className="h-3 w-3" />
+                                      <MapPinIcon className="h-3 w-3" />
                                                   {booking.facility?.venue?.name ?? ""}
                                   </span>
                               </div>
@@ -293,7 +293,7 @@ export default function BookingsPage() {
             })
                       ) : (
                           <div className="py-12 text-center">
-                              <Calendar className="mx-auto h-12 w-12 text-default-300" />
+                              <CalendarIcon className="mx-auto h-12 w-12 text-default-300" />
                               <p className="mt-4 text-lg text-default-500">
                                       {activeFilter === "ALL" ? "No tienes reservas aún" : `No hay reservas ${FILTER_TABS.find(t => t.key === activeFilter)?.label.toLowerCase()}`}
                                   </p>

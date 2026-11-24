@@ -14,7 +14,7 @@ type CalDate = CalendarDate;
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize, Tables } from "@/lib/supabase-helpers";
-import { Plus, Trash2, Ban, Pencil } from "@/components/icons";
+import { NoSymbolIcon, PencilIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
@@ -211,10 +211,10 @@ export default function AdminBlockedSlotsPage() {
         <Card>
           <CardHeader className="flex-row items-center justify-between">
             <div className="flex items-center gap-2">
-              <Ban className="h-4 w-4 text-danger" />
+              <NoSymbolIcon className="h-4 w-4 text-danger" />
               <h2 className="text-lg font-semibold">Bloqueos activos</h2>
             </div>
-            <Button size="sm" color="danger" variant="flat" startContent={<Plus className="h-3 w-3" />} onPress={() => { setDateValue(today(getLocalTimeZone())); setForm({ startTime: "08:00", endTime: "22:00", reason: "" }); onOpen(); }}>
+            <Button size="sm" color="danger" variant="flat" startContent={<PlusIcon className="h-3 w-3" />} onPress={() => { setDateValue(today(getLocalTimeZone())); setForm({ startTime: "08:00", endTime: "22:00", reason: "" }); onOpen(); }}>
               Bloquear horario
             </Button>
           </CardHeader>
@@ -232,10 +232,10 @@ export default function AdminBlockedSlotsPage() {
                     </div>
                     <div className="flex gap-1">
                       <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEditOpen(slot)}>
-                        <Pencil className="h-4 w-4" />
+                        <PencilIcon className="h-4 w-4" />
                       </Button>
                       <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(slot.id)}>
-                        <Trash2 className="h-4 w-4" />
+                        <TrashIcon className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>

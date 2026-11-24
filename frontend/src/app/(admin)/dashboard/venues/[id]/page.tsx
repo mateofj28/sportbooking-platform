@@ -5,7 +5,7 @@ import { Card, CardBody, Chip, Spinner, Button, Link, Input } from "@heroui/reac
 import { Select, SelectItem } from "@heroui/select";
 import { useVenue } from "@/hooks/use-venues";
 import { useFacilities } from "@/hooks/use-facilities";
-import { ArrowLeft, MapPin, Search, Trophy } from "@/components/icons";
+import { ArrowLeftIcon, MagnifyingGlassIcon, MapPinIcon, TrophyIcon } from "@heroicons/react/24/outline";
 import type { Facility } from "@/types";
 
 /** Devuelve el emoji correspondiente al deporte (por nombre normalizado) */
@@ -96,14 +96,14 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
     <div className="space-y-6">
       {/* Back + Header */}
       <div>
-        <Button as={Link} href="/dashboard/venues" variant="light" size="sm" startContent={<ArrowLeft className="h-4 w-4" />} className="mb-3">
+        <Button as={Link} href="/dashboard/venues" variant="light" size="sm" startContent={<ArrowLeftIcon className="h-4 w-4" />} className="mb-3">
           Volver a Complejos
         </Button>
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold">{venue.name}</h1>
             <p className="text-sm text-default-500 flex items-center gap-1 mt-1">
-              <MapPin className="h-3.5 w-3.5" />
+              <MapPinIcon className="h-3.5 w-3.5" />
               {venue.address}, {venue.city}, {venue.country}
             </p>
             {venue.description && (
@@ -143,7 +143,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
               size="sm"
               value={search}
               onValueChange={setSearch}
-              startContent={<Search className="h-4 w-4 text-default-400" />}
+              startContent={<MagnifyingGlassIcon className="h-4 w-4 text-default-400" />}
               isClearable
               onClear={() => setSearch("")}
             />
@@ -251,14 +251,14 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
         ) : hasActiveFilters ? (
           <Card className="border border-divider">
             <CardBody className="flex flex-col items-center py-10">
-              <Trophy className="h-10 w-10 text-default-200" />
+              <TrophyIcon className="h-10 w-10 text-default-200" />
               <p className="mt-3 text-sm text-default-500">No hay instalaciones que coincidan con los filtros</p>
             </CardBody>
           </Card>
         ) : (
           <Card className="border border-divider">
             <CardBody className="flex flex-col items-center py-10">
-              <Trophy className="h-10 w-10 text-default-200" />
+              <TrophyIcon className="h-10 w-10 text-default-200" />
                   <p className="mt-3 text-sm text-default-500">Este complejo no tiene instalaciones aún</p>
               <Button as={Link} href="/dashboard/facilities" size="sm" color="primary" variant="flat" className="mt-3">
                 Crear instalación

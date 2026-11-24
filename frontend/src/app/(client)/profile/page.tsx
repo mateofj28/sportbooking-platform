@@ -8,7 +8,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { Navbar } from "@/components/layout/navbar";
 import { PhoneInput, COUNTRY_CODES, validatePhoneNumber } from "@/components/shared/phone-input";
-import { User, Mail, IdCard, Save, Lock, Eye, EyeOff } from "@/components/icons";
+import { ArrowDownOnSquareIcon, EnvelopeIcon, EyeIcon, EyeSlashIcon, IdentificationIcon, LockClosedIcon, UserIcon } from "@heroicons/react/24/outline";
 import { z } from "zod";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -180,9 +180,9 @@ export default function ProfilePage() {
                             <form onSubmit={onSubmit} className="flex flex-col gap-5">
                                     {/* Nombre y apellido: fijos, como texto */}
                                 <dl className="grid gap-4 sm:grid-cols-2">
-                                    <ProfileField icon={<User className="h-4 w-4" />} label="Nombre" value={profile.first_name} />
+                                    <ProfileField icon={<UserIcon className="h-4 w-4" />} label="Nombre" value={profile.first_name} />
                                         <ProfileField label="Apellido" value={profile.last_name} />
-                                    <ProfileField icon={<IdCard className="h-4 w-4" />} label="DNI" value={profile.dni} />
+                                    <ProfileField icon={<IdentificationIcon className="h-4 w-4" />} label="DNI" value={profile.dni} />
                                 </dl>
 
                                     <Input
@@ -201,7 +201,7 @@ export default function ProfilePage() {
                                                     ? "Te vamos a enviar un link para confirmar el email nuevo."
                                                     : undefined
                                         }
-                                        startContent={<Mail className="h-4 w-4 text-default-400" />}
+                                        startContent={<EnvelopeIcon className="h-4 w-4 text-default-400" />}
                                         classNames={{ inputWrapper: "bg-default-50" }}
                                     />
 
@@ -219,7 +219,7 @@ export default function ProfilePage() {
                                         color="primary"
                                         isLoading={updateMutation.isPending}
                                         isDisabled={!dirty}
-                                        startContent={updateMutation.isPending ? undefined : <Save className="h-4 w-4" />}
+                                        startContent={updateMutation.isPending ? undefined : <ArrowDownOnSquareIcon className="h-4 w-4" />}
                                         className="self-end"
                                     >
                                         Guardar cambios
@@ -288,10 +288,10 @@ function ChangePasswordForm() {
                 value={newPassword}
                 onValueChange={setNewPassword}
                 placeholder="Mín. 8 caracteres"
-                startContent={<Lock className="h-4 w-4 text-default-400" />}
+                startContent={<LockClosedIcon className="h-4 w-4 text-default-400" />}
                 endContent={
                     <button type="button" onClick={() => setShowNew(!showNew)} className="text-default-400 hover:text-default-600">
-                        {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showNew ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                     </button>
                 }
             />
@@ -301,7 +301,7 @@ function ChangePasswordForm() {
                 variant="bordered"
                 value={confirmPassword}
                 onValueChange={setConfirmPassword}
-                startContent={<Lock className="h-4 w-4 text-default-400" />}
+                startContent={<LockClosedIcon className="h-4 w-4 text-default-400" />}
                 color={passwordsMatch ? "success" : undefined}
             />
             {newPassword && confirmPassword && !passwordsMatch && (

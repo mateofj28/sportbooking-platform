@@ -20,7 +20,7 @@ import { DataTable } from "@/components/shared/data-table";
 import { FilterChip } from "@/components/shared/filter-chip";
 import { StatusChip } from "@/components/shared/status-chip";
 import { CancelBookingModal, type CancelBookingTarget } from "@/components/shared/cancel-booking-modal";
-import { XCircle, Plus, Search, Repeat, Eye, Lock } from "@/components/icons";
+import { ArrowPathRoundedSquareIcon, EyeIcon, LockClosedIcon, MagnifyingGlassIcon, PlusIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -198,7 +198,7 @@ export default function AdminBookingsPage() {
                     <h1 className="text-2xl font-bold">Gestión de Reservas</h1>
                     <p className="text-sm text-default-500 mt-1">Gestiona y cancela las reservas</p>
                 </div>
-                <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => router.push("/dashboard/bookings/nueva")}>
+                <Button color="primary" startContent={<PlusIcon className="h-4 w-4" />} onPress={() => router.push("/dashboard/bookings/nueva")}>
                     Reserva Manual
                 </Button>
             </div>
@@ -214,7 +214,7 @@ export default function AdminBookingsPage() {
                     size="sm"
                     value={search}
                     onValueChange={setSearch}
-                    startContent={<Search className="h-4 w-4 text-default-400" />}
+                    startContent={<MagnifyingGlassIcon className="h-4 w-4 text-default-400" />}
                     isClearable
                     onClear={() => setSearch("")}
                     className="max-w-xl"
@@ -331,7 +331,7 @@ export default function AdminBookingsPage() {
                                     <div className="flex flex-wrap items-center gap-1.5">
                                         <StatusChip color={meta.color}>{meta.label}</StatusChip>
                                         {booking.recurringBookingId && (
-                                            <StatusChip color="secondary" startContent={<Repeat className="h-3 w-3" />}>
+                                            <StatusChip color="secondary" startContent={<ArrowPathRoundedSquareIcon className="h-3 w-3" />}>
                                                 Fijo
                                             </StatusChip>
                                         )}
@@ -354,7 +354,7 @@ export default function AdminBookingsPage() {
                                                 isIconOnly
                                                 aria-label={`Ver detalle de la reserva de ${name}`}
                                             >
-                                                <Eye className="h-4 w-4" />
+                                                <EyeIcon className="h-4 w-4" />
                                             </Button>
                                         </Tooltip>
                                         {cancel.allowed && (
@@ -367,14 +367,14 @@ export default function AdminBookingsPage() {
                                                     aria-label={`Cancelar la reserva de ${name}`}
                                                     onPress={() => setToCancel({ id: booking.id, startDatetime: booking.startDatetime, clientName: name, facilityName, paidPoints: booking.paymentStatus === "PAID" ? Math.round(Number(booking.totalPrice)) : 0 })}
                                                 >
-                                                    <XCircle className="h-4 w-4" />
+                                                    <XCircleIcon className="h-4 w-4" />
                                                 </Button>
                                             </Tooltip>
                                         )}
                                         {showBlocked && (
                                             <Tooltip content={cancel.reason}>
                                                 <span className="inline-flex h-8 w-8 items-center justify-center text-default-300" aria-label={cancel.reason} role="img">
-                                                    <Lock className="h-4 w-4" />
+                                                    <LockClosedIcon className="h-4 w-4" />
                                                 </span>
                                             </Tooltip>
                                         )}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
-import { Wallet } from "@/components/icons";
+import { WalletIcon } from "@heroicons/react/24/outline";
 import { Navbar } from "@/components/layout/navbar";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";
@@ -54,7 +54,7 @@ export default function WalletPage() {
                     <Card shadow="none" className="bg-content1">
                         <CardBody className="flex flex-row items-center gap-4 p-6">
                             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                                <Wallet className="h-6 w-6 text-primary" aria-hidden="true" />
+                                <WalletIcon className="h-6 w-6 text-primary" aria-hidden="true" />
                             </div>
                             <div>
                                 <p className="text-sm text-default-500">Saldo disponible</p>

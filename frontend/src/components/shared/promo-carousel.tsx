@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { ChevronLeft, ChevronRight } from "@/components/icons";
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import type { ActiveAdvertisement } from "@/lib/ads";
 
 export interface PromoSlide {
@@ -189,7 +189,7 @@ export function PromoCarousel({ slides, autoPlayMs = 4000 }: PromoCarouselProps)
                         aria-label="Anterior"
                         className="absolute left-2 top-1/2 hidden -translate-y-1/2 items-center justify-center rounded-full bg-white/80 p-1.5 text-default-700 shadow-md transition hover:bg-white sm:flex"
                     >
-                        <ChevronLeft className="h-5 w-5" />
+                        <ChevronLeftIcon className="h-5 w-5" />
                     </button>
                     <button
                         type="button"
@@ -197,7 +197,7 @@ export function PromoCarousel({ slides, autoPlayMs = 4000 }: PromoCarouselProps)
                         aria-label="Siguiente"
                         className="absolute right-2 top-1/2 hidden -translate-y-1/2 items-center justify-center rounded-full bg-white/80 p-1.5 text-default-700 shadow-md transition hover:bg-white sm:flex"
                     >
-                        <ChevronRight className="h-5 w-5" />
+                        <ChevronRightIcon className="h-5 w-5" />
                     </button>
                 </>
             )}

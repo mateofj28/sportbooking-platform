@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Badge } from "@heroui/react";
-import { Bell } from "@/components/icons";
+import { BellIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import { useUnreadCount } from "@/hooks/use-notifications";
 
@@ -33,7 +33,7 @@ export function NotificationBell() {
                 aria-label="Notificaciones"
                 onPress={() => router.push("/dashboard/notifications")}
             >
-                <Bell className="h-4 w-4 text-white/90" />
+                <BellIcon className="h-4 w-4 text-white/90" />
             </Button>
         </Badge>
     );

@@ -10,7 +10,7 @@ import { formatClock } from "@/lib/datetime";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize, Tables } from "@/lib/supabase-helpers";
-import { Plus, Trash2, DollarSign, Percent, Pencil, AlertTriangle } from "@/components/icons";
+import { CurrencyDollarIcon, ExclamationTriangleIcon, PencilIcon, PercentBadgeIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
@@ -298,10 +298,10 @@ export default function AdminPricingPage() {
         <Card>
           <CardHeader className="flex-row items-center justify-between">
             <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-success" />
+              <CurrencyDollarIcon className="h-4 w-4 text-success" />
               <h2 className="text-lg font-semibold">Tarifas configuradas</h2>
             </div>
-            <Button size="sm" color="primary" startContent={<Plus className="h-3 w-3" />} onPress={handleOpenModal}>
+            <Button size="sm" color="primary" startContent={<PlusIcon className="h-3 w-3" />} onPress={handleOpenModal}>
               Agregar
             </Button>
           </CardHeader>
@@ -309,7 +309,7 @@ export default function AdminPricingPage() {
           {uncoveredRanges.length > 0 && (
             <div className="mx-4 mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3">
               <div className="flex items-center gap-2 text-warning-700">
-                <AlertTriangle className="h-4 w-4" />
+                <ExclamationTriangleIcon className="h-4 w-4" />
                 <span className="text-sm font-semibold">Faltan tarifas por definir</span>
               </div>
               <p className="mt-1 text-xs text-default-600">
@@ -346,10 +346,10 @@ export default function AdminPricingPage() {
                     </div>
                     <div className="flex gap-1 self-end sm:self-auto">
                       <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(p)}>
-                        <Pencil className="h-4 w-4" />
+                        <PencilIcon className="h-4 w-4" />
                       </Button>
                       <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(p.id)}>
-                        <Trash2 className="h-4 w-4" />
+                        <TrashIcon className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -433,7 +433,7 @@ export default function AdminPricingPage() {
                   variant="bordered"
                   inputMode="decimal"
                   placeholder="Ej: 6.6"
-                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  startContent={<PercentBadgeIcon className="h-4 w-4 text-default-400" />}
                   value={form.profitPercent}
                   onValueChange={(v) => setForm({ ...form, profitPercent: sanitizeProfitPercent(v) })}
                   isReadOnly={isVenueAdmin}
@@ -550,7 +550,7 @@ export default function AdminPricingPage() {
                   variant="bordered"
                   inputMode="decimal"
                   placeholder="Ej: 6.6"
-                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  startContent={<PercentBadgeIcon className="h-4 w-4 text-default-400" />}
                   value={editForm.profitPercent}
                   onValueChange={(v) => setEditForm({ ...editForm, profitPercent: sanitizeProfitPercent(v) })}
                   isReadOnly={isVenueAdmin}

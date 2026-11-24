@@ -26,7 +26,7 @@ import { supabase } from "@/lib/supabase";
 import { useFacilities } from "@/hooks/use-facilities";
 import { useSports } from "@/hooks/use-sports";
 import { useAllVenues } from "@/hooks/use-venues";
-import { Plus, Trash2, Pencil, Search, Building2 } from "@/components/icons";
+import { BuildingOffice2Icon, MagnifyingGlassIcon, PencilIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useState, useMemo } from "react";
 import { Select, SelectItem } from "@heroui/select";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
@@ -347,11 +347,11 @@ export default function AdminFacilitiesPage() {
                 </div>
                 <div className="flex gap-2">
                     {isVenueAdmin && myVenue && (
-                        <Button variant="bordered" startContent={<Building2 className="h-4 w-4" />} onPress={handleEditVenue}>
+                        <Button variant="bordered" startContent={<BuildingOffice2Icon className="h-4 w-4" />} onPress={handleEditVenue}>
                             Editar complejo
                         </Button>
                     )}
-                    <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={handleCreate}>
+                    <Button color="primary" startContent={<PlusIcon className="h-4 w-4" />} onPress={handleCreate}>
                         Nueva Instalación
                     </Button>
                 </div>
@@ -365,7 +365,7 @@ export default function AdminFacilitiesPage() {
                     size="sm"
                     value={searchName}
                     onValueChange={setSearchName}
-                    startContent={<Search className="h-4 w-4 text-default-400" />}
+                    startContent={<MagnifyingGlassIcon className="h-4 w-4 text-default-400" />}
                     isClearable
                     onClear={() => setSearchName("")}
                 />
@@ -469,7 +469,7 @@ export default function AdminFacilitiesPage() {
                                             isIconOnly
                                             onPress={() => handleEdit(facility)}
                                         >
-                                            <Pencil className="h-4 w-4" />
+                                            <PencilIcon className="h-4 w-4" />
                                         </Button>
                                         <Button
                                             size="sm"
@@ -478,7 +478,7 @@ export default function AdminFacilitiesPage() {
                                             isIconOnly
                                             onPress={() => setDeleteId(facility.id)}
                                         >
-                                            <Trash2 className="h-4 w-4" />
+                                            <TrashIcon className="h-4 w-4" />
                                         </Button>
                                     </div>
                                 </TableCell>,

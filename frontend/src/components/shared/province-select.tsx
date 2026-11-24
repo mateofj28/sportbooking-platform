@@ -1,7 +1,7 @@
 "use client";
 
 import { Select, SelectItem } from "@heroui/react";
-import { MapPin } from "@/components/icons";
+import { MapPinIcon } from "@heroicons/react/24/outline";
 import { PROVINCES, isProvinceCode } from "@/lib/ar-provinces";
 
 interface ProvinceSelectProps {
@@ -49,7 +49,7 @@ export function ProvinceSelect({
             isDisabled={isDisabled}
             description={description}
             disallowEmptySelection
-            startContent={<MapPin className="h-4 w-4 text-default-400" />}
+            startContent={<MapPinIcon className="h-4 w-4 text-default-400" />}
             selectedKeys={selected}
             onSelectionChange={(keys: unknown) => {
                 const code = Array.from(keys as Set<string>)[0];

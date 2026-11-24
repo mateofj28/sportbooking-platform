@@ -7,7 +7,7 @@ import { loginSchema, type LoginFormData } from "@/lib/validations/auth.schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRouter } from "next/navigation";
-import { Trophy, Mail, Lock, ArrowRight, Eye, EyeOff } from "@/components/icons";
+import { ArrowRightIcon, EnvelopeIcon, EyeIcon, EyeSlashIcon, LockClosedIcon, TrophyIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 
 export default function LoginPage() {
@@ -49,7 +49,7 @@ export default function LoginPage() {
                 <div className="relative z-10 max-w-md text-white">
                     <div className="flex items-center gap-3 mb-8">
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                            <Trophy className="h-6 w-6 text-white" />
+                            <TrophyIcon className="h-6 w-6 text-white" />
                         </div>
                         <span className="text-2xl font-bold">SportBooking</span>
                     </div>
@@ -74,7 +74,7 @@ export default function LoginPage() {
                     {/* Mobile logo */}
                     <div className="mb-8 flex items-center gap-2 lg:hidden">
                         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                            <Trophy className="h-4 w-4 text-white" />
+                            <TrophyIcon className="h-4 w-4 text-white" />
                         </div>
                         <span className="text-xl font-bold">SportBooking</span>
                     </div>
@@ -94,7 +94,7 @@ export default function LoginPage() {
                             type="email"
                             variant="bordered"
                             size="lg"
-                            startContent={<Mail className="h-4 w-4 text-default-400" />}
+                            startContent={<EnvelopeIcon className="h-4 w-4 text-default-400" />}
                             isInvalid={!!errors.email}
                             errorMessage={errors.email?.message}
                             classNames={{ inputWrapper: "bg-default-50" }}
@@ -106,7 +106,7 @@ export default function LoginPage() {
                             type={showPassword ? "text" : "password"}
                             variant="bordered"
                             size="lg"
-                            startContent={<Lock className="h-4 w-4 text-default-400" />}
+                            startContent={<LockClosedIcon className="h-4 w-4 text-default-400" />}
                             endContent={
                                 <button
                                     type="button"
@@ -114,7 +114,7 @@ export default function LoginPage() {
                                     className="text-default-400 hover:text-default-600 focus:outline-none"
                                     aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                                 >
-                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    {showPassword ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                                 </button>
                             }
                             isInvalid={!!errors.password}
@@ -134,7 +134,7 @@ export default function LoginPage() {
                             size="lg"
                             isLoading={login.isPending}
                             className="font-semibold shadow-lg shadow-primary/20"
-                            endContent={!login.isPending && <ArrowRight className="h-4 w-4" />}
+                            endContent={!login.isPending && <ArrowRightIcon className="h-4 w-4" />}
                         >
                             Iniciar Sesión
                         </Button>

@@ -1,13 +1,13 @@
 "use client";
 
 import { Button, Link } from "@heroui/react";
-import { Trophy, ArrowLeft, Search } from "@/components/icons";
+import { ArrowLeftIcon, MagnifyingGlassIcon, TrophyIcon } from "@heroicons/react/24/outline";
 
 export default function NotFound() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center bg-background">
       <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 mb-6">
-        <Trophy className="h-10 w-10 text-primary" />
+        <TrophyIcon className="h-10 w-10 text-primary" />
       </div>
 
       <h1 className="text-8xl font-extrabold text-primary">404</h1>
@@ -21,7 +21,7 @@ export default function NotFound() {
           as={Link}
           href="/"
           color="primary"
-          startContent={<ArrowLeft className="h-4 w-4" />}
+          startContent={<ArrowLeftIcon className="h-4 w-4" />}
         >
           Volver al inicio
         </Button>
@@ -29,7 +29,7 @@ export default function NotFound() {
           as={Link}
           href="/facilities"
           variant="bordered"
-          startContent={<Search className="h-4 w-4" />}
+          startContent={<MagnifyingGlassIcon className="h-4 w-4" />}
         >
           Ver instalaciones
         </Button>

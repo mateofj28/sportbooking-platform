@@ -1,7 +1,7 @@
 "use client";
 
 import { Link } from "@heroui/react";
-import { Trophy } from "@/components/icons";
+import { TrophyIcon } from "@heroicons/react/24/outline";
 
 export function Footer() {
     return (
@@ -9,7 +9,7 @@ export function Footer() {
             <div className="mx-auto max-w-7xl px-6">
                 <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
                     <div className="flex items-center gap-2">
-                        <Trophy className="h-5 w-5 text-primary" />
+                        <TrophyIcon className="h-5 w-5 text-primary" />
                         <span className="font-semibold">SportBooking</span>
                     </div>
                     <p className="text-sm text-default-500">

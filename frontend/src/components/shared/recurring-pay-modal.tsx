@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Radio, RadioGroup } from "@heroui/react";
-import { AlertTriangle, Check } from "@/components/icons";
+import { CheckIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import type { RecurringPayMode } from "@/hooks/use-bookings";
 import { InsufficientBalance } from "@/components/shared/insufficient-balance";
 import { formatPoints } from "@/lib/points";
@@ -76,7 +76,7 @@ export function RecurringPayModal({
 
                     {firstWithin24h && (
                         <div className="flex items-start gap-2 rounded-lg bg-warning-50 p-3 text-xs text-warning-700">
-                            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
+                            <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
                             La primera fecha empieza en menos de 24 horas: no vas a poder cancelarla. Las demás sí.
                         </div>
                     )}
@@ -84,7 +84,7 @@ export function RecurringPayModal({
                 </ModalBody>
                 <ModalFooter>
                     <Button variant="light" onPress={onClose} isDisabled={isLoading}>Volver</Button>
-                    <Button color="primary" startContent={isLoading ? undefined : <Check className="h-4 w-4" />}
+                    <Button color="primary" startContent={isLoading ? undefined : <CheckIcon className="h-4 w-4" />}
                         isDisabled={!enough} isLoading={isLoading} onPress={() => onConfirm(mode)}>
                         {mode === "NONE" ? "Crear turno fijo" : `Crear y pagar ${formatPoints(needed)}`}
                     </Button>

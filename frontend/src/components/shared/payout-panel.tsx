@@ -9,7 +9,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Autocomplete, AutocompleteItem, Input, Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow, Button } from "@heroui/react";
-import { Clock, Search } from "@/components/icons";
+import { ClockIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { DataTable } from "@/components/shared/data-table";
 import { ReceiptButton } from "@/components/shared/wallet-ui";
 import { LedgerFilters, LedgerPagination, type LedgerFilterValue } from "@/components/shared/ledger-filters";
@@ -172,7 +172,7 @@ function RequestsSection({ venueId, onPay, onReject }: {
     return (
         <section className="space-y-3" aria-label="Solicitudes de pago pendientes">
             <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <Clock className="h-5 w-5 text-warning" aria-hidden="true" /> Solicitudes de pago pendientes
+                <ClockIcon className="h-5 w-5 text-warning" aria-hidden="true" /> Solicitudes de pago pendientes
             </h2>
             <p className="text-sm text-default-500">
                 Pagá por el monto pedido o rechazá con un motivo (el monto vuelve a su disponible). Las más viejas primero.
@@ -253,7 +253,7 @@ function PaymentsSection({ venueId }: { venueId: string | null }) {
                     onValueChange={setText}
                     isClearable
                     onClear={() => setText("")}
-                    startContent={<Search className="h-4 w-4 text-default-400" aria-hidden="true" />}
+                    startContent={<MagnifyingGlassIcon className="h-4 w-4 text-default-400" aria-hidden="true" />}
                 />
             </LedgerFilters>
             {isError ? (

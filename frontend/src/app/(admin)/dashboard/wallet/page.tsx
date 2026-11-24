@@ -6,7 +6,7 @@ import {
     Button, Chip, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Radio, RadioGroup,
     Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow,
 } from "@heroui/react";
-import { CalendarCheck, Clock, HandCoins, Wallet } from "@/components/icons";
+import { BanknotesIcon, CalendarDateRangeIcon, ClockIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";
 import { PointsInput } from "@/components/shared/points-input";
@@ -64,7 +64,7 @@ export default function VenueWalletPage() {
                 </div>
                 <Button
                     color="primary"
-                    startContent={<HandCoins className="h-4 w-4" aria-hidden="true" />}
+                    startContent={<BanknotesIcon className="h-4 w-4" aria-hidden="true" />}
                     isDisabled={!data || !!pendingRequest || available <= 0}
                     onPress={() => setRequestOpen(true)}
                 >
@@ -74,7 +74,7 @@ export default function VenueWalletPage() {
 
             {pendingRequest && (
                 <div role="status" className="flex items-start gap-2 rounded-xl border border-warning-200 bg-warning-50 p-3 text-sm text-warning-700">
-                    <Clock className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
+                    <ClockIcon className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
                     <span>
                         Pediste el pago de <strong>{formatPoints(pendingRequest.amount)}</strong> ({formatPesos(pendingRequest.amount)}) el{" "}
                         {formatDateTimeAr(pendingRequest.requestedAt)}. Está pendiente: cuando se pague o se rechace, podés pedir otro.
@@ -83,9 +83,9 @@ export default function VenueWalletPage() {
             )}
 
             <div className="grid gap-4 sm:grid-cols-3">
-                <SummaryCard icon={<Wallet className="h-5 w-5 text-primary" />} label="Disponible para cobrar" value={data ? formatPoints(available) : "…"} hint={data ? formatPesos(available) : undefined} />
-                <SummaryCard icon={<Clock className="h-5 w-5 text-warning" />} label="Solicitado (pendiente)" value={data ? formatPoints(data.reserved) : "…"} hint="Lo que pediste y todavía no se pagó" />
-                <SummaryCard icon={<CalendarCheck className="h-5 w-5 text-success" />} label="Acreditado este mes" value={data ? formatPoints(data.thisMonth) : "…"} hint="Turnos jugados en el mes en curso" />
+                <SummaryCard icon={<WalletIcon className="h-5 w-5 text-primary" />} label="Disponible para cobrar" value={data ? formatPoints(available) : "…"} hint={data ? formatPesos(available) : undefined} />
+                <SummaryCard icon={<ClockIcon className="h-5 w-5 text-warning" />} label="Solicitado (pendiente)" value={data ? formatPoints(data.reserved) : "…"} hint="Lo que pediste y todavía no se pagó" />
+                <SummaryCard icon={<CalendarDateRangeIcon className="h-5 w-5 text-success" />} label="Acreditado este mes" value={data ? formatPoints(data.thisMonth) : "…"} hint="Turnos jugados en el mes en curso" />
             </div>
 
             {(data?.requests.length ?? 0) > 0 && (

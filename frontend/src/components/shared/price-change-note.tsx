@@ -1,6 +1,6 @@
 "use client";
 
-import { TrendingDown, TrendingUp } from "@/components/icons";
+import { ArrowTrendingDownIcon, ArrowTrendingUpIcon } from "@heroicons/react/24/outline";
 import type { PriceChange } from "@/hooks/use-bookings";
 
 const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
@@ -12,7 +12,7 @@ const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 export function PriceChangeNote({ change, className = "" }: { change?: PriceChange; className?: string }) {
     if (!change) return null;
     const up = change.newTotal > change.oldTotal;
-    const Icon = up ? TrendingUp : TrendingDown;
+    const Icon = up ? ArrowTrendingUpIcon : ArrowTrendingDownIcon;
     return (
         <p role="status" className={`flex items-center gap-1.5 text-xs ${up ? "text-warning-600" : "text-success-600"} ${className}`}>
             <Icon className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />

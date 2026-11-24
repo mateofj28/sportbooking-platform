@@ -118,9 +118,9 @@ conservan su tamaño.
 ## Íconos
 
 - Librería única: **Heroicons** (`@heroicons/react`, outline 24 px). `lucide-react` no está instalado.
-- Importar siempre desde `@/components/icons` (un nombre por concepto: `Calendar`, `Wallet`, `AlertTriangle`…),
-  nunca directo de `@heroicons/react`. Si falta un concepto, agregarlo en ese archivo eligiendo el ícono de
-  Heroicons más parecido (los aproximados van marcados con "≈").
+- Importar directo de `@heroicons/react/24/outline` con el nombre real (`CalendarIcon`, `WalletIcon`,
+  `ExclamationTriangleIcon`…). No usar nombres ni alias de otras librerías.
+- El tipo de un ícono pasado como prop o valor es `IconComponent` (`@/lib/icon-type`).
 - Tamaño con clases (`h-4 w-4`, `h-5 w-5`); íconos decorativos con `aria-hidden="true"`.
 
 ## Imágenes

@@ -11,7 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize, Tables } from "@/lib/supabase-helpers";
 import { useAuthStore } from "@/stores/auth-store";
-import { Plus, Trash2, Clock, Pencil } from "@/components/icons";
+import { ClockIcon, PencilIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
@@ -157,10 +157,10 @@ export default function AdminSchedulesPage() {
         <Card>
           <CardHeader className="flex-row items-center justify-between">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-primary" />
+              <ClockIcon className="h-4 w-4 text-primary" />
               <h2 className="text-lg font-semibold">Horarios configurados</h2>
             </div>
-            <Button size="sm" color="primary" startContent={<Plus className="h-3 w-3" />} onPress={() => { setForm({ days: [], openTime: "08:00", closeTime: "22:00" }); onOpen(); }}>
+            <Button size="sm" color="primary" startContent={<PlusIcon className="h-3 w-3" />} onPress={() => { setForm({ days: [], openTime: "08:00", closeTime: "22:00" }); onOpen(); }}>
               Agregar
             </Button>
           </CardHeader>
@@ -178,10 +178,10 @@ export default function AdminSchedulesPage() {
                     </div>
                     <div className="flex gap-1 self-end sm:self-auto">
                       <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(s)}>
-                        <Pencil className="h-4 w-4" />
+                        <PencilIcon className="h-4 w-4" />
                       </Button>
                       <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(s.id)}>
-                        <Trash2 className="h-4 w-4" />
+                        <TrashIcon className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>

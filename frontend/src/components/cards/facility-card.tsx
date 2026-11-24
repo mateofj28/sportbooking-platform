@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardBody, Chip, Link } from "@heroui/react";
-import { MapPin, Users, Clock } from "@/components/icons";
+import { ClockIcon, MapPinIcon, UsersIcon } from "@heroicons/react/24/outline";
 import type { Facility } from "@/types";
 import { finalPricePerTurn, formatPrice } from "@/lib/pricing";
 import { MediaImage } from "@/components/shared/media-image";
@@ -63,7 +63,7 @@ export function FacilityCard({ facility, availabilityToday }: FacilityCardProps)
                   <div className="flex-1 min-w-0">
                       <h3 className="truncate text-base font-semibold">{facility.name}</h3>
                       <div className="mt-1 flex items-center gap-1 text-xs text-default-500">
-                          <MapPin className="h-3 w-3 flex-shrink-0" />
+                          <MapPinIcon className="h-3 w-3 flex-shrink-0" />
                           <span className="truncate">
                                 {facility.venue?.name ?? ""} — {facility.venue?.city ?? ""}
                           </span>
@@ -85,11 +85,11 @@ export function FacilityCard({ facility, availabilityToday }: FacilityCardProps)
                       <Chip size="sm" variant="flat" className="px-2.5 gap-1" color="secondary">Indoor</Chip>
                   )}
                   {facility.capacity && (
-                      <Chip size="sm" variant="flat" className="px-2.5 gap-1" startContent={<Users className="h-3 w-3" />}>
+                      <Chip size="sm" variant="flat" className="px-2.5 gap-1" startContent={<UsersIcon className="h-3 w-3" />}>
                           {facility.capacity}
                       </Chip>
                   )}
-                  <Chip size="sm" variant="flat" className="px-2.5 gap-1" startContent={<Clock className="h-3 w-3" />}>
+                  <Chip size="sm" variant="flat" className="px-2.5 gap-1" startContent={<ClockIcon className="h-3 w-3" />}>
                       {facility.minBookingDuration === facility.maxBookingDuration ? facility.minBookingDuration : `${facility.minBookingDuration}–${facility.maxBookingDuration}`} min
                   </Chip>
               </div>

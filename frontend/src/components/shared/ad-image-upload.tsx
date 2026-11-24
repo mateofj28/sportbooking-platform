@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import { Button, Spinner } from "@heroui/react";
-import { ImagePlus, RefreshCw, Trash2 } from "@/components/icons";
+import { ArrowPathIcon, PhotoIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/auth-store";
 import { translateError } from "@/lib/error-messages";
@@ -106,12 +106,12 @@ export function AdImageUpload({ kind, value, onChange, isRequired, errorMessage 
                         className={`w-full rounded-xl border border-divider object-cover ${aspect}`}
                     />
                     <div className="flex gap-2">
-                        <Button size="sm" variant="bordered" startContent={<RefreshCw className="h-4 w-4" />}
+                        <Button size="sm" variant="bordered" startContent={<ArrowPathIcon className="h-4 w-4" />}
                             onPress={() => inputRef.current?.click()} isLoading={uploading}>
                             Cambiar
                         </Button>
                         {!isRequired && (
-                            <Button size="sm" variant="light" color="danger" startContent={<Trash2 className="h-4 w-4" />}
+                            <Button size="sm" variant="light" color="danger" startContent={<TrashIcon className="h-4 w-4" />}
                                 onPress={() => { setLocalError(null); onChange(""); }}>
                                 Quitar
                             </Button>
@@ -132,7 +132,7 @@ export function AdImageUpload({ kind, value, onChange, isRequired, errorMessage 
                         </>
                     ) : (
                         <>
-                            <ImagePlus className="h-6 w-6" aria-hidden="true" />
+                            <PhotoIcon className="h-6 w-6" aria-hidden="true" />
                             <span className="text-xs">Subir imagen para {spec.label}</span>
                         </>
                     )}

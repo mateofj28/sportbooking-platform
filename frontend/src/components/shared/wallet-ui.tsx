@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button, Card, CardBody } from "@heroui/react";
-import { ArrowDownRight, ArrowUpRight, FileText, Sigma } from "@/components/icons";
+import { ArrowDownRightIcon, ArrowUpRightIcon, CalculatorIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import { formatPoints } from "@/lib/points";
 import { getReceiptUrl } from "@/hooks/use-wallet";
 import { useToastStore } from "@/stores/toast-store";
@@ -15,7 +15,7 @@ export function ReceiptButton({ path }: { path: string }) {
         <Button
             size="sm"
             variant="light"
-            startContent={loading ? undefined : <FileText className="h-4 w-4" />}
+            startContent={loading ? undefined : <DocumentTextIcon className="h-4 w-4" />}
             isLoading={loading}
             onPress={async () => {
                 setLoading(true);
@@ -42,10 +42,10 @@ export function LedgerTotals({ sumIn, sumOut, sumNet, count, filtered, inHint, o
 }) {
     return (
         <div className="grid gap-4 sm:grid-cols-3" aria-label="Total de la columna Créditos">
-            <SummaryCard icon={<ArrowUpRight className="h-5 w-5 text-success" />} label="Entradas" value={`+${formatPoints(sumIn)}`} hint={inHint} />
-            <SummaryCard icon={<ArrowDownRight className="h-5 w-5 text-danger" />} label="Salidas" value={`−${formatPoints(sumOut)}`} hint={outHint} />
+            <SummaryCard icon={<ArrowUpRightIcon className="h-5 w-5 text-success" />} label="Entradas" value={`+${formatPoints(sumIn)}`} hint={inHint} />
+            <SummaryCard icon={<ArrowDownRightIcon className="h-5 w-5 text-danger" />} label="Salidas" value={`−${formatPoints(sumOut)}`} hint={outHint} />
             <SummaryCard
-                icon={<Sigma className="h-5 w-5 text-primary" />}
+                icon={<CalculatorIcon className="h-5 w-5 text-primary" />}
                 label="Total"
                 value={`${sumNet < 0 ? "−" : ""}${formatPoints(Math.abs(sumNet))}`}
                 hint={`${count} movimiento${count !== 1 ? "s" : ""}${filtered ? " con los filtros aplicados" : ""}`}

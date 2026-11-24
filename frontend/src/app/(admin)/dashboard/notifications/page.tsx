@@ -2,7 +2,7 @@
 
 import { Button, Spinner, Chip } from "@heroui/react";
 import { formatDateShortAr } from "@/lib/datetime";
-import { Bell, Calendar, DollarSign, XCircle, Repeat, UserPlus, TrendingUp, Building2, CheckCheck, HandCoins, BadgeCheck, Ban } from "@/components/icons";
+import { ArrowPathRoundedSquareIcon, ArrowTrendingUpIcon, BanknotesIcon, BellIcon, BuildingOffice2Icon, CalendarIcon, CheckBadgeIcon, CheckCircleIcon, CurrencyDollarIcon, NoSymbolIcon, UserPlusIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -19,18 +19,18 @@ const TYPE_META: Record<NotificationType, {
   accent: string;   // color del borde izquierdo
   label: string;
 }> = {
-  BOOKING_CREATED: { icon: <Calendar className="h-4 w-4 text-primary" />, iconBg: "bg-primary/10", accent: "border-l-primary", label: "Nueva reserva" },
-  BOOKING_PAID: { icon: <DollarSign className="h-4 w-4 text-success" />, iconBg: "bg-success/10", accent: "border-l-success", label: "Reserva pagada" },
-  BOOKING_CANCELLED: { icon: <XCircle className="h-4 w-4 text-danger" />, iconBg: "bg-danger/10", accent: "border-l-danger", label: "Cancelada" },
-  BOOKING_AUTO_CANCELLED: { icon: <XCircle className="h-4 w-4 text-danger" />, iconBg: "bg-danger/10", accent: "border-l-danger", label: "Cancelada automáticamente" },
-  RECURRING_CREATED: { icon: <Repeat className="h-4 w-4 text-secondary" />, iconBg: "bg-secondary/10", accent: "border-l-secondary", label: "Turno fijo" },
-  NEW_CLIENT: { icon: <UserPlus className="h-4 w-4 text-primary" />, iconBg: "bg-primary/10", accent: "border-l-primary", label: "Nuevo cliente" },
-  COMMISSION_EARNED: { icon: <TrendingUp className="h-4 w-4 text-emerald-500" />, iconBg: "bg-emerald-500/10", accent: "border-l-emerald-500", label: "Comisión" },
-  VENUE_OR_FACILITY_CREATED: { icon: <Building2 className="h-4 w-4 text-warning" />, iconBg: "bg-warning/10", accent: "border-l-warning", label: "Nueva instalación" },
-  USER_REGISTERED: { icon: <UserPlus className="h-4 w-4 text-secondary" />, iconBg: "bg-secondary/10", accent: "border-l-secondary", label: "Nuevo usuario" },
-  PAYOUT_REQUESTED: { icon: <HandCoins className="h-4 w-4 text-warning" />, iconBg: "bg-warning/10", accent: "border-l-warning", label: "Solicitud de pago" },
-  PAYOUT_PAID: { icon: <BadgeCheck className="h-4 w-4 text-success" />, iconBg: "bg-success/10", accent: "border-l-success", label: "Pago recibido" },
-  PAYOUT_REJECTED: { icon: <Ban className="h-4 w-4 text-danger" />, iconBg: "bg-danger/10", accent: "border-l-danger", label: "Solicitud rechazada" },
+  BOOKING_CREATED: { icon: <CalendarIcon className="h-4 w-4 text-primary" />, iconBg: "bg-primary/10", accent: "border-l-primary", label: "Nueva reserva" },
+  BOOKING_PAID: { icon: <CurrencyDollarIcon className="h-4 w-4 text-success" />, iconBg: "bg-success/10", accent: "border-l-success", label: "Reserva pagada" },
+  BOOKING_CANCELLED: { icon: <XCircleIcon className="h-4 w-4 text-danger" />, iconBg: "bg-danger/10", accent: "border-l-danger", label: "Cancelada" },
+  BOOKING_AUTO_CANCELLED: { icon: <XCircleIcon className="h-4 w-4 text-danger" />, iconBg: "bg-danger/10", accent: "border-l-danger", label: "Cancelada automáticamente" },
+  RECURRING_CREATED: { icon: <ArrowPathRoundedSquareIcon className="h-4 w-4 text-secondary" />, iconBg: "bg-secondary/10", accent: "border-l-secondary", label: "Turno fijo" },
+  NEW_CLIENT: { icon: <UserPlusIcon className="h-4 w-4 text-primary" />, iconBg: "bg-primary/10", accent: "border-l-primary", label: "Nuevo cliente" },
+  COMMISSION_EARNED: { icon: <ArrowTrendingUpIcon className="h-4 w-4 text-emerald-500" />, iconBg: "bg-emerald-500/10", accent: "border-l-emerald-500", label: "Comisión" },
+  VENUE_OR_FACILITY_CREATED: { icon: <BuildingOffice2Icon className="h-4 w-4 text-warning" />, iconBg: "bg-warning/10", accent: "border-l-warning", label: "Nueva instalación" },
+  USER_REGISTERED: { icon: <UserPlusIcon className="h-4 w-4 text-secondary" />, iconBg: "bg-secondary/10", accent: "border-l-secondary", label: "Nuevo usuario" },
+  PAYOUT_REQUESTED: { icon: <BanknotesIcon className="h-4 w-4 text-warning" />, iconBg: "bg-warning/10", accent: "border-l-warning", label: "Solicitud de pago" },
+  PAYOUT_PAID: { icon: <CheckBadgeIcon className="h-4 w-4 text-success" />, iconBg: "bg-success/10", accent: "border-l-success", label: "Pago recibido" },
+  PAYOUT_REJECTED: { icon: <NoSymbolIcon className="h-4 w-4 text-danger" />, iconBg: "bg-danger/10", accent: "border-l-danger", label: "Solicitud rechazada" },
 };
 
 /** A dónde lleva cada aviso al tocarlo (los de reservas, al detalle de la reserva). */
@@ -88,7 +88,7 @@ export default function NotificationsPage() {
           <Button
             variant="flat"
             size="sm"
-            startContent={<CheckCheck className="h-4 w-4" />}
+            startContent={<CheckCircleIcon className="h-4 w-4" />}
             isLoading={markAllRead.isPending}
             onPress={() => markAllRead.mutate()}
           >
@@ -103,7 +103,7 @@ export default function NotificationsPage() {
       ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-default-100 mb-4">
-              <Bell className="h-7 w-7 text-default-400" />
+              <BellIcon className="h-7 w-7 text-default-400" />
             </div>
             <p className="font-semibold text-default-600">Sin notificaciones</p>
             <p className="mt-1 text-sm text-default-400 max-w-xs">
@@ -132,7 +132,7 @@ export default function NotificationsPage() {
                 >
                   {/* Ícono */}
                   <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg mt-0.5 ${meta?.iconBg ?? "bg-default-100"}`}>
-                    {meta?.icon ?? <Bell className="h-4 w-4 text-default-500" />}
+                    {meta?.icon ?? <BellIcon className="h-4 w-4 text-default-500" />}
                   </div>
 
                   {/* Contenido */}

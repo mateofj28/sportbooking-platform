@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trophy } from "@/components/icons";
+import { TrophyIcon } from "@heroicons/react/24/outline";
 
 interface MediaImageProps {
     /** URL de la foto real (Supabase Storage). Si falta o falla al cargar, se muestra el fondo por defecto. */
@@ -63,7 +63,7 @@ function DefaultCover({ label }: { label: string }) {
                 <rect x="318" y="60" width="52" height="80" />
             </svg>
             <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-[2px]">
-                <Trophy className="h-7 w-7 text-white/90" aria-hidden="true" />
+                <TrophyIcon className="h-7 w-7 text-white/90" aria-hidden="true" />
             </div>
         </div>
     );

@@ -9,7 +9,7 @@ import {
 } from "@/lib/validations/auth.schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
-import { Trophy, Mail, Lock, User, ArrowRight, CheckCircle2, Eye, EyeOff } from "@/components/icons";
+import { ArrowRightIcon, CheckCircleIcon, EnvelopeIcon, EyeIcon, EyeSlashIcon, LockClosedIcon, TrophyIcon, UserIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { PhoneInput, COUNTRY_CODES, validatePhoneNumber } from "@/components/shared/phone-input";
@@ -94,7 +94,7 @@ export default function RegisterPage() {
                 <div className="relative z-10 max-w-md text-white">
                     <div className="flex items-center gap-3 mb-8">
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                            <Trophy className="h-6 w-6 text-white" />
+                            <TrophyIcon className="h-6 w-6 text-white" />
                         </div>
                         <span className="text-2xl font-bold">SportBooking</span>
                     </div>
@@ -132,13 +132,13 @@ export default function RegisterPage() {
                         <div className="flex flex-col items-center text-center gap-6">
                             {/* Ícono animado */}
                             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-success/10 ring-4 ring-success/20">
-                                <CheckCircle2 className="h-10 w-10 text-success" />
+                                <CheckCircleIcon className="h-10 w-10 text-success" />
                             </div>
 
                             {/* Logo mobile */}
                             <div className="flex items-center gap-2 lg:hidden">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                                    <Trophy className="h-4 w-4 text-white" />
+                                    <TrophyIcon className="h-4 w-4 text-white" />
                                 </div>
                                 <span className="text-lg font-bold">SportBooking</span>
                             </div>
@@ -177,7 +177,7 @@ export default function RegisterPage() {
                   {/* Mobile logo */}
                   <div className="mb-6 flex items-center gap-2 lg:hidden">
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                          <Trophy className="h-4 w-4 text-white" />
+                          <TrophyIcon className="h-4 w-4 text-white" />
                       </div>
                       <span className="text-xl font-bold">SportBooking</span>
                   </div>
@@ -196,7 +196,7 @@ export default function RegisterPage() {
                               label="Nombre"
                               placeholder="Juan"
                               variant="bordered"
-                              startContent={<User className="h-4 w-4 text-default-400" />}
+                              startContent={<UserIcon className="h-4 w-4 text-default-400" />}
                               isInvalid={!!errors.firstName}
                               errorMessage={errors.firstName?.message}
                               classNames={{ inputWrapper: "bg-default-50" }}
@@ -217,7 +217,7 @@ export default function RegisterPage() {
                           placeholder="tu@email.com"
                           type="email"
                           variant="bordered"
-                          startContent={<Mail className="h-4 w-4 text-default-400" />}
+                          startContent={<EnvelopeIcon className="h-4 w-4 text-default-400" />}
                           isInvalid={!!errors.email}
                           errorMessage={errors.email?.message}
                           classNames={{ inputWrapper: "bg-default-50" }}
@@ -251,10 +251,10 @@ export default function RegisterPage() {
                           placeholder="Mínimo 8 caracteres"
                           type={showPassword ? "text" : "password"}
                           variant="bordered"
-                          startContent={<Lock className="h-4 w-4 text-default-400" />}
+                          startContent={<LockClosedIcon className="h-4 w-4 text-default-400" />}
                           endContent={
                               <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-default-400 hover:text-default-600 transition-colors">
-                                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  {showPassword ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                               </button>
                           }
                           isInvalid={!!errors.password}
@@ -270,10 +270,10 @@ export default function RegisterPage() {
                               placeholder="Repite tu contraseña"
                               type={showConfirmPassword ? "text" : "password"}
                               variant="bordered"
-                              startContent={<Lock className="h-4 w-4 text-default-400" />}
+                              startContent={<LockClosedIcon className="h-4 w-4 text-default-400" />}
                               endContent={
                                   <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="text-default-400 hover:text-default-600 transition-colors">
-                                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                      {showConfirmPassword ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                                   </button>
                               }
                               isInvalid={!!errors.confirmPassword || !!passwordsDontMatch}
@@ -283,7 +283,7 @@ export default function RegisterPage() {
                           />
                           {passwordsMatch && !errors.confirmPassword && (
                               <p className="mt-1 flex items-center gap-1 text-xs text-success">
-                                  <CheckCircle2 className="h-3 w-3" />
+                                  <CheckCircleIcon className="h-3 w-3" />
                                   Las contraseñas coinciden
                               </p>
                           )}
@@ -315,7 +315,7 @@ export default function RegisterPage() {
                           isLoading={registerMutation.isPending}
                             isDisabled={!acceptedTerms}
                             className="font-semibold shadow-lg shadow-primary/20"
-                          endContent={!registerMutation.isPending && <ArrowRight className="h-4 w-4" />}
+                          endContent={!registerMutation.isPending && <ArrowRightIcon className="h-4 w-4" />}
                       >
                           Crear Cuenta
                       </Button>
@@ -347,7 +347,7 @@ function BenefitCard({ title, description }: { title: string; description: strin
     return (
         <div className="flex items-start gap-3">
             <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-white/20">
-                <CheckCircle2 className="h-3 w-3 text-white" />
+                <CheckCircleIcon className="h-3 w-3 text-white" />
             </div>
             <div>
                 <p className="text-sm font-semibold text-white">{title}</p>

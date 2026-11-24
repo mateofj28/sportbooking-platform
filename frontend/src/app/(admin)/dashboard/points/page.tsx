@@ -6,7 +6,7 @@ import {
     Button, Chip, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Radio, RadioGroup,
     Spinner, Tab, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, Textarea,
 } from "@heroui/react";
-import { Search, SlidersHorizontal } from "@/components/icons";
+import { AdjustmentsHorizontalIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";
 import { LedgerTotals, ReceiptButton } from "@/components/shared/wallet-ui";
@@ -107,7 +107,7 @@ function UsersTab() {
                 onValueChange={setText}
                 isClearable
                 onClear={() => setText("")}
-                startContent={<Search className="h-4 w-4 text-default-400" aria-hidden="true" />}
+                startContent={<MagnifyingGlassIcon className="h-4 w-4 text-default-400" aria-hidden="true" />}
             />
             {isError ? (
                 <p role="alert" className="text-sm text-danger">{error?.message}</p>
@@ -133,7 +133,7 @@ function UsersTab() {
                                     <TableCell className="text-right tabular-nums text-default-500">{formatPoints(u.spent)}</TableCell>
                                     <TableCell className="text-right">
                                         <Button size="sm" variant="flat" color="primary"
-                                            startContent={<SlidersHorizontal className="h-4 w-4" aria-hidden="true" />}
+                                            startContent={<AdjustmentsHorizontalIcon className="h-4 w-4" aria-hidden="true" />}
                                             onPress={() => setTarget(u)}>
                                             Ajustar créditos
                                         </Button>

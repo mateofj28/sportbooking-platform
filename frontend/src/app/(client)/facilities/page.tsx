@@ -11,7 +11,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { FacilityCard } from "@/components/cards/facility-card";
 import { useAvailabilitySummary, localDateStr } from "@/hooks/use-availability";
 import { amenityEmoji } from "@/lib/amenities";
-import { Search, MapPin, ArrowLeft, Building2 } from "@/components/icons";
+import { ArrowLeftIcon, BuildingOffice2Icon, MagnifyingGlassIcon, MapPinIcon } from "@heroicons/react/24/outline";
 import { MediaImage } from "@/components/shared/media-image";
 
 
@@ -99,7 +99,7 @@ function FacilitiesContent() {
                                 placeholder="Buscar complejo por nombre o municipio..."
                                 value={venueSearch}
                                 onValueChange={setVenueSearch}
-                                startContent={<Search className="h-4 w-4 text-default-400" />}
+                                startContent={<MagnifyingGlassIcon className="h-4 w-4 text-default-400" />}
                                 className="max-w-md"
                                 variant="bordered"
                                 isClearable
@@ -133,7 +133,7 @@ function FacilitiesContent() {
                                             <CardBody className="p-4">
                                                 <h3 className="truncate text-base font-semibold">{venue.name}</h3>
                                                 <div className="mt-1 flex items-center gap-1 text-xs text-default-500">
-                                                    <MapPin className="h-3 w-3 flex-shrink-0" />
+                                                    <MapPinIcon className="h-3 w-3 flex-shrink-0" />
                                                     <span className="truncate">
                                                         {venue.address ? `${venue.address} — ` : ""}{venue.city}
                                                     </span>
@@ -170,7 +170,7 @@ function FacilitiesContent() {
                                 </div>
                             ) : (
                                 <div className="py-12 text-center">
-                                    <Building2 className="mx-auto h-10 w-10 text-default-200" />
+                                    <BuildingOffice2Icon className="mx-auto h-10 w-10 text-default-200" />
                                     <p className="mt-3 text-lg text-default-500">
                                                 {venueSearch ? "No se encontraron complejos" : "No hay complejos disponibles por el momento"}
                                     </p>
@@ -187,7 +187,7 @@ function FacilitiesContent() {
                         <Button
                             variant="light"
                             size="sm"
-                            startContent={<ArrowLeft className="h-4 w-4" />}
+                            startContent={<ArrowLeftIcon className="h-4 w-4" />}
                             onPress={handleBack}
                             className="mb-4"
                         >
@@ -199,7 +199,7 @@ function FacilitiesContent() {
                         </h1>
                         {selectedVenue && (
                             <p className="mt-2 flex items-center gap-1 text-default-500">
-                                <MapPin className="h-4 w-4" />
+                                <MapPinIcon className="h-4 w-4" />
                                 {selectedVenue.address ? `${selectedVenue.address} — ` : ""}{selectedVenue.city}
                             </p>
                         )}

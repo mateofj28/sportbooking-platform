@@ -12,7 +12,7 @@ import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { Navbar } from "@/components/layout/navbar";
 import { MediaImage } from "@/components/shared/media-image";
-import { ArrowLeft, MapPin, Calendar, Clock, User, Check, X, Repeat, ShieldCheck, AlertTriangle } from "@/components/icons";
+import { ArrowLeftIcon, ArrowPathRoundedSquareIcon, CalendarIcon, CheckIcon, ClockIcon, ExclamationTriangleIcon, MapPinIcon, ShieldCheckIcon, UserIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 function formatDateLong(dateStr: string): string {
     return formatDateAr(dateStr);
@@ -64,7 +64,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
         <div className="flex min-h-screen flex-col bg-default-50">
             <Navbar />
             <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
-                <Button variant="light" size="sm" startContent={<ArrowLeft className="h-4 w-4" />} onPress={() => router.back()} className="mb-4">
+                <Button variant="light" size="sm" startContent={<ArrowLeftIcon className="h-4 w-4" />} onPress={() => router.back()} className="mb-4">
                     Volver
                 </Button>
 
@@ -81,7 +81,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                             )}
                             <h1 className="text-2xl font-bold text-white">{booking.facility.name}</h1>
                             <p className="mt-1 flex items-center gap-1 text-sm text-white/80">
-                                <MapPin className="h-3.5 w-3.5" />
+                                <MapPinIcon className="h-3.5 w-3.5" />
                                 {booking.facility.venue?.name}{booking.facility.venue?.city ? ` — ${booking.facility.venue.city}` : ""}
                             </p>
                         </div>
@@ -95,14 +95,14 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                     <div className="space-y-4">
                         {isRecurring && (
                             <div className="flex items-center gap-2 rounded-xl border border-secondary/30 bg-secondary/10 px-4 py-3 text-sm text-secondary-700">
-                                <Repeat className="h-4 w-4" />
+                                <ArrowPathRoundedSquareIcon className="h-4 w-4" />
                                 Esta reserva es parte de un <strong>turno fijo semanal</strong>.
                             </div>
                         )}
 
                         {isRecurring && booking.paymentStatus !== "PAID" && booking.status === "CONFIRMED" && !isPast && (
                             <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning-700">
-                                <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                                <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 flex-shrink-0" />
                                 <span>
                                     El pago debe realizarse <strong>al menos 24 horas antes</strong> de la fecha
                                     (antes del <strong>{formatDateLong(new Date(new Date(booking.startDatetime).getTime() - 24 * 60 * 60 * 1000).toISOString())}</strong>).
@@ -113,11 +113,11 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
 
                         <Card className="border border-divider shadow-none">
                             <CardBody className="gap-0 p-0">
-                                <DetailRow icon={<Calendar className="h-4 w-4" />} label="Fecha" value={<span className="capitalize">{formatDateLong(booking.startDatetime)}</span>} />
+                                <DetailRow icon={<CalendarIcon className="h-4 w-4" />} label="Fecha" value={<span className="capitalize">{formatDateLong(booking.startDatetime)}</span>} />
                                 <Divider />
-                                <DetailRow icon={<Clock className="h-4 w-4" />} label="Horario" value={`${formatTime(booking.startDatetime)} — ${formatTime(booking.endDatetime)} · ${mins} min`} />
+                                <DetailRow icon={<ClockIcon className="h-4 w-4" />} label="Horario" value={`${formatTime(booking.startDatetime)} — ${formatTime(booking.endDatetime)} · ${mins} min`} />
                                 <Divider />
-                                <DetailRow icon={<User className="h-4 w-4" />} label="Cliente" value={booking.user ? `${booking.user.firstName} ${booking.user.lastName}` : "Cliente"} />
+                                <DetailRow icon={<UserIcon className="h-4 w-4" />} label="Cliente" value={booking.user ? `${booking.user.firstName} ${booking.user.lastName}` : "Cliente"} />
                             </CardBody>
                         </Card>
 
@@ -170,7 +170,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
 
                                 {booking.paymentStatus === "PAID" && booking.status === "CONFIRMED" && (
                                     <div className="flex items-center justify-center gap-2 rounded-lg bg-success/10 py-2 text-sm text-success">
-                                        <ShieldCheck className="h-4 w-4" /> Pagada con tus créditos
+                                        <ShieldCheckIcon className="h-4 w-4" /> Pagada con tus créditos
                                     </div>
                                 )}
 
@@ -178,7 +178,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                                     <Button
                                         color="danger"
                                         variant="light"
-                                        startContent={<X className="h-4 w-4" />}
+                                        startContent={<XMarkIcon className="h-4 w-4" />}
                                         onPress={() => setConfirmCancel(true)}
                                     >
                                         Cancelar reserva
@@ -187,7 +187,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
 
                                 {cancelBlockedByTime && (
                                     <div className="flex items-start gap-2 rounded-lg bg-default-100 p-3 text-xs text-default-500">
-                                        <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
+                                        <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
                                         <span>
                                             Ya no es posible cancelar: solo se puede cancelar hasta
                                             <strong> 24 horas antes</strong> del inicio del turno.

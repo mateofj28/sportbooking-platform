@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@heroui/react";
-import { MessageCircle } from "@/components/icons";
+import { ChatBubbleOvalLeftIcon } from "@heroicons/react/24/outline";
 import { useAuthStore } from "@/stores/auth-store";
 import { whatsappTopupUrl } from "@/lib/points";
 
@@ -27,7 +27,7 @@ export function WhatsappTopupButton({ points, size = "md", fullWidth, isDisabled
             fullWidth={fullWidth}
             isDisabled={isDisabled}
             className="bg-[#25D366] font-medium text-white!"
-            startContent={<MessageCircle className="h-4 w-4" aria-hidden="true" />}
+            startContent={<ChatBubbleOvalLeftIcon className="h-4 w-4" aria-hidden="true" />}
         >
             {label}
         </Button>

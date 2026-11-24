@@ -1,12 +1,12 @@
 "use client";
 
 import { useToastStore } from "@/stores/toast-store";
-import { CheckCircle2, XCircle, Info, X } from "@/components/icons";
+import { CheckCircleIcon, InformationCircleIcon, XCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 const ICONS = {
-  success: <CheckCircle2 className="h-4 w-4 text-success" />,
-  error: <XCircle className="h-4 w-4 text-danger" />,
-  info: <Info className="h-4 w-4 text-primary" />,
+  success: <CheckCircleIcon className="h-4 w-4 text-success" />,
+  error: <XCircleIcon className="h-4 w-4 text-danger" />,
+  info: <InformationCircleIcon className="h-4 w-4 text-primary" />,
 };
 
 const BG = {
@@ -30,7 +30,7 @@ export function ToastContainer() {
           {ICONS[toast.type]}
           <p className="flex-1 text-sm font-medium text-foreground">{toast.message}</p>
           <button onClick={() => removeToast(toast.id)} className="text-default-400 hover:text-default-600">
-            <X className="h-3.5 w-3.5" />
+            <XMarkIcon className="h-3.5 w-3.5" />
           </button>
         </div>
       ))}

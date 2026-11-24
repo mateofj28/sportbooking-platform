@@ -10,7 +10,7 @@ import {
 } from "@/lib/validations/auth.schema";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { Trophy, Mail, ArrowLeft } from "@/components/icons";
+import { ArrowLeftIcon, EnvelopeIcon, TrophyIcon } from "@heroicons/react/24/outline";
 
 export default function ForgotPasswordPage() {
     const mutation = useMutation({
@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
         <div className="flex min-h-screen items-center justify-center px-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="flex flex-col items-center gap-2 pb-0 pt-8">
-                    <Trophy className="h-10 w-10 text-primary" />
+                    <TrophyIcon className="h-10 w-10 text-primary" />
                     <h1 className="text-2xl font-bold">Recuperar Contraseña</h1>
                     <p className="text-center text-sm text-default-500">
                         Ingresa tu email y te enviaremos un link para restablecer tu
@@ -57,7 +57,7 @@ export default function ForgotPasswordPage() {
                                 href="/login"
                                 variant="light"
                                 className="mt-4"
-                                startContent={<ArrowLeft className="h-4 w-4" />}
+                                startContent={<ArrowLeftIcon className="h-4 w-4" />}
                             >
                                 Volver al login
                             </Button>
@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
                                 placeholder="tu@email.com"
                                 type="email"
                                 variant="bordered"
-                                startContent={<Mail className="h-4 w-4 text-default-400" />}
+                                startContent={<EnvelopeIcon className="h-4 w-4 text-default-400" />}
                                 isInvalid={!!errors.email}
                                 errorMessage={errors.email?.message}
                             />
@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
 
                     <p className="mt-6 text-center text-sm text-default-500">
                         <Link href="/login" size="sm">
-                            <ArrowLeft className="mr-1 inline h-3 w-3" />
+                            <ArrowLeftIcon className="mr-1 inline h-3 w-3" />
                             Volver al login
                         </Link>
                     </p>

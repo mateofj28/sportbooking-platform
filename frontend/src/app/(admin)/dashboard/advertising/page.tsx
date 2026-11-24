@@ -9,7 +9,7 @@ import {
 } from "@heroui/react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, Megaphone, Pencil, Plus, Trash2 } from "@/components/icons";
+import { EyeIcon, MegaphoneIcon, PencilIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { DataTable } from "@/components/shared/data-table";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { DateTimeField } from "@/components/shared/date-time-field";
@@ -169,7 +169,7 @@ export default function AdvertisingPage() {
                         Gestioná las promociones que ven los clientes. Cada una puede mostrarse en todo el país o solo en municipios específicos, según dónde esté el cliente.
                     </p>
                 </div>
-                <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={openCreate}>
+                <Button color="primary" startContent={<PlusIcon className="h-4 w-4" />} onPress={openCreate}>
                     Nueva publicidad
                 </Button>
             </div>
@@ -273,10 +273,10 @@ export default function AdvertisingPage() {
                                     <TableCell>
                                         <div className="flex justify-end gap-1">
                                             <Button size="sm" color="primary" variant="light" isIconOnly aria-label={`Editar ${ad.title}`} onPress={() => openEdit(ad)}>
-                                                <Pencil className="h-4 w-4" />
+                                                <PencilIcon className="h-4 w-4" />
                                             </Button>
                                             <Button size="sm" color="danger" variant="light" isIconOnly aria-label={`Eliminar ${ad.title}`} onPress={() => setDeleteTarget(ad)}>
-                                                <Trash2 className="h-4 w-4" />
+                                                <TrashIcon className="h-4 w-4" />
                                             </Button>
                                         </div>
                                     </TableCell>
@@ -356,7 +356,7 @@ function ClientSimulator({
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-                        <Eye className="h-4 w-4 text-primary" aria-hidden="true" />
+                        <EyeIcon className="h-4 w-4 text-primary" aria-hidden="true" />
                     </div>
                     <div>
                         <h2 className="text-base font-semibold">Vista del cliente</h2>
@@ -393,7 +393,7 @@ function ClientSimulator({
                 </>
             ) : (
                 <div className="flex flex-col items-center gap-2 py-6 text-center">
-                    <Megaphone className="h-6 w-6 text-default-300" aria-hidden="true" />
+                    <MegaphoneIcon className="h-6 w-6 text-default-300" aria-hidden="true" />
                     <p className="text-sm text-default-500">Este cliente no vería ninguna publicidad.</p>
                 </div>
             )}

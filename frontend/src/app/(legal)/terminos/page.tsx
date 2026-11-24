@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@heroui/react";
-import { Trophy, ArrowLeft } from "@/components/icons";
+import { ArrowLeftIcon, TrophyIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -16,7 +16,7 @@ export default function TermsPage() {
             <header className="bg-gradient-to-r from-blue-500 to-blue-800 px-6 py-5 text-white">
                 <div className="mx-auto flex w-full max-w-3xl items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
-                        <Trophy className="h-5 w-5" />
+                        <TrophyIcon className="h-5 w-5" />
                     </div>
                     <span className="text-lg font-bold">SportBooking</span>
                 </div>
@@ -26,7 +26,7 @@ export default function TermsPage() {
                 <Button
                     variant="light"
                     size="sm"
-                    startContent={<ArrowLeft className="h-4 w-4" />}
+                    startContent={<ArrowLeftIcon className="h-4 w-4" />}
                     onPress={() => router.back()}
                     className="mb-4"
                 >

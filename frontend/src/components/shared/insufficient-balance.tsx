@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle } from "@/components/icons";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { formatPoints } from "@/lib/points";
 import { WhatsappTopupButton } from "@/components/shared/whatsapp-topup-button";
 
@@ -10,7 +10,7 @@ export function InsufficientBalance({ needed, available }: { needed: number; ava
     return (
         <div role="alert" className="space-y-3 rounded-xl border border-warning-200 bg-warning-50 p-4">
             <div className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning-600" aria-hidden="true" />
+                <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning-600" aria-hidden="true" />
                 <div className="text-sm">
                     <p className="font-semibold text-warning-700!">Saldo insuficiente</p>
                     <p className="text-warning-700">

@@ -1,25 +1,26 @@
-import { DoorOpen, ShowerHead, Toilet, Wifi, ParkingSquare, Flame, UtensilsCrossed, Lightbulb, Shirt, Coffee, Armchair, Snowflake, Store, ShieldCheck, Accessibility, Tag, type IconComponent } from "@/components/icons";
+import { ArrowRightEndOnRectangleIcon, BeakerIcon, BuildingStorefrontIcon, CakeIcon, CloudIcon, FireIcon, HandRaisedIcon, HomeIcon, HomeModernIcon, LightBulbIcon, ShieldCheckIcon, SparklesIcon, SwatchIcon, TagIcon, TruckIcon, WifiIcon } from "@heroicons/react/24/outline";
+import type { IconComponent } from "@/lib/icon-type";
 
 /**
  * Mapea cada servicio (amenity) a su ícono (Heroicons, ver components/icons.ts).
  * Normaliza el nombre (sin acentos, minúsculas) para tolerar variaciones.
  */
 const ICONS: Record<string, IconComponent> = {
-    vestuarios: DoorOpen,
-    duchas: ShowerHead,
-    banos: Toilet,
-    wifi: Wifi,
-    estacionamiento: ParkingSquare,
-    parrilla: Flame,
-    buffet: UtensilsCrossed,
-    "iluminacion nocturna": Lightbulb,
-    "alquiler de pecheras": Shirt,
-    cafeteria: Coffee,
-    tribunas: Armchair,
-    "aire acondicionado": Snowflake,
-    kiosco: Store,
-    seguridad: ShieldCheck,
-    accesible: Accessibility,
+    vestuarios: ArrowRightEndOnRectangleIcon,
+    duchas: SparklesIcon,
+    banos: HomeIcon,
+    wifi: WifiIcon,
+    estacionamiento: TruckIcon,
+    parrilla: FireIcon,
+    buffet: CakeIcon,
+    "iluminacion nocturna": LightBulbIcon,
+    "alquiler de pecheras": SwatchIcon,
+    cafeteria: BeakerIcon,
+    tribunas: HomeModernIcon,
+    "aire acondicionado": CloudIcon,
+    kiosco: BuildingStorefrontIcon,
+    seguridad: ShieldCheckIcon,
+    accesible: HandRaisedIcon,
 };
 
 /**
@@ -50,7 +51,7 @@ function normalize(name: string): string {
 
 /** Devuelve el ícono del servicio, o un ícono genérico si no hay match. */
 export function amenityIcon(name: string): IconComponent {
-    return ICONS[normalize(name)] || Tag;
+    return ICONS[normalize(name)] || TagIcon;
 }
 
 /** Devuelve el emoji (con forma y color) del servicio, o 🏷️ si no hay match. */

@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { resetPasswordSchema, type ResetPasswordFormData } from "@/lib/validations/auth.schema";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { Trophy, Lock, ArrowLeft, CheckCircle2, Eye, EyeOff } from "@/components/icons";
+import { ArrowLeftIcon, CheckCircleIcon, EyeIcon, EyeSlashIcon, LockClosedIcon, TrophyIcon } from "@heroicons/react/24/outline";
 import { useState, Suspense } from "react";
 
 function ResetPasswordContent() {
@@ -37,7 +37,7 @@ function ResetPasswordContent() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="flex flex-col items-center gap-2 pb-0 pt-8">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-            <Trophy className="h-6 w-6 text-primary" />
+            <TrophyIcon className="h-6 w-6 text-primary" />
           </div>
           <h1 className="text-2xl font-bold">Nueva Contraseña</h1>
           <p className="text-center text-sm text-default-500">
@@ -48,7 +48,7 @@ function ResetPasswordContent() {
           {mutation.isSuccess ? (
             <div className="text-center space-y-4">
               <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-success/10">
-                <CheckCircle2 className="h-8 w-8 text-success" />
+                <CheckCircleIcon className="h-8 w-8 text-success" />
               </div>
               <p className="text-success font-medium">
                 ¡Contraseña actualizada correctamente!
@@ -74,10 +74,10 @@ function ResetPasswordContent() {
                 placeholder="Mínimo 8 caracteres"
                 type={showPassword ? "text" : "password"}
                 variant="bordered"
-                startContent={<Lock className="h-4 w-4 text-default-400" />}
+                startContent={<LockClosedIcon className="h-4 w-4 text-default-400" />}
                 endContent={
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-default-400 hover:text-default-600">
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                   </button>
                 }
                 isInvalid={!!errors.password}
@@ -90,7 +90,7 @@ function ResetPasswordContent() {
                 placeholder="Repite la contraseña"
                 type="password"
                 variant="bordered"
-                startContent={<Lock className="h-4 w-4 text-default-400" />}
+                startContent={<LockClosedIcon className="h-4 w-4 text-default-400" />}
                 isInvalid={!!errors.confirmPassword}
                 errorMessage={errors.confirmPassword?.message}
                 classNames={{ inputWrapper: "bg-default-50" }}
@@ -116,7 +116,7 @@ function ResetPasswordContent() {
 
           <p className="mt-6 text-center text-sm text-default-500">
             <Link href="/login" size="sm" className="text-primary">
-              <ArrowLeft className="mr-1 inline h-3 w-3" />
+              <ArrowLeftIcon className="mr-1 inline h-3 w-3" />
               Volver al login
             </Link>
           </p>

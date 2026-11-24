@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@heroui/react";
-import { Wallet } from "@/components/icons";
+import { WalletIcon } from "@heroicons/react/24/outline";
 import { useMarkBookingPaid } from "@/hooks/use-bookings";
 import { useMyBalance } from "@/hooks/use-wallet";
 import { formatPoints } from "@/lib/points";
@@ -34,7 +34,7 @@ export function PayWithPointsButton({ bookingId, total, size = "sm", fullWidth, 
                 size={size}
                 fullWidth={fullWidth}
                 color="primary"
-                startContent={<Wallet className="h-4 w-4" aria-hidden="true" />}
+                startContent={<WalletIcon className="h-4 w-4" aria-hidden="true" />}
                 onPress={onOpen}
             >
                 {label ?? `Pagar ${formatPoints(price)}`}

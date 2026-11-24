@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea } from "@heroui/react";
-import { AlertTriangle } from "@/components/icons";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import { useCancelBooking } from "@/hooks/use-bookings";
 import { formatDateAr, formatTimeAr, formatDateShortAr } from "@/lib/datetime";
@@ -69,7 +69,7 @@ export function CancelBookingModal({ booking, onClose, onCancelled }: CancelBook
         <Modal isOpen={!!booking} onClose={close} size="md">
             <ModalContent>
                 <ModalHeader className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-warning" />
+                    <ExclamationTriangleIcon className="h-5 w-5 text-warning" />
                     Cancelar reserva
                 </ModalHeader>
                 <ModalBody className="gap-3">

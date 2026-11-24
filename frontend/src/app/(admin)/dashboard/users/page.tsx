@@ -11,7 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize, invokeFunction, Tables } from "@/lib/supabase-helpers";
 import { useVenues } from "@/hooks/use-venues";
-import { UserX, UserCheck, Pencil, Plus, Search, Trash2 } from "@/components/icons";
+import { MagnifyingGlassIcon, PencilIcon, PlusIcon, TrashIcon, UserCircleIcon, UserMinusIcon } from "@heroicons/react/24/outline";
 import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { PhoneInput } from "@/components/shared/phone-input";
@@ -306,7 +306,7 @@ export default function AdminUsersPage() {
                         {totalUsers > 0 ? `${totalUsers} usuario${totalUsers !== 1 ? "s" : ""} en el sistema` : "Gestiona los usuarios de la plataforma"}
                     </p>
                 </div>
-                <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={onCreateOpen}>
+                <Button color="primary" startContent={<PlusIcon className="h-4 w-4" />} onPress={onCreateOpen}>
                     Nuevo Usuario
                 </Button>
             </div>
@@ -319,7 +319,7 @@ export default function AdminUsersPage() {
                     size="sm"
                     value={search}
                     onValueChange={handleSearch}
-                    startContent={<Search className="h-4 w-4 text-default-400" />}
+                    startContent={<MagnifyingGlassIcon className="h-4 w-4 text-default-400" />}
                     isClearable
                     onClear={() => handleSearch("")}
                 />
@@ -398,16 +398,16 @@ export default function AdminUsersPage() {
                             <TableCell>
                                 <div className="flex gap-1">
                                     <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEditRole(user)} title="Editar">
-                                        <Pencil className="h-4 w-4" />
+                                        <PencilIcon className="h-4 w-4" />
                                     </Button>
                                     {user.isActive && user.role !== "ADMIN" && (
                                         <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(user.id)} title="Desactivar">
-                                            <UserX className="h-4 w-4" />
+                                            <UserMinusIcon className="h-4 w-4" />
                                         </Button>
                                     )}
                                     {!user.isActive && (
                                         <Button size="sm" color="success" variant="light" isIconOnly onPress={() => setReactivateId(user.id)} title="Reactivar">
-                                            <UserCheck className="h-4 w-4" />
+                                            <UserCircleIcon className="h-4 w-4" />
                                         </Button>
                                     )}
                                 </div>
@@ -571,7 +571,7 @@ export default function AdminUsersPage() {
                                     size="sm"
                                     color="danger"
                                     variant="flat"
-                                    startContent={<Trash2 className="h-3.5 w-3.5" />}
+                                    startContent={<TrashIcon className="h-3.5 w-3.5" />}
                                     onPress={() => setDeleteUserId(editUser!.id)}
                                     isLoading={deleteUserMutation.isPending}
                                 >

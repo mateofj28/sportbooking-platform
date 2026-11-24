@@ -2,7 +2,7 @@
 
 import { Button, Link, Input, Card, CardBody, Avatar } from "@heroui/react";
 import { Navbar } from "@/components/layout/navbar";
-import { Search, MapPin, Calendar, Clock, CheckCircle2, Star, ArrowRight, Trophy, Users, Zap, Shield } from "@/components/icons";
+import { ArrowRightIcon, BoltIcon, CalendarIcon, CheckCircleIcon, ClockIcon, MagnifyingGlassIcon, MapPinIcon, ShieldCheckIcon, StarIcon, TrophyIcon, UsersIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -29,7 +29,7 @@ export default function HomePage() {
                             {/* Left - Copy */}
                             <div>
                                 <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-xs font-semibold text-white uppercase tracking-wider">
-                                    <Zap className="h-3 w-3" />
+                                    <BoltIcon className="h-3 w-3" />
                                     La app de reservas deportivas
                                 </span>
 
@@ -54,7 +54,7 @@ export default function HomePage() {
                                         value={searchQuery}
                                         onValueChange={setSearchQuery}
                                         onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                                        startContent={<Search className="h-4 w-4 text-white/60" />}
+                                        startContent={<MagnifyingGlassIcon className="h-4 w-4 text-white/60" />}
                                         classNames={{
                                             inputWrapper: "bg-white/10 dark:bg-white/5 shadow-sm border-white/20 dark:border-white/10",
                                             input: "text-white placeholder:text-white/50",
@@ -68,7 +68,7 @@ export default function HomePage() {
                                         className="shadow-lg shadow-primary/30"
                                         onPress={handleSearch}
                                     >
-                                        <ArrowRight className="h-5 w-5" />
+                                        <ArrowRightIcon className="h-5 w-5" />
                                     </Button>
                                 </div>
 
@@ -87,7 +87,7 @@ export default function HomePage() {
                                     <div>
                                         <div className="flex items-center gap-1">
                                             {[1, 2, 3, 4, 5].map((i) => (
-                                                <Star key={i} className="h-3.5 w-3.5 fill-warning text-warning" />
+                                                <StarIcon key={i} className="h-3.5 w-3.5 fill-warning text-warning" />
                                             ))}
                                         </div>
                                         <p className="text-xs text-white/70">+2,000 usuarios activos</p>
@@ -114,7 +114,7 @@ export default function HomePage() {
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                                                        <Trophy className="h-4 w-4 text-primary" />
+                                                        <TrophyIcon className="h-4 w-4 text-primary" />
                                                     </div>
                                                     <div>
                                                         <p className="text-sm font-medium">{item.name}</p>
@@ -134,7 +134,7 @@ export default function HomePage() {
                                 </div>
                                 <div className="absolute -bottom-3 -left-3 rounded-xl bg-content1 px-3 py-2 shadow-lg border border-default-100">
                                     <p className="text-xs font-medium text-foreground flex items-center gap-1">
-                                        <Clock className="h-3 w-3 text-primary" />
+                                        <ClockIcon className="h-3 w-3 text-primary" />
                                         Confirmación inmediata
                                     </p>
                                 </div>
@@ -156,9 +156,9 @@ export default function HomePage() {
                         </div>
 
                         <div className="grid gap-8 md:grid-cols-3">
-                            <StepCard step={1} icon={<Search className="h-6 w-6" />} title="Busca" description="Filtra por deporte, ubicación, fecha y horario disponible" />
-                            <StepCard step={2} icon={<Calendar className="h-6 w-6" />} title="Elige tu horario" description="Selecciona el día y la hora que más te convenga" />
-                            <StepCard step={3} icon={<CheckCircle2 className="h-6 w-6" />} title="¡Listo!" description="Confirma tu reserva y recibe la notificación al instante" />
+                            <StepCard step={1} icon={<MagnifyingGlassIcon className="h-6 w-6" />} title="Busca" description="Filtra por deporte, ubicación, fecha y horario disponible" />
+                            <StepCard step={2} icon={<CalendarIcon className="h-6 w-6" />} title="Elige tu horario" description="Selecciona el día y la hora que más te convenga" />
+                            <StepCard step={3} icon={<CheckCircleIcon className="h-6 w-6" />} title="¡Listo!" description="Confirma tu reserva y recibe la notificación al instante" />
                         </div>
                     </div>
                 </section>
@@ -200,12 +200,12 @@ export default function HomePage() {
                         </div>
 
                         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                            <FeatureCard icon={<Trophy className="h-5 w-5 text-primary" />} title="Múltiples deportes" description="Fútbol, tenis, pádel, básquet, vóley y más. Todo en un solo lugar." />
-                            <FeatureCard icon={<Clock className="h-5 w-5 text-success" />} title="Disponibilidad en tiempo real" description="Consulta horarios actualizados y reserva al instante sin sorpresas." />
-                            <FeatureCard icon={<MapPin className="h-5 w-5 text-secondary" />} title="Múltiples complejos" description="Encuentra la cancha más cercana y compara precios entre complejos." />
-                            <FeatureCard icon={<Shield className="h-5 w-5 text-warning" />} title="Reserva segura" description="Tu reserva queda confirmada al instante. Cancelación flexible." />
-                            <FeatureCard icon={<Users className="h-5 w-5 text-danger" />} title="Gestión de equipos" description="Organiza partidos, invita amigos y gestiona tus reservas grupales." />
-                            <FeatureCard icon={<Zap className="h-5 w-5 text-primary" />} title="Panel administrativo" description="Si tienes un complejo, gestiona reservas, precios y horarios fácilmente." />
+                            <FeatureCard icon={<TrophyIcon className="h-5 w-5 text-primary" />} title="Múltiples deportes" description="Fútbol, tenis, pádel, básquet, vóley y más. Todo en un solo lugar." />
+                            <FeatureCard icon={<ClockIcon className="h-5 w-5 text-success" />} title="Disponibilidad en tiempo real" description="Consulta horarios actualizados y reserva al instante sin sorpresas." />
+                            <FeatureCard icon={<MapPinIcon className="h-5 w-5 text-secondary" />} title="Múltiples complejos" description="Encuentra la cancha más cercana y compara precios entre complejos." />
+                            <FeatureCard icon={<ShieldCheckIcon className="h-5 w-5 text-warning" />} title="Reserva segura" description="Tu reserva queda confirmada al instante. Cancelación flexible." />
+                            <FeatureCard icon={<UsersIcon className="h-5 w-5 text-danger" />} title="Gestión de equipos" description="Organiza partidos, invita amigos y gestiona tus reservas grupales." />
+                            <FeatureCard icon={<BoltIcon className="h-5 w-5 text-primary" />} title="Panel administrativo" description="Si tienes un complejo, gestiona reservas, precios y horarios fácilmente." />
                         </div>
                     </div>
                 </section>

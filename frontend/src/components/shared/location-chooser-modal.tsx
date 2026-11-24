@@ -1,7 +1,7 @@
 "use client";
 
 import { Input, Modal, ModalBody, ModalContent, ModalHeader, Spinner } from "@heroui/react";
-import { Check, ChevronRight, Globe, LocateFixed, MapPin } from "@/components/icons";
+import { CheckIcon, ChevronRightIcon, GlobeAltIcon, MapPinIcon, ViewfinderCircleIcon } from "@heroicons/react/24/outline";
 import { useMemo, useState } from "react";
 import { provinceName } from "@/lib/ar-provinces";
 import type { LocalityInfo } from "@/lib/geo/locality-locator";
@@ -88,7 +88,7 @@ export function LocationChooserModal({ isOpen, onClose, onChoose, onLocateMe, on
                         onValueChange={setText}
                         isClearable
                         isDisabled={isLoading}
-                        startContent={<MapPin className="h-4 w-4 text-default-400" aria-hidden="true" />}
+                        startContent={<MapPinIcon className="h-4 w-4 text-default-400" aria-hidden="true" />}
                         endContent={isLoading ? <Spinner size="sm" /> : undefined}
                     />
 
@@ -98,7 +98,7 @@ export function LocationChooserModal({ isOpen, onClose, onChoose, onLocateMe, on
                             onClick={() => { setText(""); onLocateMe(); }}
                             className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-primary hover:bg-default-100"
                         >
-                            <LocateFixed className="h-4 w-4" aria-hidden="true" />
+                            <ViewfinderCircleIcon className="h-4 w-4" aria-hidden="true" />
                             Buscar cerca de mí
                         </button>
                     )}
@@ -110,12 +110,12 @@ export function LocationChooserModal({ isOpen, onClose, onChoose, onLocateMe, on
                             aria-current={noneSelected ? "true" : undefined}
                             className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left hover:bg-default-100"
                         >
-                            <Globe className="h-4 w-4 flex-shrink-0 text-default-400" aria-hidden="true" />
+                            <GlobeAltIcon className="h-4 w-4 flex-shrink-0 text-default-400" aria-hidden="true" />
                             <span className="min-w-0 flex-1 text-sm">
                                 <span className="block text-foreground">Sin municipio</span>
                                 <span className="block text-xs text-default-400">Ver solo las promociones nacionales</span>
                             </span>
-                            {noneSelected && <Check className="h-4 w-4 flex-shrink-0 text-primary" aria-hidden="true" />}
+                            {noneSelected && <CheckIcon className="h-4 w-4 flex-shrink-0 text-primary" aria-hidden="true" />}
                         </button>
                     )}
 
@@ -136,12 +136,12 @@ export function LocationChooserModal({ isOpen, onClose, onChoose, onLocateMe, on
                                     aria-current={l.code === currentCode ? "true" : undefined}
                                     className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left hover:bg-default-100"
                                 >
-                                    <MapPin className="h-4 w-4 flex-shrink-0 text-default-400" aria-hidden="true" />
+                                    <MapPinIcon className="h-4 w-4 flex-shrink-0 text-default-400" aria-hidden="true" />
                                     <span className="min-w-0 flex-1 truncate text-sm text-default-500">
                                         <span className="font-semibold text-foreground">{l.name}</span>
                                         , {provinceName(l.province)}, Argentina
                                     </span>
-                                    <ChevronRight className="h-4 w-4 flex-shrink-0 text-default-400" aria-hidden="true" />
+                                    <ChevronRightIcon className="h-4 w-4 flex-shrink-0 text-default-400" aria-hidden="true" />
                                 </button>
                             </li>
                         ))}

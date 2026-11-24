@@ -12,7 +12,7 @@ import {
     Button, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Radio, RadioGroup,
     Spinner, TableBody, TableCell, TableColumn, TableHeader, TableRow, Textarea,
 } from "@heroui/react";
-import { Paperclip } from "@/components/icons";
+import { PaperClipIcon } from "@heroicons/react/24/outline";
 import { DataTable } from "@/components/shared/data-table";
 import { PointsInput } from "@/components/shared/points-input";
 import { usePayVenue, useRejectPayout, type PendingPayoutRequest, type VenueBalance } from "@/hooks/use-wallet";
@@ -161,7 +161,7 @@ export function PayModal({ target, onClose }: { target: PayTarget | null; onClos
                     />
                     <div>
                         <input ref={fileRef} type="file" accept={RECEIPT_TYPES.join(",")} className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
-                        <Button variant="bordered" startContent={<Paperclip className="h-4 w-4" aria-hidden="true" />} onPress={() => fileRef.current?.click()}>
+                        <Button variant="bordered" startContent={<PaperClipIcon className="h-4 w-4" aria-hidden="true" />} onPress={() => fileRef.current?.click()}>
                             {file ? "Cambiar comprobante" : "Adjuntar comprobante"}
                         </Button>
                         <p className="mt-1 text-xs text-default-400">{file ? file.name : "Imagen o PDF, hasta 5 MB"}</p>

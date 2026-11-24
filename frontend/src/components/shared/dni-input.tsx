@@ -11,7 +11,7 @@
 
 import { useState } from 'react'
 import { Input } from '@heroui/react'
-import { CreditCard } from "@/components/icons"
+import { CreditCardIcon } from "@heroicons/react/24/outline";
 import { supabase } from '@/lib/supabase'
 
 interface DniInputProps {
@@ -76,7 +76,7 @@ export function DniInput({
             isDisabled={checking}
             description={checking ? "Verificando DNI..." : undefined}
             classNames={{ inputWrapper: "bg-default-50" }}
-            startContent={<CreditCard className="h-4 w-4 text-default-400" />}
+            startContent={<CreditCardIcon className="h-4 w-4 text-default-400" />}
             onKeyPress={(e) => { if (!/[0-9]/.test(e.key)) e.preventDefault() }}
         />
     )

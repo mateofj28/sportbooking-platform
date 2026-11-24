@@ -12,7 +12,7 @@ import { camelize } from "@/lib/supabase-helpers";
 import { useSports } from "@/hooks/use-sports";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
-import { Plus, Trash2, Pencil } from "@/components/icons";
+import { PencilIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import type { Sport } from "@/types";
 
@@ -82,7 +82,7 @@ export default function AdminSportsPage() {
                     <h1 className="text-2xl font-bold">Deportes</h1>
                     <p className="text-sm text-default-500 mt-1">Catálogo de deportes disponibles</p>
                 </div>
-                <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={onOpen}>Nuevo Deporte</Button>
+                <Button color="primary" startContent={<PlusIcon className="h-4 w-4" />} onPress={onOpen}>Nuevo Deporte</Button>
             </div>
 
             <DataTable aria-label="Deportes">
@@ -108,8 +108,8 @@ export default function AdminSportsPage() {
                             <TableCell><Chip color={sport.isActive ? "success" : "danger"} size="sm" variant="flat">{sport.isActive ? "Activo" : "Inactivo"}</Chip></TableCell>
                             <TableCell>
                                 <div className="flex gap-1">
-                                    <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(sport)}><Pencil className="h-4 w-4" /></Button>
-                                    <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(sport.id)}><Trash2 className="h-4 w-4" /></Button>
+                                    <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(sport)}><PencilIcon className="h-4 w-4" /></Button>
+                                    <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(sport.id)}><TrashIcon className="h-4 w-4" /></Button>
                                 </div>
                             </TableCell>
                         </TableRow>

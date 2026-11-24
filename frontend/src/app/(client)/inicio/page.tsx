@@ -15,7 +15,7 @@ import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { useSports } from "@/hooks/use-sports";
 import { Navbar } from "@/components/layout/navbar";
 import { useRouter } from "next/navigation";
-import { Search, Calendar, Clock, MapPin, ArrowRight, RotateCcw } from "@/components/icons";
+import { ArrowRightIcon, ArrowUturnLeftIcon, CalendarIcon, ClockIcon, MagnifyingGlassIcon, MapPinIcon } from "@heroicons/react/24/outline";
 import type { Booking } from "@/types";
 
 /** ⚽ 🎾 etc. según el nombre del deporte */
@@ -106,9 +106,9 @@ export default function ClientHomePage() {
                             value={searchQuery}
                             onValueChange={setSearchQuery}
                             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                            startContent={<Search className="h-4 w-4 text-default-400" />}
+                            startContent={<MagnifyingGlassIcon className="h-4 w-4 text-default-400" />}
                         />
-                        <Button color="primary" onPress={handleSearch} endContent={<ArrowRight className="h-4 w-4" />}>
+                        <Button color="primary" onPress={handleSearch} endContent={<ArrowRightIcon className="h-4 w-4" />}>
                             Reservar
                         </Button>
                     </div>
@@ -140,13 +140,13 @@ export default function ClientHomePage() {
                                             {(() => { const c = getBookingStatusChip(b); return <Chip size="sm" color={c.color} variant="flat">{c.label}</Chip>; })()}
                                         </div>
                                         <p className="text-xs text-default-400 flex items-center gap-1">
-                                            <MapPin className="h-3 w-3" /> {b.facility.venue?.name}
+                                            <MapPinIcon className="h-3 w-3" /> {b.facility.venue?.name}
                                         </p>
                                         <p className="text-xs text-default-500 flex items-center gap-1">
-                                            <Calendar className="h-3 w-3" /> {formatDate(b.startDatetime)}
+                                            <CalendarIcon className="h-3 w-3" /> {formatDate(b.startDatetime)}
                                         </p>
                                         <p className="text-xs text-default-500 flex items-center gap-1">
-                                            <Clock className="h-3 w-3" /> {formatTime12h(b.startDatetime)} - {formatTime12h(b.endDatetime)}
+                                            <ClockIcon className="h-3 w-3" /> {formatTime12h(b.startDatetime)} - {formatTime12h(b.endDatetime)}
                                         </p>
                                         <div className="mt-1 flex items-center justify-between">
                                             <div>
@@ -168,7 +168,7 @@ export default function ClientHomePage() {
                     ) : (
                         <Card className="border border-divider">
                             <CardBody className="flex flex-col items-center py-10">
-                                <Calendar className="h-10 w-10 text-default-200" />
+                                <CalendarIcon className="h-10 w-10 text-default-200" />
                                 <p className="mt-3 text-sm text-default-500">No tienes reservas próximas</p>
                                 <Button as="a" href="/facilities" size="sm" color="primary" variant="flat" className="mt-3">
                                     Explorar instalaciones
@@ -198,7 +198,7 @@ export default function ClientHomePage() {
                                             <p className="text-sm font-semibold truncate">{f.name}</p>
                                             <p className="text-xs text-default-400 truncate">{f.venue?.name}</p>
                                         </div>
-                                        <RotateCcw className="h-4 w-4 text-default-400 flex-shrink-0" />
+                                        <ArrowUturnLeftIcon className="h-4 w-4 text-default-400 flex-shrink-0" />
                                     </CardBody>
                                 </Card>
                             ))}

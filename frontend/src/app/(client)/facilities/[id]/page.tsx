@@ -33,7 +33,7 @@ import { useToastStore } from "@/stores/toast-store";
 import type { Facility } from "@/types";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
-import { MapPin, Clock, Users, ChevronLeft, ChevronRight, DollarSign, Check, AlertTriangle } from "@/components/icons";
+import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, ClockIcon, CurrencyDollarIcon, ExclamationTriangleIcon, MapPinIcon, UsersIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 
 const DAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -430,7 +430,7 @@ export default function FacilityDetailPage({
         <div className="flex min-h-screen flex-col">
             <Navbar />
             <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
-                <Button variant="light" size="sm" startContent={<ChevronLeft className="h-4 w-4" />} onPress={() => router.back()} className="mb-4">
+                <Button variant="light" size="sm" startContent={<ChevronLeftIcon className="h-4 w-4" />} onPress={() => router.back()} className="mb-4">
                     Volver
                 </Button>
                 {/* Header */}
@@ -439,7 +439,7 @@ export default function FacilityDetailPage({
                         <div>
                             <h1 className="text-2xl font-bold">{facility.name}</h1>
                             <p className="mt-1 flex items-center gap-1 text-sm text-default-500">
-                                <MapPin className="h-3.5 w-3.5" />
+                                <MapPinIcon className="h-3.5 w-3.5" />
                                 {facility.venue?.name ?? ""} — {facility.venue?.address ?? ""}, {facility.venue?.city ?? ""}
                             </p>
                         </div>
@@ -454,11 +454,11 @@ export default function FacilityDetailPage({
                         {facility.surfaceType && <Chip size="sm" variant="flat" className="px-2.5 gap-1">{facility.surfaceType}</Chip>}
                         {facility.isIndoor && <Chip size="sm" variant="flat" className="px-2.5 gap-1" color="secondary">Indoor</Chip>}
                         {facility.capacity && (
-                            <Chip size="sm" variant="flat" className="px-2.5 gap-1" startContent={<Users className="h-3 w-3" />}>
+                            <Chip size="sm" variant="flat" className="px-2.5 gap-1" startContent={<UsersIcon className="h-3 w-3" />}>
                                 {facility.capacity} jugadores
                             </Chip>
                         )}
-                        <Chip size="sm" variant="flat" className="px-2.5 gap-1" startContent={<Clock className="h-3 w-3" />}>
+                        <Chip size="sm" variant="flat" className="px-2.5 gap-1" startContent={<ClockIcon className="h-3 w-3" />}>
                             {facility.minBookingDuration === facility.maxBookingDuration ? facility.minBookingDuration : `${facility.minBookingDuration}–${facility.maxBookingDuration}`} min
                         </Chip>
                     </div>
@@ -469,7 +469,7 @@ export default function FacilityDetailPage({
                     <Card className="shadow-sm">
                         <CardBody className="items-center gap-3 py-10 text-center">
                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary/10">
-                                <Users className="h-6 w-6 text-secondary" />
+                                <UsersIcon className="h-6 w-6 text-secondary" />
                             </div>
                             <h2 className="text-lg font-bold">Este deporte se abona por mensualidad</h2>
                             <p className="max-w-md text-sm text-default-500">
@@ -477,7 +477,7 @@ export default function FacilityDetailPage({
                                 consultá en el complejo por la inscripción mensual y los horarios de las clases.
                             </p>
                             <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm text-default-600">
-                                <MapPin className="h-4 w-4" />
+                                <MapPinIcon className="h-4 w-4" />
                                 <span>{facility.venue?.name ?? ""} — {facility.venue?.address ?? ""}, {facility.venue?.city ?? ""}</span>
                             </div>
                         </CardBody>
@@ -675,7 +675,7 @@ export default function FacilityDetailPage({
                                                 onPress={handleBooking}
                                                 isLoading={createBooking.isPending}
                                                             isDisabled={isAuthenticated && (balanceLoading || balance < price)}
-                                                startContent={<Check className="h-4 w-4" />}
+                                                startContent={<CheckIcon className="h-4 w-4" />}
                                                 className="font-semibold"
                                             >
                                                 {isAuthenticated ? "Confirmar Reserva" : "Iniciar sesión para reservar"}
@@ -686,7 +686,7 @@ export default function FacilityDetailPage({
                                                 size="lg"
                                                 onPress={handleRecurringBooking}
                                                     isLoading={createRecurring.isPending}
-                                                startContent={<Check className="h-4 w-4" />}
+                                                startContent={<CheckIcon className="h-4 w-4" />}
                                                 className="font-semibold"
                                             >
                                                     {isAuthenticated ? "Crear turno fijo (8 fechas)" : "Iniciar sesión para reservar"}
@@ -774,7 +774,7 @@ export default function FacilityDetailPage({
                                             key={price.id}
                                             className="flex items-center gap-2 rounded-lg bg-default-100 px-3 py-2"
                                         >
-                                            <Clock className="h-3.5 w-3.5 text-default-500" />
+                                            <ClockIcon className="h-3.5 w-3.5 text-default-500" />
                                             <span className="text-sm">{formatTime12h(price.startTime)} - {formatTime12h(price.endTime)}</span>
                                             <Chip size="sm" color="success" variant="flat">
                                                 {formatPoints(finalPricePerTurn(price))} por turno
@@ -821,7 +821,7 @@ export default function FacilityDetailPage({
                 <ModalContent>
                     <ModalHeader className="flex items-center gap-2">
                         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-warning/15">
-                            <AlertTriangle className="h-5 w-5 text-warning" />
+                            <ExclamationTriangleIcon className="h-5 w-5 text-warning" />
                         </span>
                         No vas a poder cancelar
                     </ModalHeader>
@@ -864,7 +864,7 @@ export default function FacilityDetailPage({
                             color="primary"
                             onPress={handleConfirmToday}
                             isLoading={pendingAction === "recurring" ? createRecurring.isPending : createBooking.isPending}
-                            startContent={<Check className="h-4 w-4" />}
+                            startContent={<CheckIcon className="h-4 w-4" />}
                         >
                             {pendingAction === "recurring" ? "Aceptar y crear" : "Aceptar y pagar"}
                         </Button>

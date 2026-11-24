@@ -3,7 +3,7 @@
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button,
 } from "@heroui/react";
-import { AlertTriangle } from "@/components/icons";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -30,7 +30,7 @@ export function ConfirmModal({
     <Modal isOpen={isOpen} onClose={onClose} size="sm">
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-warning" />
+          <ExclamationTriangleIcon className="h-5 w-5 text-warning" />
           {title}
         </ModalHeader>
         <ModalBody>

@@ -27,7 +27,7 @@ import { useSidebarStore } from "@/stores/sidebar-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { NotificationBell } from "@/components/layout/notification-bell";
-import { Trophy, LogOut, User, Calendar, LayoutDashboard, Eye, Sun, Moon, Menu, ChevronLeft, Monitor, Check, Wallet } from "@/components/icons";
+import { ArrowRightStartOnRectangleIcon, Bars3Icon, CalendarIcon, CheckIcon, ChevronLeftIcon, ComputerDesktopIcon, EyeIcon, MoonIcon, Squares2X2Icon, SunIcon, TrophyIcon, UserIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { useMyBalance } from "@/hooks/use-wallet";
 import { formatPoints } from "@/lib/points";
 
@@ -40,7 +40,7 @@ function NavBalance() {
             aria-label={`Mi billetera: ${formatPoints(balance ?? 0)}`}
             className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm font-medium text-white hover:bg-white/25"
         >
-            <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
+            <WalletIcon className="h-3.5 w-3.5" aria-hidden="true" />
             {isLoading ? "…" : formatPoints(balance ?? 0)}
         </Link>
     );
@@ -84,7 +84,7 @@ export function Navbar() {
                         aria-label="Abrir menú"
                         className="flex items-center justify-center rounded-lg p-1 text-white hover:bg-white/10 lg:hidden"
                     >
-                        <Menu className="h-6 w-6" />
+                        <Bars3Icon className="h-6 w-6" />
                     </button>
                 ) : (
                     <NavbarMenuToggle
@@ -95,7 +95,7 @@ export function Navbar() {
                 <NavbarBrand>
                     <Link href="/" className="flex items-center gap-2 text-white">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20">
-                            <Trophy className="h-4 w-4 text-white" />
+                            <TrophyIcon className="h-4 w-4 text-white" />
                         </div>
                         <p className="font-bold text-lg text-white!">SportBooking</p>
                     </Link>
@@ -133,8 +133,8 @@ export function Navbar() {
                             className="flex items-center gap-1.5 rounded-full border border-white/40 px-3 py-1 text-sm font-medium text-white hover:bg-white/10"
                         >
                             {inDashboard
-                                ? <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                                : <LayoutDashboard className="h-3.5 w-3.5" aria-hidden="true" />}
+                                ? <EyeIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                                : <Squares2X2Icon className="h-3.5 w-3.5" aria-hidden="true" />}
                             {inDashboard ? "Vista de cliente" : "Panel de administración"}
                         </Link>
                     </NavbarItem>
@@ -158,7 +158,7 @@ export function Navbar() {
                 {mounted && !isAuthenticated && (
                     <NavbarItem>
                         <Button isIconOnly variant="light" size="sm" onPress={toggleTheme} aria-label="Cambiar tema">
-                            {isDark ? <Sun className="h-4 w-4 text-yellow-300" /> : <Moon className="h-4 w-4 text-white/80" />}
+                            {isDark ? <SunIcon className="h-4 w-4 text-yellow-300" /> : <MoonIcon className="h-4 w-4 text-white/80" />}
                         </Button>
                     </NavbarItem>
                 )}
@@ -197,13 +197,13 @@ export function Navbar() {
                                         </div>
                                         {/* Items */}
                                         <div className="py-1">
-                                            <MenuItem href="/profile" icon={<User className="h-4 w-4" />} label="Mi Perfil" />
-                                            <MenuItem href="/bookings" icon={<Calendar className="h-4 w-4" />} label="Mis Reservas" />
-                                            <MenuItem href="/wallet" icon={<Wallet className="h-4 w-4" />} label="Mi billetera" />
+                                            <MenuItem href="/profile" icon={<UserIcon className="h-4 w-4" />} label="Mi Perfil" />
+                                            <MenuItem href="/bookings" icon={<CalendarIcon className="h-4 w-4" />} label="Mis Reservas" />
+                                            <MenuItem href="/wallet" icon={<WalletIcon className="h-4 w-4" />} label="Mi billetera" />
                                             {isAdminUser && (
                                                 inDashboard
-                                                    ? <MenuItem href="/inicio" icon={<Eye className="h-4 w-4" />} label="Vista de cliente" />
-                                                    : <MenuItem href="/dashboard" icon={<LayoutDashboard className="h-4 w-4" />} label="Panel de administración" />
+                                                    ? <MenuItem href="/inicio" icon={<EyeIcon className="h-4 w-4" />} label="Vista de cliente" />
+                                                    : <MenuItem href="/dashboard" icon={<Squares2X2Icon className="h-4 w-4" />} label="Panel de administración" />
                                             )}
                                             {/* Tema con flecha */}
                                             <button
@@ -212,11 +212,11 @@ export function Navbar() {
                                                 className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-default-100 transition-colors text-left"
                                             >
                                                 {isDark
-                                                    ? <Moon className="h-4 w-4 text-blue-400 flex-shrink-0" />
-                                                    : <Sun className="h-4 w-4 text-yellow-400 flex-shrink-0" />
+                                                    ? <MoonIcon className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                                                    : <SunIcon className="h-4 w-4 text-yellow-400 flex-shrink-0" />
                                                 }
                                                 <span className="flex-1">Tema</span>
-                                                <ChevronLeft className="h-3.5 w-3.5 rotate-180 text-default-400 flex-shrink-0" />
+                                                <ChevronLeftIcon className="h-3.5 w-3.5 rotate-180 text-default-400 flex-shrink-0" />
                                             </button>
                                         </div>
                                         {/* Cerrar sesión */}
@@ -226,7 +226,7 @@ export function Navbar() {
                                                 onClick={logout}
                                                 className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-danger/10 transition-colors text-left"
                                             >
-                                                <LogOut className="h-4 w-4 flex-shrink-0" />
+                                                <ArrowRightStartOnRectangleIcon className="h-4 w-4 flex-shrink-0" />
                                                 Cerrar Sesión
                                             </button>
                                         </div>
@@ -239,7 +239,7 @@ export function Navbar() {
                                                 onClick={() => setDropdownView("main")}
                                                 className="flex w-full items-center gap-2 px-4 py-3 text-sm font-semibold hover:bg-default-100 transition-colors border-b border-divider text-left"
                                             >
-                                                <ChevronLeft className="h-4 w-4 text-default-500 flex-shrink-0" />
+                                                <ChevronLeftIcon className="h-4 w-4 text-default-500 flex-shrink-0" />
                                                 Tema
                                             </button>
                                             {/* Opciones */}
@@ -249,18 +249,18 @@ export function Navbar() {
                                                     onClick={() => { if (isDark) toggleTheme(); }}
                                                     className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-default-100 transition-colors text-left"
                                         >
-                                                    <Sun className="h-4 w-4 text-yellow-400 flex-shrink-0" />
+                                                    <SunIcon className="h-4 w-4 text-yellow-400 flex-shrink-0" />
                                                     <span className="flex-1">Claro</span>
-                                                    {!isDark && <Check className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
+                                                    {!isDark && <CheckIcon className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => { if (!isDark) toggleTheme(); }}
                                                     className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-default-100 transition-colors text-left"
                                         >
-                                                    <Moon className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                                                    <MoonIcon className="h-4 w-4 text-blue-400 flex-shrink-0" />
                                                     <span className="flex-1">Oscuro</span>
-                                                    {isDark && <Check className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
+                                                    {isDark && <CheckIcon className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
                                                 </button>
                                             </div>
                                         </div>

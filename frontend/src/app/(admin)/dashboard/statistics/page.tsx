@@ -10,7 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { useFacilities } from "@/hooks/use-facilities";
 import { useSports } from "@/hooks/use-sports";
 import { useAuthStore } from "@/stores/auth-store";
-import { Calendar, MapPin, TrendingUp, Activity, ArrowUpRight, ArrowDownRight, Users, Filter, CheckCircle2 } from "@/components/icons";
+import { ArrowDownRightIcon, ArrowTrendingUpIcon, ArrowUpRightIcon, CalendarIcon, CheckCircleIcon, FunnelIcon, MapPinIcon, PresentationChartLineIcon, UsersIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -176,7 +176,7 @@ export default function StatisticsPage() {
             <Card className="border border-divider">
                 <CardBody className="p-4">
                     <div className="flex items-center gap-2 mb-3">
-                        <Filter className="h-4 w-4 text-default-500" />
+                        <FunnelIcon className="h-4 w-4 text-default-500" />
                         <span className="text-sm font-semibold">Filtros</span>
                     </div>
                     <div className={`grid gap-3 sm:grid-cols-2 ${isVenueAdmin ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
@@ -291,18 +291,18 @@ export default function StatisticsPage() {
 
             {/* Stats Cards */}
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-                <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Ingresos" value={`$${fmt(t.totalBase)}`} color="bg-success-50 text-success-600" />
+                <StatCard icon={<ArrowTrendingUpIcon className="h-5 w-5" />} label="Ingresos" value={`$${fmt(t.totalBase)}`} color="bg-success-50 text-success-600" />
                 {!isVenueAdmin && (
-                    <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Comisión empresa" value={`$${fmt(t.totalCommission)}`} color="bg-emerald-100 text-emerald-600" />
+                    <StatCard icon={<ArrowTrendingUpIcon className="h-5 w-5" />} label="Comisión empresa" value={`$${fmt(t.totalCommission)}`} color="bg-emerald-100 text-emerald-600" />
                 )}
-                    <StatCard icon={<Calendar className="h-5 w-5" />} label="Reservas" value={t.totalAll} color="bg-primary-50 text-primary-600" trend={`${t.cancelled} canceladas`} trendUp={t.cancelled > 0 ? false : undefined} />
-                <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="Completadas" value={t.completed} color="bg-success-50 text-success-600" trend="turnos asistidos" trendUp={t.completed > 0 ? true : undefined} />
-                <StatCard icon={<Activity className="h-5 w-5" />} label="Confirmación" value={`${t.occupancyRate}%`} color="bg-secondary-50 text-secondary-600" trend={`${t.cancelled} canceladas`} trendUp={false} />
-                    <StatCard icon={<MapPin className="h-5 w-5" />} label="Instalaciones" value={facilitiesData?.filter((f) => f.isActive).length || 0} color="bg-warning-50 text-warning-600" trend={`${sportsData?.length || 0} deportes`} />
+                    <StatCard icon={<CalendarIcon className="h-5 w-5" />} label="Reservas" value={t.totalAll} color="bg-primary-50 text-primary-600" trend={`${t.cancelled} canceladas`} trendUp={t.cancelled > 0 ? false : undefined} />
+                <StatCard icon={<CheckCircleIcon className="h-5 w-5" />} label="Completadas" value={t.completed} color="bg-success-50 text-success-600" trend="turnos asistidos" trendUp={t.completed > 0 ? true : undefined} />
+                <StatCard icon={<PresentationChartLineIcon className="h-5 w-5" />} label="Confirmación" value={`${t.occupancyRate}%`} color="bg-secondary-50 text-secondary-600" trend={`${t.cancelled} canceladas`} trendUp={false} />
+                    <StatCard icon={<MapPinIcon className="h-5 w-5" />} label="Instalaciones" value={facilitiesData?.filter((f) => f.isActive).length || 0} color="bg-warning-50 text-warning-600" trend={`${sportsData?.length || 0} deportes`} />
                 {isVenueAdmin ? (
-                    <StatCard icon={<Users className="h-5 w-5" />} label="Clientes" value={t.uniqueClients} color="bg-primary-50 text-primary-600" trend="reservaron aquí" trendUp={t.uniqueClients > 0 ? true : undefined} />
+                    <StatCard icon={<UsersIcon className="h-5 w-5" />} label="Clientes" value={t.uniqueClients} color="bg-primary-50 text-primary-600" trend="reservaron aquí" trendUp={t.uniqueClients > 0 ? true : undefined} />
                 ) : (
-                            <StatCard icon={<Users className="h-5 w-5" />} label="Usuarios" value={usersData?.total || 0} color="bg-primary-50 text-primary-600" trend="registrados" />
+                            <StatCard icon={<UsersIcon className="h-5 w-5" />} label="Usuarios" value={usersData?.total || 0} color="bg-primary-50 text-primary-600" trend="registrados" />
                 )}
             </div>
 
@@ -495,8 +495,8 @@ function StatCard({ icon, label, value, color, trend, trendUp }: {
                     <p className="mt-1.5 text-sm text-default-500 leading-snug">{label}</p>
                     {trend && (
                         <span className={`mt-1 flex items-center gap-1 text-xs leading-tight ${trendUp === true ? "text-success" : trendUp === false ? "text-danger" : "text-default-400"}`}>
-                            {trendUp === true && <ArrowUpRight className="h-3 w-3 flex-shrink-0" />}
-                            {trendUp === false && <ArrowDownRight className="h-3 w-3 flex-shrink-0" />}
+                            {trendUp === true && <ArrowUpRightIcon className="h-3 w-3 flex-shrink-0" />}
+                            {trendUp === false && <ArrowDownRightIcon className="h-3 w-3 flex-shrink-0" />}
                             <span className="min-w-0">{trend}</span>
                         </span>
                     )}

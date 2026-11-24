@@ -18,7 +18,7 @@ import { addYearsToDate } from "@/lib/ads";
 import { useVenues } from "@/hooks/use-venues";
 import { formatTimeAr, formatDateAr, formatDateShortAr } from "@/lib/datetime";
 import { useState, useEffect, useCallback } from "react";
-import { Calendar, Clock, MapPin, User, DollarSign, Users, TrendingUp, CheckCircle2, ChevronRight, Search } from "@/components/icons";
+import { ArrowTrendingUpIcon, CalendarIcon, CheckCircleIcon, ChevronRightIcon, ClockIcon, CurrencyDollarIcon, MagnifyingGlassIcon, MapPinIcon, UserIcon, UsersIcon } from "@heroicons/react/24/outline";
 import type { Booking, Facility, PaginatedResult, User as UserType, Venue } from "@/types";
 
 /** Hora 12 h sin cero adelante: "9:00 am" */
@@ -123,7 +123,7 @@ function BookingRow({ booking }: { booking: Booking }) {
                 {/* Fila principal: ícono + cancha + (precio/estado a la derecha en desktop) */}
                 <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                        <Calendar className="h-5 w-5 text-primary" />
+                        <CalendarIcon className="h-5 w-5 text-primary" />
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -133,16 +133,16 @@ function BookingRow({ booking }: { booking: Booking }) {
                         <div className="mt-1 flex flex-col gap-1 text-xs text-default-500 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
                             {venueName && (
                                 <span className="flex items-center gap-1.5 min-w-0">
-                                    <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                                    <MapPinIcon className="h-3.5 w-3.5 flex-shrink-0" />
                                     <span className="truncate">{venueName}</span>
                                 </span>
                             )}
                             <span className="flex items-center gap-1.5 min-w-0">
-                                <User className="h-3.5 w-3.5 flex-shrink-0" />
+                                <UserIcon className="h-3.5 w-3.5 flex-shrink-0" />
                                 <span className="truncate">{booking.user ? `${booking.user.firstName} ${booking.user.lastName}` : "Cliente"}</span>
                             </span>
                             <span className="flex items-center gap-1.5">
-                                <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                                <ClockIcon className="h-3.5 w-3.5 flex-shrink-0" />
                                 <span className="whitespace-nowrap">
                                     {formatTime12h(booking.startDatetime)} — {formatTime12h(booking.endDatetime)}
                                 </span>
@@ -218,7 +218,7 @@ function TodayBookings() {
                 ) : (
                     <Card className="border border-divider">
                         <CardBody className="flex flex-col items-center py-8">
-                            <Calendar className="h-10 w-10 text-default-200" />
+                            <CalendarIcon className="h-10 w-10 text-default-200" />
                             <p className="mt-3 text-sm text-default-500">Sin reservas pendientes de uso hoy</p>
                             </CardBody>
                         </Card>
@@ -243,7 +243,7 @@ function TodayBookings() {
                 ) : (
                     <Card className="border border-divider">
                         <CardBody className="flex flex-col items-center py-8">
-                            <Calendar className="h-10 w-10 text-default-200" />
+                            <CalendarIcon className="h-10 w-10 text-default-200" />
                                 <p className="mt-3 text-sm text-default-500">Todavía no hay reservas completadas hoy</p>
                         </CardBody>
                     </Card>
@@ -412,13 +412,13 @@ function TodaySummary() {
 
     const stats = [
         {
-            icon: <Clock className="h-5 w-5 text-primary" />,
+            icon: <ClockIcon className="h-5 w-5 text-primary" />,
             label: "Reservas realizadas",
             value: paidPendingCount,
             bg: "bg-primary/10",
         },
         {
-            icon: <CheckCircle2 className="h-5 w-5 text-success" />,
+            icon: <CheckCircleIcon className="h-5 w-5 text-success" />,
             label: "Reservas completadas",
             value: usedCount,
             bg: "bg-success/10",
@@ -426,19 +426,19 @@ function TodaySummary() {
         // Admin de sede ve "clientes que reservaron"; admin general ve "usuarios nuevos" del sistema
         isVenueAdmin
             ? {
-                icon: <Users className="h-5 w-5 text-secondary" />,
+                icon: <UsersIcon className="h-5 w-5 text-secondary" />,
                 label: "Clientes hoy",
                 value: clientsToday,
                 bg: "bg-secondary/10",
             }
             : {
-                icon: <Users className="h-5 w-5 text-secondary" />,
+                icon: <UsersIcon className="h-5 w-5 text-secondary" />,
                 label: "Usuarios nuevos",
                 value: newUsersToday.length,
                 bg: "bg-secondary/10",
             },
         {
-            icon: <DollarSign className="h-5 w-5 text-success" />,
+            icon: <CurrencyDollarIcon className="h-5 w-5 text-success" />,
             label: "Ingresos hoy",
             value: `$${formatPrice(todayRevenue)}`,
             bg: "bg-success/10",
@@ -446,14 +446,14 @@ function TodaySummary() {
         // La comisión de la empresa solo es visible para el admin general
         ...(!isVenueAdmin
             ? [{
-                icon: <TrendingUp className="h-5 w-5 text-emerald-500" />,
+                icon: <ArrowTrendingUpIcon className="h-5 w-5 text-emerald-500" />,
                 label: "Comisión empresa hoy",
                 value: `$${formatPrice(todayCommission)}`,
                 bg: "bg-emerald-500/10",
             }]
             : []),
         {
-            icon: <MapPin className="h-5 w-5 text-warning" />,
+            icon: <MapPinIcon className="h-5 w-5 text-warning" />,
             label: "Turnos ocupados",
             value: `${occupiedTurns}/${totalTurnsToday}`,
             bg: "bg-warning/10",
@@ -613,7 +613,7 @@ function RevenueByVenue() {
             ) : rows.length === 0 ? (
                 <Card className="border border-divider">
                     <CardBody className="flex flex-col items-center py-8">
-                        <DollarSign className="h-10 w-10 text-default-200" />
+                        <CurrencyDollarIcon className="h-10 w-10 text-default-200" />
                             <p className="mt-3 text-sm text-default-500">
                                 {isToday ? "Todavía no hay turnos completados hoy" : "No hubo turnos completados ese día"}
                             </p>
@@ -643,7 +643,7 @@ function RevenueByVenue() {
                                 <CardBody className="flex-row items-center justify-between gap-3 p-4">
                                     <div className="flex items-center gap-3 flex-1 min-w-0">
                                         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
-                                            <MapPin className="h-5 w-5 text-emerald-500" />
+                                            <MapPinIcon className="h-5 w-5 text-emerald-500" />
                                         </div>
                                         <div className="min-w-0">
                                             <p className="font-semibold text-sm truncate">{r.venueName}</p>
@@ -730,7 +730,7 @@ function OverviewModal({
                         placeholder="Buscar por cliente o cancha…"
                         value={searchInput}
                         onValueChange={setSearchInput}
-                        startContent={<Search className="h-4 w-4 text-default-400" />}
+                        startContent={<MagnifyingGlassIcon className="h-4 w-4 text-default-400" />}
                         isClearable
                         onClear={() => setSearchInput("")}
                         className="mb-2"
@@ -740,7 +740,7 @@ function OverviewModal({
                         <div className="flex justify-center py-10"><Spinner /></div>
                     ) : rows.length === 0 ? (
                         <div className="flex flex-col items-center py-10">
-                            <Calendar className="h-10 w-10 text-default-200" />
+                            <CalendarIcon className="h-10 w-10 text-default-200" />
                                 <p className="mt-3 text-sm text-default-500">
                                     {search ? "Sin resultados para la búsqueda" : "No hay reservas"}
                                 </p>
@@ -823,7 +823,7 @@ function OverviewCard({
                         <p className="mt-1 text-sm font-semibold">{title}</p>
                         <p className="text-xs text-default-500">{subtitle}</p>
                     </div>
-                    <ChevronRight className="h-5 w-5 flex-shrink-0 text-default-400" />
+                    <ChevronRightIcon className="h-5 w-5 flex-shrink-0 text-default-400" />
                 </CardBody>
             </Card>
 
@@ -846,14 +846,14 @@ function GeneralOverview() {
                     kind="realizadas"
                     title="Reservas realizadas"
                     subtitle="Pagadas cuyo turno todavía no pasó"
-                    icon={<Clock className="h-6 w-6 text-primary" />}
+                    icon={<ClockIcon className="h-6 w-6 text-primary" />}
                     iconBg="bg-primary/10"
                 />
                 <OverviewCard
                     kind="completadas"
                     title="Reservas completadas"
                     subtitle="Turnos ya finalizados"
-                    icon={<CheckCircle2 className="h-6 w-6 text-success" />}
+                    icon={<CheckCircleIcon className="h-6 w-6 text-success" />}
                     iconBg="bg-success/10"
                 />
             </div>

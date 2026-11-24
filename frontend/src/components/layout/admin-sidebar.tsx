@@ -4,30 +4,30 @@ import { Link, Button } from "@heroui/react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthStore } from "@/stores/auth-store";
-import { LayoutDashboard, Calendar, MapPin, Users, Trophy, ArrowLeft, LogOut, Clock, DollarSign, Ban, X, Bell, HelpCircle, BarChart3, Megaphone, Wallet, Coins, Landmark } from "@/components/icons";
+import { ArrowLeftIcon, ArrowRightStartOnRectangleIcon, BellIcon, BuildingLibraryIcon, CalendarIcon, ChartBarIcon, CircleStackIcon, ClockIcon, CurrencyDollarIcon, MapPinIcon, MegaphoneIcon, NoSymbolIcon, QuestionMarkCircleIcon, Squares2X2Icon, TrophyIcon, UsersIcon, WalletIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useEffect } from "react";
 import { useSidebarStore } from "@/stores/sidebar-store";
 
 type Role = "ADMIN" | "VENUE_ADMIN";
 
-const menuItems: { href: string; label: string; icon: typeof LayoutDashboard; only?: Role }[] = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+const menuItems: { href: string; label: string; icon: typeof Squares2X2Icon; only?: Role }[] = [
+    { href: "/dashboard", label: "Dashboard", icon: Squares2X2Icon },
     // Billetera de créditos (spec billetera-créditos): justo después del Dashboard
-    { href: "/dashboard/wallet", label: "Billetera", icon: Wallet, only: "VENUE_ADMIN" },
-    { href: "/dashboard/points", label: "Créditos", icon: Coins, only: "ADMIN" },
-    { href: "/dashboard/balances", label: "Balances", icon: Landmark, only: "ADMIN" },
-    { href: "/dashboard/bookings", label: "Reservas", icon: Calendar },
-    { href: "/dashboard/statistics", label: "Estadísticas", icon: BarChart3 },
-    { href: "/dashboard/facilities", label: "Instalaciones", icon: MapPin },
-    { href: "/dashboard/venues", label: "Complejos", icon: MapPin },
-    { href: "/dashboard/schedules", label: "Horarios", icon: Clock },
-    { href: "/dashboard/pricing", label: "Precios", icon: DollarSign },
-    { href: "/dashboard/blocked-slots", label: "Bloqueos", icon: Ban },
-    { href: "/dashboard/users", label: "Usuarios", icon: Users },
-    { href: "/dashboard/sports", label: "Deportes", icon: Trophy },
-    { href: "/dashboard/advertising", label: "Publicidad", icon: Megaphone },
-    { href: "/dashboard/notifications", label: "Notificaciones", icon: Bell },
-    { href: "/dashboard/support", label: "Ayuda y soporte", icon: HelpCircle },
+    { href: "/dashboard/wallet", label: "Billetera", icon: WalletIcon, only: "VENUE_ADMIN" },
+    { href: "/dashboard/points", label: "Créditos", icon: CircleStackIcon, only: "ADMIN" },
+    { href: "/dashboard/balances", label: "Balances", icon: BuildingLibraryIcon, only: "ADMIN" },
+    { href: "/dashboard/bookings", label: "Reservas", icon: CalendarIcon },
+    { href: "/dashboard/statistics", label: "Estadísticas", icon: ChartBarIcon },
+    { href: "/dashboard/facilities", label: "Instalaciones", icon: MapPinIcon },
+    { href: "/dashboard/venues", label: "Complejos", icon: MapPinIcon },
+    { href: "/dashboard/schedules", label: "Horarios", icon: ClockIcon },
+    { href: "/dashboard/pricing", label: "Precios", icon: CurrencyDollarIcon },
+    { href: "/dashboard/blocked-slots", label: "Bloqueos", icon: NoSymbolIcon },
+    { href: "/dashboard/users", label: "Usuarios", icon: UsersIcon },
+    { href: "/dashboard/sports", label: "Deportes", icon: TrophyIcon },
+    { href: "/dashboard/advertising", label: "Publicidad", icon: MegaphoneIcon },
+    { href: "/dashboard/notifications", label: "Notificaciones", icon: BellIcon },
+    { href: "/dashboard/support", label: "Ayuda y soporte", icon: QuestionMarkCircleIcon },
 ];
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
@@ -52,7 +52,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
               </div>
               {onClose && (
                     <button onClick={onClose} aria-label="Cerrar menú" className="lg:hidden p-1 rounded-lg hover:bg-white/10 dark:hover:bg-default-100">
-                        <X className="h-5 w-5 text-white dark:text-default-500" />
+                        <XMarkIcon className="h-5 w-5 text-white dark:text-default-500" />
                   </button>
               )}
           </div>
@@ -85,7 +85,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
                     href="/inicio"
                     className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white hover:bg-white/10 dark:text-default-600 dark:hover:bg-default-100"
               >
-                  <ArrowLeft className="h-4 w-4" />
+                  <ArrowLeftIcon className="h-4 w-4" />
                     Vista de cliente
               </Link>
                 {/* Sobre el azul, el rojo no se lee: en claro va en blanco como el resto */}
@@ -93,7 +93,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
                   onClick={logout}
                     className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white hover:bg-white/10 dark:text-danger dark:hover:bg-danger/10 transition-colors"
               >
-                  <LogOut className="h-4 w-4" />
+                  <ArrowRightStartOnRectangleIcon className="h-4 w-4" />
                   Cerrar Sesión
               </button>
           </div>

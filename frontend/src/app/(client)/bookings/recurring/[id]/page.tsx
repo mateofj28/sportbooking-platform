@@ -11,7 +11,7 @@ import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { getBookingStatusChip } from "@/lib/booking-status";
 import { formatTimeAr, formatDateAr, formatClock } from "@/lib/datetime";
 import { Navbar } from "@/components/layout/navbar";
-import { ArrowLeft, MapPin, Clock, Repeat, Calendar, DollarSign } from "@/components/icons";
+import { ArrowLeftIcon, ArrowPathRoundedSquareIcon, CalendarIcon, ClockIcon, CurrencyDollarIcon, MapPinIcon } from "@heroicons/react/24/outline";
 
 const DAYS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
 
@@ -71,7 +71,7 @@ export default function RecurringDetailPage({ params }: { params: Promise<{ id: 
         <div className="flex min-h-screen flex-col bg-default-50">
             <Navbar />
             <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6">
-                <Button variant="light" size="sm" startContent={<ArrowLeft className="h-4 w-4" />} onPress={() => router.back()} className="mb-4">
+                <Button variant="light" size="sm" startContent={<ArrowLeftIcon className="h-4 w-4" />} onPress={() => router.back()} className="mb-4">
                     Volver
                 </Button>
 
@@ -82,7 +82,7 @@ export default function RecurringDetailPage({ params }: { params: Promise<{ id: 
                             <div>
                                 <h1 className="text-xl font-bold">{recurring.facility.name}</h1>
                                 <p className="mt-1 flex items-center gap-1 text-sm text-default-500">
-                                    <MapPin className="h-3.5 w-3.5" />
+                                    <MapPinIcon className="h-3.5 w-3.5" />
                                     {recurring.facility.venue?.name}
                                 </p>
                             </div>
@@ -91,8 +91,8 @@ export default function RecurringDetailPage({ params }: { params: Promise<{ id: 
                             </Chip>
                         </div>
                         <div className="flex flex-wrap gap-3 text-sm text-default-500">
-                            <span className="flex items-center gap-1"><Repeat className="h-3.5 w-3.5" /> Todos los {DAYS_ES[recurring.dayOfWeek]}</span>
-                            <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {formatTime12h(recurring.startTime)} — {formatTime12h(recurring.endTime)}</span>
+                            <span className="flex items-center gap-1"><ArrowPathRoundedSquareIcon className="h-3.5 w-3.5" /> Todos los {DAYS_ES[recurring.dayOfWeek]}</span>
+                            <span className="flex items-center gap-1"><ClockIcon className="h-3.5 w-3.5" /> {formatTime12h(recurring.startTime)} — {formatTime12h(recurring.endTime)}</span>
                         </div>
                     </CardHeader>
                 </Card>
@@ -119,7 +119,7 @@ export default function RecurringDetailPage({ params }: { params: Promise<{ id: 
                                 <CardBody className="flex-row items-center justify-between gap-3 p-4">
                                     <div className="flex items-center gap-3">
                                         <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-default-100 text-default-500">
-                                            <Calendar className="h-4 w-4" />
+                                            <CalendarIcon className="h-4 w-4" />
                                         </span>
                                         <div>
                                             <p className="text-sm font-medium capitalize">{formatDateLong(b.startDatetime)}</p>

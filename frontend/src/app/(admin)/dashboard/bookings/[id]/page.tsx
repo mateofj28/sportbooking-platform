@@ -5,7 +5,7 @@ import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Card, CardBody, CardHeader, Divider, Spinner } from "@heroui/react";
-import { ArrowLeft, MapPin, Calendar, Clock, User, Phone, Mail, IdCard, Repeat, XCircle, BadgeDollarSign, History, StickyNote, AlertTriangle } from "@/components/icons";
+import { ArrowLeftIcon, ArrowPathRoundedSquareIcon, CalendarIcon, ClipboardDocumentListIcon, ClipboardIcon, ClockIcon, CurrencyDollarIcon, EnvelopeIcon, ExclamationTriangleIcon, IdentificationIcon, MapPinIcon, PhoneIcon, UserIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { supabase } from "@/lib/supabase";
 import { camelize } from "@/lib/supabase-helpers";
 import { formatDateAr, formatTimeAr, formatDateTimeAr } from "@/lib/datetime";
@@ -98,7 +98,7 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
     useAdminBookingsRealtime(!!booking, id);
 
     const back = (
-        <Button variant="light" size="sm" startContent={<ArrowLeft className="h-4 w-4" />} onPress={() => router.push("/dashboard/bookings")}>
+        <Button variant="light" size="sm" startContent={<ArrowLeftIcon className="h-4 w-4" />} onPress={() => router.push("/dashboard/bookings")}>
             Volver a reservas
         </Button>
     );
@@ -138,7 +138,7 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
                 <div className="min-w-0">
                     <h1 className="text-2xl font-bold">{facilityName}</h1>
                     <p className="mt-1 flex items-center gap-1 text-sm text-default-500">
-                        <MapPin className="h-3.5 w-3.5" />
+                        <MapPinIcon className="h-3.5 w-3.5" />
                         {booking.facility?.venue?.name ?? ""}
                         {booking.facility?.venue?.city ? ` — ${booking.facility.venue.city}` : ""}
                         {booking.facility?.sport?.name ? ` · ${booking.facility.sport.name}` : ""}
@@ -146,7 +146,7 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
                     <div className="mt-2 flex flex-wrap gap-2">
                         <StatusChip color={state.color}>{state.label}</StatusChip>
                         {booking.recurringBookingId && (
-                            <StatusChip color="secondary" startContent={<Repeat className="h-3 w-3" />}>Turno fijo</StatusChip>
+                            <StatusChip color="secondary" startContent={<ArrowPathRoundedSquareIcon className="h-3 w-3" />}>Turno fijo</StatusChip>
                         )}
                         {isOwn && <StatusChip>Tu reserva</StatusChip>}
                     </div>
@@ -161,7 +161,7 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
                             href={`/bookings/${booking.id}`}
                             color="success"
                             variant="flat"
-                            startContent={<BadgeDollarSign className="h-4 w-4" />}
+                            startContent={<CurrencyDollarIcon className="h-4 w-4" />}
                         >
                             Pagar desde Mis Reservas
                         </Button>
@@ -170,7 +170,7 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
                         <Button
                             color="danger"
                             variant="flat"
-                            startContent={<XCircle className="h-4 w-4" />}
+                            startContent={<XCircleIcon className="h-4 w-4" />}
                             onPress={() => setToCancel({ id: booking.id, startDatetime: booking.startDatetime, clientName: client, facilityName, paidPoints: booking.paymentStatus === "PAID" ? Math.round(Number(booking.totalPrice)) : 0 })}
                         >
                             Cancelar
@@ -181,7 +181,7 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
 
             {!cancel.allowed && booking.status === "CONFIRMED" && isFuture && (
                 <p className="flex items-center gap-2 rounded-lg border border-divider px-3 py-2 text-sm text-default-500">
-                    <AlertTriangle className="h-4 w-4 flex-shrink-0 text-warning" />
+                    <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0 text-warning" />
                     {cancel.reason}
                 </p>
             )}
@@ -190,17 +190,17 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
                 <div className="space-y-6">
                     {/* Turno */}
                     <Card shadow="none" className="border border-divider">
-                        <CardHeader className="gap-2"><Calendar className="h-4 w-4 text-primary" /><h2 className="font-semibold">Turno</h2></CardHeader>
+                        <CardHeader className="gap-2"><CalendarIcon className="h-4 w-4 text-primary" /><h2 className="font-semibold">Turno</h2></CardHeader>
                         <Divider />
                         <CardBody className="gap-3 text-sm">
-                            <Row icon={<Calendar className="h-4 w-4" />} label="Fecha">
+                            <Row icon={<CalendarIcon className="h-4 w-4" />} label="Fecha">
                                 <span className="capitalize">{formatDateAr(booking.startDatetime)}</span>
                             </Row>
-                            <Row icon={<Clock className="h-4 w-4" />} label="Horario">
+                            <Row icon={<ClockIcon className="h-4 w-4" />} label="Horario">
                                 {formatTimeAr(booking.startDatetime)} — {formatTimeAr(booking.endDatetime)} · {mins} min
                             </Row>
                             {booking.recurring && (
-                                <Row icon={<Repeat className="h-4 w-4" />} label="Turno fijo">
+                                <Row icon={<ArrowPathRoundedSquareIcon className="h-4 w-4" />} label="Turno fijo">
                                     Todos los {DAYS[booking.recurring.dayOfWeek] ?? ""} de {booking.recurring.startTime} a {booking.recurring.endTime}
                                     {" "}(hasta el {formatDateAr(booking.recurring.endDate, { day: "2-digit", month: "short", year: "numeric" })})
                                     {!booking.recurring.isActive && <span className="text-danger"> · serie cancelada</span>}
@@ -211,19 +211,19 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
 
                     {/* Cliente */}
                     <Card shadow="none" className="border border-divider">
-                        <CardHeader className="gap-2"><User className="h-4 w-4 text-primary" /><h2 className="font-semibold">Cliente</h2></CardHeader>
+                        <CardHeader className="gap-2"><UserIcon className="h-4 w-4 text-primary" /><h2 className="font-semibold">Cliente</h2></CardHeader>
                         <Divider />
                         <CardBody className="gap-3 text-sm">
-                            <Row icon={<User className="h-4 w-4" />} label="Nombre">{client}</Row>
+                            <Row icon={<UserIcon className="h-4 w-4" />} label="Nombre">{client}</Row>
                             {/* DNI y teléfono: solo el admin general. Email: ambos admins (032). */}
-                            {isAdmin && booking.user?.dni && <Row icon={<IdCard className="h-4 w-4" />} label="DNI">{booking.user.dni}</Row>}
+                            {isAdmin && booking.user?.dni && <Row icon={<IdentificationIcon className="h-4 w-4" />} label="DNI">{booking.user.dni}</Row>}
                             {isAdmin && booking.user?.phone && (
-                                <Row icon={<Phone className="h-4 w-4" />} label="Teléfono">
+                                <Row icon={<PhoneIcon className="h-4 w-4" />} label="Teléfono">
                                     <a className="text-primary hover:underline" href={`tel:${booking.user.phone.replace(/[^\d+]/g, "")}`}>{booking.user.phone}</a>
                                 </Row>
                             )}
                             {booking.user?.email && (
-                                <Row icon={<Mail className="h-4 w-4" />} label="Email">
+                                <Row icon={<EnvelopeIcon className="h-4 w-4" />} label="Email">
                                     <a className="text-primary hover:underline break-all" href={`mailto:${booking.user.email}`}>{booking.user.email}</a>
                                 </Row>
                             )}
@@ -232,7 +232,7 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
 
                     {booking.notes && (
                         <Card shadow="none" className="border border-divider">
-                            <CardHeader className="gap-2"><StickyNote className="h-4 w-4 text-primary" /><h2 className="font-semibold">Notas</h2></CardHeader>
+                            <CardHeader className="gap-2"><ClipboardIcon className="h-4 w-4 text-primary" /><h2 className="font-semibold">Notas</h2></CardHeader>
                             <Divider />
                             <CardBody className="text-sm text-default-700 whitespace-pre-wrap">{booking.notes}</CardBody>
                         </Card>
@@ -242,7 +242,7 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
                 <div className="space-y-6">
                     {/* Pago: el complejo ve su ganancia (base); la comisión solo el admin general */}
                     <Card shadow="none" className="border border-divider">
-                        <CardHeader className="gap-2"><BadgeDollarSign className="h-4 w-4 text-primary" /><h2 className="font-semibold">Pago</h2></CardHeader>
+                        <CardHeader className="gap-2"><CurrencyDollarIcon className="h-4 w-4 text-primary" /><h2 className="font-semibold">Pago</h2></CardHeader>
                         <Divider />
                         <CardBody className="gap-3 text-sm">
                             <div className="flex items-center justify-between">
@@ -272,7 +272,7 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
 
                     {/* Historial */}
                     <Card shadow="none" className="border border-divider">
-                        <CardHeader className="gap-2"><History className="h-4 w-4 text-primary" /><h2 className="font-semibold">Historial</h2></CardHeader>
+                        <CardHeader className="gap-2"><ClipboardDocumentListIcon className="h-4 w-4 text-primary" /><h2 className="font-semibold">Historial</h2></CardHeader>
                         <Divider />
                         <CardBody className="gap-3 text-sm">
                             <div>

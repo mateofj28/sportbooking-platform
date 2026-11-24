@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Spinner } from "@heroui/react";
-import { ImagePlus, X } from "@/components/icons";
+import { PhotoIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
@@ -111,7 +111,7 @@ export function ImageUpload({
                             className="rounded-lg bg-white/90 p-1.5 text-danger hover:bg-white"
                             aria-label="Quitar imagen"
                         >
-                            <X className="h-4 w-4" />
+                            <XMarkIcon className="h-4 w-4" />
                         </button>
                     </div>
                 </div>
@@ -129,7 +129,7 @@ export function ImageUpload({
                         </>
                     ) : (
                         <>
-                            <ImagePlus className="h-6 w-6" />
+                            <PhotoIcon className="h-6 w-6" />
                             <span className="text-xs">Subir imagen (JPG, PNG, WEBP · máx 5 MB)</span>
                         </>
                     )}

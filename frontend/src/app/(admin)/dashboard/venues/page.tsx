@@ -12,7 +12,7 @@ import { camelize } from "@/lib/supabase-helpers";
 import { useAllVenues } from "@/hooks/use-venues";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useToastStore } from "@/stores/toast-store";
-import { Plus, Trash2, Pencil, Search } from "@/components/icons";
+import { MagnifyingGlassIcon, PencilIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useState, useMemo } from "react";
 import { useFacilities } from "@/hooks/use-facilities";
 import { MunicipalityFields } from "@/components/shared/municipality-fields";
@@ -145,7 +145,7 @@ export default function AdminVenuesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold">Complejos</h1><p className="text-sm text-default-500 mt-1">Gestiona los complejos deportivos</p></div>
-        <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", provinceCode: "", localityCode: "", description: "", amenities: [], imageUrl: "" }); onOpen(); }}>Nuevo Complejo</Button>
+        <Button color="primary" startContent={<PlusIcon className="h-4 w-4" />} onPress={() => { setForm({ name: "", slug: "", address: "", provinceCode: "", localityCode: "", description: "", amenities: [], imageUrl: "" }); onOpen(); }}>Nuevo Complejo</Button>
       </div>
 
       {/* Filter */}
@@ -156,7 +156,7 @@ export default function AdminVenuesPage() {
           size="sm"
           value={search}
           onValueChange={setSearch}
-          startContent={<Search className="h-4 w-4 text-default-400" />}
+          startContent={<MagnifyingGlassIcon className="h-4 w-4 text-default-400" />}
           isClearable
           onClear={() => setSearch("")}
           className="max-w-md"
@@ -186,8 +186,8 @@ export default function AdminVenuesPage() {
               <TableCell><Chip color={v.isActive ? "success" : "danger"} size="sm" variant="flat">{v.isActive ? "Activa" : "Inactiva"}</Chip></TableCell>
               <TableCell>
                 <div className="flex gap-1">
-                  <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(v)}><Pencil className="h-4 w-4" /></Button>
-                  <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(v.id)}><Trash2 className="h-4 w-4" /></Button>
+                  <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleEdit(v)}><PencilIcon className="h-4 w-4" /></Button>
+                  <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => setDeleteId(v.id)}><TrashIcon className="h-4 w-4" /></Button>
                 </div>
               </TableCell>
             </TableRow>

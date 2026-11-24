@@ -11,7 +11,7 @@ import { useCreateRecurringBooking } from "@/hooks/use-bookings";
 import { AvailabilityPicker, type AvailabilitySelection, formatPrice } from "@/components/shared/availability-picker";
 import { useToastStore } from "@/stores/toast-store";
 import { useAuthStore } from "@/stores/auth-store";
-import { ArrowLeft, Search, User, Check, CalendarDays } from "@/components/icons";
+import { ArrowLeftIcon, CalendarDaysIcon, CheckIcon, MagnifyingGlassIcon, UserIcon } from "@heroicons/react/24/outline";
 import { useState as useReactState } from "react";
 
 interface FoundClient {
@@ -175,7 +175,7 @@ export default function NewManualBookingPage() {
             {/* Header */}
             <div className="flex items-center gap-3">
                 <Button isIconOnly variant="light" onPress={() => router.push("/dashboard/bookings")} aria-label="Volver">
-                    <ArrowLeft className="h-5 w-5" />
+                    <ArrowLeftIcon className="h-5 w-5" />
                 </Button>
                 <div>
                     <h1 className="text-2xl font-bold">Nueva reserva manual</h1>
@@ -293,13 +293,13 @@ export default function NewManualBookingPage() {
                                             onValueChange={setClientSearchValue}
                                             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleClientLookup(); } }}
                                         />
-                                        <Button size="sm" color="primary" variant="flat" isLoading={clientLookupLoading} onPress={handleClientLookup} startContent={!clientLookupLoading && <Search className="h-4 w-4" />}>
+                                        <Button size="sm" color="primary" variant="flat" isLoading={clientLookupLoading} onPress={handleClientLookup} startContent={!clientLookupLoading && <MagnifyingGlassIcon className="h-4 w-4" />}>
                                             Buscar
                                         </Button>
                                     </div>
                                     {foundClient && (
                                         <div className="mt-2 flex items-center gap-2 rounded-md bg-success/10 px-3 py-2 text-sm">
-                                            <User className="h-4 w-4 text-success" />
+                                            <UserIcon className="h-4 w-4 text-success" />
                                             <span className="font-medium">{foundClient.firstName} {foundClient.lastName}</span>
                                                     {foundClient.email && <span className="text-default-500">· {foundClient.email}</span>}
                                         </div>
@@ -362,11 +362,11 @@ export default function NewManualBookingPage() {
                                 <Divider />
                                         {bookingError && <p className="text-xs text-danger">{bookingError}</p>}
                                 {mode === "single" ? (
-                                            <Button color="primary" size="lg" startContent={<Check className="h-4 w-4" />} isLoading={bookingPending} isDisabled={!userId || !selection} onPress={handleSingleSubmit}>
+                                            <Button color="primary" size="lg" startContent={<CheckIcon className="h-4 w-4" />} isLoading={bookingPending} isDisabled={!userId || !selection} onPress={handleSingleSubmit}>
                                         Crear reserva {selection ? `· $${formatPrice(selection.price)} ARS` : ""}
                                     </Button>
                                 ) : (
-                                    <Button color="primary" size="lg" startContent={<CalendarDays className="h-4 w-4" />} isLoading={createRecurring.isPending} isDisabled={!userId || !selection} onPress={handleRecurringSubmit}>
+                                    <Button color="primary" size="lg" startContent={<CalendarDaysIcon className="h-4 w-4" />} isLoading={createRecurring.isPending} isDisabled={!userId || !selection} onPress={handleRecurringSubmit}>
                                                     Crear turno fijo (8 fechas)
                                     </Button>
                                 )}
@@ -383,7 +383,7 @@ export default function NewManualBookingPage() {
                         <CardBody>
                             {!facilityId ? (
                                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                                    <CalendarDays className="h-10 w-10 text-default-200" />
+                                    <CalendarDaysIcon className="h-10 w-10 text-default-200" />
                                     <p className="mt-3 text-sm text-default-500">Selecciona una instalación para ver los horarios disponibles</p>
                                 </div>
                             ) : !selectedFacility ? (

@@ -1,9 +1,10 @@
+import { serverNow } from "@/lib/clock";
 import type { Booking } from "@/types";
 
 export type ChipColor = "success" | "warning" | "danger" | "default";
 
 /** ¿El turno ya empezó? Instantes absolutos: no depende de la zona horaria. */
-export function hasStarted(booking: Pick<Booking, "startDatetime">, now: number = Date.now()): boolean {
+export function hasStarted(booking: Pick<Booking, "startDatetime">, now: number = serverNow()): boolean {
     return new Date(booking.startDatetime).getTime() <= now;
 }
 
@@ -14,7 +15,7 @@ export function hasStarted(booking: Pick<Booking, "startDatetime">, now: number 
  */
 export function isPayable(
     booking: Pick<Booking, "status" | "paymentStatus" | "startDatetime">,
-    now: number = Date.now(),
+    now: number = serverNow(),
 ): boolean {
     return booking.status === "CONFIRMED" && booking.paymentStatus !== "PAID" && !hasStarted(booking, now);
 }
@@ -28,7 +29,7 @@ export function isPayable(
  */
 export function getBookingStatusChip(
     booking: Pick<Booking, "status" | "paymentStatus" | "recurringBookingId" | "startDatetime">,
-    now: number = Date.now(),
+    now: number = serverNow(),
 ): { label: string; color: ChipColor } {
     if (booking.status === "CANCELLED") {
         return { label: "Cancelada", color: "danger" };
@@ -66,7 +67,7 @@ export const ADMIN_BOOKING_STATES: Record<AdminBookingState, { label: string; pl
 
 export function getAdminBookingState(
     booking: Pick<Booking, "status" | "paymentStatus" | "endDatetime">,
-    now: number = Date.now(),
+    now: number = serverNow(),
 ): AdminBookingState {
     if (booking.status === "CANCELLED") return "CANCELADA";
     if (booking.status === "COMPLETED") return "COMPLETADA";

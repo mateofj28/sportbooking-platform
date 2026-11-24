@@ -1,5 +1,6 @@
 "use client";
 
+import { serverNow, serverDate } from "@/lib/clock";
 import { use, useState } from "react";
 import { Button, Card, CardBody, Chip, Divider, Spinner } from "@heroui/react";
 import { useRouter } from "next/navigation";
@@ -49,11 +50,11 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
 
     const chip = getBookingStatusChip(booking);
     const isRecurring = !!booking.recurringBookingId;
-    const isPast = new Date(booking.startDatetime) < new Date();
+    const isPast = new Date(booking.startDatetime) < serverDate();
     const canPay = isPayable(booking);
     // El cliente solo puede cancelar hasta 24 horas antes del inicio del turno
     const CANCEL_LIMIT_MS = 24 * 60 * 60 * 1000;
-    const msToStart = new Date(booking.startDatetime).getTime() - Date.now();
+    const msToStart = new Date(booking.startDatetime).getTime() - serverNow();
     const withinCancelWindow = msToStart >= CANCEL_LIMIT_MS;
     const canCancel = booking.status === "CONFIRMED" && !isPast && withinCancelWindow;
     // Mostrar aviso cuando ya no se puede cancelar por el límite (reserva aún futura y activa)

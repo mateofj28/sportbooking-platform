@@ -1,4 +1,5 @@
 "use client";
+import { serverDate, arTodayLocalDate, isArToday } from "@/lib/clock";
 import { toAppError } from '@/lib/error-messages'
 
 import { useMemo, useState, useEffect } from "react";
@@ -33,7 +34,7 @@ export function toLocalDateStr(d: Date): string {
 
 /** Minutos desde medianoche en hora local de Argentina (UTC-3) */
 export function argentinaNowMinutes(): number {
-    const now = new Date();
+    const now = serverDate();
     const arMs = now.getTime() + now.getTimezoneOffset() * 60000 - 3 * 60 * 60000;
     const ar = new Date(arMs);
     return ar.getHours() * 60 + ar.getMinutes();
@@ -94,7 +95,7 @@ export function durationOptionsForSport(sportName: string | undefined, min: numb
 
 function getRemainingDaysOfMonth(): Date[] {
     const days: Date[] = [];
-    const today = new Date();
+    const today = arTodayLocalDate();
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const remaining = lastDay - today.getDate();
     const totalDays = Math.max(remaining + 1, 30);
@@ -124,7 +125,7 @@ interface AvailabilityPickerProps {
 }
 
 export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el día" }: AvailabilityPickerProps) {
-    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const [selectedDate, setSelectedDate] = useState<Date>(() => arTodayLocalDate());
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [duration, setDuration] = useState<number>(facility.minBookingDuration || 60);
 
@@ -189,7 +190,7 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
         const resp = availabilityByDate[ds];
         // Si aún carga, lo dejamos habilitado provisionalmente (se recalcula al llegar)
         if (loadingByDate[ds] || !resp) {
-            const isDayToday = day.toDateString() === new Date().toDateString();
+            const isDayToday = isArToday(day);
             return generateTimeSlots(daySchedule.openTime, daySchedule.closeTime, facility.minBookingDuration, isDayToday).length > 0;
         }
         return resp.slots.some((s) => s.available);
@@ -198,7 +199,7 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
     const dateStr = toLocalDateStr(selectedDate);
     const availability = availabilityByDate[dateStr];
 
-    const isToday = selectedDate.toDateString() === new Date().toDateString();
+    const isToday = isArToday(selectedDate);
     const timeSlots = useMemo(() => {
         if (availability?.slots) return availability.slots;
         if (!schedule) return [];
@@ -295,7 +296,7 @@ export function AvailabilityPicker({ facility, onChange, dayLabel = "1. Elige el
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                     {days.map((day) => {
                         const isSelected = day.toDateString() === selectedDate.toDateString();
-                        const isDayToday = day.toDateString() === new Date().toDateString();
+                        const isDayToday = isArToday(day);
                         // Habilitación según disponibilidad REAL (backend), misma fuente que las horas
                         const dayHasSlots = dayHasAvailableSlots(day);
                         return (

@@ -1,4 +1,5 @@
 "use client";
+import { serverNow } from "@/lib/clock";
 import { toAppError } from '@/lib/error-messages'
 
 import {
@@ -296,7 +297,7 @@ export default function AdminBookingsPage() {
                         const cancel = actor ? checkCancel(actor, booking) : { allowed: false as const, reason: "" };
                         const isOwn = booking.userId === user?.id;
                         const showBlocked = !cancel.allowed && booking.status === "CONFIRMED"
-                            && new Date(booking.startDatetime).getTime() > Date.now();
+                            && new Date(booking.startDatetime).getTime() > serverNow();
                         const name = clientName(booking);
                         const facilityName = booking.facility?.name ?? "Cancha";
                         return (

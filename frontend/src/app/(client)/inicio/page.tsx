@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/clock";
 import { useMemo, useState, useEffect } from "react";
 import { Card, CardBody, Chip, Button, Spinner, Input } from "@heroui/react";
 import { getBookingStatusChip, isPayable } from "@/lib/booking-status";
@@ -63,7 +64,7 @@ export default function ClientHomePage() {
 
     // Próximas reservas confirmadas (futuras), ordenadas por fecha
     const upcoming = useMemo(() => {
-        const now = new Date();
+        const now = serverDate();
         return bookings
             .filter((b) => b.status === "CONFIRMED" && new Date(b.startDatetime) >= now)
             .sort((a, b) => new Date(a.startDatetime).getTime() - new Date(b.startDatetime).getTime())

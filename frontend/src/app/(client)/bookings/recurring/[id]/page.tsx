@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/clock";
 import { use, useMemo } from "react";
 import { Button, Card, CardBody, CardHeader, Chip, Divider, Spinner } from "@heroui/react";
 import { useRouter } from "next/navigation";
@@ -33,7 +34,7 @@ export default function RecurringDetailPage({ params }: { params: Promise<{ id: 
     // Reservas ordenadas: próximas (futuras) primero por fecha ascendente, luego pasadas
     const sortedBookings = useMemo(() => {
         if (!recurring) return [];
-        const now = new Date();
+        const now = serverDate();
         const withMeta = recurring.bookings.map((b) => ({
             ...b,
             isPast: new Date(b.startDatetime) < now,

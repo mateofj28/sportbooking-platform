@@ -1,5 +1,6 @@
 "use client";
 
+import { serverNow } from "@/lib/clock";
 import {
     Card,
     CardBody,
@@ -70,7 +71,7 @@ export default function BookingsPage() {
     if (!isHydrated) return <div className="flex min-h-screen items-center justify-center"><Spinner size="lg" /></div>;
     if (!isAuthenticated) return null;
 
-    const nowMs = Date.now();
+    const nowMs = serverNow();
     const matchesFilter = (b: Booking, f: BookingFilter): boolean => {
         if (f === "ALL") return true;
         // Próximas: pagadas, no canceladas y cuyo turno aún no pasó (futuras pendientes de uso)

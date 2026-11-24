@@ -1,3 +1,4 @@
+import { serverDate } from "@/lib/clock";
 import { z } from "zod";
 import {
     AD_LIMITS, AD_MAX_FUTURE_YEARS, AD_MAX_LOCALITIES, arLocalToIso, maxAdDate, todayAr,
@@ -74,7 +75,7 @@ export function createAdvertisementSchema(baseline: AdDatesBaseline = { startsAt
                 ctx.addIssue({ code: "custom", path: ["localities"], message: "Elegí al menos un municipio" });
             }
 
-            const now = new Date();
+            const now = serverDate();
             const today = todayAr(now);
             const maxDate = maxAdDate(now);
             const tope = `No puede superar los ${AD_MAX_FUTURE_YEARS} años desde hoy`;

@@ -1,4 +1,5 @@
 'use client'
+import { serverDate } from "@/lib/clock";
 import { toAppError } from '@/lib/error-messages'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -80,7 +81,7 @@ function rowToRecurring(row: RecurringBookingRow): RecurringBooking {
     return {
         ...c,
         upcomingCount: (row.bookings ?? []).filter(
-            (b) => b.status === 'CONFIRMED' && new Date(b.start_datetime!) >= new Date()
+            (b) => b.status === 'CONFIRMED' && new Date(b.start_datetime!) >= serverDate()
         ).length,
         totalCount: (row.bookings ?? []).length,
         bookings: (row.bookings ?? []).map((b) => ({

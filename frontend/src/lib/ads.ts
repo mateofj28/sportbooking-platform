@@ -6,6 +6,7 @@
 // y utilidades para el panel de gestión.
 // ============================================================
 
+import { serverDate } from "@/lib/clock";
 import type { LocalityInfo } from "@/lib/geo/locality-locator";
 import { provinceName } from "@/lib/ar-provinces";
 import { formatDateTimeAr } from "@/lib/datetime";
@@ -89,7 +90,7 @@ export interface ActiveAdvertisement {
 /** Estado de vigencia (mismo criterio que la RPC: inicio <= ahora < fin). */
 export function getAdStatus(
     ad: Pick<Advertisement, "isActive" | "startsAt" | "endsAt">,
-    now: Date = new Date(),
+    now: Date = serverDate(),
 ): AdStatus {
     if (!ad.isActive) return "PAUSED";
     if (ad.endsAt && new Date(ad.endsAt) <= now) return "EXPIRED";
@@ -126,7 +127,7 @@ const AR_OFFSET_MS = 3 * 60 * 60 * 1000;
 export const AD_MAX_FUTURE_YEARS = 2;
 
 /** Hoy en Argentina como "YYYY-MM-DD" (no depende de la zona horaria del navegador). */
-export function todayAr(now: Date = new Date()): string {
+export function todayAr(now: Date = serverDate()): string {
     return new Date(now.getTime() - AR_OFFSET_MS).toISOString().slice(0, 10);
 }
 
@@ -148,7 +149,7 @@ export function addYearsToDate(date: string, years: number): string {
 }
 
 /** Día máximo programable, "YYYY-MM-DD". */
-export function maxAdDate(now: Date = new Date()): string {
+export function maxAdDate(now: Date = serverDate()): string {
     return addYearsToDate(todayAr(now), AD_MAX_FUTURE_YEARS);
 }
 

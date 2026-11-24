@@ -1,4 +1,5 @@
 'use client'
+import { arTodayLocalDate } from "@/lib/clock";
 import { toAppError } from '@/lib/error-messages'
 
 import { useQuery } from '@tanstack/react-query'
@@ -28,7 +29,7 @@ export interface AvailabilitySummaryItem {
 }
 
 /** Fecha "YYYY-MM-DD" con los componentes LOCALES (no UTC). */
-export function localDateStr(d: Date = new Date()): string {
+export function localDateStr(d: Date = arTodayLocalDate()): string {
     const y = d.getFullYear()
     const m = String(d.getMonth() + 1).padStart(2, '0')
     const day = String(d.getDate()).padStart(2, '0')

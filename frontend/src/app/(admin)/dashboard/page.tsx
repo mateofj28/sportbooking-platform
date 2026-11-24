@@ -1,4 +1,5 @@
 "use client";
+import { serverNow, serverDate } from "@/lib/clock";
 import { toAppError } from '@/lib/error-messages'
 
 import {
@@ -173,7 +174,7 @@ function BookingRow({ booking }: { booking: Booking }) {
 
 function TodayBookings() {
     const today = argentinaToday();
-    const now = Date.now();
+    const now = serverNow();
 
     // Reservas de hoy (misma consulta y caché que el resumen del día)
     const { data: allBookings = [], isLoading } = useDashboardDayBookings(today);
@@ -204,7 +205,7 @@ function TodayBookings() {
                     <div>
                         <h2 className="text-lg font-bold">Reservas realizadas pendientes de uso</h2>
                         <p className="text-xs text-default-500">
-                            {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Argentina/Buenos_Aires" })}
+                            {serverDate().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Argentina/Buenos_Aires" })}
                         </p>
                     </div>
                     {pending.length > 0 && (
@@ -305,7 +306,7 @@ function TodaySummary() {
             return (data ?? []).map((r) => camelize(r as Tables<'blocked_slots'>) as unknown as { id: string; facilityId: string; startDatetime: string; endDatetime: string });
         },
     });
-    const nowMs = Date.now();
+    const nowMs = serverNow();
     const notCancelled = allBookings.filter((b) => b.status !== "CANCELLED");
 
     // Reservas cuyo turno EMPIEZA hoy (agrupadas por fecha de inicio).
@@ -501,7 +502,7 @@ function argentinaEndDay(endIso: string): string {
 
 /** Fecha de hoy (YYYY-MM-DD) en hora local de Argentina. Misma base que argentinaDay. */
 function argentinaToday(): string {
-    return argentinaDay(new Date());
+    return argentinaDay(serverDate());
 }
 
 /**
@@ -518,7 +519,7 @@ function RevenueByVenue() {
 
     // Reservas del día elegido (si es hoy, comparte caché con las listas de arriba)
     const { data: allBookings = [], isLoading } = useDashboardDayBookings(selectedDay);
-    const now = Date.now();
+    const now = serverNow();
 
     // Ganancia = turno pagado y YA USADO (su horario de fin ya pasó), por FECHA DE FIN del turno.
     // La ganancia se reconoce el día que el turno termina: un turno 23:00->00:30 cuenta al día siguiente.

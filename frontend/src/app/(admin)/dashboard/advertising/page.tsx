@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/clock";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -106,10 +107,10 @@ export default function AdvertisingPage() {
     const { data: localityIndex } = useLocalityIndex();
 
     // "Ahora" se fija por render para que el estado de toda la tabla sea consistente
-    const now = new Date();
+    const now = serverDate();
 
     const filtered = useMemo(() => {
-        const current = new Date();
+        const current = serverDate();
         return (ads ?? []).filter((ad) => {
             if (statusFilter !== "ALL" && getAdStatus(ad, current) !== statusFilter) return false;
             if (scopeFilter !== "ALL" && ad.scope !== scopeFilter) return false;

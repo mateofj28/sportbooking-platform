@@ -1,5 +1,6 @@
 "use client";
 
+import { serverNow } from "@/lib/clock";
 import { Button, Spinner, Chip } from "@heroui/react";
 import { formatDateShortAr } from "@/lib/datetime";
 import { ArrowPathRoundedSquareIcon, ArrowTrendingUpIcon, BanknotesIcon, BellIcon, BuildingOffice2Icon, CalendarIcon, CheckBadgeIcon, CheckCircleIcon, CurrencyDollarIcon, NoSymbolIcon, UserPlusIcon, XCircleIcon } from "@heroicons/react/24/outline";
@@ -42,7 +43,7 @@ function notificationHref(n: AppNotification): string | null {
 
 /** "hace X" en español */
 function timeAgo(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
+  const diffMs = serverNow() - new Date(iso).getTime();
   const sec = Math.floor(diffMs / 1000);
   if (sec < 60) return "hace un momento";
   const min = Math.floor(sec / 60);

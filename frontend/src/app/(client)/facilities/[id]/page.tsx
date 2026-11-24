@@ -1,5 +1,6 @@
 "use client";
 
+import { serverNow, serverDate, arTodayLocalDate, isArToday } from "@/lib/clock";
 import { use, useState, useMemo, useEffect } from "react";
 import { formatClock } from "@/lib/datetime";
 import {
@@ -44,7 +45,7 @@ const MONTHS_ES = [
 
 /** Minutos desde medianoche en hora local de Argentina (UTC-3), sin depender de la zona del navegador */
 function argentinaNowMinutes(): number {
-    const now = new Date();
+    const now = serverDate();
     // Hora UTC + offset de Argentina (-3h)
     const arMs = now.getTime() + now.getTimezoneOffset() * 60000 - 3 * 60 * 60000;
     const ar = new Date(arMs);
@@ -99,7 +100,7 @@ function toLocalDateStr(d: Date): string {
 
 function getRemainingDaysOfMonth(): Date[] {
     const days: Date[] = [];
-    const today = new Date();
+    const today = arTodayLocalDate();
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const remaining = lastDay - today.getDate();
     // Show at least 30 days ahead (current month + next month if needed)
@@ -125,7 +126,7 @@ export default function FacilityDetailPage({
     const createBooking = useCreateBooking();
     const createRecurring = useCreateRecurringBooking();
 
-    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const [selectedDate, setSelectedDate] = useState<Date>(() => arTodayLocalDate());
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [duration, setDuration] = useState<number>(60);
     const [notes, setNotes] = useState("");
@@ -192,11 +193,11 @@ export default function FacilityDetailPage({
             return availability.slots.some((s) => s.available);
         }
         // Para los demás días: estimación local a partir del horario (no fetch por cada día)
-        const isDayToday = day.toDateString() === new Date().toDateString();
+        const isDayToday = isArToday(day);
         return generateTimeSlots(daySchedule.openTime, daySchedule.closeTime, facility.minBookingDuration, isDayToday).length > 0;
     };
 
-    const isToday = selectedDate.toDateString() === new Date().toDateString();
+    const isToday = isArToday(selectedDate);
     const timeSlots = useMemo(() => {
         if (availability?.slots) {
             return availability.slots;
@@ -302,7 +303,7 @@ export default function FacilityDetailPage({
     const startsWithinCancelWindow = useMemo(() => {
         if (!selectedSlot) return false;
         const startMs = new Date(buildArIso(selectedDate, selectedSlot)).getTime();
-        return startMs - Date.now() < CANCEL_WINDOW_MS;
+        return startMs - serverNow() < CANCEL_WINDOW_MS;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedSlot, selectedDate, schedule]);
 
@@ -523,7 +524,7 @@ export default function FacilityDetailPage({
                             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                                 {days.map((day) => {
                                     const isSelected = day.toDateString() === selectedDate.toDateString();
-                                    const isDayToday = day.toDateString() === new Date().toDateString();
+                                    const isDayToday = isArToday(day);
                                     // Habilitación según disponibilidad real (misma fuente que las horas)
                                     const dayHasSlots = dayHasAvailableSlots(day);
                                     return (

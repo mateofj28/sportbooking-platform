@@ -1,4 +1,5 @@
 "use client";
+import { serverNow } from "@/lib/clock";
 import { toAppError } from '@/lib/error-messages'
 
 import { use, useState } from "react";
@@ -126,7 +127,7 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
     const client = fullName(booking.user) ?? "Cliente";
     const facilityName = booking.facility?.name ?? "Cancha";
     const mins = Math.round((new Date(booking.endDatetime).getTime() - new Date(booking.startDatetime).getTime()) / 60000);
-    const isFuture = new Date(booking.startDatetime).getTime() > Date.now();
+    const isFuture = new Date(booking.startDatetime).getTime() > serverNow();
     const refresh = () => queryClient.invalidateQueries({ queryKey: ["booking", "admin", id] });
 
     return (

@@ -8,6 +8,7 @@
  *   -> cancelar solo con 24 h o más de anticipación.
  * - Lo AJENO: según el rol (ADMIN: todo; VENUE_ADMIN: su complejo; CLIENT: nada).
  */
+import { serverNow } from "@/lib/clock";
 import type { AppRole } from "@/stores/auth-store";
 
 export const CLIENT_CANCEL_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -44,7 +45,7 @@ export type CancelCheck = { allowed: true } | { allowed: false; reason: string }
 export function checkCancel(
     actor: Actor,
     booking: { userId: string; status: string; startDatetime: string; facility?: { venue?: { id: string } | null } | null },
-    now: number = Date.now(),
+    now: number = serverNow(),
 ): CancelCheck {
     if (booking.status !== "CONFIRMED") return { allowed: false, reason: "La reserva no está activa" };
     const msToStart = new Date(booking.startDatetime).getTime() - now;

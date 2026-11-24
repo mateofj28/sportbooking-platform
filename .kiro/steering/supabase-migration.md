@@ -338,6 +338,11 @@ WHERE recurring_booking_id IS NOT NULL
   AND start_datetime <= now() + INTERVAL '24 hours';
 -- Luego: enviar email + notificación in-app a los admins afectados.
 ```
+- Solo se cancela por esa regla si la reserva existía desde antes del límite (`created_at <= inicio - 24h`).
+- Además se cancela toda reserva `CONFIRMED + PENDING` cuyo turno **ya empezó** (motivo "no se pagó antes del
+  inicio del turno"): no se puede pagar (`pay_booking` lo rechaza) y si no, quedaría pendiente para siempre.
+- En el frontend, "Pagar" y la pestaña "Pendiente de pago" usan `isPayable` (`lib/booking-status.ts`): confirmada,
+  sin pagar y el turno todavía no empezó.
 
 #### Cron 2: Recordatorio de turno próximo (cada 10 minutos)
 ```sql

@@ -3,14 +3,15 @@
 // Scheduled Edge Function — corre cada hora.
 //
 // Cancela las reservas CONFIRMED + PENDING (sin pagar) cuyo inicio está dentro de
-// las próximas 24 h. Aplica a:
+// las próximas 24 h, y las que ya empezaron sin pagar. Aplica a:
 //   - fechas de turno fijo, y
 //   - reservas manuales que un admin creó a nombre de un cliente (quedan pendientes
 //     de pago y las paga el cliente). Las reservas propias se pagan al crearlas.
 //
 // Solo se cancela si el cliente tuvo tiempo de pagar: la reserva tiene que existir
 // desde ANTES del límite de 24 h (created_at <= inicio - 24 h). Una reserva creada a
-// menos de 24 h del turno no se cancela sola.
+// menos de 24 h del turno no se cancela por esa regla: tiene hasta el inicio para pagar,
+// y si el turno empieza sin pago se cancela en la corrida siguiente (REASON_STARTED).
 //
 // Idempotente y sin carreras: el UPDATE vuelve a exigir CONFIRMED + PENDING, así que
 // si el cliente pagó entre la búsqueda y la cancelación, no se toca. Solo se avisa
@@ -23,6 +24,7 @@ import { bookingToEmailData, sendBookingCancellation } from '../_shared/email.ts
 import { notifyBookingCancelled } from '../_shared/notifications.ts'
 
 const REASON = 'Cancelada automáticamente por falta de pago (menos de 24h de antelación)'
+const REASON_STARTED = 'Cancelada automáticamente: no se pagó antes del inicio del turno'
 const DAY_MS = 24 * 60 * 60 * 1000
 
 Deno.serve(async (req) => {
@@ -35,7 +37,10 @@ Deno.serve(async (req) => {
     const now = new Date()
     const in24h = new Date(now.getTime() + DAY_MS)
 
-    // 1. Candidatas: sin pagar y empiezan en menos de 24 h
+    // 1. Candidatas: sin pagar y empiezan en menos de 24 h, o ya empezaron.
+    //    Las que ya empezaron no se pueden pagar (pay_booking lo rechaza): si se quedaran
+    //    CONFIRMED + PENDING, el cliente las vería "pendientes de pago" para siempre. Pasa con
+    //    las creadas a menos de 24 h del turno, que la regla de abajo no cancela antes.
     const { data: candidates, error: fetchError } = await supabase
       .from('bookings')
       .select(`
@@ -48,46 +53,56 @@ Deno.serve(async (req) => {
       `)
       .eq('status', 'CONFIRMED')
       .eq('payment_status', 'PENDING')
-      .gt('start_datetime', now.toISOString())
       .lte('start_datetime', in24h.toISOString())
 
     if (fetchError) throw fetchError
 
-    // Solo las que existían antes del límite de 24 h (el cliente tuvo tiempo de pagar)
-    const toCancel = (candidates ?? []).filter((b) =>
-      new Date(b.created_at).getTime() <= new Date(b.start_datetime).getTime() - DAY_MS,
-    )
+    const nowMs = now.getTime()
+    const started = (b: { start_datetime: string }) => new Date(b.start_datetime).getTime() <= nowMs
+    // Ya empezó: se cancela siempre. Empieza en menos de 24 h: solo si existía antes del
+    // límite de 24 h (el cliente tuvo tiempo de pagar).
+    const reasonFor = new Map<string, string>()
+    for (const b of candidates ?? []) {
+      if (started(b)) reasonFor.set(b.id, REASON_STARTED)
+      else if (new Date(b.created_at).getTime() <= new Date(b.start_datetime).getTime() - DAY_MS) reasonFor.set(b.id, REASON)
+    }
+    const toCancel = (candidates ?? []).filter((b) => reasonFor.has(b.id))
     if (toCancel.length === 0) {
       return new Response(JSON.stringify({ cancelled: 0 }), { status: 200 })
     }
 
-    // 2. Cancelar solo si SIGUEN sin pagar (compare-and-set)
-    const { data: cancelled, error: updateError } = await supabase
-      .from('bookings')
-      .update({
-        status:              'CANCELLED',
-        cancelled_at:        now.toISOString(),
-        cancellation_reason: REASON,
-        updated_at:          now.toISOString(),
-      })
-      .in('id', toCancel.map((b) => b.id))
-      .eq('status', 'CONFIRMED')
-      .eq('payment_status', 'PENDING')
-      .select('id')
-
-    if (updateError) throw updateError
-    const cancelledIds = new Set((cancelled ?? []).map((c) => c.id))
+    // 2. Cancelar solo si SIGUEN sin pagar (compare-and-set). Un UPDATE por motivo.
+    const cancelledIds = new Set<string>()
+    for (const reason of [REASON, REASON_STARTED]) {
+      const ids = toCancel.filter((b) => reasonFor.get(b.id) === reason).map((b) => b.id)
+      if (ids.length === 0) continue
+      const { data: cancelled, error: updateError } = await supabase
+        .from('bookings')
+        .update({
+          status: 'CANCELLED',
+          cancelled_at: now.toISOString(),
+          cancellation_reason: reason,
+          updated_at: now.toISOString(),
+        })
+        .in('id', ids)
+        .eq('status', 'CONFIRMED')
+        .eq('payment_status', 'PENDING')
+        .select('id')
+      if (updateError) throw updateError
+      for (const c of cancelled ?? []) cancelledIds.add(c.id)
+    }
 
     // 3. Avisar solo de las que realmente se cancelaron (best-effort)
     await Promise.allSettled(
       toCancel
         .filter((b) => cancelledIds.has(b.id))
         .map(async (booking) => {
+          const reason = reasonFor.get(booking.id)!
           const emailData = bookingToEmailData(booking as any)
           if (emailData) {
-            await sendBookingCancellation({ ...emailData, reason: REASON })
+            await sendBookingCancellation({ ...emailData, reason })
           }
-          await notifyBookingCancelled(booking as any, REASON, true)
+          await notifyBookingCancelled(booking as any, reason, true)
         }),
     )
 

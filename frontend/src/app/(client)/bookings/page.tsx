@@ -24,7 +24,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { ArrowPathRoundedSquareIcon, CalendarIcon, ClockIcon, CurrencyDollarIcon, MapPinIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getBookingStatusChip } from "@/lib/booking-status";
+import { getBookingStatusChip, isPayable } from "@/lib/booking-status";
 import type { Booking, BookingStatus } from "@/types";
 
 const DAYS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
@@ -79,15 +79,17 @@ export default function BookingsPage() {
                 && b.paymentStatus === "PAID"
                 && new Date(b.endDatetime).getTime() > nowMs;
         }
-        if (f === "PENDING_PAYMENT") return b.status === "CONFIRMED" && b.paymentStatus === "PENDING";
+        // Pendiente de pago: solo lo que todavía se puede pagar (el turno no empezó)
+        if (f === "PENDING_PAYMENT") return isPayable(b, nowMs);
         if (f === "PAID") return b.status === "CONFIRMED" && b.paymentStatus === "PAID";
         return b.status === f;
     };
     const filteredBookings = (bookings?.filter((b) => matchesFilter(b, activeFilter)) || []).sort((a, b) => {
-        // En "Próximas" mostramos la más cercana primero; en el resto, la más reciente primero
+        // En "Próximas" y "Pendiente de pago", la más cercana primero (la próxima a usar o a pagar);
+        // en el resto, la más reciente primero
         const ta = new Date(a.startDatetime).getTime();
         const tb = new Date(b.startDatetime).getTime();
-        return activeFilter === "UPCOMING" ? ta - tb : tb - ta;
+        return activeFilter === "UPCOMING" || activeFilter === "PENDING_PAYMENT" ? ta - tb : tb - ta;
     });
 
     const handleCancelClick = (booking: Booking) => {
@@ -247,7 +249,8 @@ export default function BookingsPage() {
                       </div>
                   ) : filteredBookings.length > 0 ? (
                       filteredBookings.map((booking) => {
-                          const chip = getBookingStatusChip(booking);
+                          const chip = getBookingStatusChip(booking, nowMs);
+                          const payable = isPayable(booking, nowMs);
                           return (
                               <Card key={booking.id} isPressable onPress={() => router.push(`/bookings/${booking.id}`)} className="w-full">
                                   <CardBody className="flex-row items-center justify-between gap-4 p-4">
@@ -275,12 +278,12 @@ export default function BookingsPage() {
                               <p className="mt-1 text-sm font-medium text-success">
                                               Total: ${Math.round(Number(booking.totalPrice)).toLocaleString("en-US")} ARS
                               </p>
-                                          {booking.status === "CONFIRMED" && booking.paymentStatus !== "PAID" && (
+                                          {payable && (
                                               <PriceChangeNote change={priceChanges?.get(booking.id)} className="mt-1" />
                                           )}
                           </div>
                                       <div className="flex flex-col items-end gap-2">
-                                          {booking.status === "CONFIRMED" && booking.paymentStatus !== "PAID" && (
+                                          {payable && (
                                               <div onClick={(e) => e.stopPropagation()}>
                                                   <PayWithPointsButton bookingId={booking.id} total={Number(booking.totalPrice)} label="Pagar" />
                                               </div>

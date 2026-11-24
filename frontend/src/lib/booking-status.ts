@@ -2,6 +2,23 @@ import type { Booking } from "@/types";
 
 export type ChipColor = "success" | "warning" | "danger" | "default";
 
+/** ¿El turno ya empezó? Instantes absolutos: no depende de la zona horaria. */
+export function hasStarted(booking: Pick<Booking, "startDatetime">, now: number = Date.now()): boolean {
+    return new Date(booking.startDatetime).getTime() <= now;
+}
+
+/**
+ * ¿Se puede pagar? Confirmada, sin pagar y el turno todavía no empezó.
+ * Es la misma regla que pay_booking en la base ("El turno ya empezó: no se puede pagar"),
+ * así no se ofrece un botón "Pagar" que va a fallar.
+ */
+export function isPayable(
+    booking: Pick<Booking, "status" | "paymentStatus" | "startDatetime">,
+    now: number = Date.now(),
+): boolean {
+    return booking.status === "CONFIRMED" && booking.paymentStatus !== "PAID" && !hasStarted(booking, now);
+}
+
 /**
  * Devuelve la etiqueta y color del chip de estado que ve el cliente.
  * - Cancelada -> rojo
@@ -9,7 +26,10 @@ export type ChipColor = "success" | "warning" | "danger" | "default";
  * - Pagada (turno fijo ya pagado) -> verde "Pagada"
  * - Reserva única (pagada al crear) -> verde "Lista para usar"
  */
-export function getBookingStatusChip(booking: Pick<Booking, "status" | "paymentStatus" | "recurringBookingId">): { label: string; color: ChipColor } {
+export function getBookingStatusChip(
+    booking: Pick<Booking, "status" | "paymentStatus" | "recurringBookingId" | "startDatetime">,
+    now: number = Date.now(),
+): { label: string; color: ChipColor } {
     if (booking.status === "CANCELLED") {
         return { label: "Cancelada", color: "danger" };
     }
@@ -17,6 +37,8 @@ export function getBookingStatusChip(booking: Pick<Booking, "status" | "paymentS
         return { label: "Completada", color: "default" };
     }
     if (booking.paymentStatus === "PENDING") {
+        // El turno empezó sin pagar: ya no se puede pagar (la base lo rechaza) y el cron la cancela
+        if (hasStarted(booking, now)) return { label: "No se pagó", color: "default" };
         return { label: "Pendiente de pago", color: "warning" };
     }
     // Pagada (tanto reservas únicas como turnos fijos ya pagados)

@@ -108,6 +108,7 @@ export default function RecurringDetailPage({ params }: { params: Promise<{ id: 
                             status: b.status as any,
                             paymentStatus: b.paymentStatus as any,
                             recurringBookingId: recurring.id,
+                            startDatetime: b.startDatetime,
                         });
                         return (
                             <Card

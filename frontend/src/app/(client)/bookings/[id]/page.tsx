@@ -7,7 +7,7 @@ import { useBooking, useCancelBooking, usePriceChanges } from "@/hooks/use-booki
 import { PayWithPointsButton } from "@/components/shared/pay-with-points-button";
 import { formatPoints } from "@/lib/points";
 import { PriceChangeNote } from "@/components/shared/price-change-note";
-import { getBookingStatusChip } from "@/lib/booking-status";
+import { getBookingStatusChip, isPayable } from "@/lib/booking-status";
 import { formatTimeAr, formatDateAr } from "@/lib/datetime";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { Navbar } from "@/components/layout/navbar";
@@ -50,7 +50,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     const chip = getBookingStatusChip(booking);
     const isRecurring = !!booking.recurringBookingId;
     const isPast = new Date(booking.startDatetime) < new Date();
-    const canPay = booking.status === "CONFIRMED" && booking.paymentStatus !== "PAID";
+    const canPay = isPayable(booking);
     // El cliente solo puede cancelar hasta 24 horas antes del inicio del turno
     const CANCEL_LIMIT_MS = 24 * 60 * 60 * 1000;
     const msToStart = new Date(booking.startDatetime).getTime() - Date.now();
@@ -160,7 +160,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                                     <span className="text-2xl font-bold">${formatPrice(booking.totalPrice)}</span>
                                 </div>
                                 <p className="-mt-2 text-xs text-default-400">{booking.currency} · comisión de servicio incluida</p>
-                                {booking.paymentStatus !== "PAID" && <PriceChangeNote change={priceChanges?.get(booking.id)} />}
+                                {canPay && <PriceChangeNote change={priceChanges?.get(booking.id)} />}
 
                                 {(canPay || canCancel || cancelBlockedByTime) && <Divider />}
 

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { Card, CardBody, Chip, Button, Spinner, Input } from "@heroui/react";
-import { getBookingStatusChip } from "@/lib/booking-status";
+import { getBookingStatusChip, isPayable } from "@/lib/booking-status";
 import { formatTimeAr } from "@/lib/datetime";
 import { PromoCarousel, adToSlide } from "@/components/shared/promo-carousel";
 import { LocationNotice } from "@/components/shared/location-notice";
@@ -151,11 +151,11 @@ export default function ClientHomePage() {
                                         <div className="mt-1 flex items-center justify-between">
                                             <div>
                                                 <p className="text-sm font-bold text-success">${formatPrice(b.totalPrice)} ARS</p>
-                                                {b.status === "CONFIRMED" && b.paymentStatus !== "PAID" && (
+                                                {isPayable(b) && (
                                                     <PriceChangeNote change={priceChanges?.get(b.id)} />
                                                 )}
                                             </div>
-                                            {b.status === "CONFIRMED" && b.paymentStatus !== "PAID" && (
+                                            {isPayable(b) && (
                                                 <div onClick={(e) => e.stopPropagation()}>
                                                     <PayWithPointsButton bookingId={b.id} total={Number(b.totalPrice)} label="Pagar" />
                                                 </div>

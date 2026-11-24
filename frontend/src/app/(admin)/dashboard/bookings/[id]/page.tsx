@@ -9,7 +9,7 @@ import { ArrowLeftIcon, ArrowPathRoundedSquareIcon, CalendarIcon, ClipboardDocum
 import { supabase } from "@/lib/supabase";
 import { camelize } from "@/lib/supabase-helpers";
 import { formatDateAr, formatTimeAr, formatDateTimeAr } from "@/lib/datetime";
-import { ADMIN_BOOKING_STATES, getAdminBookingState } from "@/lib/booking-status";
+import { ADMIN_BOOKING_STATES, getAdminBookingState, isPayable } from "@/lib/booking-status";
 import { checkCancel, canPay } from "@/lib/booking-permissions";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAdminBookingsRealtime } from "@/hooks/use-admin-bookings-realtime";
@@ -122,7 +122,7 @@ export default function AdminBookingDetailPage({ params }: { params: Promise<{ i
     const cancel = checkCancel(actor, booking);
     const isOwn = booking.userId === user.id;
     // Solo el titular paga (canPay): en el panel no se cobra la reserva de otra persona
-    const ownPending = canPay(actor, booking.userId) && booking.status === "CONFIRMED" && booking.paymentStatus !== "PAID";
+    const ownPending = canPay(actor, booking.userId) && isPayable(booking);
     const client = fullName(booking.user) ?? "Cliente";
     const facilityName = booking.facility?.name ?? "Cancha";
     const mins = Math.round((new Date(booking.endDatetime).getTime() - new Date(booking.startDatetime).getTime()) / 60000);

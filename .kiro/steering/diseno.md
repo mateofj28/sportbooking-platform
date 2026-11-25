@@ -34,6 +34,11 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
   - No se ofrecen fechas que no tienen sentido para el caso (ej. programar algo en el pasado) ni años absurdos
     (1900, 2222). Si no hay una regla de negocio distinta, el tope hacia adelante es de 2 años.
   - "Hoy" y los límites se calculan en hora de Argentina (`todayAr()` en `lib/ads.ts`), nunca con la zona del navegador.
+- **Reloj**: nunca usar `Date.now()` ni `new Date()` para decidir algo (pasado/futuro, pagar, cancelar, "hoy").
+  Usar `lib/clock.ts`: `serverNow()` / `serverDate()` (hora del servidor, corrige PCs con la hora mal),
+  `arTodayStr()`, `arTodayLocalDate()`, `isArToday()`, `arNowMinutes()` (día y hora de Argentina).
+  `ClockSync` (providers) sincroniza con la RPC `server_now` al abrir la app y cada 10 min.
+  `Date.now()` solo para cosas sin significado de negocio (nombres de archivo, ids, cachés).
   - Los límites se repiten en la validación Zod (el usuario puede escribir el año a mano) y en la base
     (trigger o CHECK). Ver `createAdvertisementSchema` y la migración 019 como ejemplo.
   - Las reglas "no en el pasado" se exigen solo sobre valores **nuevos o modificados**: al editar un registro

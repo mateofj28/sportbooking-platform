@@ -5,9 +5,6 @@ import {
     NavbarBrand,
     NavbarContent,
     NavbarItem,
-    NavbarMenuToggle,
-    NavbarMenu,
-    NavbarMenuItem,
     Button,
     Link,
     Dropdown,
@@ -21,15 +18,19 @@ import {
     PopoverContent,
 } from "@heroui/react";
 import { useState } from "react";
+import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { NotificationBell } from "@/components/layout/notification-bell";
-import { ArrowRightStartOnRectangleIcon, Bars3Icon, CalendarIcon, CheckIcon, ChevronLeftIcon, ComputerDesktopIcon, EyeIcon, MoonIcon, Squares2X2Icon, SunIcon, TrophyIcon, UserIcon, WalletIcon } from "@heroicons/react/24/outline";
+import { ArrowRightStartOnRectangleIcon, Bars3Icon, CalendarIcon, CheckIcon, ChevronLeftIcon, ComputerDesktopIcon, EyeIcon, HomeIcon, MapPinIcon, MoonIcon, Squares2X2Icon, SunIcon, TrophyIcon, UserIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { useMyBalance } from "@/hooks/use-wallet";
 import { formatPoints } from "@/lib/points";
+
+/** 98764000 -> "98.8M" (saldo corto en móvil). */
+const COMPACT = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 
 /** Saldo de créditos del usuario, con link a "Mi billetera". */
 function NavBalance() {
@@ -38,16 +39,21 @@ function NavBalance() {
         <Link
             href="/wallet"
             aria-label={`Mi billetera: ${formatPoints(balance ?? 0)}`}
-            className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm font-medium text-white hover:bg-white/25"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/15 px-2.5 py-1 text-sm font-medium text-white hover:bg-white/25 sm:px-3"
         >
-            <WalletIcon className="h-3.5 w-3.5" aria-hidden="true" />
-            {isLoading ? "…" : formatPoints(balance ?? 0)}
+            <WalletIcon className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+            {isLoading ? "…" : (
+                <>
+                    {/* Móvil: corto (98.8M). Desde 640 px: completo (98,764,000 créditos) */}
+                    <span className="sm:hidden">{COMPACT.format(balance ?? 0)}</span>
+                    <span className="hidden sm:inline">{formatPoints(balance ?? 0)}</span>
+                </>
+            )}
         </Link>
     );
 }
 
 export function Navbar() {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [dropdownView, setDropdownView] = useState<"main" | "theme">("main");
     // Selectores granulares: el Navbar solo re-renderiza cuando cambia
     // el campo exacto que necesita, no en cada escritura al store
@@ -70,11 +76,12 @@ export function Navbar() {
 
     return (
         <HeroNavbar
-            onMenuOpenChange={setIsMenuOpen}
             maxWidth="xl"
             classNames={{
                 base: "bg-[#2F54D6] border-b border-[#2F54D6] dark:bg-gradient-to-r dark:from-blue-400 dark:to-blue-900 dark:border-blue-800",
-                content: "text-white",
+                content: "text-white gap-2 sm:gap-4",
+                // Móvil: menos padding y separación para que todo entre sin desbordar
+                wrapper: "px-3 gap-2 sm:px-6 sm:gap-4",
             }}
         >
             <NavbarContent>
@@ -86,18 +93,13 @@ export function Navbar() {
                     >
                         <Bars3Icon className="h-6 w-6" />
                     </button>
-                ) : (
-                    <NavbarMenuToggle
-                        aria-label={isMenuOpen ? "Cerrar menú" : "Abrir menú"}
-                        className="sm:hidden"
-                    />
-                )}
+                ) : null}
                 <NavbarBrand>
                     <Link href="/" className="flex items-center gap-2 text-white">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20">
                             <TrophyIcon className="h-4 w-4 text-white" />
                         </div>
-                        <p className="font-bold text-lg text-white!">SportBooking</p>
+                        <p className="font-bold text-lg text-white! max-[419px]:hidden">SportBooking</p>
                     </Link>
                 </NavbarBrand>
             </NavbarContent>
@@ -156,7 +158,7 @@ export function Navbar() {
                 )}
                 {/* Botón de tema: solo visible cuando NO está autenticado */}
                 {mounted && !isAuthenticated && (
-                    <NavbarItem>
+                    <NavbarItem className="hidden sm:flex">
                         <Button isIconOnly variant="light" size="sm" onPress={toggleTheme} aria-label="Cambiar tema">
                             {isDark ? <SunIcon className="h-4 w-4 text-yellow-300" /> : <MoonIcon className="h-4 w-4 text-white/80" />}
                         </Button>
@@ -197,9 +199,16 @@ export function Navbar() {
                                         </div>
                                         {/* Items */}
                                         <div className="py-1">
-                                            <MenuItem href="/profile" icon={<UserIcon className="h-4 w-4" />} label="Mi Perfil" />
+                                            {/* En móvil no hay links en la barra: van acá */}
+                                            {showClientLinks && (
+                                                <div className="sm:hidden">
+                                                    <MenuItem href="/inicio" icon={<HomeIcon className="h-4 w-4" />} label="Inicio" />
+                                                    <MenuItem href="/facilities" icon={<MapPinIcon className="h-4 w-4" />} label="Instalaciones" />
+                                                </div>
+                                            )}
                                             <MenuItem href="/bookings" icon={<CalendarIcon className="h-4 w-4" />} label="Mis Reservas" />
                                             <MenuItem href="/wallet" icon={<WalletIcon className="h-4 w-4" />} label="Mi billetera" />
+                                            <MenuItem href="/profile" icon={<UserIcon className="h-4 w-4" />} label="Mi Perfil" />
                                             {isAdminUser && (
                                                 inDashboard
                                                     ? <MenuItem href="/inicio" icon={<EyeIcon className="h-4 w-4" />} label="Vista de cliente" />
@@ -269,9 +278,10 @@ export function Navbar() {
                         </Popover>
                 ) : (
                     <>
-                        <NavbarItem className="hidden sm:flex">
-                                    <Link href="/login" className="text-sm font-medium text-white hover:text-white/80">
-                                Iniciar Sesión
+                        <NavbarItem>
+                                    <Link href="/login" className="whitespace-nowrap text-sm font-medium text-white hover:text-white/80">
+                                <span className="sm:hidden">Ingresar</span>
+                                <span className="hidden sm:inline">Iniciar Sesión</span>
                             </Link>
                         </NavbarItem>
                         <NavbarItem>
@@ -282,58 +292,6 @@ export function Navbar() {
                     </>
                 )}
             </NavbarContent>
-
-            <NavbarMenu>
-                {inDashboard ? null : <>
-                    {isAuthenticated && (
-                    <NavbarMenuItem>
-                        <Link className="w-full" href="/inicio" size="lg">
-                            Inicio
-                        </Link>
-                    </NavbarMenuItem>
-                    )}
-                    <NavbarMenuItem>
-                        <Link className="w-full" href="/facilities" size="lg">
-                            Instalaciones
-                        </Link>
-                    </NavbarMenuItem>
-                {isAuthenticated && (
-                    <>
-                        <NavbarMenuItem>
-                            <Link className="w-full" href="/bookings" size="lg">
-                                Mis Reservas
-                            </Link>
-                        </NavbarMenuItem>
-                        <NavbarMenuItem>
-                            <Link className="w-full" href="/profile" size="lg">
-                                Mi Perfil
-                            </Link>
-                        </NavbarMenuItem>
-                    </>
-                )}
-                    {isAdminUser && (
-                    <NavbarMenuItem>
-                        <Link className="w-full" href="/dashboard" size="lg">
-                                Panel de administración
-                        </Link>
-                    </NavbarMenuItem>
-                )}
-                {!isAuthenticated && (
-                    <>
-                        <NavbarMenuItem>
-                            <Link className="w-full" href="/login" size="lg">
-                                Iniciar Sesión
-                            </Link>
-                        </NavbarMenuItem>
-                        <NavbarMenuItem>
-                            <Link className="w-full" color="primary" href="/register" size="lg">
-                                Registrarse
-                            </Link>
-                        </NavbarMenuItem>
-                    </>
-                )}
-                </>}
-            </NavbarMenu>
         </HeroNavbar>
     );
 }
@@ -341,12 +299,12 @@ export function Navbar() {
 /** Item de menú reutilizable para el popover del usuario */
 function MenuItem({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
     return (
-        <a
+        <NextLink
             href={href}
             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-default-100 transition-colors text-left text-foreground"
         >
             <span className="flex-shrink-0 text-default-500">{icon}</span>
             {label}
-        </a>
+        </NextLink>
     );
 }

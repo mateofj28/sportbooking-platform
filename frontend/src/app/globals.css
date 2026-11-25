@@ -136,6 +136,20 @@ h6,
     }
 }
 /* ============================================================
+ * Barra de navegación de abajo (components/layout/bottom-nav.tsx, solo < 640 px).
+ * Reserva su alto al final de la página para que no tape contenido, y sube los
+ * avisos (toasts) por encima de ella. Solo cuando la barra está en la página.
+ * ============================================================ */
+@media (max-width: 639.98px) {
+    body:has([data-bottom-nav]) {
+        padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+    }
+
+    body:has([data-bottom-nav]) .fixed.bottom-4.right-4 {
+        bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
+}
+/* ============================================================
  * Campos numéricos SIN flechas de aumentar/disminuir (spinners).
  * Regla de diseño global: aplica a cualquier input type="number",
  * incluidos los de HeroUI, presentes y futuros.

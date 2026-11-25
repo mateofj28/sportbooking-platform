@@ -25,7 +25,8 @@ import { useSidebarStore } from "@/stores/sidebar-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { NotificationBell } from "@/components/layout/notification-bell";
-import { ArrowRightStartOnRectangleIcon, Bars3Icon, CalendarIcon, CheckIcon, ChevronLeftIcon, ComputerDesktopIcon, EyeIcon, HomeIcon, MapPinIcon, MoonIcon, Squares2X2Icon, SunIcon, TrophyIcon, UserIcon, WalletIcon } from "@heroicons/react/24/outline";
+import { BottomNav } from "@/components/layout/bottom-nav";
+import { ArrowRightStartOnRectangleIcon, Bars3Icon, CalendarIcon, CheckIcon, ChevronLeftIcon, ComputerDesktopIcon, EyeIcon, MoonIcon, Squares2X2Icon, SunIcon, TrophyIcon, UserIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { useMyBalance } from "@/hooks/use-wallet";
 import { formatPoints } from "@/lib/points";
 
@@ -75,6 +76,7 @@ export function Navbar() {
     const showClientLinks = !(isAdminUser && inDashboard);
 
     return (
+        <>
         <HeroNavbar
             maxWidth="xl"
             classNames={{
@@ -165,7 +167,7 @@ export function Navbar() {
                     </NavbarItem>
                 )}
                 {!isHydrated ? (
-                    <NavbarItem>
+                    <NavbarItem className={inDashboard ? "" : "hidden sm:flex"}>
                         <div className="h-8 w-8 animate-pulse rounded-full bg-default-200" />
                     </NavbarItem>
                 ) : isAuthenticated ? (
@@ -182,7 +184,8 @@ export function Navbar() {
                             <PopoverTrigger>
                                 <Avatar
                                 as="button"
-                                className="transition-transform"
+                                // En celular (fuera del panel) está la pestaña "Perfil" de la barra de abajo
+                                className={`transition-transform ${inDashboard ? "" : "hidden sm:flex"}`}
                                 color="primary"
                                 name={`${user?.firstName} ${user?.lastName}`}
                                 size="sm"
@@ -199,13 +202,6 @@ export function Navbar() {
                                         </div>
                                         {/* Items */}
                                         <div className="py-1">
-                                            {/* En móvil no hay links en la barra: van acá */}
-                                            {showClientLinks && (
-                                                <div className="sm:hidden">
-                                                    <MenuItem href="/inicio" icon={<HomeIcon className="h-4 w-4" />} label="Inicio" />
-                                                    <MenuItem href="/facilities" icon={<MapPinIcon className="h-4 w-4" />} label="Instalaciones" />
-                                                </div>
-                                            )}
                                             <MenuItem href="/bookings" icon={<CalendarIcon className="h-4 w-4" />} label="Mis Reservas" />
                                             <MenuItem href="/wallet" icon={<WalletIcon className="h-4 w-4" />} label="Mi billetera" />
                                             <MenuItem href="/profile" icon={<UserIcon className="h-4 w-4" />} label="Mi Perfil" />
@@ -293,6 +289,8 @@ export function Navbar() {
                 )}
             </NavbarContent>
         </HeroNavbar>
+        {isHydrated && isAuthenticated && !inDashboard && <BottomNav />}
+        </>
     );
 }
 

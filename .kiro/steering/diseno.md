@@ -83,6 +83,19 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
 - Cuidado con `globals.css`: fuerza `color` en `h1–h6`, `.font-bold` y `.font-semibold`. Si ese texto va sobre un
   fondo de color (banners, etiquetas sobre imágenes), forzar el color con `!` (ej. `text-white!`).
 
+## Navegación
+
+- **Celular (< 640 px), vista de cliente con sesión**: barra fija abajo (`components/layout/bottom-nav.tsx`) con
+  Inicio · Canchas · Mis reservas · Billetera · Perfil. La sección actual va en `primary` con ícono relleno.
+  "Perfil" abre una hoja desde abajo con Mi Perfil, Panel de administración (admins), Tema y Cerrar sesión.
+  La monta el `Navbar`; el espacio se reserva en `globals.css` (`body:has([data-bottom-nav])`).
+- En celular, fuera del panel, el avatar de arriba no se muestra (lo reemplaza "Perfil").
+- **No hay menú hamburguesa** en la vista de cliente. En el panel (`/dashboard`) el botón de arriba abre el menú lateral.
+- **Escritorio**: links arriba (Inicio, Instalaciones, Mis Reservas) y menú del avatar.
+- Navegar siempre con `next/link` (sin recargar la página), nunca con `<a href>` para rutas internas.
+- La barra superior no puede desbordar en 360 px: en celular el saldo va corto ("98.8M") y el nombre de la marca
+  se oculta por debajo de 420 px.
+
 ## Botones
 
 Resuelto globalmente en `globals.css` (no repetir clases en cada pantalla). Aplica a los `Button` de HeroUI

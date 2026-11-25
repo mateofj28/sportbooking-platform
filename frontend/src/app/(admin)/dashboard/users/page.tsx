@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize, invokeFunction, Tables } from "@/lib/supabase-helpers";
 import { useVenues } from "@/hooks/use-venues";
+import { formatDateTimeAr } from "@/lib/datetime";
 import { MagnifyingGlassIcon, PencilIcon, PlusIcon, TrashIcon, UserCircleIcon, UserMinusIcon } from "@heroicons/react/24/outline";
 import { useState, useMemo } from "react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
@@ -367,6 +368,7 @@ export default function AdminUsersPage() {
                     <TableColumn>ROL</TableColumn>
                     <TableColumn>COMPLEJO</TableColumn>
                     <TableColumn>ESTADO</TableColumn>
+                    <TableColumn>REGISTRO</TableColumn>
                     <TableColumn>ACCIONES</TableColumn>
                 </TableHeader>
                 <TableBody emptyContent="No hay usuarios">
@@ -394,6 +396,10 @@ export default function AdminUsersPage() {
                                 <Chip color={user.isActive ? "success" : "danger"} size="sm" variant="flat">
                                     {user.isActive ? "Activo" : "Inactivo"}
                                 </Chip>
+                            </TableCell>
+                            {/* Fecha de registro (profiles.created_at, hora AR) */}
+                            <TableCell className="text-sm text-default-500">
+                                {user.createdAt ? formatDateTimeAr(user.createdAt) : "—"}
                             </TableCell>
                             <TableCell>
                                 <div className="flex gap-1">

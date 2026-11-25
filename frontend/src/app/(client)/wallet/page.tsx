@@ -28,7 +28,7 @@ const FAQ: { key: string; question: string; answer: React.ReactNode }[] = [
             <>
                 Haciendo click en{" "}
                 <Link href={WHATSAPP_HELP_URL} isExternal size="sm" className="font-medium">nuestro WhatsApp</Link>{" "}
-                le explicaremos los pasos a seguir.
+                te explicamos los pasos a seguir.
             </>
         ),
     },

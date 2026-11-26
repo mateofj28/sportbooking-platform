@@ -580,12 +580,6 @@ supabase/
 
 ## TAREAS PENDIENTES ANTES DE LANZAR AL PÚBLICO
 
-- [ ] **Aclarar "no son reintegrables" en Mi billetera** (preguntas frecuentes, `app/(client)/wallet/page.tsx`).
-  - Hoy la respuesta dice que los créditos "no son reintegrables", pero la regla de negocio es que al cancelar
-    un turno se devuelve el 100% de los créditos a la billetera.
-  - Probablemente quiere decir "no se reintegran en dinero". Definir el texto con el dueño del negocio
-    (ej.: "No se reintegran en dinero; si cancelás un turno, los créditos vuelven a tu billetera") y reemplazarlo.
-
 - [ ] **Verificar dominio en Resend** para poder enviar emails a cualquier destinatario.
   - Hoy se usa `onboarding@resend.dev` (solo llega al email registrado en Resend, sirve para testing).
   - Para producción: ir a **https://resend.com/domains**, agregar tu dominio, configurar los registros DNS que Resend indique, y luego actualizar el secret `RESEND_FROM_EMAIL` en Supabase Edge Functions con `SportBooking <notificaciones@tudominio.com>`.

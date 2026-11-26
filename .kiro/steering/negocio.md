@@ -141,6 +141,8 @@ Relación clave:
   (`create-recurring` `pay_mode` ALL/NEXT/NONE, migración 054). El cobro es todo o nada con el turno: si el saldo no
   alcanza, no se crea nada. Las fechas sin pagar se pagan con el botón Pagar y se cancelan solas a menos de 24 h.
 - **Reserva manual o turno fijo de un admin para un cliente**: quedan pendientes y **el titular los paga** con créditos.
+- **Los créditos no se devuelven en dinero ni se transfieren entre usuarios, y no vencen.** En Mi billetera las
+  preguntas frecuentes dicen "no son reintegrables": significa en dinero; el texto está aprobado así.
 - **Cancelación**: se mantiene la regla de 24 h para el cliente (también al cancelar una serie: las fechas a menos de
   24 h se mantienen). Cancele quien cancele, se devuelve el **100% de lo pagado** (`cancel_booking`).
 - **Sede**: suma el **precio base** recién cuando el turno pasa a *Completada* (trigger `credit_venue_on_complete`, una

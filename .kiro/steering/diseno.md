@@ -85,13 +85,19 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
 
 ## Navegación
 
+- **Todas las secciones de la vista de cliente están en `lib/navigation.ts`** (nombre, ícono, ruta, grupo,
+  roles, si va en la barra de abajo, si ya existe). Para sumar una sección (Estadísticas, Entrenamientos,
+  Escuela de fútbol…) se edita solo esa lista: aparece en "Más" (celular) y en el menú del avatar (computadora).
+  Las que tienen `available: false` no se muestran.
 - **Celular (< 640 px), vista de cliente con sesión**: barra fija abajo (`components/layout/bottom-nav.tsx`) con
-  Inicio · Canchas · Mis reservas · Billetera · Perfil. La sección actual va en `primary` con ícono relleno.
-  "Perfil" abre una hoja desde abajo con Mi Perfil, Panel de administración (admins), Tema y Cerrar sesión.
+  **4 pestañas fijas** (Inicio · Canchas · Mis reservas · Billetera) **+ "Más"**. Máximo 5: no agregar pestañas.
+  La sección actual va en `primary` con ícono relleno; "Más" se marca si la pantalla es una de sus secciones.
+  "Más" abre una hoja desde abajo con las secciones en una grilla agrupada (Mi cuenta, Actividad), Ajustes (tema),
+  Panel de administración (admins) y Cerrar sesión. Desde `MORE_SEARCH_FROM` opciones muestra un buscador.
   La monta el `Navbar`; el espacio se reserva en `globals.css` (`body:has([data-bottom-nav])`).
-- En celular, fuera del panel, el avatar de arriba no se muestra (lo reemplaza "Perfil").
+- En celular, fuera del panel, el avatar de arriba no se muestra (lo reemplaza "Más").
+- **Computadora**: la barra de arriba queda igual; las secciones nuevas van en el menú del avatar.
 - **No hay menú hamburguesa** en la vista de cliente. En el panel (`/dashboard`) el botón de arriba abre el menú lateral.
-- **Escritorio**: links arriba (Inicio, Instalaciones, Mis Reservas) y menú del avatar.
 - Navegar siempre con `next/link` (sin recargar la página), nunca con `<a href>` para rutas internas.
 - La barra superior no puede desbordar en 360 px. Orden a la derecha: **saldo y después la campana**.
   En celular el saldo va con el **número completo** sin la palabra ("98,764,000"); solo desde mil millones se

@@ -26,7 +26,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { BottomNav } from "@/components/layout/bottom-nav";
-import { ArrowRightStartOnRectangleIcon, Bars3Icon, CalendarIcon, CheckIcon, ChevronLeftIcon, ComputerDesktopIcon, EyeIcon, MoonIcon, Squares2X2Icon, SunIcon, TrophyIcon, UserIcon, WalletIcon } from "@heroicons/react/24/outline";
+import { groupedSections } from "@/lib/navigation";
+import { ArrowRightStartOnRectangleIcon, Bars3Icon, CalendarIcon, CheckIcon, ChevronLeftIcon, ComputerDesktopIcon, EyeIcon, MoonIcon, Squares2X2Icon, SunIcon, TrophyIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { useMyBalance } from "@/hooks/use-wallet";
 import { formatPoints, formatPointsNumber } from "@/lib/points";
 
@@ -212,7 +213,11 @@ export function Navbar() {
                                         <div className="py-1">
                                             <MenuItem href="/bookings" icon={<CalendarIcon className="h-4 w-4" />} label="Mis Reservas" />
                                             <MenuItem href="/wallet" icon={<WalletIcon className="h-4 w-4" />} label="Mi billetera" />
-                                            <MenuItem href="/profile" icon={<UserIcon className="h-4 w-4" />} label="Mi Perfil" />
+                                            {/* Mi Perfil, Notificaciones y las secciones nuevas (lib/navigation.ts) */}
+                                            {groupedSections(user?.role).flatMap((g) => g.items).map((s) => {
+                                                const Icon = s.icon;
+                                                return <MenuItem key={s.key} href={s.href} icon={<Icon className="h-4 w-4" />} label={s.label} />;
+                                            })}
                                             {isAdminUser && (
                                                 inDashboard
                                                     ? <MenuItem href="/inicio" icon={<EyeIcon className="h-4 w-4" />} label="Vista de cliente" />

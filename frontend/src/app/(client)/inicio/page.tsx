@@ -86,7 +86,8 @@ export default function ClientHomePage() {
     }, [bookings]);
 
     const handleSearch = () => {
-        router.push(`/facilities${searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : ""}`);
+        const q = searchQuery.trim();
+        router.push(`/facilities${q ? `?search=${encodeURIComponent(q)}` : ""}`);
     };
 
     if (!isHydrated) return <div className="flex min-h-screen items-center justify-center"><Spinner size="lg" /></div>;
@@ -100,19 +101,29 @@ export default function ClientHomePage() {
                 <section>
                     <h1 className="text-2xl font-bold">Hola, {user?.firstName} 👋</h1>
                     <p className="text-sm text-default-500 mt-1">¿Listo para tu próximo partido?</p>
-                    <div className="mt-4 flex max-w-xl items-center gap-2">
+                    {/* Un solo campo a todo el ancho: se busca con Enter ("Buscar" en el teclado del
+                        celular) o con la flecha de la derecha. Lleva a Canchas con la búsqueda aplicada. */}
+                    <form
+                        role="search"
+                        className="mt-4 max-w-xl"
+                        onSubmit={(e) => { e.preventDefault(); handleSearch(); }}
+                    >
                         <Input
-                            placeholder="Buscar una cancha..."
+                            type="search"
+                            enterKeyHint="search"
+                            aria-label="Buscar complejo o municipio"
+                            placeholder="Buscar complejo o municipio…"
                             variant="bordered"
                             value={searchQuery}
                             onValueChange={setSearchQuery}
-                            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                            startContent={<MagnifyingGlassIcon className="h-4 w-4 text-default-400" />}
+                            startContent={<MagnifyingGlassIcon className="h-4 w-4 flex-shrink-0 text-default-400" aria-hidden="true" />}
+                            endContent={
+                                <Button type="submit" isIconOnly size="sm" color="primary" radius="full" aria-label="Buscar" className="-mr-1">
+                                    <ArrowRightIcon className="h-4 w-4" aria-hidden="true" />
+                                </Button>
+                            }
                         />
-                        <Button color="primary" onPress={handleSearch} endContent={<ArrowRightIcon className="h-4 w-4" />}>
-                            Reservar
-                        </Button>
-                    </div>
+                    </form>
                 </section>
 
                 {/* Promociones (justo después del buscador) */}

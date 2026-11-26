@@ -20,7 +20,8 @@ function FacilitiesContent() {
     // Nivel 2: complejo seleccionado (por estado o por query param)
     const [venueId, setVenueId] = useState(() => searchParams.get("venueId") || "");
     // Buscador de complejos (nivel 1)
-    const [venueSearch, setVenueSearch] = useState("");
+    // Arranca con la búsqueda que viene de Inicio (?search=...)
+    const [venueSearch, setVenueSearch] = useState(() => searchParams.get("search") ?? "");
     // Filtro por deporte (nivel 2)
     const [sportId, setSportId] = useState(() => searchParams.get("sportId") || "");
 
@@ -49,13 +50,11 @@ function FacilitiesContent() {
     // Complejos filtrados: solo los que tienen canchas bookeable + buscador de texto
     const filteredVenues = useMemo(() => {
         const list = (venues || []).filter((v) => venueIdsWithBookable.has(v.id));
-        const q = venueSearch.trim().toLowerCase();
+        // Sin distinguir mayúsculas ni acentos: "simulacion" encuentra "Simulación"
+        const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        const q = norm(venueSearch);
         if (!q) return list;
-        return list.filter(
-            (v) =>
-                v.name.toLowerCase().includes(q) ||
-                v.city?.toLowerCase().includes(q),
-        );
+        return list.filter((v) => norm(v.name).includes(q) || norm(v.city ?? "").includes(q));
     }, [venues, venueSearch, venueIdsWithBookable]);
 
     // Canchas del complejo seleccionado (nivel 2)

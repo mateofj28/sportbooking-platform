@@ -28,10 +28,17 @@ import { NotificationBell } from "@/components/layout/notification-bell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { ArrowRightStartOnRectangleIcon, Bars3Icon, CalendarIcon, CheckIcon, ChevronLeftIcon, ComputerDesktopIcon, EyeIcon, MoonIcon, Squares2X2Icon, SunIcon, TrophyIcon, UserIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { useMyBalance } from "@/hooks/use-wallet";
-import { formatPoints } from "@/lib/points";
+import { formatPoints, formatPointsNumber } from "@/lib/points";
 
 /** 98764000 -> "98.8M" (saldo corto en móvil). */
 const COMPACT = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
+/** Desde este saldo, en celular se muestra corto (1.2B): un número más largo no entra en la barra. */
+const COMPACT_FROM = 1_000_000_000;
+
+/** Saldo para la barra en celular: completo ("98,764,000") salvo que sea muy grande ("1.2B"). */
+function mobileBalance(n: number): string {
+    return Math.abs(n) >= COMPACT_FROM ? COMPACT.format(n) : formatPointsNumber(n);
+}
 
 /** Saldo de créditos del usuario, con link a "Mi billetera". */
 function NavBalance() {
@@ -45,8 +52,9 @@ function NavBalance() {
             <WalletIcon className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
             {isLoading ? "…" : (
                 <>
-                    {/* Móvil: corto (98.8M). Desde 640 px: completo (98,764,000 créditos) */}
-                    <span className="sm:hidden">{COMPACT.format(balance ?? 0)}</span>
+                    {/* Celular: el número completo (98,764,000), corto solo desde mil millones.
+                        Desde 640 px: con la palabra (98,764,000 créditos) */}
+                    <span className="tabular-nums sm:hidden">{mobileBalance(balance ?? 0)}</span>
                     <span className="hidden sm:inline">{formatPoints(balance ?? 0)}</span>
                 </>
             )}
@@ -146,16 +154,16 @@ export function Navbar() {
             </NavbarContent>
 
             <NavbarContent justify="end">
-                {/* Campana de notificaciones: solo para administradores */}
-                {isAuthenticated && (user?.role === "ADMIN" || user?.role === "VENUE_ADMIN") && (
-                    <NavbarItem>
-                        <NotificationBell />
-                    </NavbarItem>
-                )}
                 {/* Saldo de créditos: en la vista de cliente (R1.8) */}
                 {isHydrated && isAuthenticated && !inDashboard && (
                     <NavbarItem>
                         <NavBalance />
+                    </NavbarItem>
+                )}
+                {/* Campana de notificaciones: solo para administradores */}
+                {isAuthenticated && (user?.role === "ADMIN" || user?.role === "VENUE_ADMIN") && (
+                    <NavbarItem>
+                        <NotificationBell />
                     </NavbarItem>
                 )}
                 {/* Botón de tema: solo visible cuando NO está autenticado */}

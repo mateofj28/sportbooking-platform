@@ -93,8 +93,9 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
 - **No hay menú hamburguesa** en la vista de cliente. En el panel (`/dashboard`) el botón de arriba abre el menú lateral.
 - **Escritorio**: links arriba (Inicio, Instalaciones, Mis Reservas) y menú del avatar.
 - Navegar siempre con `next/link` (sin recargar la página), nunca con `<a href>` para rutas internas.
-- La barra superior no puede desbordar en 360 px: en celular el saldo va corto ("98.8M") y el nombre de la marca
-  se oculta por debajo de 420 px.
+- La barra superior no puede desbordar en 360 px. Orden a la derecha: **saldo y después la campana**.
+  En celular el saldo va con el **número completo** sin la palabra ("98,764,000"); solo desde mil millones se
+  acorta ("1.2B"). Desde 640 px: "98,764,000 créditos". El nombre de la marca se oculta por debajo de 420 px.
 
 ## Botones
 

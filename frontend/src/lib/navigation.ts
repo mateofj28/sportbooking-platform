@@ -56,8 +56,8 @@ export const NAV_SECTIONS: NavSection[] = [
     // Por ahora las notificaciones in-app son solo de los administradores
     { key: "notificaciones", label: "Notificaciones", href: "/dashboard/notifications", icon: BellIcon, group: "account", roles: ["ADMIN", "VENUE_ADMIN"], available: true },
 
-    // "Más" -> Actividad (todavía no existen: poner href y available: true cuando estén)
-    { key: "estadisticas", label: "Estadísticas", href: "/estadisticas", icon: ChartBarIcon, group: "activity", available: false },
+    // "Más" -> Actividad (las que no existen todavía: poner href y available: true cuando estén)
+    { key: "estadisticas", label: "Estadísticas", href: "/estadisticas", icon: ChartBarIcon, group: "activity", available: true },
     { key: "entrenamientos", label: "Entrenamientos", href: "/entrenamientos", icon: FireIcon, group: "activity", available: false },
     { key: "escuela", label: "Escuela de fútbol", href: "/escuela-de-futbol", icon: AcademicCapIcon, group: "activity", available: false },
 ];

@@ -107,6 +107,41 @@ function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
 // LECTURAS — supabase.from() directo con RLS automático
 // ============================================================
 
+export interface MyBookingStats {
+    /** Realizadas + Completadas + Canceladas. */
+    total: number
+    /** Pagadas cuyo turno todavía no terminó. */
+    realizadas: number
+    /** Turnos ya jugados. */
+    completadas: number
+    /** Turnos pagados que se cancelaron. */
+    canceladas: number
+}
+
+/**
+ * Cantidad de MIS reservas por estado de negocio (migración 062, cuenta en la base).
+ * Cuelga de ['bookings']: reservar, pagar o cancelar la actualiza.
+ */
+export function useMyBookingStats() {
+    const userId = useAuthStore((s) => s.user?.id)
+    return useQuery({
+        queryKey: ['bookings', 'my-stats', userId],
+        enabled: !!userId,
+        staleTime: 60_000,
+        queryFn: async (): Promise<MyBookingStats> => {
+            const { data, error } = await (supabase.rpc as any)('my_booking_stats')
+            if (error) throw toAppError(error)
+            const s = (data ?? {}) as Partial<MyBookingStats>
+            return {
+                total: Number(s.total ?? 0),
+                realizadas: Number(s.realizadas ?? 0),
+                completadas: Number(s.completadas ?? 0),
+                canceladas: Number(s.canceladas ?? 0),
+            }
+        },
+    })
+}
+
 /**
  * MIS reservas (las que hice yo como cliente).
  *

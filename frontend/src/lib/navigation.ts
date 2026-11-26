@@ -7,6 +7,10 @@
 // Para sumar una sección (ej. "Escuela de fútbol"): poner su `href` y `available: true`.
 // Aparece sola en "Más" (celular) y en el menú del avatar (computadora).
 // Las que tienen `available: false` todavía no existen y no se muestran.
+//
+// Solo van secciones de la VISTA DE CLIENTE (lo que hace cualquier usuario: reservar, pagar, su perfil).
+// Lo de gestión (notificaciones del negocio, estadísticas del complejo, etc.) va en el panel
+// (/dashboard, menú lateral), aunque el usuario sea admin: el contexto lo define la ruta (negocio.md).
 // ============================================================
 
 import {
@@ -53,8 +57,9 @@ export const NAV_SECTIONS: NavSection[] = [
 
     // "Más" -> Mi cuenta
     { key: "perfil", label: "Mi Perfil", href: "/profile", icon: UserIcon, group: "account", available: true },
-    // Por ahora las notificaciones in-app son solo de los administradores
-    { key: "notificaciones", label: "Notificaciones", href: "/dashboard/notifications", icon: BellIcon, group: "account", roles: ["ADMIN", "VENUE_ADMIN"], available: true },
+    // Notificaciones del cliente: todavía no existen. Las de los admins son de la gestión del negocio
+    // y viven en el panel (/dashboard/notifications, menú lateral y campana), no en la vista de cliente.
+    { key: "notificaciones", label: "Notificaciones", href: "/notificaciones", icon: BellIcon, group: "account", available: false },
 
     // "Más" -> Actividad (las que no existen todavía: poner href y available: true cuando estén)
     { key: "estadisticas", label: "Estadísticas", href: "/estadisticas", icon: ChartBarIcon, group: "activity", available: true },

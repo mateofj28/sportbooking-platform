@@ -97,6 +97,9 @@ Estas reglas aplican a cualquier pantalla o componente nuevo y a las correccione
   La monta el `Navbar`; el espacio se reserva en `globals.css` (`body:has([data-bottom-nav])`).
 - En celular, fuera del panel, el avatar de arriba no se muestra (lo reemplaza "Más").
 - **Computadora**: la barra de arriba queda igual; las secciones nuevas van en el menú del avatar.
+- **Cada contexto muestra solo sus acciones.** En la vista de cliente no aparece nada de gestión aunque el usuario
+  sea admin (campana y notificaciones del negocio, estadísticas del complejo, etc.): eso vive en `/dashboard`.
+  La única excepción es el cambio de contexto "Panel de administración" / "Vista de cliente" (negocio.md).
 - **No hay menú hamburguesa** en la vista de cliente. En el panel (`/dashboard`) el botón de arriba abre el menú lateral.
 - Navegar siempre con `next/link` (sin recargar la página), nunca con `<a href>` para rutas internas.
 - La barra superior no puede desbordar en 360 px. Orden a la derecha: **saldo y después la campana**.

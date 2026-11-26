@@ -33,9 +33,8 @@ const FAQ: { key: string; question: string; answer: React.ReactNode }[] = [
         ),
     },
     {
-        // PENDIENTE: aclarar "no son reintegrables". Al cancelar un turno los créditos SÍ vuelven a la
-        // billetera; seguramente significa "no se reintegran en dinero". Ver "Tareas pendientes" en
-        // .kiro/steering/supabase-migration.md.
+        // "No son reintegrables" = no se devuelven en dinero. Al cancelar un turno los créditos sí vuelven
+        // a la billetera (cancel_booking). Texto aprobado por el dueño del negocio.
         key: "transferibles",
         question: "¿Los créditos son transferibles y reintegrables?",
         answer:

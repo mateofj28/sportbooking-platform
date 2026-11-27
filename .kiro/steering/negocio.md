@@ -28,6 +28,9 @@ Relación clave:
 
 - La **ganancia del complejo** es el **precio base** (`basePrice`), SIN la comisión de la empresa. Nunca usar `totalPrice` para ingresos del complejo.
 - La **comisión de la empresa** (`commissionAmount`) se muestra aparte y solo al admin general.
+- El **% de comisión** (`pricing.profit_percent`) lo define **solo el admin general**. La base lo garantiza
+  (trigger `guard_pricing_commission`, migración 063): el admin de sede no puede cambiarlo, y si crea una tarifa
+  recibe el % vigente de esa cancha (si no, el de otra cancha de su complejo; si no hay, 10%).
 - El ingreso/comisión se **reconoce cuando el turno YA finalizó** (turno pagado + `endDatetime` ya pasó), no al momento de pagar.
 - La tarifa es **precio por turno fijo** (no por hora, no se multiplica por duración).
 

@@ -108,6 +108,18 @@ export default function AdminPricingPage() {
     enabled: !!selectedFacility,
   });
 
+  // % de comisión que recibe una tarifa nueva de esta cancha si la crea el admin de sede
+  // (lo decide la base: pricing_default_commission, migración 063)
+  const { data: defaultCommission } = useQuery({
+    queryKey: ["pricing", selectedFacility, "default-commission"],
+    queryFn: async (): Promise<number> => {
+      const { data, error } = await (supabase.rpc as any)("pricing_default_commission", { p_facility: selectedFacility });
+      if (error) throw toAppError(error);
+      return Number(data ?? 10);
+    },
+    enabled: !!selectedFacility && isVenueAdmin,
+  });
+
   // Horarios de la instalación, para detectar franjas sin tarifa
   const { data: schedules } = useQuery({
     queryKey: ["schedules", selectedFacility],
@@ -277,7 +289,9 @@ export default function AdminPricingPage() {
   };
 
   const handleOpenModal = () => {
-    setForm({ startTime: "08:00", endTime: "22:00", pricePerHour: "25.000", profitPercent: "10", days: [], allDays: false });
+    // Admin de sede: el % lo asigna la base (migración 063); se muestra el que va a recibir
+    const percent = isVenueAdmin && defaultCommission != null ? String(Number(defaultCommission)) : "10";
+    setForm({ startTime: "08:00", endTime: "22:00", pricePerHour: "25.000", profitPercent: percent, days: [], allDays: false });
     onOpen();
   };
 

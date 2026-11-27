@@ -168,6 +168,11 @@ export interface AdminTrainerRow {
     sports: string[]
     slotsCount: number
     minRate: number | null
+    /** Clases no canceladas (Etapa 2). */
+    classesCount: number
+    /** Lugares cancelados por el entrenador / por los alumnos (E20). */
+    cancelledByTrainer: number
+    cancelledByClients: number
 }
 
 export interface AdminTrainersPage {

@@ -211,3 +211,73 @@ export async function sendPriceChangeNotice(data: { email: string; firstName: st
     '#F59E0B',
   )
 }
+
+// ------------------------------------------------------------
+// Clases con entrenadores (migración 066)
+// ------------------------------------------------------------
+
+export interface ClassEmailData {
+  email: string
+  firstName: string
+  sportName: string
+  trainerName: string
+  location: string
+  start: string
+  end: string
+  isGroup: boolean
+  /** Total que pagó el cliente (créditos). */
+  total?: number
+}
+
+function classRows(d: ClassEmailData): string {
+  const rows: [string, string][] = [
+    ['Clase', `${d.sportName} (${d.isGroup ? 'grupal' : 'individual'})`],
+    ['Entrenador', d.trainerName],
+    ['Lugar', d.location],
+    ['Fecha', arDateLabel(d.start)],
+    ['Horario', `${arTime(d.start)} - ${arTime(d.end)}`],
+  ]
+  if (d.total != null) rows.push(['Total', `${Math.round(d.total).toLocaleString('en-US')} créditos`])
+  return rows.map(([k, v]) => `
+    <tr>
+      <td style="padding:6px 0;font-size:13px;color:#9ca3af;">${k}</td>
+      <td style="padding:6px 0;font-size:13px;color:#1a1d23;text-align:right;font-weight:600;">${esc(v)}</td>
+    </tr>`).join('')
+}
+
+/** Al cliente: clase reservada y pagada. */
+export async function sendClassConfirmation(d: ClassEmailData): Promise<void> {
+  const body = `
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b7280;">Hola ${esc(d.firstName)}, tu clase quedó confirmada:</p>
+    <table width="100%" style="border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;margin-bottom:20px;">${classRows(d)}</table>
+    <p style="margin:0;font-size:13px;color:#047857;background:#d1fae5;padding:12px;border-radius:8px;">✅ Pagada con tus créditos. Podés cancelarla hasta 24 horas antes desde "Mis reservas".</p>`
+  await send(d.email, 'Clase confirmada - SportBooking', '¡Clase confirmada!', body, '#10B981')
+}
+
+/** Al entrenador: un cliente reservó (o se sumó a) una clase. */
+export async function sendClassBookedToTrainer(d: ClassEmailData & { studentName: string; taken: number; capacity: number }): Promise<void> {
+  const body = `
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b7280;">
+      Hola ${esc(d.firstName)}, ${esc(d.studentName)} reservó una clase con vos${d.isGroup ? ` (${d.taken} de ${d.capacity} lugares ocupados)` : ''}:
+    </p>
+    <table width="100%" style="border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;">${classRows({ ...d, total: undefined })}</table>`
+  await send(d.email, 'Nueva clase reservada - SportBooking', 'Te reservaron una clase', body, '#3B82F6')
+}
+
+/** Cancelación: al cliente (con devolución) o al entrenador (cuando cancela un cliente). */
+export async function sendClassCancellation(
+  d: ClassEmailData & { reason?: string | null; refunded?: number; byLabel: string; toTrainer?: boolean; studentName?: string },
+): Promise<void> {
+  const refund = !d.toTrainer && d.refunded && d.refunded > 0
+    ? `<p style="margin:0 0 12px;font-size:13px;color:#047857;background:#d1fae5;padding:12px;border-radius:8px;">✅ Te devolvimos ${Math.round(d.refunded).toLocaleString('en-US')} créditos a tu billetera.</p>`
+    : ''
+  const intro = d.toTrainer
+    ? `${esc(d.studentName ?? 'Un alumno')} canceló su lugar en esta clase:`
+    : `tu clase fue cancelada (${esc(d.byLabel)}):`
+  const body = `
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b7280;">Hola ${esc(d.firstName)}, ${intro}</p>
+    <table width="100%" style="border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;margin-bottom:20px;">${classRows({ ...d, total: undefined })}</table>
+    ${refund}
+    ${d.reason ? `<p style="margin:0;font-size:13px;color:#6b7280;">Motivo: ${esc(d.reason)}</p>` : ''}`
+  await send(d.email, 'Clase cancelada - SportBooking', 'Clase cancelada', body, '#EF4444')
+}

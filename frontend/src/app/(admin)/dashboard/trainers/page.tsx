@@ -102,6 +102,8 @@ export default function AdminTrainersPage() {
                         <TableColumn>CONTACTO</TableColumn>
                         <TableColumn>DEPORTES</TableColumn>
                         <TableColumn>FRANJAS</TableColumn>
+                        <TableColumn>CLASES</TableColumn>
+                        <TableColumn>CANCELACIONES</TableColumn>
                         <TableColumn>DESDE</TableColumn>
                         <TableColumn>ESTADO</TableColumn>
                         <TableColumn>ALTA</TableColumn>
@@ -123,6 +125,11 @@ export default function AdminTrainersPage() {
                                     </TableCell>
                                     <TableCell>{t.sports.length ? t.sports.join(", ") : "—"}</TableCell>
                                     <TableCell>{t.slotsCount}</TableCell>
+                                    <TableCell>{t.classesCount}</TableCell>
+                                    <TableCell className="text-xs text-default-500">
+                                        <p>Entrenador: {t.cancelledByTrainer}</p>
+                                        <p>Alumnos: {t.cancelledByClients}</p>
+                                    </TableCell>
                                     <TableCell>{t.minRate != null ? <Credits amount={t.minRate} /> : "—"}</TableCell>
                                     <TableCell><Chip size="sm" variant="flat" color={meta.color}>{meta.label}</Chip></TableCell>
                                     <TableCell className="text-default-500">{formatDateTimeAr(t.createdAt)}</TableCell>

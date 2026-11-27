@@ -4,7 +4,7 @@ import { Link, Button } from "@heroui/react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthStore } from "@/stores/auth-store";
-import { AcademicCapIcon, ArrowLeftIcon, ArrowRightStartOnRectangleIcon, BellIcon, BuildingLibraryIcon, CalendarIcon, ChartBarIcon, CircleStackIcon, ClockIcon, CurrencyDollarIcon, MapPinIcon, MegaphoneIcon, NoSymbolIcon, QuestionMarkCircleIcon, Squares2X2Icon, TrophyIcon, UserIcon, UsersIcon, WalletIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { AcademicCapIcon, ArrowLeftIcon, ArrowRightStartOnRectangleIcon, BellIcon, BuildingLibraryIcon, CalendarDaysIcon, CalendarIcon, ChartBarIcon, CircleStackIcon, ClockIcon, CurrencyDollarIcon, MapPinIcon, MegaphoneIcon, NoSymbolIcon, QuestionMarkCircleIcon, Squares2X2Icon, TrophyIcon, UserIcon, UsersIcon, WalletIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useEffect } from "react";
 import { useSidebarStore } from "@/stores/sidebar-store";
 
@@ -27,10 +27,12 @@ export const PANEL_MENU: { href: string; label: string; icon: typeof Squares2X2I
     { href: "/dashboard/pricing", label: "Precios", icon: CurrencyDollarIcon, roles: ADMINS },
     { href: "/dashboard/blocked-slots", label: "Bloqueos", icon: NoSymbolIcon, roles: ADMINS },
     { href: "/dashboard/trainers", label: "Entrenadores", icon: AcademicCapIcon, roles: ["ADMIN"] },
+    { href: "/dashboard/classes", label: "Clases", icon: CalendarDaysIcon, roles: ["ADMIN"] },
     { href: "/dashboard/users", label: "Usuarios", icon: UsersIcon, roles: ["ADMIN"] },
     { href: "/dashboard/sports", label: "Deportes", icon: TrophyIcon, roles: ["ADMIN"] },
     { href: "/dashboard/advertising", label: "Publicidad", icon: MegaphoneIcon, roles: ["ADMIN"] },
-    // Entrenador (spec entrenadores, Etapa 1)
+    // Entrenador (spec entrenadores)
+    { href: "/dashboard/trainer/classes", label: "Mis clases", icon: CalendarDaysIcon, roles: ["TRAINER"] },
     { href: "/dashboard/trainer/availability", label: "Disponibilidad", icon: ClockIcon, roles: ["TRAINER"] },
     { href: "/dashboard/trainer/blocks", label: "Bloqueos", icon: NoSymbolIcon, roles: ["TRAINER"] },
     { href: "/dashboard/trainer/profile", label: "Mi perfil de entrenador", icon: UserIcon, roles: ["TRAINER"] },

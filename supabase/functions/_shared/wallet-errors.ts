@@ -36,6 +36,11 @@ const STATUS: Record<string, number> = {
   WL004: 409,
   WL005: 404,
   WL006: 400,
+  // Entrenadores y clases (migraciones 065/066)
+  TR001: 403,
+  TR002: 400,
+  TR003: 404,
+  TR004: 409,
 }
 
 const CODE_NAME: Record<string, string> = {
@@ -62,6 +67,10 @@ export function walletProblem(e: DbError, fallback = 'No se pudo completar la op
       code: CODE_NAME[code],
       extra: parseDetails(e.details),
     }
+  }
+  // Clases (066): dos clases del entrenador a la vez (última barrera de la base)
+  if (code === '23P01' && /trainer_classes/.test(e.message ?? '')) {
+    return { message: 'Ese horario se acaba de ocupar. Elegí otro.', status: 409 }
   }
   // Integridad de la reserva (025): horario ocupado, fuera de horario, bloqueado
   if (code === '23P01' || code === '23514') {

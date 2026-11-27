@@ -109,10 +109,15 @@ export default function AdminTrainerDetailPage({ params }: { params: Promise<{ i
                     {t.role !== "TRAINER" && <p className="text-xs text-warning mt-1">Esta cuenta ya no tiene rol de entrenador.</p>}
                     {!t.isActive && <p className="text-xs text-danger mt-1">La cuenta está desactivada.</p>}
                 </div>
-                <Button color={suspended ? "primary" : "danger"} variant={suspended ? "solid" : "flat"} className="w-full sm:w-auto"
-                    onPress={() => { setReason(""); setReasonError(null); statusModal.onOpen(); }}>
-                    {suspended ? "Reactivar" : "Suspender"}
-                </Button>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                    <Button as={Link} href={`/dashboard/classes?trainer=${t.trainerId}`} variant="bordered" className="w-full sm:w-auto">
+                        Ver clases
+                    </Button>
+                    <Button color={suspended ? "primary" : "danger"} variant={suspended ? "solid" : "flat"} className="w-full sm:w-auto"
+                        onPress={() => { setReason(""); setReasonError(null); statusModal.onOpen(); }}>
+                        {suspended ? "Reactivar" : "Suspender"}
+                    </Button>
+                </div>
             </div>
 
             {suspended && (

@@ -63,3 +63,44 @@ export function finalRate(rate: number, percent: number): number {
 export function sortSlots<T extends Pick<TrainerSlot, 'dayOfWeek' | 'startTime'>>(slots: T[]): T[] {
     return [...slots].sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime))
 }
+
+// ---------------------------------------------------------------
+// Clases (Etapa 2)
+// ---------------------------------------------------------------
+
+/** Quién canceló, en palabras. */
+export const CANCELLED_BY_LABEL: Record<string, string> = {
+    CLIENT: 'el alumno',
+    TRAINER: 'el entrenador',
+    ADMIN: 'la administración',
+    SYSTEM: 'el sistema',
+}
+
+/**
+ * Estado de negocio de una reserva de clase (negocio.md): Realizada (pagada, la clase no terminó),
+ * Completada (la clase terminó) o Cancelada.
+ */
+export function classBookingChip(
+    b: { status: string; class: { end: string } }, nowMs: number,
+): { label: string; color: 'primary' | 'success' | 'danger' } {
+    if (b.status === 'CANCELLED') return { label: 'Cancelada', color: 'danger' }
+    if (b.status === 'COMPLETED' || new Date(b.class.end).getTime() <= nowMs) return { label: 'Completada', color: 'success' }
+    return { label: 'Realizada', color: 'primary' }
+}
+
+/** Estado de una clase para el entrenador y el admin. */
+export function classChip(
+    c: { status: string; end: string; start: string }, nowMs: number,
+): { label: string; color: 'primary' | 'success' | 'danger' | 'warning' } {
+    if (c.status === 'CANCELLED') return { label: 'Cancelada', color: 'danger' }
+    if (c.status === 'COMPLETED' || new Date(c.end).getTime() <= nowMs) return { label: 'Completada', color: 'success' }
+    if (new Date(c.start).getTime() <= nowMs) return { label: 'En curso', color: 'warning' }
+    return { label: 'Próxima', color: 'primary' }
+}
+
+/** Días AR: "lun, mié y vie" a partir de 0..6. */
+export function daysLabel(days: number[]): string {
+    const short = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
+    const d = [...new Set(days)].sort((a, b) => a - b).map((i) => short[i])
+    return d.length <= 1 ? (d[0] ?? '—') : `${d.slice(0, -1).join(', ')} y ${d[d.length - 1]}`
+}

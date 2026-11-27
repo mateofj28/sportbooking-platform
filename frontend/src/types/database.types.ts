@@ -394,6 +394,116 @@ export type Database = {
         }
         Relationships: []
       }
+      class_bookings: {
+        Row: {
+          base_price: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_by_role: string | null
+          class_id: string
+          commission_amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          paid_at: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          reminder_sent_at: string | null
+          status: Database["public"]["Enums"]["booking_status"]
+          total_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          base_price: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_by_role?: string | null
+          class_id: string
+          commission_amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          reminder_sent_at?: string | null
+          status?: Database["public"]["Enums"]["booking_status"]
+          total_price: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          base_price?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_by_role?: string | null
+          class_id?: string
+          commission_amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          reminder_sent_at?: string | null
+          status?: Database["public"]["Enums"]["booking_status"]
+          total_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_bookings_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_bookings_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_bookings_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "trainer_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_bookings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_bookings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facilities: {
         Row: {
           capacity: number | null
@@ -845,6 +955,99 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "trainer_blocks_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      trainer_classes: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          capacity: number
+          created_at: string
+          end_datetime: string
+          hours: number
+          id: string
+          is_group: boolean
+          location: string
+          slot_id: string | null
+          sport_id: string
+          start_datetime: string
+          status: Database["public"]["Enums"]["class_status"]
+          trainer_id: string
+          updated_at: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          capacity: number
+          created_at?: string
+          end_datetime: string
+          hours: number
+          id?: string
+          is_group: boolean
+          location: string
+          slot_id?: string | null
+          sport_id: string
+          start_datetime: string
+          status?: Database["public"]["Enums"]["class_status"]
+          trainer_id: string
+          updated_at?: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          capacity?: number
+          created_at?: string
+          end_datetime?: string
+          hours?: number
+          id?: string
+          is_group?: boolean
+          location?: string
+          slot_id?: string | null
+          sport_id?: string
+          start_datetime?: string
+          status?: Database["public"]["Enums"]["class_status"]
+          trainer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_classes_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_classes_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_classes_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "trainer_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_classes_sport_id_fkey"
+            columns: ["sport_id"]
+            isOneToOne: false
+            referencedRelation: "sports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_classes_trainer_id_fkey"
             columns: ["trainer_id"]
             isOneToOne: false
             referencedRelation: "trainers"
@@ -1337,6 +1540,7 @@ export type Database = {
           amount: number
           balance_after: number
           booking_id: string | null
+          class_booking_id: string | null
           created_at: string
           created_by: string | null
           detail: string
@@ -1349,6 +1553,7 @@ export type Database = {
           amount: number
           balance_after: number
           booking_id?: string | null
+          class_booking_id?: string | null
           created_at?: string
           created_by?: string | null
           detail: string
@@ -1361,6 +1566,7 @@ export type Database = {
           amount?: number
           balance_after?: number
           booking_id?: string | null
+          class_booking_id?: string | null
           created_at?: string
           created_by?: string | null
           detail?: string
@@ -1375,6 +1581,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_class_booking_id_fkey"
+            columns: ["class_booking_id"]
+            isOneToOne: false
+            referencedRelation: "class_bookings"
             referencedColumns: ["id"]
           },
           {
@@ -1466,6 +1679,18 @@ export type Database = {
     }
     Functions: {
       admin_balances_summary: { Args: never; Returns: Json }
+      admin_classes: {
+        Args: {
+          p_from?: string
+          p_page?: number
+          p_size?: number
+          p_sport?: string
+          p_status?: string
+          p_to?: string
+          p_trainer?: string
+        }
+        Returns: Json
+      }
       admin_list_bookings: {
         Args: {
           p_from?: string
@@ -1532,12 +1757,25 @@ export type Database = {
         }
         Returns: Json
       }
+      ar_date: { Args: { p_ts: string }; Returns: string }
       ar_day_key: { Args: { ts: string }; Returns: string }
       ar_day_start: { Args: { p_day: string }; Returns: string }
       ar_midnight_utc: { Args: { date_str: string }; Returns: string }
       ar_month: { Args: { p_ts: string }; Returns: string }
       ar_province_codes: { Args: never; Returns: string[] }
       ar_province_name: { Args: { p_code: string }; Returns: string }
+      book_class: {
+        Args: {
+          p_by: string
+          p_expected: number
+          p_hours: number
+          p_sport: string
+          p_start: string
+          p_trainer: string
+          p_user: string
+        }
+        Returns: Json
+      }
       booking_label: { Args: { p_booking: string }; Returns: string }
       bt_apply: {
         Args: {
@@ -1561,7 +1799,52 @@ export type Database = {
         Args: { p_booking: string; p_by: string; p_reason: string }
         Returns: Json
       }
+      cancel_class_booking: {
+        Args: { p_by: string; p_id: string; p_reason: string }
+        Returns: Json
+      }
+      cancel_trainer_class: {
+        Args: { p_by: string; p_class: string; p_reason: string }
+        Returns: Json
+      }
+      class_actor_role: {
+        Args: { p_by: string; p_owner: string; p_trainer: string }
+        Returns: string
+      }
+      class_booking_do_cancel: {
+        Args: { p_by: string; p_id: string; p_reason: string; p_role: string }
+        Returns: number
+      }
+      class_json: { Args: { p_class: string; p_view: string }; Returns: Json }
+      class_label: { Args: { p_class: string }; Returns: string }
+      class_options: {
+        Args: {
+          p_day: string
+          p_hours: number
+          p_sport: string
+          p_trainer: string
+          p_user: string
+        }
+        Returns: {
+          already: boolean
+          base: number
+          capacity: number
+          class_id: string
+          commission: number
+          end_at: string
+          is_group: boolean
+          location: string
+          slot_id: string
+          start_at: string
+          taken: number
+          total: number
+        }[]
+      }
       clock_minutes: { Args: { p: string }; Returns: number }
+      close_empty_class: {
+        Args: { p_by: string; p_class: string }
+        Returns: undefined
+      }
       complete_past_bookings: { Args: never; Returns: number }
       create_booking_paid: {
         Args: {
@@ -1628,6 +1911,10 @@ export type Database = {
       is_venue_admin: { Args: never; Returns: boolean }
       lock_venue_payouts: { Args: { p_venue: string }; Returns: undefined }
       my_booking_stats: { Args: never; Returns: Json }
+      my_class_bookings: {
+        Args: { p_page?: number; p_scope?: string; p_size?: number }
+        Returns: Json
+      }
       my_wallet_history: {
         Args: {
           p_from?: string
@@ -1671,6 +1958,17 @@ export type Database = {
       }
       request_venue_payout: { Args: { p_amount?: number }; Returns: Json }
       require_trainer: { Args: never; Returns: string }
+      search_trainers: {
+        Args: {
+          p_dow?: number
+          p_max?: number
+          p_min?: number
+          p_page?: number
+          p_size?: number
+          p_sport?: string
+        }
+        Returns: Json
+      }
       server_now: { Args: never; Returns: string }
       set_user_role: {
         Args: { p_role: string; p_user_id: string; p_venue_id?: string }
@@ -1680,14 +1978,32 @@ export type Database = {
         Args: { p_end: string; p_reason: string; p_start: string }
         Returns: Json
       }
+      trainer_availability: {
+        Args: {
+          p_date: string
+          p_hours: number
+          p_sport: string
+          p_trainer: string
+        }
+        Returns: Json
+      }
       trainer_delete_block: { Args: { p_id: string }; Returns: Json }
       trainer_delete_slot: { Args: { p_id: string }; Returns: Json }
+      trainer_final_rate: {
+        Args: { p_percent: number; p_rate: number }
+        Returns: number
+      }
       trainer_is_public: { Args: { p_trainer: string }; Returns: boolean }
+      trainer_my_classes: {
+        Args: { p_page?: number; p_scope?: string; p_size?: number }
+        Returns: Json
+      }
       trainer_my_panel: { Args: never; Returns: Json }
       trainer_panel_json: {
         Args: { p_trainer: string; p_with_commission: boolean }
         Returns: Json
       }
+      trainer_public_profile: { Args: { p_trainer: string }; Returns: Json }
       trainer_publish_problems: {
         Args: { p_trainer: string }
         Returns: string[]
@@ -1756,10 +2072,22 @@ export type Database = {
         }
         Returns: number
       }
+      wallet_apply_class: {
+        Args: {
+          p_amount: number
+          p_by: string
+          p_class_booking: string
+          p_detail: string
+          p_kind: Database["public"]["Enums"]["wallet_tx_kind"]
+          p_user: string
+        }
+        Returns: number
+      }
     }
     Enums: {
       billing_type: "PER_SESSION" | "MONTHLY"
       booking_status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"
+      class_status: "OPEN" | "CANCELLED" | "COMPLETED"
       notification_type:
         | "BOOKING_CREATED"
         | "BOOKING_PAID"
@@ -1912,6 +2240,7 @@ export const Constants = {
     Enums: {
       billing_type: ["PER_SESSION", "MONTHLY"],
       booking_status: ["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"],
+      class_status: ["OPEN", "CANCELLED", "COMPLETED"],
       notification_type: [
         "BOOKING_CREATED",
         "BOOKING_PAID",

@@ -63,7 +63,8 @@ export const NAV_SECTIONS: NavSection[] = [
 
     // "Más" -> Actividad (las que no existen todavía: poner href y available: true cuando estén)
     { key: "estadisticas", label: "Estadísticas", href: "/estadisticas", icon: ChartBarIcon, group: "activity", available: true },
-    { key: "entrenamientos", label: "Entrenamientos", href: "/entrenamientos", icon: FireIcon, group: "activity", available: false },
+    // Clases con entrenadores (spec entrenadores, E21: antes "Entrenamientos")
+    { key: "entrenadores", label: "Entrenadores", href: "/entrenadores", icon: FireIcon, group: "activity", available: true },
     { key: "escuela", label: "Escuela de fútbol", href: "/escuela-de-futbol", icon: AcademicCapIcon, group: "activity", available: false },
 ];
 

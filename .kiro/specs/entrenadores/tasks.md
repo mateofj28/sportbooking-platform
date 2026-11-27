@@ -33,19 +33,19 @@ Flujo de cada tarea con base: probar en `BEGIN … ROLLBACK` → aplicar → dep
 
 ## Etapa 2 — Reservar una clase única
 
-- [ ] 2.1 Migración: `trainer_classes`, `class_bookings` (EXCLUDE, cupo, unique por alumno), `class_price`,
+- [x] 2.1 Migración: `trainer_classes`, `class_bookings` (EXCLUDE, cupo, unique por alumno), `class_price`,
   `trainer_availability`, `search_trainers`, `book_class`, `cancel_class_booking`, `cancel_trainer_class`,
   `wallet_transactions.class_booking_id`; RLS.
   - _Req. 5, 6, 7, 9_
-- [ ] 2.2 Edge: `create-class-booking`, `cancel-class-booking`, `cancel-trainer-class`; errores `TR00x` traducidos.
+- [x] 2.2 Edge: `create-class-booking`, `cancel-class-booking`, `cancel-trainer-class`; errores `TR00x` traducidos.
   - _Req. 7, 9_
-- [ ] 2.3 Cliente: `/entrenadores` (lista y filtros), `/entrenadores/[id]` (perfil, día, duración, horarios,
+- [x] 2.3 Cliente: `/entrenadores` (lista y filtros), `/entrenadores/[id]` (perfil, día, duración, horarios,
   confirmar con saldo), pestaña **Clases** en Mis reservas, detalle y cancelación. Navegación "Entrenadores".
   - _Req. 5, 6, 7, 9, E21_
-- [ ] 2.4 Entrenador: Mis clases (próximas / historial, alumnos, cancelar). Admin: Clases (todas, filtros,
+- [x] 2.4 Entrenador: Mis clases (próximas / historial, alumnos, cancelar). Admin: Clases (todas, filtros,
   cancelar).
   - _Req. 10.2, 11.2_
-- [ ] 2.5 Cierre de etapa (incluye prueba de concurrencia por el último lugar y por el mismo horario).
+- [x] 2.5 Cierre de etapa (incluye prueba de concurrencia por el último lugar y por el mismo horario).
 
 ## Etapa 3 — Clases fijas y cambios del entrenador
 

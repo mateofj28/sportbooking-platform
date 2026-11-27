@@ -186,3 +186,28 @@ Relación clave:
 - El **admin de sede no ve nada** de entrenadores. El entrenador no ve nada del negocio de canchas: su panel
   (`/dashboard`) solo tiene Inicio, Disponibilidad, Bloqueos, Mi perfil de entrenador y Ayuda. En la vista de
   cliente reserva canchas con las reglas de cliente, como los administradores. Cambiar de vista no cambia datos.
+
+### Etapa 2: reservar una clase única
+
+- El cliente busca en **Entrenadores** (`/entrenadores`, menú "Más"): solo perfiles publicados, filtros por deporte,
+  día y precio final por hora, resueltos y paginados en la base (`search_trainers`).
+- Horarios (`trainer_availability` / `class_options`): inicio en pasos de 1 h dentro de una franja que da ese
+  deporte (incluye la parte después de medianoche de la franja del día anterior); la clase entera entra en la
+  franja; **desde 24 h y hasta 30 días** (hora AR); sin bloqueos en ningún día que toque la clase.
+- Grupales: la primera reserva define la clase (inicio, deporte y duración). Los siguientes se suman si coincide
+  todo y hay cupo ("X lugares"). Cualquier otra clase que se pise deja el horario fuera.
+- Precio de una clase: `base = tarifa (individual o grupal por persona) × horas`,
+  `comisión = round(base × % / 100)`, `total = base + comisión`. Se paga **al reservar** con créditos
+  (`book_class`, todo o nada, `expected_total`); la clase queda Realizada.
+- La base garantiza: una sola reserva por cliente y clase, cupo con la fila bloqueada, reservas del mismo
+  entrenador serializadas, `EXCLUDE` contra dos clases a la vez, el entrenador no se reserva a sí mismo.
+- Cancelar (`cancel_class_booking`): la base decide el rol. **Su propia reserva** = reglas de cliente (24 h o más,
+  motivo opcional). **El entrenador de la clase** o **el admin general** = en cualquier momento, motivo
+  obligatorio (3 a 300). Siempre 100% de devolución en la misma transacción. Una clase sin alumnos se cancela sola
+  y libera el horario. El entrenador o el admin pueden cancelar la clase entera (`cancel_trainer_class`).
+- Bloquear días con clases reservadas se rechaza y dice cuáles (E16).
+- Dinero: mismos movimientos de billetera que las canchas (`BOOKING_PAYMENT` / `BOOKING_REFUND`) con
+  `class_booking_id`; los totales de Balances siguen cuadrando. Hasta la Etapa 4 (pago a entrenadores), lo cobrado
+  por clases jugadas figura en Balances como "gastado no jugado".
+- El entrenador ve sus alumnos (sin DNI ni teléfono) y su tarifa; el admin general ve todo (email, comisión, total).
+  El admin de sede no ve nada.

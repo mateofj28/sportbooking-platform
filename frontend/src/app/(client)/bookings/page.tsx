@@ -22,7 +22,8 @@ import { formatPoints } from "@/lib/points";
 import { PriceChangeNote } from "@/components/shared/price-change-note";
 import { useAuthStore } from "@/stores/auth-store";
 import { Navbar } from "@/components/layout/navbar";
-import { ArrowPathRoundedSquareIcon, CalendarIcon, ClockIcon, CurrencyDollarIcon, MapPinIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { MyClassesTab } from "@/components/classes/my-classes-tab";
+import { AcademicCapIcon, ArrowPathRoundedSquareIcon, CalendarIcon, ClockIcon, CurrencyDollarIcon, MapPinIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getBookingStatusChip, isPayable } from "@/lib/booking-status";
@@ -47,7 +48,11 @@ const FILTER_TABS: { key: BookingFilter; label: string }[] = [
 export default function BookingsPage() {
     const { isAuthenticated, isHydrated } = useAuthStore();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<"bookings" | "recurring">("bookings");
+    const [activeTab, setActiveTab] = useState<"bookings" | "recurring" | "classes">("bookings");
+    // ?tab=classes (al reservar una clase se vuelve acá)
+    useEffect(() => {
+        if (new URLSearchParams(window.location.search).get("tab") === "classes") setActiveTab("classes");
+    }, []);
     const [activeFilter, setActiveFilter] = useState<BookingFilter>("UPCOMING");
 
     const { data: recurringList, isLoading: recurringLoading } = useRecurringBookings();
@@ -152,9 +157,21 @@ export default function BookingsPage() {
                             </span>
                         )}
                     </button>
+                    <button
+                        onClick={() => setActiveTab("classes")}
+                        className={`-mb-px flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${activeTab === "classes"
+                            ? "border-primary text-primary"
+                            : "border-transparent text-default-500 hover:text-default-700"
+                            }`}
+                    >
+                        <AcademicCapIcon className="h-4 w-4" />
+                        Clases
+                    </button>
                 </div>
 
-                {activeTab === "recurring" ? (
+                {activeTab === "classes" ? (
+                    <MyClassesTab />
+                ) : activeTab === "recurring" ? (
                     <div className="mt-6 space-y-4">
                         {recurringLoading ? (
                             <div className="flex justify-center py-12"><Spinner size="lg" /></div>

@@ -15,7 +15,9 @@
 // Es una función pura (sin red ni base) para poder probarla con casos concretos.
 // ============================================================
 
-export type Role = 'CLIENT' | 'ADMIN' | 'VENUE_ADMIN'
+// TRAINER (entrenador, spec entrenadores E9): para canchas y reservas propias se comporta como un
+// cliente (E7). Sus permisos de entrenador (sus clases) se agregan en la Etapa 2.
+export type Role = 'CLIENT' | 'ADMIN' | 'VENUE_ADMIN' | 'TRAINER'
 
 export interface Actor {
   id: string
@@ -30,7 +32,7 @@ export function actorFromUser(user: {
   app_metadata?: Record<string, unknown>
 }): Actor {
   const raw = user.app_metadata?.role
-  const role: Role = raw === 'ADMIN' || raw === 'VENUE_ADMIN' ? raw : 'CLIENT'
+  const role: Role = raw === 'ADMIN' || raw === 'VENUE_ADMIN' || raw === 'TRAINER' ? raw : 'CLIENT'
   const venueId = user.app_metadata?.venue_id
   return { id: user.id, role, venueId: typeof venueId === 'string' ? venueId : null }
 }
@@ -54,7 +56,8 @@ export function canManage(actor: Actor, ownerId: string, resourceVenueId: string
  * (Ej.: la cancelación con 24 h de anticipación.)
  */
 export function appliesClientRules(actor: Actor, ownerId: string): boolean {
-  return actor.role === 'CLIENT' || ownerId === actor.id
+  // Un entrenador, en canchas, es un cliente más (E7)
+  return actor.role === 'CLIENT' || actor.role === 'TRAINER' || ownerId === actor.id
 }
 
 /**

@@ -20,7 +20,7 @@ hora de Argentina y el panel `/dashboard`.
 | E4 | Precio | Clases: **tarifa por hora × horas**. Canchas siguen con precio por turno. Son reglas separadas. |
 | E5 | Alta | **La hace el admin general**: crea la cuenta (nombre, email, teléfono, DNI, contraseña, foto opcional). Después el entrenador completa su perfil y lo **publica**. No hay registro abierto de entrenadores. |
 | E6 | Datos | DNI y teléfono obligatorios. |
-| E7 | Doble rol | **Un cliente puede ser entrenador y un entrenador puede ser cliente**: es un cambio de rol que habilita tareas específicas, con la misma cuenta. Se respeta lo que tiene cada uno: billetera, reservas como cliente, perfil, clases y saldo como entrenador. El cambio de rol nunca borra datos. Como entrenador, también reserva canchas y clases de otros entrenadores (reglas de cliente). |
+| E7 | Doble rol | La cuenta del entrenador tiene rol **`TRAINER`** y **también es cliente**: pasa de **"Panel"** (da clases) a **"Vista de cliente"** (reserva canchas o clases de otros entrenadores) cuando quiera, como hoy los admins. Es un **cambio de contexto**, no de datos: no borra ni mueve nada, y puede usar uno, otro, los dos o ninguno cualquier día. Ej.: José da una clase a Santiago de 20 a 21 y después, como cliente, juega tenis con Alfredo de 22 a 23. Como cliente rige todo lo de cliente (pago con créditos, 24 h para cancelar). |
 | E8 | Confirmación | La reserva queda **confirmada al pagar**. El entrenador no la acepta. |
 | E9 | Panel | Rol nuevo **`TRAINER`**, con su panel dentro de `/dashboard`. |
 | E10 | Lugar | **Texto libre** por franja de disponibilidad (ej. "Club Social Roca, cancha 2"). La cancha la consigue el entrenador por fuera de la app. |
@@ -77,15 +77,13 @@ personas que conozco.
 3. EL admin general DEBE poder **suspender** y **reactivar** a un entrenador. Suspendido: no aparece a los
    clientes y no se pueden hacer reservas nuevas; las ya hechas siguen vigentes salvo que el admin las cancele.
 4. NO DEBE existir autoregistro como entrenador desde la pantalla pública de registro.
-5. EL admin general DEBE poder cambiar el rol de un usuario **de cliente a entrenador y de entrenador a cliente**
-   desde Usuarios (E7). El cambio **no borra nada**:
-   - de cliente a entrenador: conserva billetera, movimientos y reservas como cliente; el perfil de entrenador
-     arranca en borrador;
-   - de entrenador a cliente: conserva billetera, reservas como cliente, perfil, historial de clases y saldo
-     ganado (el admin se lo sigue pudiendo pagar); su perfil deja de mostrarse a los clientes.
-   - SI el entrenador tiene clases **futuras**, EL sistema DEBE impedir pasarlo a cliente hasta que esas clases
-     se cancelen (100% de devolución a los alumnos) o terminen. **A confirmar.**
-   - SI vuelve a ser entrenador, recupera su perfil, franjas y saldo tal como estaban.
+5. EL admin general DEBE poder hacer entrenador a un **usuario que ya es cliente** (desde Usuarios). Conserva su
+   billetera, movimientos y reservas; el perfil de entrenador arranca en borrador.
+6. LA cuenta de entrenador DEBE poder usar la **vista de cliente** en cualquier momento con el cambio
+   "Panel" / "Vista de cliente" (E7), sin que eso cambie ni borre datos. Lo que hace como cliente (reservas,
+   pagos, cancelaciones) se rige por las reglas de cliente; lo que hace como entrenador, por las de entrenador.
+7. PARA que alguien deje de dar clases, el admin general lo **suspende** (2.3): sus datos, historial y saldo
+   ganado se conservan y el admin le sigue pudiendo pagar lo que tenga sin cobrar.
 
 ## Requisito 3 — Perfil del entrenador
 

@@ -79,7 +79,8 @@ function MoreSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
     const { logout } = useAuth();
     const { isDark, toggleTheme } = useTheme();
     const [query, setQuery] = useState("");
-    const isAdminUser = user?.role === "ADMIN" || user?.role === "VENUE_ADMIN";
+    const isAdminUser = user?.role === "ADMIN" || user?.role === "VENUE_ADMIN" || user?.role === "TRAINER";
+    const panelLabel = user?.role === "TRAINER" ? "Mi panel" : "Panel de administración";
 
     const groups = useMemo(() => groupedSections(user?.role), [user?.role]);
     const total = groups.reduce((n, g) => n + g.items.length, 0);
@@ -176,7 +177,7 @@ function MoreSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
                     <div className="mt-3 border-t border-divider pt-2">
                         {isAdminUser && (
                             <NextLink href="/dashboard" onClick={close} className={row}>
-                                <Squares2X2Icon className="h-5 w-5 text-default-500" aria-hidden="true" /> Panel de administración
+                                <Squares2X2Icon className="h-5 w-5 text-default-500" aria-hidden="true" /> {panelLabel}
                             </NextLink>
                         )}
                         <button type="button" onClick={() => { close(); logout(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-danger hover:bg-danger/10">

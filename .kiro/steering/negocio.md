@@ -163,3 +163,26 @@ Relación clave:
 - **Integridad**: todo movimiento es una fila inmutable (`wallet_transactions`, `venue_ledger`); nadie escribe por la
   API. Los créditos solo se mueven con las funciones de la migración 043. Un usuario con movimientos no se borra: se desactiva.
 - Pantallas: cliente "Mi billetera" (`/wallet`, saldo en el navbar); admin de sede "Billetera"; admin general "Créditos" y "Balances".
+
+## Entrenadores (spec `.kiro/specs/entrenadores`) — Etapa 1: alta y panel
+
+- Rol **TRAINER**. Lo crea solo el admin general (Entrenadores → "Nuevo entrenador", o Usuarios con rol
+  Entrenador); nombre, email, contraseña, **teléfono y DNI obligatorios**. La ficha arranca en **Borrador**.
+- Estados de la ficha: **Borrador** → **Publicado** (lo hace el entrenador) → **Suspendido** (solo el admin general,
+  con motivo de 3 a 300 caracteres). Reactivar vuelve a **Borrador** y el entrenador publica de nuevo.
+  Solo un perfil Publicado es visible para los clientes.
+- Para publicar hace falta: al menos un deporte, al menos una franja, tarifa grupal en las franjas con deportes
+  grupales y que todos sus deportes sigan admitiendo clases. Si deja de cumplirse estando publicado, vuelve a Borrador.
+- Deportes: el admin general habilita las clases por deporte (`classes_enabled`), sus duraciones en horas
+  (`class_durations`, 1 a 8) y el cupo (`class_max_students`; 1 = individual, más de 1 = grupal).
+- Franjas semanales: horas en punto, pueden cruzar la medianoche, no se pueden pisar entre sí (toda la semana,
+  domingo → lunes incluido). Cada franja tiene lugar (texto libre), deportes del perfil, tarifa individual y
+  tarifa grupal (por alumno). Tarifas **por hora**, en créditos.
+- **Comisión por franja**: la define solo el admin general (`admin_set_slot_commission`, 1 a 100%). El entrenador
+  la ve en solo lectura con el precio final (`tarifa + round(tarifa × % / 100)`). Una franja nueva toma la
+  comisión de su franja modificada más recientemente (10% si es la primera).
+- Bloqueos: días completos (hora AR), desde hoy y hasta 2 años hacia adelante.
+- Todo lo del entrenador se escribe por funciones de la base (`trainer_*`, `admin_*`), nunca tablas directo.
+- El **admin de sede no ve nada** de entrenadores. El entrenador no ve nada del negocio de canchas: su panel
+  (`/dashboard`) solo tiene Inicio, Disponibilidad, Bloqueos, Mi perfil de entrenador y Ayuda. En la vista de
+  cliente reserva canchas con las reglas de cliente, como los administradores. Cambiar de vista no cambia datos.

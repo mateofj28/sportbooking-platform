@@ -88,6 +88,9 @@ export default function AdminVenuesPage() {
         slug: data.slug,
         address: data.address,
         locality_code: data.localityCode || null,
+        // La completa el trigger de la base con el nombre del municipio (migración 041);
+        // sin municipio la base rechaza el alta.
+        city: "",
         country: COUNTRY,
         description: data.description || null,
         amenities: data.amenities,

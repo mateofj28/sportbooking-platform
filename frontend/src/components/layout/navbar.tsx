@@ -81,7 +81,9 @@ export function Navbar() {
 
     // Los administradores también pueden usar la app como clientes (ver canchas, reservar, ver
     // sus propias reservas). El contexto lo define la ruta: /dashboard = gestión; el resto = cliente.
-    const isAdminUser = user?.role === "ADMIN" || user?.role === "VENUE_ADMIN";
+    // Usuarios con panel (/dashboard): admins y entrenadores. Con el entrenador, "Mi panel".
+    const isAdminUser = user?.role === "ADMIN" || user?.role === "VENUE_ADMIN" || user?.role === "TRAINER";
+    const panelLabel = user?.role === "TRAINER" ? "Mi panel" : "Panel de administración";
     const showClientLinks = !(isAdminUser && inDashboard);
 
     return (
@@ -148,7 +150,7 @@ export function Navbar() {
                             {inDashboard
                                 ? <EyeIcon className="h-3.5 w-3.5" aria-hidden="true" />
                                 : <Squares2X2Icon className="h-3.5 w-3.5" aria-hidden="true" />}
-                            {inDashboard ? "Vista de cliente" : "Panel de administración"}
+                            {inDashboard ? "Vista de cliente" : panelLabel}
                         </Link>
                     </NavbarItem>
                 )}
@@ -222,7 +224,7 @@ export function Navbar() {
                                             {isAdminUser && (
                                                 inDashboard
                                                     ? <MenuItem href="/inicio" icon={<EyeIcon className="h-4 w-4" />} label="Vista de cliente" />
-                                                    : <MenuItem href="/dashboard" icon={<Squares2X2Icon className="h-4 w-4" />} label="Panel de administración" />
+                                                    : <MenuItem href="/dashboard" icon={<Squares2X2Icon className="h-4 w-4" />} label={panelLabel} />
                                             )}
                                             {/* Tema con flecha */}
                                             <button

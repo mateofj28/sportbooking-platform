@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       advertisements: {
@@ -50,8 +25,8 @@ export type Database = {
           image_url: string
           is_active: boolean
           link_url: string | null
-          priority: number
           localities: string[]
+          priority: number
           scope: string
           starts_at: string | null
           title: string
@@ -67,8 +42,8 @@ export type Database = {
           image_url: string
           is_active?: boolean
           link_url?: string | null
-          priority?: number
           localities?: string[]
+          priority?: number
           scope?: string
           starts_at?: string | null
           title: string
@@ -84,8 +59,8 @@ export type Database = {
           image_url?: string
           is_active?: boolean
           link_url?: string | null
-          priority?: number
           localities?: string[]
+          priority?: number
           scope?: string
           starts_at?: string | null
           title?: string
@@ -96,10 +71,41 @@ export type Database = {
             foreignKeyName: "advertisements_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advertisements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
+      }
+      ar_localities: {
+        Row: {
+          category: string
+          code: string
+          kind: string
+          name: string
+          province_code: string
+        }
+        Insert: {
+          category: string
+          code: string
+          kind: string
+          name: string
+          province_code: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          kind?: string
+          name?: string
+          province_code?: string
+        }
+        Relationships: []
       }
       blocked_slots: {
         Row: {
@@ -137,6 +143,13 @@ export type Database = {
             foreignKeyName: "blocked_slots_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocked_slots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -145,6 +158,58 @@ export type Database = {
             columns: ["facility_id"]
             isOneToOne: false
             referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_price_changes: {
+        Row: {
+          booking_id: string
+          changed_at: string
+          currency: string
+          new_total: number
+          notified_at: string | null
+          old_total: number
+          user_id: string
+        }
+        Insert: {
+          booking_id: string
+          changed_at?: string
+          currency?: string
+          new_total: number
+          notified_at?: string | null
+          old_total: number
+          user_id: string
+        }
+        Update: {
+          booking_id?: string
+          changed_at?: string
+          currency?: string
+          new_total?: number
+          notified_at?: string | null
+          old_total?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_price_changes_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_price_changes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_price_changes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -224,7 +289,21 @@ export type Database = {
             foreignKeyName: "bookings_cancelled_by_fkey"
             columns: ["cancelled_by"]
             isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
             referencedColumns: ["id"]
           },
           {
@@ -252,10 +331,68 @@ export type Database = {
             foreignKeyName: "bookings_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
+      }
+      business_totals_audit: {
+        Row: {
+          checked_at: string
+          drift: Json
+          id: number
+        }
+        Insert: {
+          checked_at?: string
+          drift: Json
+          id?: never
+        }
+        Update: {
+          checked_at?: string
+          drift?: Json
+          id?: never
+        }
+        Relationships: []
+      }
+      business_totals_shards: {
+        Row: {
+          collected: number
+          commission: number
+          in_wallets: number
+          paid_to_venues: number
+          pending_to_venues: number
+          played: number
+          slot: number
+          spent_net: number
+        }
+        Insert: {
+          collected?: number
+          commission?: number
+          in_wallets?: number
+          paid_to_venues?: number
+          pending_to_venues?: number
+          played?: number
+          slot: number
+          spent_net?: number
+        }
+        Update: {
+          collected?: number
+          commission?: number
+          in_wallets?: number
+          paid_to_venues?: number
+          pending_to_venues?: number
+          played?: number
+          slot?: number
+          spent_net?: number
+        }
+        Relationships: []
       }
       facilities: {
         Row: {
@@ -348,6 +485,13 @@ export type Database = {
             columns: ["notification_id"]
             isOneToOne: false
             referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
             referencedColumns: ["id"]
           },
           {
@@ -557,6 +701,13 @@ export type Database = {
             foreignKeyName: "recurring_bookings_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_bookings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -565,6 +716,13 @@ export type Database = {
             columns: ["facility_id"]
             isOneToOne: false
             referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
             referencedColumns: ["id"]
           },
           {
@@ -620,6 +778,9 @@ export type Database = {
       sports: {
         Row: {
           billing_type: Database["public"]["Enums"]["billing_type"]
+          class_durations: number[]
+          class_max_students: number
+          classes_enabled: boolean
           created_at: string
           description: string | null
           id: string
@@ -630,6 +791,9 @@ export type Database = {
         }
         Insert: {
           billing_type?: Database["public"]["Enums"]["billing_type"]
+          class_durations?: number[]
+          class_max_students?: number
+          classes_enabled?: boolean
           created_at?: string
           description?: string | null
           id?: string
@@ -640,6 +804,9 @@ export type Database = {
         }
         Update: {
           billing_type?: Database["public"]["Enums"]["billing_type"]
+          class_durations?: number[]
+          class_max_students?: number
+          classes_enabled?: boolean
           created_at?: string
           description?: string | null
           id?: string
@@ -649,6 +816,420 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      trainer_blocks: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          reason: string | null
+          start_date: string
+          trainer_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          reason?: string | null
+          start_date: string
+          trainer_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          reason?: string | null
+          start_date?: string
+          trainer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_blocks_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      trainer_slot_sports: {
+        Row: {
+          slot_id: string
+          sport_id: string
+        }
+        Insert: {
+          slot_id: string
+          sport_id: string
+        }
+        Update: {
+          slot_id?: string
+          sport_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_slot_sports_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "trainer_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_slot_sports_sport_id_fkey"
+            columns: ["sport_id"]
+            isOneToOne: false
+            referencedRelation: "sports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trainer_slots: {
+        Row: {
+          commission_percent: number
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_active: boolean
+          location: string
+          rate_group: number | null
+          rate_individual: number
+          start_time: string
+          trainer_id: string
+          updated_at: string
+        }
+        Insert: {
+          commission_percent?: number
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_active?: boolean
+          location: string
+          rate_group?: number | null
+          rate_individual: number
+          start_time: string
+          trainer_id: string
+          updated_at?: string
+        }
+        Update: {
+          commission_percent?: number
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          location?: string
+          rate_group?: number | null
+          rate_individual?: number
+          start_time?: string
+          trainer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_slots_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      trainer_sports: {
+        Row: {
+          sport_id: string
+          trainer_id: string
+        }
+        Insert: {
+          sport_id: string
+          trainer_id: string
+        }
+        Update: {
+          sport_id?: string
+          trainer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_sports_sport_id_fkey"
+            columns: ["sport_id"]
+            isOneToOne: false
+            referencedRelation: "sports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_sports_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      trainers: {
+        Row: {
+          bio: string | null
+          created_at: string
+          created_by: string | null
+          experience: string | null
+          published_at: string | null
+          status: Database["public"]["Enums"]["trainer_status"]
+          suspended_at: string | null
+          suspended_reason: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          created_by?: string | null
+          experience?: string | null
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["trainer_status"]
+          suspended_at?: string | null
+          suspended_reason?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          created_by?: string | null
+          experience?: string | null
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["trainer_status"]
+          suspended_at?: string | null
+          suspended_reason?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_ledger: {
+        Row: {
+          amount: number
+          booking_id: string | null
+          commission: number
+          created_at: string
+          detail: string
+          id: string
+          kind: Database["public"]["Enums"]["venue_ledger_kind"]
+          period: string
+          settlement_id: string | null
+          venue_id: string
+        }
+        Insert: {
+          amount: number
+          booking_id?: string | null
+          commission?: number
+          created_at?: string
+          detail: string
+          id?: string
+          kind: Database["public"]["Enums"]["venue_ledger_kind"]
+          period: string
+          settlement_id?: string | null
+          venue_id: string
+        }
+        Update: {
+          amount?: number
+          booking_id?: string | null
+          commission?: number
+          created_at?: string
+          detail?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["venue_ledger_kind"]
+          period?: string
+          settlement_id?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_ledger_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_ledger_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "venue_settlements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_ledger_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_payout_requests: {
+        Row: {
+          amount: number
+          id: string
+          reject_reason: string | null
+          requested_at: string
+          requested_by: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          settlement_id: string | null
+          status: Database["public"]["Enums"]["payout_request_status"]
+          venue_id: string
+        }
+        Insert: {
+          amount: number
+          id?: string
+          reject_reason?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          settlement_id?: string | null
+          status?: Database["public"]["Enums"]["payout_request_status"]
+          venue_id: string
+        }
+        Update: {
+          amount?: number
+          id?: string
+          reject_reason?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          settlement_id?: string | null
+          status?: Database["public"]["Enums"]["payout_request_status"]
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_payout_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_payout_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_payout_requests_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_payout_requests_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_payout_requests_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "venue_settlements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_payout_requests_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_settlements: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          period: string
+          receipt_path: string | null
+          transfer_ref: string | null
+          venue_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          period: string
+          receipt_path?: string | null
+          transfer_ref?: string | null
+          venue_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          period?: string
+          receipt_path?: string | null
+          transfer_ref?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_settlements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_settlements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_settlements_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       venue_sports: {
         Row: {
@@ -704,8 +1285,7 @@ export type Database = {
         Insert: {
           address: string
           amenities?: string[]
-          // La completa la base desde locality_code (trigger venue_fill_municipality, 041)
-          city?: string
+          city: string
           country: string
           created_at?: string
           description?: string | null
@@ -742,28 +1322,279 @@ export type Database = {
           state?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "venues_locality_code_fkey"
+            columns: ["locality_code"]
+            isOneToOne: false
+            referencedRelation: "ar_localities"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          booking_id: string | null
+          created_at: string
+          created_by: string | null
+          detail: string
+          id: string
+          kind: Database["public"]["Enums"]["wallet_tx_kind"]
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          booking_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          detail: string
+          id?: string
+          kind: Database["public"]["Enums"]["wallet_tx_kind"]
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          booking_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          detail?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["wallet_tx_kind"]
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
-      [_ in never]: never
+      profile_directory: {
+        Row: {
+          email: string | null
+          first_name: string | null
+          id: string | null
+          last_name: string | null
+        }
+        Insert: {
+          email?: string | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+        }
+        Update: {
+          email?: string | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      admin_balances_summary: { Args: never; Returns: Json }
+      admin_list_bookings: {
+        Args: {
+          p_from?: string
+          p_page?: number
+          p_per_page?: number
+          p_search?: string
+          p_state?: string
+          p_to?: string
+        }
+        Returns: Json
+      }
+      admin_lookup_client: {
+        Args: { p_dni?: string; p_email?: string }
+        Returns: Json
+      }
+      admin_payout_pending_count: { Args: never; Returns: number }
+      admin_payout_requests: { Args: { p_venue?: string }; Returns: Json }
+      admin_points_users: {
+        Args: { p_page?: number; p_search?: string; p_size?: number }
+        Returns: Json
+      }
+      admin_set_slot_commission: {
+        Args: { p_percent: number; p_slot: string }
+        Returns: Json
+      }
+      admin_set_trainer_status: {
+        Args: { p_reason: string; p_suspend: boolean; p_trainer: string }
+        Returns: Json
+      }
+      admin_trainer_detail: { Args: { p_trainer: string }; Returns: Json }
+      admin_trainers: {
+        Args: {
+          p_page?: number
+          p_search?: string
+          p_size?: number
+          p_status?: string
+        }
+        Returns: Json
+      }
+      admin_venue_balances: {
+        Args: { p_page?: number; p_size?: number; p_venue?: string }
+        Returns: Json
+      }
+      admin_venue_payments: {
+        Args: {
+          p_from?: string
+          p_page?: number
+          p_search?: string
+          p_size?: number
+          p_to?: string
+          p_venue?: string
+        }
+        Returns: Json
+      }
+      admin_wallet_history: {
+        Args: {
+          p_from?: string
+          p_kind?: string
+          p_page?: number
+          p_size?: number
+          p_to?: string
+          p_user?: string
+          p_venue?: string
+        }
+        Returns: Json
+      }
       ar_day_key: { Args: { ts: string }; Returns: string }
+      ar_day_start: { Args: { p_day: string }; Returns: string }
       ar_midnight_utc: { Args: { date_str: string }; Returns: string }
+      ar_month: { Args: { p_ts: string }; Returns: string }
       ar_province_codes: { Args: never; Returns: string[] }
+      ar_province_name: { Args: { p_code: string }; Returns: string }
+      booking_label: { Args: { p_booking: string }; Returns: string }
+      bt_apply: {
+        Args: {
+          d_collected: number
+          d_commission: number
+          d_in_wallets: number
+          d_paid: number
+          d_pending: number
+          d_played: number
+          d_spent_net: number
+        }
+        Returns: undefined
+      }
+      bt_slot: { Args: never; Returns: number }
+      business_totals_verify: { Args: never; Returns: Json }
       calculate_price: {
         Args: { p_facility_id: string; p_start_datetime: string }
         Returns: Json
       }
+      cancel_booking: {
+        Args: { p_booking: string; p_by: string; p_reason: string }
+        Returns: Json
+      }
+      clock_minutes: { Args: { p: string }; Returns: number }
+      complete_past_bookings: { Args: never; Returns: number }
+      create_booking_paid: {
+        Args: {
+          p_by: string
+          p_end: string
+          p_facility: string
+          p_notes: string
+          p_start: string
+          p_user: string
+        }
+        Returns: string
+      }
+      emit_payout_notification: {
+        Args: {
+          p_admin: boolean
+          p_body: string
+          p_data: Json
+          p_title: string
+          p_type: Database["public"]["Enums"]["notification_type"]
+          p_venue: string
+        }
+        Returns: undefined
+      }
+      fmt_ar_datetime: { Args: { p_ts: string }; Returns: string }
+      fmt_points: { Args: { p: number }; Returns: string }
       get_active_advertisements: {
         Args: { p_locality?: string }
         Returns: {
           alt_text: string
           id: string
-          image_mobile_url: string | null
+          image_mobile_url: string
           image_url: string
-          link_url: string | null
+          link_url: string
           scope: string
         }[]
       }
@@ -795,14 +1626,135 @@ export type Database = {
         Returns: boolean
       }
       is_venue_admin: { Args: never; Returns: boolean }
+      lock_venue_payouts: { Args: { p_venue: string }; Returns: undefined }
+      my_booking_stats: { Args: never; Returns: Json }
+      my_wallet_history: {
+        Args: {
+          p_from?: string
+          p_kind?: string
+          p_page?: number
+          p_size?: number
+          p_to?: string
+        }
+        Returns: Json
+      }
       owns_venue: { Args: { p_venue_id: string }; Returns: boolean }
+      pay_booking: {
+        Args: { p_booking: string; p_expected: number; p_user: string }
+        Returns: Json
+      }
+      pay_bookings_batch: {
+        Args: { p_bookings: string[]; p_user: string }
+        Returns: Json
+      }
+      pay_venue: {
+        Args: {
+          p_amount: number
+          p_receipt_path: string
+          p_request: string
+          p_transfer_ref: string
+          p_venue: string
+        }
+        Returns: Json
+      }
+      pricing_default_commission: {
+        Args: { p_facility: string }
+        Returns: number
+      }
+      reject_venue_payout: {
+        Args: { p_reason: string; p_request: string }
+        Returns: Json
+      }
+      reprice_pending_recurring: {
+        Args: { p_facility_id: string }
+        Returns: number
+      }
+      request_venue_payout: { Args: { p_amount?: number }; Returns: Json }
+      require_trainer: { Args: never; Returns: string }
+      server_now: { Args: never; Returns: string }
       set_user_role: {
         Args: { p_role: string; p_user_id: string; p_venue_id?: string }
+        Returns: Json
+      }
+      trainer_add_block: {
+        Args: { p_end: string; p_reason: string; p_start: string }
+        Returns: Json
+      }
+      trainer_delete_block: { Args: { p_id: string }; Returns: Json }
+      trainer_delete_slot: { Args: { p_id: string }; Returns: Json }
+      trainer_is_public: { Args: { p_trainer: string }; Returns: boolean }
+      trainer_my_panel: { Args: never; Returns: Json }
+      trainer_panel_json: {
+        Args: { p_trainer: string; p_with_commission: boolean }
+        Returns: Json
+      }
+      trainer_publish_problems: {
+        Args: { p_trainer: string }
+        Returns: string[]
+      }
+      trainer_save_slot: {
+        Args: {
+          p_day: number
+          p_end: string
+          p_id: string
+          p_location: string
+          p_rate_group: number
+          p_rate_individual: number
+          p_sport_ids: string[]
+          p_start: string
+        }
+        Returns: Json
+      }
+      trainer_set_published: { Args: { p_publish: boolean }; Returns: Json }
+      trainer_slots_overlap: {
+        Args: {
+          d1: number
+          d2: number
+          e1: string
+          e2: string
+          s1: string
+          s2: string
+        }
+        Returns: boolean
+      }
+      trainer_upsert_profile: {
+        Args: { p_bio: string; p_experience: string; p_sport_ids: string[] }
         Returns: Json
       }
       venue_admin_can_see_profile: {
         Args: { p_profile_id: string }
         Returns: boolean
+      }
+      venue_balance_info: {
+        Args: { p_venue: string }
+        Returns: Record<string, unknown>
+      }
+      venue_wallet: {
+        Args: {
+          p_from?: string
+          p_kind?: string
+          p_page?: number
+          p_size?: number
+          p_to?: string
+          p_venue?: string
+        }
+        Returns: Json
+      }
+      wallet_admin_adjust: {
+        Args: { p_amount: number; p_reason: string; p_user: string }
+        Returns: Json
+      }
+      wallet_apply: {
+        Args: {
+          p_amount: number
+          p_booking: string
+          p_by: string
+          p_detail: string
+          p_kind: Database["public"]["Enums"]["wallet_tx_kind"]
+          p_reason: string
+          p_user: string
+        }
+        Returns: number
       }
     }
     Enums: {
@@ -822,7 +1774,15 @@ export type Database = {
         | "PAYOUT_PAID"
         | "PAYOUT_REJECTED"
       payment_status: "PENDING" | "PAID"
-      role: "CLIENT" | "ADMIN" | "VENUE_ADMIN"
+      payout_request_status: "PENDING" | "PAID" | "REJECTED"
+      role: "CLIENT" | "ADMIN" | "VENUE_ADMIN" | "TRAINER"
+      trainer_status: "DRAFT" | "PUBLISHED" | "SUSPENDED"
+      venue_ledger_kind: "BOOKING_CREDIT" | "SETTLEMENT"
+      wallet_tx_kind:
+        | "TOPUP"
+        | "ADJUSTMENT"
+        | "BOOKING_PAYMENT"
+        | "BOOKING_REFUND"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -948,9 +1908,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       billing_type: ["PER_SESSION", "MONTHLY"],
@@ -970,7 +1927,16 @@ export const Constants = {
         "PAYOUT_REJECTED",
       ],
       payment_status: ["PENDING", "PAID"],
-      role: ["CLIENT", "ADMIN", "VENUE_ADMIN"],
+      payout_request_status: ["PENDING", "PAID", "REJECTED"],
+      role: ["CLIENT", "ADMIN", "VENUE_ADMIN", "TRAINER"],
+      trainer_status: ["DRAFT", "PUBLISHED", "SUSPENDED"],
+      venue_ledger_kind: ["BOOKING_CREDIT", "SETTLEMENT"],
+      wallet_tx_kind: [
+        "TOPUP",
+        "ADJUSTMENT",
+        "BOOKING_PAYMENT",
+        "BOOKING_REFUND",
+      ],
     },
   },
 } as const

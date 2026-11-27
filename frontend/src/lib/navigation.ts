@@ -21,7 +21,7 @@ import {
 } from "@heroicons/react/24/solid";
 import type { IconComponent } from "@/lib/icon-type";
 
-export type NavRole = "CLIENT" | "ADMIN" | "VENUE_ADMIN";
+export type NavRole = "CLIENT" | "ADMIN" | "VENUE_ADMIN" | "TRAINER";
 export type NavGroupKey = "account" | "activity";
 
 export interface NavSection {

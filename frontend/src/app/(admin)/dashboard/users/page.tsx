@@ -20,15 +20,17 @@ import { DniInput } from "@/components/shared/dni-input";
 import { useToastStore } from "@/stores/toast-store";
 import type { User, Venue } from "@/types";
 
-const ROLE_COLORS: Record<string, "secondary" | "warning" | "default"> = {
+const ROLE_COLORS: Record<string, "secondary" | "warning" | "default" | "success"> = {
     ADMIN: "secondary",
     VENUE_ADMIN: "warning",
+    TRAINER: "success",
     CLIENT: "default",
 };
 
 const ROLE_LABELS: Record<string, string> = {
     ADMIN: "Admin General",
     VENUE_ADMIN: "Admin Complejo",
+    TRAINER: "Entrenador",
     CLIENT: "Cliente",
 };
 
@@ -333,6 +335,7 @@ export default function AdminUsersPage() {
                 >
                     <SelectItem key="CLIENT">Cliente</SelectItem>
                     <SelectItem key="VENUE_ADMIN">Admin Complejo</SelectItem>
+                    <SelectItem key="TRAINER">Entrenador</SelectItem>
                     <SelectItem key="ADMIN">Admin General</SelectItem>
                 </Select>
                 <Select
@@ -461,6 +464,7 @@ export default function AdminUsersPage() {
                         >
                             <SelectItem key="CLIENT" textValue="Cliente">Cliente</SelectItem>
                             <SelectItem key="VENUE_ADMIN" textValue="Admin de Complejo">Admin de Complejo</SelectItem>
+                            <SelectItem key="TRAINER" textValue="Entrenador">Entrenador</SelectItem>
                             <SelectItem key="ADMIN" textValue="Admin General">Admin General</SelectItem>
                         </Select>
                         {createForm.role === "VENUE_ADMIN" && (
@@ -483,7 +487,7 @@ export default function AdminUsersPage() {
                             color="primary"
                             onPress={handleCreateSubmit}
                             isLoading={createUserMutation.isPending}
-                            isDisabled={!createForm.email || !createForm.password || !createForm.firstName || !createForm.lastName}
+                            isDisabled={!createForm.email || !createForm.password || !createForm.firstName || !createForm.lastName || (createForm.role === "TRAINER" && (!createForm.phone || !createForm.dni))}
                         >
                             Crear Usuario
                         </Button>
@@ -549,6 +553,7 @@ export default function AdminUsersPage() {
                         >
                             <SelectItem key="CLIENT" textValue="Cliente">Cliente</SelectItem>
                             <SelectItem key="VENUE_ADMIN" textValue="Admin de Complejo">Admin de Complejo</SelectItem>
+                            <SelectItem key="TRAINER" textValue="Entrenador">Entrenador</SelectItem>
                             <SelectItem key="ADMIN" textValue="Admin General">Admin General</SelectItem>
                         </Select>
 

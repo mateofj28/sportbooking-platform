@@ -7,7 +7,7 @@ export interface User {
     phone?: string;
     dni?: string;
     avatarUrl?: string;
-    role: "CLIENT" | "ADMIN" | "VENUE_ADMIN";
+    role: "CLIENT" | "ADMIN" | "VENUE_ADMIN" | "TRAINER";
     venueId?: string | null;
     isActive?: boolean;
     createdAt?: string;
@@ -44,6 +44,12 @@ export interface Sport {
     maxPlayers?: number;
     billingType?: BillingType;
     isActive: boolean;
+    /** Clases con entrenadores (spec entrenadores, Req. 1) */
+    classesEnabled?: boolean;
+    /** Duraciones permitidas de una clase, en horas enteras */
+    classDurations?: number[];
+    /** Máximo de alumnos por clase (1 = individual) */
+    classMaxStudents?: number;
 }
 
 // Venue types

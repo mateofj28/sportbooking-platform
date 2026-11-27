@@ -14,7 +14,7 @@ export function useSports(activeOnly = true) {
     queryFn: async (): Promise<Sport[]> => {
       let query = supabase
         .from('sports')
-        .select('id, name, description, max_players, billing_type, is_active')
+        .select('id, name, description, max_players, billing_type, is_active, classes_enabled, class_durations, class_max_students')
         .order('name')
 
       if (activeOnly) query = query.eq('is_active', true)

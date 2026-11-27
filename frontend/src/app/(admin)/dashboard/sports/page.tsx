@@ -4,6 +4,7 @@ import { toAppError } from '@/lib/error-messages'
 import {
     Button, Chip, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, RadioGroup, Radio, useDisclosure,
+    Switch, CheckboxGroup, Checkbox, Divider,
 } from "@heroui/react";
 import { DataTable } from "@/components/shared/data-table";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -23,6 +24,13 @@ export default function AdminSportsPage() {
     const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
     const [form, setForm] = useState({ name: "", description: "", maxPlayers: "", billingType: "PER_SESSION" });
     const [editForm, setEditForm] = useState({ id: "", name: "", description: "", maxPlayers: "", billingType: "PER_SESSION" });
+    // Clases con entrenadores (spec entrenadores, Req. 1)
+    const [classForm, setClassForm] = useState({ enabled: false, durations: ["1"] as string[], maxStudents: "1" });
+    const maxStudentsNum = Number(classForm.maxStudents);
+    const classFormError = !classForm.enabled ? null
+        : classForm.durations.length === 0 ? "Elegí al menos una duración"
+        : !Number.isInteger(maxStudentsNum) || maxStudentsNum < 1 || maxStudentsNum > 50 ? "El cupo tiene que ser entre 1 y 50 alumnos"
+        : null;
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const { data: sports, isLoading } = useSports(false);
@@ -55,14 +63,23 @@ export default function AdminSportsPage() {
                 description: data.description || null,
                 max_players: data.maxPlayers ?? null,
                 billing_type: data.billingType,
+                classes_enabled: data.classesEnabled,
+                class_durations: data.classDurations,
+                class_max_students: data.classMaxStudents,
             }).eq("id", id);
             if (error) throw toAppError(error);
         },
         onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sports"] }); onEditClose(); addToast("Deporte actualizado"); },
+        onError: (e: Error) => addToast(e.message, "error"),
     });
 
     const handleEdit = (sport: Sport) => {
         setEditForm({ id: sport.id, name: sport.name, description: sport.description || "", maxPlayers: sport.maxPlayers != null ? String(sport.maxPlayers) : "", billingType: sport.billingType || "PER_SESSION" });
+        setClassForm({
+            enabled: !!sport.classesEnabled,
+            durations: (sport.classDurations?.length ? sport.classDurations : [1]).map(String),
+            maxStudents: String(sport.classMaxStudents ?? 1),
+        });
         onEditOpen();
     };
 
@@ -91,6 +108,7 @@ export default function AdminSportsPage() {
                     <TableColumn>DESCRIPCIÓN</TableColumn>
                     <TableColumn>JUGADORES</TableColumn>
                     <TableColumn>MODALIDAD</TableColumn>
+                    <TableColumn>CLASES</TableColumn>
                     <TableColumn>ESTADO</TableColumn>
                     <TableColumn>ACCIONES</TableColumn>
                 </TableHeader>
@@ -104,6 +122,17 @@ export default function AdminSportsPage() {
                                 <Chip color={sport.billingType === "MONTHLY" ? "secondary" : "primary"} size="sm" variant="flat">
                                     {sport.billingType === "MONTHLY" ? "Mensualidad" : "Por turno"}
                                 </Chip>
+                            </TableCell>
+                            <TableCell>
+                                {sport.classesEnabled ? (
+                                    <span className="text-sm text-default-600">
+                                        {(sport.classDurations ?? []).map((h) => `${h} h`).join(" · ")}
+                                        {" · "}
+                                        {(sport.classMaxStudents ?? 1) > 1 ? `grupal, hasta ${sport.classMaxStudents}` : "individual"}
+                                    </span>
+                                ) : (
+                                    <span className="text-sm text-default-400">No</span>
+                                )}
                             </TableCell>
                             <TableCell><Chip color={sport.isActive ? "success" : "danger"} size="sm" variant="flat">{sport.isActive ? "Activo" : "Inactivo"}</Chip></TableCell>
                             <TableCell>
@@ -159,10 +188,55 @@ export default function AdminSportsPage() {
                             <Radio value="PER_SESSION">Por turno</Radio>
                             <Radio value="MONTHLY">Mensualidad</Radio>
                         </RadioGroup>
+
+                        <Divider />
+                        <div className="space-y-3" role="group" aria-label="Clases con entrenadores">
+                            <Switch isSelected={classForm.enabled} onValueChange={(v) => setClassForm({ ...classForm, enabled: v })}>
+                                Admite clases con entrenadores
+                            </Switch>
+                            {classForm.enabled && (
+                                <>
+                                    <CheckboxGroup
+                                        label="Duraciones permitidas de una clase"
+                                        orientation="horizontal"
+                                        value={classForm.durations}
+                                        onValueChange={(v) => setClassForm({ ...classForm, durations: [...v].sort((a, b) => Number(a) - Number(b)) })}
+                                        description="Horas enteras. El cliente elige entre estas al reservar."
+                                    >
+                                        {["1", "2", "3", "4", "5", "6", "7", "8"].map((h) => <Checkbox key={h} value={h}>{h} h</Checkbox>)}
+                                    </CheckboxGroup>
+                                    <Input
+                                        label="Máximo de alumnos por clase"
+                                        type="number"
+                                        min="1"
+                                        max="50"
+                                        variant="bordered"
+                                        value={classForm.maxStudents}
+                                        onValueChange={(v) => setClassForm({ ...classForm, maxStudents: v.replace(/\D/g, "") })}
+                                        description={maxStudentsNum > 1 ? "Clase grupal: varios alumnos en el mismo horario." : "1 = clase individual."}
+                                    />
+                                    <p className="text-xs text-default-400">Los cambios no afectan las clases ya reservadas.</p>
+                                </>
+                            )}
+                            {classFormError && <p role="alert" className="text-sm text-danger">{classFormError}</p>}
+                        </div>
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="light" onPress={onEditClose}>Cancelar</Button>
-                        <Button color="primary" onPress={() => editMutation.mutate({ id: editForm.id, ...buildPayload(editForm) })} isLoading={editMutation.isPending}>Guardar</Button>
+                        <Button
+                            color="primary"
+                            isDisabled={!!classFormError}
+                            onPress={() => editMutation.mutate({
+                                id: editForm.id,
+                                ...buildPayload(editForm),
+                                classesEnabled: classForm.enabled,
+                                classDurations: classForm.durations.map(Number),
+                                classMaxStudents: maxStudentsNum || 1,
+                            })}
+                            isLoading={editMutation.isPending}
+                        >
+                            Guardar
+                        </Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>

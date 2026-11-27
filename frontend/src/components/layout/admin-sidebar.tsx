@@ -4,51 +4,60 @@ import { Link, Button } from "@heroui/react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthStore } from "@/stores/auth-store";
-import { ArrowLeftIcon, ArrowRightStartOnRectangleIcon, BellIcon, BuildingLibraryIcon, CalendarIcon, ChartBarIcon, CircleStackIcon, ClockIcon, CurrencyDollarIcon, MapPinIcon, MegaphoneIcon, NoSymbolIcon, QuestionMarkCircleIcon, Squares2X2Icon, TrophyIcon, UsersIcon, WalletIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { AcademicCapIcon, ArrowLeftIcon, ArrowRightStartOnRectangleIcon, BellIcon, BuildingLibraryIcon, CalendarIcon, ChartBarIcon, CircleStackIcon, ClockIcon, CurrencyDollarIcon, MapPinIcon, MegaphoneIcon, NoSymbolIcon, QuestionMarkCircleIcon, Squares2X2Icon, TrophyIcon, UserIcon, UsersIcon, WalletIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useEffect } from "react";
 import { useSidebarStore } from "@/stores/sidebar-store";
 
-type Role = "ADMIN" | "VENUE_ADMIN";
+type Role = "ADMIN" | "VENUE_ADMIN" | "TRAINER";
+const ADMINS: Role[] = ["ADMIN", "VENUE_ADMIN"];
 
-const menuItems: { href: string; label: string; icon: typeof Squares2X2Icon; only?: Role }[] = [
-    { href: "/dashboard", label: "Dashboard", icon: Squares2X2Icon },
+// Cada ítem dice explícitamente qué roles lo ven: un rol nuevo no ve nada por defecto.
+// Exportado: el layout del panel lo usa para no dejar entrar a un rol a una página que no es suya.
+export const PANEL_MENU: { href: string; label: string; icon: typeof Squares2X2Icon; roles: Role[] }[] = [
+    { href: "/dashboard", label: "Dashboard", icon: Squares2X2Icon, roles: ["ADMIN", "VENUE_ADMIN", "TRAINER"] },
     // Billetera de créditos (spec billetera-créditos): justo después del Dashboard
-    { href: "/dashboard/wallet", label: "Billetera", icon: WalletIcon, only: "VENUE_ADMIN" },
-    { href: "/dashboard/points", label: "Créditos", icon: CircleStackIcon, only: "ADMIN" },
-    { href: "/dashboard/balances", label: "Balances", icon: BuildingLibraryIcon, only: "ADMIN" },
-    { href: "/dashboard/bookings", label: "Reservas", icon: CalendarIcon },
-    { href: "/dashboard/statistics", label: "Estadísticas", icon: ChartBarIcon },
-    { href: "/dashboard/facilities", label: "Instalaciones", icon: MapPinIcon },
-    { href: "/dashboard/venues", label: "Complejos", icon: MapPinIcon },
-    { href: "/dashboard/schedules", label: "Horarios", icon: ClockIcon },
-    { href: "/dashboard/pricing", label: "Precios", icon: CurrencyDollarIcon },
-    { href: "/dashboard/blocked-slots", label: "Bloqueos", icon: NoSymbolIcon },
-    { href: "/dashboard/users", label: "Usuarios", icon: UsersIcon },
-    { href: "/dashboard/sports", label: "Deportes", icon: TrophyIcon },
-    { href: "/dashboard/advertising", label: "Publicidad", icon: MegaphoneIcon },
-    { href: "/dashboard/notifications", label: "Notificaciones", icon: BellIcon },
-    { href: "/dashboard/support", label: "Ayuda y soporte", icon: QuestionMarkCircleIcon },
+    { href: "/dashboard/wallet", label: "Billetera", icon: WalletIcon, roles: ["VENUE_ADMIN"] },
+    { href: "/dashboard/points", label: "Créditos", icon: CircleStackIcon, roles: ["ADMIN"] },
+    { href: "/dashboard/balances", label: "Balances", icon: BuildingLibraryIcon, roles: ["ADMIN"] },
+    { href: "/dashboard/bookings", label: "Reservas", icon: CalendarIcon, roles: ADMINS },
+    { href: "/dashboard/statistics", label: "Estadísticas", icon: ChartBarIcon, roles: ADMINS },
+    { href: "/dashboard/facilities", label: "Instalaciones", icon: MapPinIcon, roles: ADMINS },
+    { href: "/dashboard/venues", label: "Complejos", icon: MapPinIcon, roles: ["ADMIN"] },
+    { href: "/dashboard/schedules", label: "Horarios", icon: ClockIcon, roles: ADMINS },
+    { href: "/dashboard/pricing", label: "Precios", icon: CurrencyDollarIcon, roles: ADMINS },
+    { href: "/dashboard/blocked-slots", label: "Bloqueos", icon: NoSymbolIcon, roles: ADMINS },
+    { href: "/dashboard/trainers", label: "Entrenadores", icon: AcademicCapIcon, roles: ["ADMIN"] },
+    { href: "/dashboard/users", label: "Usuarios", icon: UsersIcon, roles: ["ADMIN"] },
+    { href: "/dashboard/sports", label: "Deportes", icon: TrophyIcon, roles: ["ADMIN"] },
+    { href: "/dashboard/advertising", label: "Publicidad", icon: MegaphoneIcon, roles: ["ADMIN"] },
+    // Entrenador (spec entrenadores, Etapa 1)
+    { href: "/dashboard/trainer/availability", label: "Disponibilidad", icon: ClockIcon, roles: ["TRAINER"] },
+    { href: "/dashboard/trainer/blocks", label: "Bloqueos", icon: NoSymbolIcon, roles: ["TRAINER"] },
+    { href: "/dashboard/trainer/profile", label: "Mi perfil de entrenador", icon: UserIcon, roles: ["TRAINER"] },
+    { href: "/dashboard/notifications", label: "Notificaciones", icon: BellIcon, roles: ADMINS },
+    { href: "/dashboard/support", label: "Ayuda y soporte", icon: QuestionMarkCircleIcon, roles: ["ADMIN", "VENUE_ADMIN", "TRAINER"] },
 ];
+
+/** ¿Este rol puede abrir esta ruta del panel? (la ruta o una subruta de un ítem suyo) */
+export function canOpenPanelRoute(role: string | undefined, path: string): boolean {
+    return PANEL_MENU.some((i) => i.roles.includes(role as Role)
+        && (path === i.href || (i.href !== "/dashboard" && path.startsWith(i.href + "/"))));
+}
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
     const pathname = usePathname();
     const { logout } = useAuth();
     const { user } = useAuthStore();
-    const isVenueAdmin = user?.role === "VENUE_ADMIN";
-
-    // VENUE_ADMIN can't see: venues, sports, users
-    const role: Role = isVenueAdmin ? "VENUE_ADMIN" : "ADMIN";
-    const visibleItems = menuItems
-        .filter((item) => !item.only || item.only === role)
-        .filter((item) => !isVenueAdmin || !(["/dashboard/venues", "/dashboard/sports", "/dashboard/users", "/dashboard/advertising"].includes(item.href)));
+    const isTrainer = user?.role === "TRAINER";
+    const visibleItems = PANEL_MENU.filter((item) => item.roles.includes(user?.role as Role));
 
     return (
       <div className="flex h-full flex-col">
           <div className="mb-6 flex items-center justify-between px-3 pt-2">
               <div>
                     {/* text-white! porque globals.css fuerza el color de h2 / .font-bold */}
-                    <h2 className="text-lg font-bold text-white! dark:text-foreground!">Admin Panel</h2>
-                    <p className="text-xs text-white/80 dark:text-default-500">Gestión de SportBooking</p>
+                    <h2 className="text-lg font-bold text-white! dark:text-foreground!">{isTrainer ? "Mi panel" : "Admin Panel"}</h2>
+                    <p className="text-xs text-white/80 dark:text-default-500">{isTrainer ? "Entrenador en SportBooking" : "Gestión de SportBooking"}</p>
               </div>
               {onClose && (
                     <button onClick={onClose} aria-label="Cerrar menú" className="lg:hidden p-1 rounded-lg hover:bg-white/10 dark:hover:bg-default-100">
@@ -60,7 +69,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hide">
                 {visibleItems.map((item) => {
                   const Icon = item.icon;
-                  const isActive = pathname === item.href;
+                  const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href + "/"));
                   return (
                       <Link
                           key={item.href}

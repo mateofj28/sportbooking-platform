@@ -27,7 +27,8 @@ export function canManage(actor: Actor, ownerId: string, resourceVenueId: string
 }
 
 export function appliesClientRules(actor: Actor, ownerId: string): boolean {
-    return actor.role === "CLIENT" || ownerId === actor.id;
+    // Un entrenador, en canchas, es un cliente más (E7)
+    return actor.role === "CLIENT" || actor.role === "TRAINER" || ownerId === actor.id;
 }
 
 /**

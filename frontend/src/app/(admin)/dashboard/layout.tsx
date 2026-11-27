@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Spinner } from "@heroui/react";
-import { AdminSidebar } from "@/components/layout/admin-sidebar";
+import { AdminSidebar, canOpenPanelRoute } from "@/components/layout/admin-sidebar";
 import { Navbar } from "@/components/layout/navbar";
 import { useAuthStore } from "@/stores/auth-store";
+
+/** Roles con panel: admin general, admin de sede y entrenador (spec entrenadores E9). */
+const PANEL_ROLES = ["ADMIN", "VENUE_ADMIN", "TRAINER"];
 
 export default function DashboardLayout({
     children,
@@ -13,15 +16,19 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const router = useRouter();
+    const pathname = usePathname() ?? "/dashboard";
     const { isAuthenticated, isHydrated, user } = useAuthStore();
+    const hasPanel = !!user && PANEL_ROLES.includes(user.role);
+    // Cada rol entra solo a sus pantallas (la autorización real está en la base)
+    const allowed = hasPanel && canOpenPanelRoute(user?.role, pathname);
 
     useEffect(() => {
-        if (isHydrated && (!isAuthenticated || (user?.role !== "ADMIN" && user?.role !== "VENUE_ADMIN"))) {
-            router.replace("/login");
-        }
-    }, [isHydrated, isAuthenticated, user, router]);
+        if (!isHydrated) return;
+        if (!isAuthenticated || !hasPanel) router.replace("/login");
+        else if (!allowed) router.replace("/dashboard");
+    }, [isHydrated, isAuthenticated, hasPanel, allowed, router]);
 
-    if (!isHydrated) {
+    if (!isHydrated || (isAuthenticated && hasPanel && !allowed)) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Spinner size="lg" />
@@ -29,7 +36,7 @@ export default function DashboardLayout({
         );
     }
 
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !hasPanel) {
         return null;
     }
 

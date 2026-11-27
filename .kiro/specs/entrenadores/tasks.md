@@ -6,30 +6,30 @@ Flujo de cada tarea con base: probar en `BEGIN … ROLLBACK` → aplicar → dep
 
 ## Etapa 1 — Alta del entrenador y su panel (sin reservas todavía)
 
-- [ ] 1.1 Migración 064: `ADD VALUE 'TRAINER'` al enum `role`.
+- [x] 1.1 Migración 064: `ADD VALUE 'TRAINER'` al enum `role`.
   - _Req. 2, E9_
-- [ ] 1.2 Migración 065 (parte 1): config de clases en `sports` (`classes_enabled`, `class_durations`,
+- [x] 1.2 Migración 065 (parte 1): config de clases en `sports` (`classes_enabled`, `class_durations`,
   `class_max_students`); tablas `trainers`, `trainer_sports`, `trainer_slots`, `trainer_slot_sports`,
   `trainer_blocks`; enum `trainer_status`; CHECKs; triggers (superposición de franjas, deportes válidos,
   `guard_trainer_commission`); RLS por rol (admin de sede sin acceso); `set_user_role` acepta TRAINER.
   - _Req. 1, 2, 3, 4.1–4.7, 13, E17, E22_
-- [ ] 1.3 RPC: `trainer_upsert_profile`, `trainer_set_published` (checklist 3.2), `admin_set_trainer_status`,
+- [x] 1.3 RPC: `trainer_upsert_profile`, `trainer_set_published` (checklist 3.2), `admin_set_trainer_status`,
   `admin_trainers` (lista paginada con filtros) y `admin_trainer_detail`.
   - _Req. 2.3, 3, 11.1_
-- [ ] 1.4 Edge: `admin-create-user` acepta `role: 'TRAINER'` y crea la fila `trainers` (DRAFT); validación de
+- [x] 1.4 Edge: `admin-create-user` acepta `role: 'TRAINER'` y crea la fila `trainers` (DRAFT); validación de
   datos obligatorios (DNI, teléfono). "Hacer entrenador" a un cliente existente (`admin-set-role`).
   `_shared/permissions.ts` reconoce TRAINER.
   - _Req. 2.1, 2.5, E5, E6_
-- [ ] 1.5 Frontend roles: `TRAINER` en tipos y auth store; `dashboard/layout` lo deja entrar; sidebar con su menú;
+- [x] 1.5 Frontend roles: `TRAINER` en tipos y auth store; `dashboard/layout` lo deja entrar; sidebar con su menú;
   navbar con el cambio "Panel" / "Vista de cliente" para TRAINER.
   - _Req. 2.6, 10.1, E7_
-- [ ] 1.6 Pantallas del entrenador: Perfil (con Publicar/Despublicar y checklist), Disponibilidad (franjas con
+- [x] 1.6 Pantallas del entrenador: Perfil (con Publicar/Despublicar y checklist), Disponibilidad (franjas con
   deportes, lugar, tarifas, % solo lectura y precio final), Bloqueos.
   - _Req. 3, 4_
-- [ ] 1.7 Pantallas del admin general: Deportes (config de clases), Entrenadores (lista, alta, detalle con % de
+- [x] 1.7 Pantallas del admin general: Deportes (config de clases), Entrenadores (lista, alta, detalle con % de
   comisión editable por franja, suspender/reactivar), Usuarios (crear entrenador / hacer entrenador).
   - _Req. 1, 2, 11.1_
-- [ ] 1.8 Cierre de etapa: pruebas en la base, build, deploy, push. `negocio.md` con las reglas de la etapa.
+- [x] 1.8 Cierre de etapa: pruebas en la base, build, deploy, push. `negocio.md` con las reglas de la etapa.
 
 ## Etapa 2 — Reservar una clase única
 

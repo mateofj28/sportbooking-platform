@@ -11,6 +11,7 @@ import {
 import { DataTable } from "@/components/shared/data-table";
 import { parseDate, type CalendarDate } from "@internationalized/date";
 import { useAuthStore } from "@/stores/auth-store";
+import { TrainerHome } from "@/components/trainer/trainer-home";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { camelize, Tables } from "@/lib/supabase-helpers";
@@ -31,6 +32,12 @@ function formatPrice(value: number): string {
 }
 
 export default function DashboardPage() {
+    const role = useAuthStore((s) => s.user?.role);
+    // El entrenador tiene su propio inicio (spec entrenadores, Etapa 1): no ve nada del negocio de canchas
+    return role === "TRAINER" ? <TrainerHome /> : <AdminDashboard />;
+}
+
+function AdminDashboard() {
     const { user } = useAuthStore();
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
     // Nombre de la sede del admin de sede (para el saludo)

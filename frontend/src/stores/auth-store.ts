@@ -12,7 +12,8 @@
 import { create } from 'zustand'
 import type { User as SupabaseUser, Session } from '@supabase/supabase-js'
 
-export type AppRole = 'CLIENT' | 'ADMIN' | 'VENUE_ADMIN'
+// TRAINER: entrenador (spec entrenadores). En la vista de cliente es un cliente más (E7).
+export type AppRole = 'CLIENT' | 'ADMIN' | 'VENUE_ADMIN' | 'TRAINER'
 
 // Tipo del usuario de la app (derivado del JWT de Supabase)
 export interface AppUser {

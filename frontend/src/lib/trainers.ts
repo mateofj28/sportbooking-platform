@@ -81,9 +81,13 @@ export const CANCELLED_BY_LABEL: Record<string, string> = {
  * Completada (la clase terminó) o Cancelada.
  */
 export function classBookingChip(
-    b: { status: string; class: { end: string } }, nowMs: number,
-): { label: string; color: 'primary' | 'success' | 'danger' } {
+    b: { status: string; paymentStatus?: string; class: { start: string; end: string } }, nowMs: number,
+): { label: string; color: 'primary' | 'success' | 'danger' | 'warning' | 'default' } {
     if (b.status === 'CANCELLED') return { label: 'Cancelada', color: 'danger' }
+    // Fecha de clase fija sin pagar: todavía no es una reserva realizada (el cron la cancela si no se paga)
+    if (b.paymentStatus === 'PENDING') {
+        return new Date(b.class.start).getTime() <= nowMs ? { label: 'No se pagó', color: 'default' } : { label: 'Pendiente de pago', color: 'warning' }
+    }
     if (b.status === 'COMPLETED' || new Date(b.class.end).getTime() <= nowMs) return { label: 'Completada', color: 'success' }
     return { label: 'Realizada', color: 'primary' }
 }

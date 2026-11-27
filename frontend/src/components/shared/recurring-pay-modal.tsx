@@ -21,6 +21,10 @@ interface RecurringPayModalProps {
     /** Error del servidor (ej. el saldo cambió en otra pestaña). */
     error?: string | null;
     onConfirm: (mode: RecurringPayMode) => void;
+    /** Cómo se llama lo que se crea (por defecto "turno fijo"; en clases, "clase fija"). */
+    noun?: string;
+    /** Género de `noun` para armar las frases. */
+    feminine?: boolean;
 }
 
 /**
@@ -28,7 +32,7 @@ interface RecurringPayModalProps {
  * crearlas y pagar cada una después. El cobro es todo o nada con el turno (create-recurring).
  */
 export function RecurringPayModal({
-    isOpen, onClose, pricePerDate, dates, balance, firstWithin24h, isLoading, error, onConfirm,
+    isOpen, onClose, pricePerDate, dates, balance, firstWithin24h, isLoading, error, onConfirm, noun = "turno fijo", feminine = false,
 }: RecurringPayModalProps) {
     const [mode, setMode] = useState<RecurringPayMode>("NEXT");
     const price = Math.round(pricePerDate);
@@ -45,9 +49,9 @@ export function RecurringPayModal({
     return (
         <Modal isOpen={isOpen} onClose={() => !isLoading && onClose()} size="md" placement="center" scrollBehavior="inside">
             <ModalContent>
-                <ModalHeader>¿Cómo querés pagar el turno fijo?</ModalHeader>
+                <ModalHeader>¿Cómo querés pagar {feminine ? "la" : "el"} {noun}?</ModalHeader>
                 <ModalBody className="gap-4">
-                    <RadioGroup aria-label="Forma de pago del turno fijo" value={mode} onValueChange={(v) => setMode(v as RecurringPayMode)}>
+                    <RadioGroup aria-label={`Forma de pago ${feminine ? "de la" : "del"} ${noun}`} value={mode} onValueChange={(v) => setMode(v as RecurringPayMode)}>
                         <Radio value="ALL" isDisabled={balance < totalAll}
                             description={`${formatPoints(totalAll)} por las ${dates} fechas${balance < totalAll ? " · no te alcanza el saldo" : ""}`}>
                             Pagar todo ahora
@@ -86,7 +90,7 @@ export function RecurringPayModal({
                     <Button variant="light" onPress={onClose} isDisabled={isLoading}>Volver</Button>
                     <Button color="primary" startContent={isLoading ? undefined : <CheckIcon className="h-4 w-4" />}
                         isDisabled={!enough} isLoading={isLoading} onPress={() => onConfirm(mode)}>
-                        {mode === "NONE" ? "Crear turno fijo" : `Crear y pagar ${formatPoints(needed)}`}
+                        {mode === "NONE" ? `Crear ${noun}` : `Crear y pagar ${formatPoints(needed)}`}
                     </Button>
                 </ModalFooter>
             </ModalContent>

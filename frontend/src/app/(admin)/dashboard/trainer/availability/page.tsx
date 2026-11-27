@@ -222,6 +222,13 @@ export default function TrainerAvailabilityPage() {
                                 <p>La comisión la define la administración y se suma a tu tarifa. Vas a ver el precio final al guardar.</p>
                             )}
                         </div>
+                        {form.id && (
+                            <p className="text-xs text-default-500">
+                                Las clases ya pagadas no cambian. Las fechas sin pagar de clases fijas (a más de 24 h) toman la tarifa,
+                                el lugar y el horario nuevos, manteniendo su lugar dentro de la franja; si ya no entran, se cancelan solas.
+                                Al alumno le avisamos por email.
+                            </p>
+                        )}
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="light" onPress={modal.onClose}>Cancelar</Button>
@@ -238,7 +245,7 @@ export default function TrainerAvailabilityPage() {
                     onError: (e) => { setDeleteId(null); addToast(e.message); },
                 })}
                 title="Eliminar franja"
-                message="¿Seguro que querés eliminar esta franja? Si era la única, tu perfil vuelve a borrador."
+                message="¿Seguro que querés eliminar esta franja? Las clases ya pagadas se mantienen; las fechas sin pagar de clases fijas se cancelan. Si era la única franja, tu perfil vuelve a borrador."
                 confirmLabel="Eliminar"
                 isLoading={remove.isPending}
             />

@@ -3,7 +3,7 @@
 // Perfil de un entrenador y reserva de una clase (Req. 5.4, 6, 7).
 // Horarios desde 24 h y hasta 30 días (hora AR); la base los calcula y vuelve a validar al reservar.
 import {
-    Avatar, Button, Card, CardBody, Chip, DatePicker, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader,
+    Avatar, Button, Card, CardBody, Checkbox, Chip, DatePicker, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader,
     Spinner, useDisclosure,
 } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/select";
@@ -15,7 +15,8 @@ import { ChevronLeftIcon, ClockIcon, MapPinIcon, UsersIcon } from "@heroicons/re
 import { Navbar } from "@/components/layout/navbar";
 import { InsufficientBalance } from "@/components/shared/insufficient-balance";
 import { Credits } from "@/components/trainer/credits";
-import { useBookClass, usePublicTrainer, useTrainerAvailability, type ClassOption } from "@/hooks/use-classes";
+import { useBookClass, useBookClassSeries, usePublicTrainer, useTrainerAvailability, type ClassOption, type ClassPayMode } from "@/hooks/use-classes";
+import { RecurringPayModal } from "@/components/shared/recurring-pay-modal";
 import { useMyBalance } from "@/hooks/use-wallet";
 import { todayAr } from "@/lib/ads";
 import { formatDateAr, formatTimeAr } from "@/lib/datetime";
@@ -45,6 +46,11 @@ export default function TrainerProfilePage({ params }: { params: Promise<{ id: s
     const [hours, setHours] = useState<number | null>(null);
     const [date, setDate] = useState<string | null>(null);
     const [picked, setPicked] = useState<ClassOption | null>(null);
+    // Clase fija: la misma clase todas las semanas (8 fechas, Req. 8)
+    const [weekly, setWeekly] = useState(false);
+    const series = useBookClassSeries();
+    const seriesModal = useDisclosure();
+    const [seriesError, setSeriesError] = useState<string | null>(null);
 
     const sport = t?.sports.find((s) => s.id === sportId) ?? null;
 
@@ -92,6 +98,25 @@ export default function TrainerProfilePage({ params }: { params: Promise<{ id: s
     };
 
     const enough = !picked || balance >= picked.total;
+
+    const onSeries = (payMode: ClassPayMode) => {
+        if (!picked || !sportId) return;
+        setSeriesError(null);
+        series.mutate(
+            { trainerId: t.trainerId, sportId, start: picked.start, hours: picked.hours, payMode, expectedTotal: picked.total },
+            {
+                onSuccess: (r) => {
+                    seriesModal.onClose();
+                    setPicked(null);
+                    addToast(r.skippedCount > 0
+                        ? `Clase fija creada: ${r.createdCount} fechas (${r.skippedCount} no estaban disponibles).`
+                        : `Clase fija creada: ${r.createdCount} fechas.`);
+                    router.push("/bookings?tab=classes");
+                },
+                onError: (e) => setSeriesError(e.message),
+            },
+        );
+    };
 
     return (
         <Shell>
@@ -198,7 +223,15 @@ export default function TrainerProfilePage({ params }: { params: Promise<{ id: s
                                         <p className="mt-1">Total <Credits amount={picked.total} className="font-semibold" /></p>
                                     </div>
                                     {isAuthenticated ? (
-                                        <Button color="primary" className="w-full sm:w-auto" onPress={confirm.onOpen}>Reservar</Button>
+                                            <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+                                                <Checkbox isSelected={weekly} onValueChange={setWeekly} size="sm">
+                                                    Repetir todas las semanas (clase fija, 8 fechas)
+                                                </Checkbox>
+                                                <Button color="primary" className="w-full sm:w-auto"
+                                                    onPress={() => { if (weekly) { setSeriesError(null); seriesModal.onOpen(); } else confirm.onOpen(); }}>
+                                                    {weekly ? "Crear clase fija" : "Reservar"}
+                                                </Button>
+                                            </div>
                                     ) : (
                                         <Button as={Link} href="/login" color="primary" className="w-full sm:w-auto">Iniciá sesión para reservar</Button>
                                     )}
@@ -238,6 +271,21 @@ export default function TrainerProfilePage({ params }: { params: Promise<{ id: s
                     </ModalFooter>
                 </ModalContent>
             </Modal>
+            {picked && (
+                <RecurringPayModal
+                    isOpen={seriesModal.isOpen}
+                    onClose={seriesModal.onClose}
+                    pricePerDate={picked.total}
+                    dates={8}
+                    balance={balance}
+                    firstWithin24h={false}
+                    isLoading={series.isPending}
+                    error={seriesError}
+                    onConfirm={onSeries}
+                    noun="clase fija"
+                    feminine
+                />
+            )}
         </Shell>
     );
 }

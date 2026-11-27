@@ -20,7 +20,8 @@
 
 import { createAdminClient } from '../_shared/db.ts'
 import { requireCron } from '../_shared/cron-auth.ts'
-import { bookingToEmailData, sendBookingCancellation } from '../_shared/email.ts'
+import { bookingToEmailData, sendBookingCancellation, sendClassCancellation } from '../_shared/email.ts'
+import { classEmail, loadClass, ROLE_LABEL } from '../_shared/classes.ts'
 import { notifyBookingCancelled } from '../_shared/notifications.ts'
 
 const REASON = 'Cancelada automáticamente por falta de pago (menos de 24h de antelación)'
@@ -34,6 +35,7 @@ Deno.serve(async (req) => {
 
   try {
     const supabase = createAdminClient()
+    const classes = await cancelUnpaidClasses(supabase)
     const now = new Date()
     const in24h = new Date(now.getTime() + DAY_MS)
 
@@ -68,7 +70,7 @@ Deno.serve(async (req) => {
     }
     const toCancel = (candidates ?? []).filter((b) => reasonFor.has(b.id))
     if (toCancel.length === 0) {
-      return new Response(JSON.stringify({ cancelled: 0 }), { status: 200 })
+      return new Response(JSON.stringify({ cancelled: 0, classes }), { status: 200 })
     }
 
     // 2. Cancelar solo si SIGUEN sin pagar (compare-and-set). Un UPDATE por motivo.
@@ -107,10 +109,29 @@ Deno.serve(async (req) => {
     )
 
     console.log(`cron-cancel-unpaid: ${cancelledIds.size} reservas canceladas`)
-    return new Response(JSON.stringify({ cancelled: cancelledIds.size }), { status: 200 })
+    return new Response(JSON.stringify({ cancelled: cancelledIds.size, classes }), { status: 200 })
 
   } catch (e) {
     console.error('cron-cancel-unpaid error:', e)
     return new Response(JSON.stringify({ error: String(e) }), { status: 500 })
   }
 })
+
+// Clases con entrenadores (067): mismas dos reglas, en la base (cancel_unpaid_class_bookings).
+// Devuelve cuántas se cancelaron; avisa al alumno por email (best-effort).
+// deno-lint-ignore no-explicit-any
+async function cancelUnpaidClasses(supabase: any): Promise<number> {
+  const { data, error } = await supabase.rpc('cancel_unpaid_class_bookings')
+  if (error) {
+    console.error('cancel_unpaid_class_bookings:', error)
+    return 0
+  }
+  const items: { id: string; classId: string; reason: string }[] = data ?? []
+  await Promise.allSettled(items.map(async (it) => {
+    const c = await loadClass(supabase, it.classId)
+    const student = c?.bookings.find((b) => b.id === it.id)?.user
+    const mail = c && student ? classEmail(c, student) : null
+    if (mail) await sendClassCancellation({ ...mail, reason: it.reason, byLabel: ROLE_LABEL.SYSTEM })
+  }))
+  return items.length
+}

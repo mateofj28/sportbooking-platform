@@ -211,3 +211,24 @@ Relación clave:
   por clases jugadas figura en Balances como "gastado no jugado".
 - El entrenador ve sus alumnos (sin DNI ni teléfono) y su tarifa; el admin general ve todo (email, comisión, total).
   El admin de sede no ve nada.
+
+### Etapa 3: clases fijas y cambios del entrenador
+
+- **Clase fija** (`book_class_series`): desde el horario elegido (primera fecha: 24 h a 30 días), 8 fechas semanales
+  a la misma hora AR. Las fechas que no se pueden (bloqueo, ocupado, llena, ya reservada) se saltean y se
+  informan; si no se puede ninguna, no se crea nada. Pago al crear: **todo / solo la próxima / nada**, todo o nada.
+  Las fechas sin pagar **ocupan** el lugar.
+- Pagar fechas (`pay_class_booking`, `pay_class_bookings_batch`, Edge `pay-class-bookings`): solo el titular, antes
+  del inicio, con `expected_total` (si el precio cambió, no se cobra).
+- Fechas sin pagar: mismas dos reglas que las canchas (`cancel_unpaid_class_bookings`, desde `cron-cancel-unpaid`):
+  ya empezó → se cancela; empieza en menos de 24 h y existía antes de ese límite → se cancela. Rol `SYSTEM`.
+- Cancelar la serie (`cancel_recurring_class`): la propia → fechas a 24 h o más; entrenador o admin general → todas
+  las futuras con motivo. Lo pagado vuelve al 100%. La serie queda inactiva.
+- **Cambios del entrenador (E23)**, por triggers en `trainer_slots` y `trainer_slot_sports`, solo sobre fechas
+  **sin pagar** de clases fijas a más de 24 h:
+  - tarifa / comisión → precio vigente; lugar → el nuevo, si nadie pagó esa clase;
+  - horario → la fecha conserva su posición dentro de la franja (18–21 → 19–22: 18:00 pasa a 19:00), creando o
+    sumándose a la clase de ese horario;
+  - si ya no entra (franja más corta, borrada, sin ese deporte, se pisa, bloqueo, llena, < 24 h) → se cancela sola.
+  - Lo pagado no cambia nunca. Cada cambio queda en `class_booking_changes` (lo que el cliente conocía y lo nuevo)
+    y `cron-notify-price-changes` manda un email agrupado por cliente a los 5 minutos sin cambios.

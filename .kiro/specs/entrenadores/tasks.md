@@ -49,17 +49,17 @@ Flujo de cada tarea con base: probar en `BEGIN … ROLLBACK` → aplicar → dep
 
 ## Etapa 3 — Clases fijas y cambios del entrenador
 
-- [ ] 3.1 Migración: `recurring_classes`, `pay_class_bookings_batch`, `class_booking_changes`,
+- [x] 3.1 Migración: `recurring_classes`, `pay_class_bookings_batch`, `class_booking_changes`,
   `reprice_pending_class_bookings` + trigger en `trainer_slots` (precio, lugar, movimiento de horario,
   cancelación si no entra).
   - _Req. 8, 4.6, E15, E23_
-- [ ] 3.2 Edge: `create-recurring-class` (pay_mode ALL/NEXT/NONE, rollback), `cancel-recurring-class`,
+- [x] 3.2 Edge: `create-recurring-class` (pay_mode ALL/NEXT/NONE, rollback), `cancel-recurring-class`,
   `pay-class-bookings`; `cron-cancel-unpaid` y `cron-notify-price-changes` incluyen clases.
   - _Req. 8_
-- [ ] 3.3 Frontend: crear clase fija con las 3 opciones de pago, Pagar / Pagar todo, aviso de cambios
+- [x] 3.3 Frontend: crear clase fija con las 3 opciones de pago, Pagar / Pagar todo, aviso de cambios
   (`PriceChangeNote` para clases), cancelar la serie.
   - _Req. 8_
-- [ ] 3.4 Cierre de etapa (casos de reprecio: cambio de tarifa, de lugar, de horario dentro y fuera de la franja,
+- [x] 3.4 Cierre de etapa (casos de reprecio: cambio de tarifa, de lugar, de horario dentro y fuera de la franja,
   franja que cruza medianoche, clase grupal con fechas pagadas y sin pagar).
 
 ## Etapa 4 — Dinero, avisos y estadísticas

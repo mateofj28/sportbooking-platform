@@ -109,7 +109,13 @@ export function StaffClassTable({ items, view, emptyContent }: { items: ClassInf
                                     {(open.students ?? []).map((s) => (
                                         <li key={s.bookingId} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                                             <div>
-                                                <p className="font-medium">{s.firstName} {s.lastName}</p>
+                                                <p className="font-medium">
+                                                    {s.firstName} {s.lastName}
+                                                    {s.isRecurring && <span className="ml-2 text-xs font-normal text-default-500">clase fija</span>}
+                                                    {s.status === "CONFIRMED" && s.paymentStatus === "PENDING" && (
+                                                        <span className="ml-2 text-xs font-normal text-warning-600">sin pagar</span>
+                                                    )}
+                                                </p>
                                                 {isAdmin && s.email && <p className="text-xs text-default-500">{s.email}</p>}
                                                 <p className="text-xs text-default-500">
                                                     {isAdmin

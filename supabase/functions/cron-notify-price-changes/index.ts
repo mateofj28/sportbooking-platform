@@ -15,7 +15,7 @@
 
 import { createAdminClient } from '../_shared/db.ts'
 import { requireCron } from '../_shared/cron-auth.ts'
-import { sendPriceChangeNotice, type PriceChangeLine } from '../_shared/email.ts'
+import { sendClassChangeNotice, sendPriceChangeNotice, type ClassChangeLine, type PriceChangeLine } from '../_shared/email.ts'
 import { arDateLabel, arTime } from '../_shared/ar-time.ts'
 
 const QUIET_MINUTES = 5
@@ -31,6 +31,7 @@ Deno.serve(async (req) => {
     const supabase = createAdminClient()
     const now = new Date()
     const quietSince = new Date(now.getTime() - QUIET_MINUTES * 60 * 1000)
+    const classEmails = await notifyClassChanges(supabase, now, quietSince)
 
     // 1. Cambios sin avisar y "quietos" hace al menos 5 minutos
     const { data: changes, error: fetchError } = await supabase
@@ -48,7 +49,7 @@ Deno.serve(async (req) => {
 
     if (fetchError) throw fetchError
     if (!changes || changes.length === 0) {
-      return new Response(JSON.stringify({ notified: 0 }), { status: 200 })
+      return new Response(JSON.stringify({ notified: 0, classEmails }), { status: 200 })
     }
 
     // 2. Marcar como avisados ANTES de enviar (idempotencia). Solo los que siguen
@@ -95,9 +96,65 @@ Deno.serve(async (req) => {
     )
 
     console.log(`cron-notify-price-changes: ${markedIds.size} cambios, ${byUser.size} emails`)
-    return new Response(JSON.stringify({ notified: markedIds.size, emails: byUser.size }), { status: 200 })
+    return new Response(JSON.stringify({ notified: markedIds.size, emails: byUser.size, classEmails }), { status: 200 })
   } catch (e) {
     console.error('cron-notify-price-changes error:', e)
     return new Response(JSON.stringify({ error: String(e) }), { status: 500 })
   }
 })
+
+// Clases fijas (067): cambios del entrenador sobre fechas sin pagar (class_booking_changes).
+// Mismo criterio: quietos 5 minutos, se marcan antes de enviar, un email por cliente.
+// deno-lint-ignore no-explicit-any
+async function notifyClassChanges(supabase: any, now: Date, quietSince: Date): Promise<number> {
+  const { data: changes, error } = await supabase
+    .from('class_booking_changes')
+    .select(`class_booking_id, user_id, old_total, new_total, old_start, new_start, old_location, new_location, cancelled,
+      booking:class_bookings!class_booking_id(class:trainer_classes!class_id(hours,
+        sport:sports!sport_id(name), trainer:trainers!trainer_id(profile:profiles!user_id(first_name, last_name)))),
+      user:profiles!user_id(email, first_name)`)
+    .is('notified_at', null)
+    .lte('changed_at', quietSince.toISOString())
+  if (error) {
+    console.error('class_booking_changes:', error)
+    return 0
+  }
+  if (!changes?.length) return 0
+
+  const { data: marked } = await supabase
+    .from('class_booking_changes')
+    .update({ notified_at: now.toISOString() })
+    .in('class_booking_id', changes.map((c: any) => c.class_booking_id))
+    .is('notified_at', null)
+    .lte('changed_at', quietSince.toISOString())
+    .select('class_booking_id')
+  const markedIds = new Set((marked ?? []).map((m: any) => m.class_booking_id))
+
+  const credits = (n: number) => `${Math.round(n).toLocaleString('en-US')} créditos`
+  const label = (start: string, loc: string, total: number, hours: number) => {
+    const end = new Date(new Date(start).getTime() + hours * 3600_000).toISOString()
+    return `${arDateLabel(start)} · ${arTime(start)} - ${arTime(end)} · ${loc} · ${credits(total)}`
+  }
+  const byUser = new Map<string, { email: string; firstName: string; lines: ClassChangeLine[] }>()
+  for (const c of changes as any[]) {
+    if (!markedIds.has(c.class_booking_id) || !c.user?.email) continue
+    const cls = c.booking?.class
+    const hours = Number(cls?.hours ?? 1)
+    const p = cls?.trainer?.profile
+    const entry = byUser.get(c.user_id) ?? { email: c.user.email, firstName: c.user.first_name ?? '', lines: [] }
+    entry.lines.push({
+      sportName: cls?.sport?.name ?? 'Clase',
+      trainerName: `${p?.first_name ?? ''} ${p?.last_name ?? ''}`.trim(),
+      oldLabel: label(c.old_start, c.old_location, Number(c.old_total), hours),
+      newLabel: label(c.new_start, c.new_location, Number(c.new_total), hours),
+      cancelled: !!c.cancelled,
+      startsAt: c.new_start,
+    })
+    byUser.set(c.user_id, entry)
+  }
+  await Promise.allSettled([...byUser.values()].map((u) => {
+    u.lines.sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+    return sendClassChangeNotice(u)
+  }))
+  return byUser.size
+}

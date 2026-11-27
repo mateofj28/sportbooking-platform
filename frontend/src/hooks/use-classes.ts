@@ -83,6 +83,8 @@ export interface ClassStudent {
     email?: string | null
     status: 'CONFIRMED' | 'CANCELLED' | 'COMPLETED'
     paymentStatus: 'PENDING' | 'PAID'
+    /** Fecha de una clase fija (puede estar sin pagar). */
+    isRecurring?: boolean
     basePrice: number
     commissionAmount?: number | null
     totalPrice?: number | null
@@ -120,7 +122,48 @@ export interface MyClassBooking {
     cancellationReason: string | null
     createdAt: string
     canCancel: boolean
+    /** Sin pagar y la clase todavía no empezó (fecha de una clase fija). */
+    payable: boolean
+    recurringClassId: string | null
+    /** Cambio del entrenador sobre esta fecha sin pagar (E23): lo que conocía y lo nuevo. */
+    change: ClassChange | null
     class: ClassInfo
+}
+
+export interface ClassChange {
+    oldTotal: number
+    newTotal: number
+    oldStart: string
+    newStart: string
+    oldLocation: string
+    newLocation: string
+}
+
+export interface MyRecurringClass {
+    id: string
+    isActive: boolean
+    dayOfWeek: number
+    startTime: string
+    hours: number
+    startDate: string
+    endDate: string
+    sport: { id: string; name: string }
+    trainer: { id: string; firstName: string; lastName: string }
+    upcomingCount: number
+    /** Fechas sin pagar que todavía se pueden pagar. */
+    pending: { id: string; total: number }[]
+}
+
+export type ClassPayMode = 'ALL' | 'NEXT' | 'NONE'
+
+export interface ClassSeriesResult {
+    recurringClassId: string
+    createdCount: number
+    skippedCount: number
+    paidCount: number
+    paidTotal: number
+    created: { id: string; classId: string; start: string; total: number }[]
+    skipped: { start: string; reason: string }[]
 }
 
 export interface Paged<T> {
@@ -261,6 +304,66 @@ export function useCancelTrainerClass() {
         mutationFn: async (v: { classId: string; reason: string }) => {
             const { data, error } = await invokeFunction<{ students: number }>('cancel-trainer-class', {
                 class_id: v.classId, reason: v.reason.trim(),
+            })
+            if (error) throw new Error(error)
+            return data!
+        },
+        onSuccess: invalidate,
+    })
+}
+
+// ---------------------------------------------------------------
+// Clases fijas (Etapa 3, migración 067)
+// ---------------------------------------------------------------
+
+/** Clase fija: 8 fechas semanales desde la elegida; se paga todo, la próxima o nada (todo o nada). */
+export function useBookClassSeries() {
+    const invalidate = useInvalidateClasses()
+    return useMutation({
+        mutationFn: async (v: { trainerId: string; sportId: string; start: string; hours: number; payMode: ClassPayMode; expectedTotal: number }) => {
+            const { data, error } = await invokeFunction<ClassSeriesResult>('create-recurring-class', {
+                trainer_id: v.trainerId, sport_id: v.sportId, start: v.start, hours: v.hours,
+                pay_mode: v.payMode, expected_total: v.expectedTotal,
+            })
+            if (error) throw new Error(error)
+            return data!
+        },
+        onSettled: invalidate,
+    })
+}
+
+export function useMyRecurringClasses() {
+    const userId = useAuthStore((s) => s.user?.id)
+    return useQuery({
+        queryKey: [...CLASSES_KEY, 'my-series', userId],
+        enabled: !!userId,
+        queryFn: () => rpc<MyRecurringClass[]>('my_recurring_classes'),
+    })
+}
+
+/** Pagar una o varias fechas pendientes. expectedTotal = lo que ve el cliente (si cambió, no se cobra). */
+export function usePayClassBookings() {
+    const invalidate = useInvalidateClasses()
+    return useMutation({
+        mutationFn: async (v: { ids: string[]; expectedTotal: number }) => {
+            const body = v.ids.length === 1
+                ? { class_booking_id: v.ids[0], expected_total: v.expectedTotal }
+                : { class_booking_ids: v.ids, expected_total: v.expectedTotal }
+            const { data, error } = await invokeFunction<{ paidCount: number; total: number }>('pay-class-bookings', body)
+            if (error) throw new Error(error)
+            return data!
+        },
+        // También al fallar: el precio pudo haber cambiado
+        onSettled: invalidate,
+    })
+}
+
+export function useCancelRecurringClass() {
+    const invalidate = useInvalidateClasses()
+    return useMutation({
+        mutationFn: async (v: { id: string; reason?: string }) => {
+            const { data, error } = await invokeFunction<{ cancelledCount: number; refunded: number }>('cancel-recurring-class', {
+                recurring_class_id: v.id, reason: v.reason?.trim() || null,
             })
             if (error) throw new Error(error)
             return data!

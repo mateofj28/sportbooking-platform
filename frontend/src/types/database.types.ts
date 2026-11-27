@@ -394,6 +394,70 @@ export type Database = {
         }
         Relationships: []
       }
+      class_booking_changes: {
+        Row: {
+          cancelled: boolean
+          changed_at: string
+          class_booking_id: string
+          new_location: string
+          new_start: string
+          new_total: number
+          notified_at: string | null
+          old_location: string
+          old_start: string
+          old_total: number
+          user_id: string
+        }
+        Insert: {
+          cancelled?: boolean
+          changed_at?: string
+          class_booking_id: string
+          new_location: string
+          new_start: string
+          new_total: number
+          notified_at?: string | null
+          old_location: string
+          old_start: string
+          old_total: number
+          user_id: string
+        }
+        Update: {
+          cancelled?: boolean
+          changed_at?: string
+          class_booking_id?: string
+          new_location?: string
+          new_start?: string
+          new_total?: number
+          notified_at?: string | null
+          old_location?: string
+          old_start?: string
+          old_total?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_booking_changes_class_booking_id_fkey"
+            columns: ["class_booking_id"]
+            isOneToOne: true
+            referencedRelation: "class_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_booking_changes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_booking_changes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_bookings: {
         Row: {
           base_price: number
@@ -408,6 +472,7 @@ export type Database = {
           id: string
           paid_at: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
+          recurring_class_id: string | null
           reminder_sent_at: string | null
           status: Database["public"]["Enums"]["booking_status"]
           total_price: number
@@ -427,6 +492,7 @@ export type Database = {
           id?: string
           paid_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          recurring_class_id?: string | null
           reminder_sent_at?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
           total_price: number
@@ -446,6 +512,7 @@ export type Database = {
           id?: string
           paid_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          recurring_class_id?: string | null
           reminder_sent_at?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
           total_price?: number
@@ -486,6 +553,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_bookings_recurring_class_id_fkey"
+            columns: ["recurring_class_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_classes"
             referencedColumns: ["id"]
           },
           {
@@ -837,6 +911,107 @@ export type Database = {
           },
           {
             foreignKeyName: "recurring_bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_classes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          day_of_week: number
+          end_date: string
+          hours: number
+          id: string
+          is_active: boolean
+          slot_id: string | null
+          sport_id: string
+          start_date: string
+          start_time: string
+          trainer_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          day_of_week: number
+          end_date: string
+          hours: number
+          id?: string
+          is_active?: boolean
+          slot_id?: string | null
+          sport_id: string
+          start_date: string
+          start_time: string
+          trainer_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          day_of_week?: number
+          end_date?: string
+          hours?: number
+          id?: string
+          is_active?: boolean
+          slot_id?: string | null
+          sport_id?: string
+          start_date?: string
+          start_time?: string
+          trainer_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_classes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_classes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_classes_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "trainer_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_classes_sport_id_fkey"
+            columns: ["sport_id"]
+            isOneToOne: false
+            referencedRelation: "sports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_classes_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "recurring_classes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_classes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -1776,6 +1951,19 @@ export type Database = {
         }
         Returns: Json
       }
+      book_class_series: {
+        Args: {
+          p_by: string
+          p_expected: number
+          p_hours: number
+          p_pay_mode: string
+          p_sport: string
+          p_start: string
+          p_trainer: string
+          p_user: string
+        }
+        Returns: Json
+      }
       booking_label: { Args: { p_booking: string }; Returns: string }
       bt_apply: {
         Args: {
@@ -1803,10 +1991,15 @@ export type Database = {
         Args: { p_by: string; p_id: string; p_reason: string }
         Returns: Json
       }
+      cancel_recurring_class: {
+        Args: { p_by: string; p_id: string; p_reason: string }
+        Returns: Json
+      }
       cancel_trainer_class: {
         Args: { p_by: string; p_class: string; p_reason: string }
         Returns: Json
       }
+      cancel_unpaid_class_bookings: { Args: never; Returns: Json }
       class_actor_role: {
         Args: { p_by: string; p_owner: string; p_trainer: string }
         Returns: string
@@ -1820,6 +2013,7 @@ export type Database = {
       class_options: {
         Args: {
           p_day: string
+          p_horizon?: number
           p_hours: number
           p_sport: string
           p_trainer: string
@@ -1839,6 +2033,21 @@ export type Database = {
           taken: number
           total: number
         }[]
+      }
+      class_take_spot: {
+        Args: {
+          p_capacity: number
+          p_class: string
+          p_end: string
+          p_hours: number
+          p_is_group: boolean
+          p_location: string
+          p_slot: string
+          p_sport: string
+          p_start: string
+          p_trainer: string
+        }
+        Returns: string
       }
       clock_minutes: { Args: { p: string }; Returns: number }
       close_empty_class: {
@@ -1915,6 +2124,7 @@ export type Database = {
         Args: { p_page?: number; p_scope?: string; p_size?: number }
         Returns: Json
       }
+      my_recurring_classes: { Args: never; Returns: Json }
       my_wallet_history: {
         Args: {
           p_from?: string
@@ -1934,6 +2144,14 @@ export type Database = {
         Args: { p_bookings: string[]; p_user: string }
         Returns: Json
       }
+      pay_class_booking: {
+        Args: { p_expected: number; p_id: string; p_user: string }
+        Returns: Json
+      }
+      pay_class_bookings_batch: {
+        Args: { p_expected: number; p_ids: string[]; p_user: string }
+        Returns: Json
+      }
       pay_venue: {
         Args: {
           p_amount: number
@@ -1948,12 +2166,30 @@ export type Database = {
         Args: { p_facility: string }
         Returns: number
       }
+      record_class_change: {
+        Args: {
+          p_cancelled: boolean
+          p_cb: string
+          p_new_location: string
+          p_new_start: string
+          p_new_total: number
+          p_old_location: string
+          p_old_start: string
+          p_old_total: number
+          p_user: string
+        }
+        Returns: undefined
+      }
       reject_venue_payout: {
         Args: { p_reason: string; p_request: string }
         Returns: Json
       }
       reprice_pending_recurring: {
         Args: { p_facility_id: string }
+        Returns: number
+      }
+      reprice_slot_class_bookings: {
+        Args: { p_old_day: number; p_old_start: string; p_slot: string }
         Returns: number
       }
       request_venue_payout: { Args: { p_amount?: number }; Returns: Json }
@@ -1973,6 +2209,10 @@ export type Database = {
       set_user_role: {
         Args: { p_role: string; p_user_id: string; p_venue_id?: string }
         Returns: Json
+      }
+      system_cancel_class_booking: {
+        Args: { p_cb: string; p_reason: string }
+        Returns: undefined
       }
       trainer_add_block: {
         Args: { p_end: string; p_reason: string; p_start: string }

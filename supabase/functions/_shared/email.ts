@@ -281,3 +281,60 @@ export async function sendClassCancellation(
     ${d.reason ? `<p style="margin:0;font-size:13px;color:#6b7280;">Motivo: ${esc(d.reason)}</p>` : ''}`
   await send(d.email, 'Clase cancelada - SportBooking', 'Clase cancelada', body, '#EF4444')
 }
+
+// ------------------------------------------------------------
+// Clases fijas (migración 067)
+// ------------------------------------------------------------
+
+/** Al cliente: clase fija creada (fechas creadas, pagadas y pendientes). */
+export async function sendClassSeriesConfirmation(
+  d: ClassEmailData & { createdCount: number; paidCount: number; skipped: string[] },
+): Promise<void> {
+  const pending = d.createdCount - d.paidCount
+  const skipped = d.skipped.length
+    ? `<p style="margin:0 0 12px;font-size:13px;color:#6b7280;">Fechas que no se pudieron reservar: ${esc(d.skipped.join(', '))}.</p>`
+    : ''
+  const payNote = pending > 0
+    ? `<p style="margin:0;font-size:13px;color:#b45309;background:#fef3c7;padding:12px;border-radius:8px;">⚠️ ${pending} fecha${pending === 1 ? '' : 's'} pendiente${pending === 1 ? '' : 's'} de pago. Pagalas con tus créditos desde "Mis reservas" → Clases hasta 24 h antes; si no, se cancelan solas.</p>`
+    : `<p style="margin:0;font-size:13px;color:#047857;background:#d1fae5;padding:12px;border-radius:8px;">✅ Todas las fechas están pagadas.</p>`
+  const body = `
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b7280;">
+      Hola ${esc(d.firstName)}, creamos tu clase fija: ${d.createdCount} fecha${d.createdCount === 1 ? '' : 's'}, todas las semanas a la misma hora. La primera:
+    </p>
+    <table width="100%" style="border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;margin-bottom:20px;">${classRows({ ...d, total: undefined })}</table>
+    ${skipped}${payNote}`
+  await send(d.email, 'Clase fija creada - SportBooking', '¡Clase fija creada!', body, '#10B981')
+}
+
+export interface ClassChangeLine {
+  sportName: string
+  trainerName: string
+  oldLabel: string
+  newLabel: string
+  cancelled: boolean
+  startsAt: string
+}
+
+/** Cambios del entrenador sobre fechas sin pagar de clases fijas (E23), agrupados por cliente. */
+export async function sendClassChangeNotice(data: { email: string; firstName: string; lines: ClassChangeLine[] }): Promise<void> {
+  if (data.lines.length === 0) return
+  const rows = data.lines.map((l) => `
+    <tr>
+      <td style="padding:8px 0;font-size:13px;color:#1a1d23;border-bottom:1px solid #f3f4f6;">
+        <strong>${esc(l.sportName)} con ${esc(l.trainerName)}</strong><br>
+        <span style="color:#9ca3af;text-decoration:line-through;">${esc(l.oldLabel)}</span><br>
+        ${l.cancelled
+      ? '<strong style="color:#b91c1c;">Cancelada: ya no entra en el horario del entrenador</strong>'
+      : `<strong>${esc(l.newLabel)}</strong>`}
+      </td>
+    </tr>`).join('')
+  const body = `
+    <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#6b7280;">
+      Hola ${esc(data.firstName)}, el entrenador cambió su horario o su tarifa, y eso cambió estas fechas de tu clase fija que todavía no pagaste:
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">${rows}</table>
+    <p style="margin:0;font-size:13px;color:#6b7280;background:#f3f4f6;padding:12px;border-radius:8px;">
+      Las fechas que ya pagaste no cambian. Podés pagar con lo nuevo o cancelar la fecha (hasta 24 horas antes) desde <strong>Mis reservas</strong> → Clases.
+    </p>`
+  await send(data.email, 'Cambió tu clase fija - SportBooking', 'Cambió tu clase fija', body, '#F59E0B')
+}

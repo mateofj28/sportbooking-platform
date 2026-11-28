@@ -11,6 +11,7 @@ import { DataTable } from "@/components/shared/data-table";
 import { PointsAmount } from "@/components/shared/points-amount";
 import { LedgerTotals, ReceiptButton } from "@/components/shared/wallet-ui";
 import { PayoutRequestsPanel } from "@/components/shared/payout-panel";
+import { TrainerPayoutsPanel } from "@/components/shared/trainer-payouts";
 import { PointsInput } from "@/components/shared/points-input";
 import { LedgerFilters, LedgerPagination, type LedgerFilterValue } from "@/components/shared/ledger-filters";
 import { useAdjustPoints, useAdminPendingPayoutCount, useAdminPointsUsers, useAdminWalletHistory, type PointsUser } from "@/hooks/use-wallet";
@@ -73,7 +74,7 @@ export default function PointsPage() {
                         </span>
                     }
                 >
-                    <PayoutRequestsPanel />
+                    <PayoutsBySource />
                 </Tab>
                 <Tab key="history" title="Historial global"><HistoryTab /></Tab>
             </Tabs>
@@ -300,6 +301,24 @@ function HistoryTab() {
                     <LedgerPagination total={data?.total ?? 0} page={page} size={PAGE_SIZE} onPage={setPage} />
                 </>
             )}
+        </div>
+    );
+}
+
+/** Solicitudes de pago: complejos o entrenadores (spec entrenadores, Req. 11.3). */
+function PayoutsBySource() {
+    const [source, setSource] = useState<"venues" | "trainers">("venues");
+    useEffect(() => {
+        if (new URLSearchParams(window.location.search).get("source") === "trainers") setSource("trainers");
+    }, []);
+    return (
+        <div className="space-y-4">
+            <Tabs aria-label="A quién se paga" size="sm" variant="bordered" selectedKey={source}
+                onSelectionChange={(k) => setSource(k as "venues" | "trainers")}>
+                <Tab key="venues" title="Complejos" />
+                <Tab key="trainers" title="Entrenadores" />
+            </Tabs>
+            {source === "venues" ? <PayoutRequestsPanel /> : <TrainerPayoutsPanel />}
         </div>
     );
 }

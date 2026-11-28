@@ -134,6 +134,10 @@ export interface BalancesSummary {
   paidToVenues: number
   pendingToVenues: number
   requestedByVenues: number
+  /** Entrenadores (migración 069). */
+  paidToTrainers: number
+  pendingToTrainers: number
+  requestedByTrainers: number
   balanced: boolean
 }
 

@@ -8,7 +8,8 @@
 
 import { createAdminClient } from '../_shared/db.ts'
 import { requireCron } from '../_shared/cron-auth.ts'
-import { bookingToEmailData, sendBookingReminder } from '../_shared/email.ts'
+import { bookingToEmailData, sendBookingReminder, sendClassReminder } from '../_shared/email.ts'
+import { classEmail, loadClass } from '../_shared/classes.ts'
 
 Deno.serve(async (req) => {
   // Solo pg_cron (Authorization: Bearer CRON_SECRET, migración 060)
@@ -19,6 +20,7 @@ Deno.serve(async (req) => {
     const supabase = createAdminClient()
     const now = new Date()
     const in2h = new Date(now.getTime() + 2 * 60 * 60 * 1000)
+    const classes = await sendClassReminders(supabase)
 
     // 1. Buscar turnos próximos sin recordatorio enviado
     const { data: upcoming, error: fetchError } = await supabase
@@ -39,7 +41,7 @@ Deno.serve(async (req) => {
 
     if (fetchError) throw fetchError
     if (!upcoming || upcoming.length === 0) {
-      return new Response(JSON.stringify({ sent: 0 }), { status: 200 })
+      return new Response(JSON.stringify({ sent: 0, classes }), { status: 200 })
     }
 
     const ids = upcoming.map((b) => b.id)
@@ -65,10 +67,39 @@ Deno.serve(async (req) => {
     )
 
     console.log(`cron-send-reminders: ${upcoming.length} recordatorios enviados`)
-    return new Response(JSON.stringify({ sent: upcoming.length }), { status: 200 })
+    return new Response(JSON.stringify({ sent: upcoming.length, classes }), { status: 200 })
 
   } catch (e) {
     console.error('cron-send-reminders error:', e)
     return new Response(JSON.stringify({ error: String(e) }), { status: 500 })
   }
 })
+
+// Clases con entrenadores (069): claim_class_reminders marca y devuelve lo pendiente de una vez
+// (idempotente) y deja el aviso in-app del entrenador. Acá van los emails (best-effort).
+// deno-lint-ignore no-explicit-any
+async function sendClassReminders(supabase: any): Promise<number> {
+  const { data, error } = await supabase.rpc('claim_class_reminders')
+  if (error) {
+    console.error('claim_class_reminders:', error)
+    return 0
+  }
+  const students: { id: string; classId: string }[] = data?.students ?? []
+  const classIds: string[] = data?.classes ?? []
+  const ids = [...new Set([...students.map((s) => s.classId), ...classIds])]
+  const loaded = new Map((await Promise.all(ids.map((id) => loadClass(supabase, id)))).filter(Boolean).map((c) => [c!.id, c!]))
+  await Promise.allSettled([
+    ...students.map(async (s) => {
+      const c = loaded.get(s.classId)
+      const student = c?.bookings.find((b) => b.id === s.id)?.user
+      const mail = c && student ? classEmail(c, student) : null
+      if (mail) await sendClassReminder(mail, false)
+    }),
+    ...classIds.map(async (id) => {
+      const c = loaded.get(id)
+      const mail = c ? classEmail(c, c.trainer) : null
+      if (mail) await sendClassReminder(mail, true)
+    }),
+  ])
+  return students.length + classIds.length
+}

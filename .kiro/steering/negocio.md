@@ -232,3 +232,29 @@ Relación clave:
   - si ya no entra (franja más corta, borrada, sin ese deporte, se pisa, bloqueo, llena, < 24 h) → se cancela sola.
   - Lo pagado no cambia nunca. Cada cambio queda en `class_booking_changes` (lo que el cliente conocía y lo nuevo)
     y `cron-notify-price-changes` manda un email agrupado por cliente a los 5 minutos sin cambios.
+
+### Etapa 4: dinero, avisos y estadísticas
+
+- **Ganancia del entrenador** = su tarifa (`base_price`), sin la comisión. Se reconoce cuando la clase pagada
+  **termina**: `complete_past_classes` (pg_cron cada 5 min) la pasa a COMPLETED y el trigger acredita en
+  `trainer_ledger` (`CLASS_CREDIT`, con la comisión registrada aparte). La comisión la ve solo el admin general.
+- **Pagos a pedido** (igual que los complejos): el entrenador solicita todo lo disponible u otro monto (una
+  solicitud pendiente a la vez) desde **Billetera**; el admin general la paga (número de transferencia o
+  comprobante en `settlement-receipts/trainers/<id>/`) o la rechaza con motivo. También puede pagar sin solicitud
+  (no toca lo ya solicitado). Funciones: `request_trainer_payout`, `pay_trainer`, `reject_trainer_payout`,
+  `trainer_wallet`, `admin_trainer_balances`, `admin_trainer_payout_requests`, `admin_trainer_payments`.
+- **Balances**: "jugado" y "comisión" suman canchas + clases; tarjetas nuevas "Pagado a entrenadores" y
+  "Pendiente de pagar a entrenadores". `recaudado = billeteras + gastado` sigue cuadrando (057 verificado).
+  Créditos → Solicitudes de pago tiene **Complejos / Entrenadores**.
+- **Avisos in-app** (`notifications.trainer_id`, `trainer_only`): el entrenador ve los suyos; el admin general
+  todos menos los `trainer_only`; el admin de sede ninguno. Tipos: `TRAINER_PUBLISHED` (admin), `CLASS_BOOKED`,
+  `CLASS_CANCELLED` (indica quién), `CLASS_AUTO_CANCELLED` (entrenador + admin), `CLASS_REMINDER` (solo
+  entrenador), `TRAINER_PAYOUT_REQUESTED` (admin), `TRAINER_PAYOUT_PAID` / `_REJECTED` (solo entrenador),
+  `COMMISSION_EARNED` de clases (admin). Lo que pasa en una misma operación se agrupa en un solo aviso
+  (ej. cancelar una clase fija entera).
+- **Recordatorios** ~2 h antes (`claim_class_reminders` desde `cron-send-reminders`, idempotente): email al
+  alumno con clase pagada; email + aviso al entrenador una vez por clase.
+- **Estadísticas** (`get_trainer_stats`): admin general en Estadísticas → Entrenadores (con comisión y por
+  entrenador); el entrenador en su panel (sin comisión). Actividad por día de inicio; dinero por día de fin,
+  pagado y terminado. Reservas = Realizadas + Completadas + Canceladas (las pagadas). `my_booking_stats` suma
+  `classes` para el cliente.

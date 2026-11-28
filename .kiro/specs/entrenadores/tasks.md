@@ -64,14 +64,14 @@ Flujo de cada tarea con base: probar en `BEGIN … ROLLBACK` → aplicar → dep
 
 ## Etapa 4 — Dinero, avisos y estadísticas
 
-- [ ] 4.1 Migración: `trainer_ledger`, `trainer_settlements`, `trainer_payout_requests`, `complete_past_classes`
+- [x] 4.1 Migración: `trainer_ledger`, `trainer_settlements`, `trainer_payout_requests`, `complete_past_classes`
   (pg_cron) + acreditación al terminar, RPC de billetera y pagos del entrenador, totales 057 extendidos y
   verificados; notificaciones (`trainer_id`, `trainer_only`, tipos nuevos, RLS).
   - _Req. 10.3–10.5, 11.3, 11.5, 12, 13.4, E18_
-- [ ] 4.2 Edge: `cron-send-reminders` con clases (cliente y entrenador); emails de reserva, cancelación y
+- [x] 4.2 Edge: `cron-send-reminders` con clases (cliente y entrenador); emails de reserva, cancelación y
   recordatorio para clases; avisos in-app.
   - _Req. 12_
-- [ ] 4.3 Frontend: Billetera del entrenador (solicitar pago); Solicitudes de pago y Balances con
+- [x] 4.3 Frontend: Billetera del entrenador (solicitar pago); Solicitudes de pago y Balances con
   **Complejos / Entrenadores**; Notificaciones del entrenador; Estadísticas de entrenadores (admin y propio);
   `my_booking_stats` del cliente con clases.
   - _Req. 10.3, 11.3, 11.4, 11.5_

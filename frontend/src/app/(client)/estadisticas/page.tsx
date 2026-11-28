@@ -82,6 +82,19 @@ export default function EstadisticasPage() {
                             </div>
                         </section>
 
+                                    {data.classes.total > 0 && (
+                                        <section aria-label="Clases con entrenadores" className="space-y-4">
+                                            <h2 className="text-lg font-semibold">Clases con entrenadores</h2>
+                                            <div className="grid gap-4 sm:grid-cols-4">
+                                                <SummaryCard icon={<CalendarDaysIcon className="h-5 w-5 text-primary" />} label="Clases" value={fmt(data.classes.total)}
+                                                    hint={plural(data.classes.canceladas, "cancelada", "canceladas")} />
+                                                <SummaryCard icon={<ClockIcon className="h-5 w-5 text-primary" />} label="Realizadas" value={fmt(data.classes.realizadas)} hint="Pagadas, la clase todavía no fue" />
+                                                <SummaryCard icon={<CheckCircleIcon className="h-5 w-5 text-success" />} label="Completadas" value={fmt(data.classes.completadas)} hint="Clases que ya tomaste" />
+                                                <SummaryCard icon={<XCircleIcon className="h-5 w-5 text-danger" />} label="Canceladas" value={fmt(data.classes.canceladas)} hint="Clases pagadas que se cancelaron" />
+                                            </div>
+                                        </section>
+                                    )}
+
                         <Button as={NextLink} href="/bookings" variant="bordered">Ver mis reservas</Button>
                     </>
                 )}

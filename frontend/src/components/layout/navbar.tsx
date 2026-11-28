@@ -165,7 +165,7 @@ export function Navbar() {
                 )}
                     {/* Campana de notificaciones: administradores, y solo dentro del panel (/dashboard).
                     En la vista de cliente no hay notificaciones del negocio: el contexto lo define la ruta. */}
-                    {isAuthenticated && inDashboard && (user?.role === "ADMIN" || user?.role === "VENUE_ADMIN") && (
+                    {isAuthenticated && inDashboard && isAdminUser && (
                     <NavbarItem>
                         <NotificationBell />
                     </NavbarItem>

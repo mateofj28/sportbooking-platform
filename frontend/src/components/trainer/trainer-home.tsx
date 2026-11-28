@@ -3,9 +3,11 @@
 // Inicio del panel del entrenador: estado de la ficha, qué falta para publicar y accesos.
 import { Button, Card, CardBody, Chip, Spinner } from "@heroui/react";
 import Link from "next/link";
-import { CalendarDaysIcon, CheckCircleIcon, ClockIcon, ExclamationTriangleIcon, NoSymbolIcon, UserIcon } from "@heroicons/react/24/outline";
+import { CalendarDaysIcon, CheckCircleIcon, ClockIcon, WalletIcon, ExclamationTriangleIcon, NoSymbolIcon, UserIcon } from "@heroicons/react/24/outline";
 import { useMyTrainerPanel, useSetTrainerPublished } from "@/hooks/use-trainer";
 import { useTrainerMyClasses } from "@/hooks/use-classes";
+import { useTrainerWallet } from "@/hooks/use-trainer-money";
+import { formatPoints } from "@/lib/points";
 import { formatDateShortAr, formatTimeAr } from "@/lib/datetime";
 import { TRAINER_STATUS_META } from "@/lib/trainers";
 import { useToastStore } from "@/stores/toast-store";
@@ -15,6 +17,7 @@ export function TrainerHome() {
     const setPublished = useSetTrainerPublished();
     const addToast = useToastStore((s) => s.addToast);
     const { data: upcoming } = useTrainerMyClasses("UPCOMING", 1, 5);
+    const { data: wallet } = useTrainerWallet(null, { from: "", to: "", kind: "ALL", page: 1, size: 1 });
 
     if (isLoading) return <div className="flex justify-center py-12"><Spinner size="lg" /></div>;
     if (error || !panel) {
@@ -31,6 +34,7 @@ export function TrainerHome() {
         });
 
     const links = [
+        { href: "/dashboard/trainer/wallet", label: "Billetera", icon: WalletIcon, detail: wallet ? `${formatPoints(wallet.available)} para cobrar · ${formatPoints(wallet.thisMonth)} este mes` : "…" },
         { href: "/dashboard/trainer/classes", label: "Mis clases", icon: CalendarDaysIcon, detail: `${upcoming?.total ?? 0} próxima${upcoming?.total === 1 ? "" : "s"}` },
         { href: "/dashboard/trainer/profile", label: "Mi perfil de entrenador", icon: UserIcon, detail: `${panel.sports.length} deporte${panel.sports.length === 1 ? "" : "s"}` },
         { href: "/dashboard/trainer/availability", label: "Disponibilidad", icon: ClockIcon, detail: `${panel.slots.length} franja${panel.slots.length === 1 ? "" : "s"} por semana` },
@@ -101,7 +105,7 @@ export function TrainerHome() {
                 </CardBody>
             </Card>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {links.map((l) => (
                     <Card key={l.href} as={Link} href={l.href} shadow="none" className="bg-content1">
                         <CardBody className="flex-row items-center gap-3 p-4">

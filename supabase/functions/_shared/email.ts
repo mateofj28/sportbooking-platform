@@ -338,3 +338,13 @@ export async function sendClassChangeNotice(data: { email: string; firstName: st
     </p>`
   await send(data.email, 'Cambió tu clase fija - SportBooking', 'Cambió tu clase fija', body, '#F59E0B')
 }
+
+/** Recordatorio ~2 h antes de una clase: al alumno o al entrenador (migración 069). */
+export async function sendClassReminder(d: ClassEmailData, toTrainer: boolean): Promise<void> {
+  const body = `
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b7280;">
+      Hola ${esc(d.firstName)}, ${toTrainer ? 'tenés una clase para dar pronto' : 'te recordamos que tenés una clase pronto'}:
+    </p>
+    <table width="100%" style="border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;">${classRows({ ...d, total: undefined })}</table>`
+  await send(d.email, 'Recordatorio de tu clase - SportBooking', '⏰ Tu clase es pronto', body, '#3B82F6')
+}

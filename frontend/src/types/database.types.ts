@@ -366,7 +366,9 @@ export type Database = {
           collected: number
           commission: number
           in_wallets: number
+          paid_to_trainers: number
           paid_to_venues: number
+          pending_to_trainers: number
           pending_to_venues: number
           played: number
           slot: number
@@ -376,7 +378,9 @@ export type Database = {
           collected?: number
           commission?: number
           in_wallets?: number
+          paid_to_trainers?: number
           paid_to_venues?: number
+          pending_to_trainers?: number
           pending_to_venues?: number
           played?: number
           slot: number
@@ -386,7 +390,9 @@ export type Database = {
           collected?: number
           commission?: number
           in_wallets?: number
+          paid_to_trainers?: number
           paid_to_venues?: number
+          pending_to_trainers?: number
           pending_to_venues?: number
           played?: number
           slot?: number
@@ -696,6 +702,8 @@ export type Database = {
           data: Json | null
           id: string
           title: string
+          trainer_id: string | null
+          trainer_only: boolean
           type: Database["public"]["Enums"]["notification_type"]
           venue_id: string | null
         }
@@ -707,6 +715,8 @@ export type Database = {
           data?: Json | null
           id?: string
           title: string
+          trainer_id?: string | null
+          trainer_only?: boolean
           type: Database["public"]["Enums"]["notification_type"]
           venue_id?: string | null
         }
@@ -718,10 +728,26 @@ export type Database = {
           data?: Json | null
           id?: string
           title?: string
+          trainer_id?: string | null
+          trainer_only?: boolean
           type?: Database["public"]["Enums"]["notification_type"]
           venue_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_venue_id_fkey"
             columns: ["venue_id"]
@@ -1149,6 +1175,7 @@ export type Database = {
           id: string
           is_group: boolean
           location: string
+          reminder_sent_at: string | null
           slot_id: string | null
           sport_id: string
           start_datetime: string
@@ -1167,6 +1194,7 @@ export type Database = {
           id?: string
           is_group: boolean
           location: string
+          reminder_sent_at?: string | null
           slot_id?: string | null
           sport_id: string
           start_datetime: string
@@ -1185,6 +1213,7 @@ export type Database = {
           id?: string
           is_group?: boolean
           location?: string
+          reminder_sent_at?: string | null
           slot_id?: string | null
           sport_id?: string
           start_datetime?: string
@@ -1223,6 +1252,181 @@ export type Database = {
           },
           {
             foreignKeyName: "trainer_classes_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      trainer_ledger: {
+        Row: {
+          amount: number
+          class_booking_id: string | null
+          commission: number
+          created_at: string
+          detail: string
+          id: string
+          kind: Database["public"]["Enums"]["trainer_ledger_kind"]
+          settlement_id: string | null
+          trainer_id: string
+        }
+        Insert: {
+          amount: number
+          class_booking_id?: string | null
+          commission?: number
+          created_at?: string
+          detail: string
+          id?: string
+          kind: Database["public"]["Enums"]["trainer_ledger_kind"]
+          settlement_id?: string | null
+          trainer_id: string
+        }
+        Update: {
+          amount?: number
+          class_booking_id?: string | null
+          commission?: number
+          created_at?: string
+          detail?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["trainer_ledger_kind"]
+          settlement_id?: string | null
+          trainer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_ledger_class_booking_id_fkey"
+            columns: ["class_booking_id"]
+            isOneToOne: false
+            referencedRelation: "class_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_ledger_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "trainer_settlements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_ledger_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      trainer_payout_requests: {
+        Row: {
+          amount: number
+          id: string
+          reject_reason: string | null
+          requested_at: string
+          resolved_at: string | null
+          resolved_by: string | null
+          settlement_id: string | null
+          status: Database["public"]["Enums"]["payout_request_status"]
+          trainer_id: string
+        }
+        Insert: {
+          amount: number
+          id?: string
+          reject_reason?: string | null
+          requested_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          settlement_id?: string | null
+          status?: Database["public"]["Enums"]["payout_request_status"]
+          trainer_id: string
+        }
+        Update: {
+          amount?: number
+          id?: string
+          reject_reason?: string | null
+          requested_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          settlement_id?: string | null
+          status?: Database["public"]["Enums"]["payout_request_status"]
+          trainer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_payout_requests_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_payout_requests_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_payout_requests_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "trainer_settlements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_payout_requests_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      trainer_settlements: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          receipt_path: string | null
+          trainer_id: string
+          transfer_ref: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          receipt_path?: string | null
+          trainer_id: string
+          transfer_ref?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          receipt_path?: string | null
+          trainer_id?: string
+          transfer_ref?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_settlements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_settlements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_settlements_trainer_id_fkey"
             columns: ["trainer_id"]
             isOneToOne: false
             referencedRelation: "trainers"
@@ -1895,7 +2099,26 @@ export type Database = {
         Args: { p_reason: string; p_suspend: boolean; p_trainer: string }
         Returns: Json
       }
+      admin_trainer_balances: {
+        Args: { p_page?: number; p_size?: number; p_trainer?: string }
+        Returns: Json
+      }
       admin_trainer_detail: { Args: { p_trainer: string }; Returns: Json }
+      admin_trainer_payments: {
+        Args: {
+          p_from?: string
+          p_page?: number
+          p_search?: string
+          p_size?: number
+          p_to?: string
+          p_trainer?: string
+        }
+        Returns: Json
+      }
+      admin_trainer_payout_requests: {
+        Args: { p_trainer?: string }
+        Returns: Json
+      }
       admin_trainers: {
         Args: {
           p_page?: number
@@ -1977,6 +2200,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      bt_apply_trainer: {
+        Args: {
+          d_commission: number
+          d_paid: number
+          d_pending: number
+          d_played: number
+        }
+        Returns: undefined
+      }
       bt_slot: { Args: never; Returns: number }
       business_totals_verify: { Args: never; Returns: Json }
       calculate_price: {
@@ -2000,6 +2232,7 @@ export type Database = {
         Returns: Json
       }
       cancel_unpaid_class_bookings: { Args: never; Returns: Json }
+      claim_class_reminders: { Args: never; Returns: Json }
       class_actor_role: {
         Args: { p_by: string; p_owner: string; p_trainer: string }
         Returns: string
@@ -2055,6 +2288,7 @@ export type Database = {
         Returns: undefined
       }
       complete_past_bookings: { Args: never; Returns: number }
+      complete_past_classes: { Args: never; Returns: number }
       create_booking_paid: {
         Args: {
           p_by: string
@@ -2074,6 +2308,21 @@ export type Database = {
           p_title: string
           p_type: Database["public"]["Enums"]["notification_type"]
           p_venue: string
+        }
+        Returns: undefined
+      }
+      emit_trainer_notification: {
+        Args: {
+          p_actor: string
+          p_admin_only: boolean
+          p_body: string
+          p_body_many: string
+          p_data: Json
+          p_group: string
+          p_title: string
+          p_trainer: string
+          p_trainer_only: boolean
+          p_type: Database["public"]["Enums"]["notification_type"]
         }
         Returns: undefined
       }
@@ -2111,6 +2360,16 @@ export type Database = {
         }
         Returns: Json
       }
+      get_trainer_stats: {
+        Args: {
+          p_from?: string
+          p_range?: string
+          p_sport?: string
+          p_to?: string
+          p_trainer?: string
+        }
+        Returns: Json
+      }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_venue_admin: { Args: never; Returns: boolean }
       is_facility_bookable: {
@@ -2118,6 +2377,7 @@ export type Database = {
         Returns: boolean
       }
       is_venue_admin: { Args: never; Returns: boolean }
+      lock_trainer_payouts: { Args: { p_trainer: string }; Returns: undefined }
       lock_venue_payouts: { Args: { p_venue: string }; Returns: undefined }
       my_booking_stats: { Args: never; Returns: Json }
       my_class_bookings: {
@@ -2152,6 +2412,16 @@ export type Database = {
         Args: { p_expected: number; p_ids: string[]; p_user: string }
         Returns: Json
       }
+      pay_trainer: {
+        Args: {
+          p_amount: number
+          p_receipt_path: string
+          p_request: string
+          p_trainer: string
+          p_transfer_ref: string
+        }
+        Returns: Json
+      }
       pay_venue: {
         Args: {
           p_amount: number
@@ -2162,6 +2432,7 @@ export type Database = {
         }
         Returns: Json
       }
+      person_name: { Args: { p_user: string }; Returns: string }
       pricing_default_commission: {
         Args: { p_facility: string }
         Returns: number
@@ -2180,6 +2451,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      reject_trainer_payout: {
+        Args: { p_reason: string; p_request: string }
+        Returns: Json
+      }
       reject_venue_payout: {
         Args: { p_reason: string; p_request: string }
         Returns: Json
@@ -2192,6 +2467,7 @@ export type Database = {
         Args: { p_old_day: number; p_old_start: string; p_slot: string }
         Returns: number
       }
+      request_trainer_payout: { Args: { p_amount?: number }; Returns: Json }
       request_venue_payout: { Args: { p_amount?: number }; Returns: Json }
       require_trainer: { Args: never; Returns: string }
       search_trainers: {
@@ -2226,6 +2502,10 @@ export type Database = {
           p_trainer: string
         }
         Returns: Json
+      }
+      trainer_balance_info: {
+        Args: { p_trainer: string }
+        Returns: Record<string, unknown>
       }
       trainer_delete_block: { Args: { p_id: string }; Returns: Json }
       trainer_delete_slot: { Args: { p_id: string }; Returns: Json }
@@ -2275,6 +2555,17 @@ export type Database = {
       }
       trainer_upsert_profile: {
         Args: { p_bio: string; p_experience: string; p_sport_ids: string[] }
+        Returns: Json
+      }
+      trainer_wallet: {
+        Args: {
+          p_from?: string
+          p_kind?: string
+          p_page?: number
+          p_size?: number
+          p_to?: string
+          p_trainer?: string
+        }
         Returns: Json
       }
       venue_admin_can_see_profile: {
@@ -2341,9 +2632,18 @@ export type Database = {
         | "PAYOUT_REQUESTED"
         | "PAYOUT_PAID"
         | "PAYOUT_REJECTED"
+        | "TRAINER_PUBLISHED"
+        | "CLASS_BOOKED"
+        | "CLASS_CANCELLED"
+        | "CLASS_AUTO_CANCELLED"
+        | "CLASS_REMINDER"
+        | "TRAINER_PAYOUT_REQUESTED"
+        | "TRAINER_PAYOUT_PAID"
+        | "TRAINER_PAYOUT_REJECTED"
       payment_status: "PENDING" | "PAID"
       payout_request_status: "PENDING" | "PAID" | "REJECTED"
       role: "CLIENT" | "ADMIN" | "VENUE_ADMIN" | "TRAINER"
+      trainer_ledger_kind: "CLASS_CREDIT" | "SETTLEMENT"
       trainer_status: "DRAFT" | "PUBLISHED" | "SUSPENDED"
       venue_ledger_kind: "BOOKING_CREDIT" | "SETTLEMENT"
       wallet_tx_kind:
@@ -2494,10 +2794,19 @@ export const Constants = {
         "PAYOUT_REQUESTED",
         "PAYOUT_PAID",
         "PAYOUT_REJECTED",
+        "TRAINER_PUBLISHED",
+        "CLASS_BOOKED",
+        "CLASS_CANCELLED",
+        "CLASS_AUTO_CANCELLED",
+        "CLASS_REMINDER",
+        "TRAINER_PAYOUT_REQUESTED",
+        "TRAINER_PAYOUT_PAID",
+        "TRAINER_PAYOUT_REJECTED",
       ],
       payment_status: ["PENDING", "PAID"],
       payout_request_status: ["PENDING", "PAID", "REJECTED"],
       role: ["CLIENT", "ADMIN", "VENUE_ADMIN", "TRAINER"],
+      trainer_ledger_kind: ["CLASS_CREDIT", "SETTLEMENT"],
       trainer_status: ["DRAFT", "PUBLISHED", "SUSPENDED"],
       venue_ledger_kind: ["BOOKING_CREDIT", "SETTLEMENT"],
       wallet_tx_kind: [

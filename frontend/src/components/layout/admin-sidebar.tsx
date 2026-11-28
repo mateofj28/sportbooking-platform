@@ -36,7 +36,9 @@ export const PANEL_MENU: { href: string; label: string; icon: typeof Squares2X2I
     { href: "/dashboard/trainer/availability", label: "Disponibilidad", icon: ClockIcon, roles: ["TRAINER"] },
     { href: "/dashboard/trainer/blocks", label: "Bloqueos", icon: NoSymbolIcon, roles: ["TRAINER"] },
     { href: "/dashboard/trainer/profile", label: "Mi perfil de entrenador", icon: UserIcon, roles: ["TRAINER"] },
-    { href: "/dashboard/notifications", label: "Notificaciones", icon: BellIcon, roles: ADMINS },
+    { href: "/dashboard/trainer/wallet", label: "Billetera", icon: WalletIcon, roles: ["TRAINER"] },
+    { href: "/dashboard/trainer/stats", label: "Estadísticas", icon: ChartBarIcon, roles: ["TRAINER"] },
+    { href: "/dashboard/notifications", label: "Notificaciones", icon: BellIcon, roles: ["ADMIN", "VENUE_ADMIN", "TRAINER"] },
     { href: "/dashboard/support", label: "Ayuda y soporte", icon: QuestionMarkCircleIcon, roles: ["ADMIN", "VENUE_ADMIN", "TRAINER"] },
 ];
 

@@ -1,7 +1,8 @@
 "use client";
 import { toAppError } from '@/lib/error-messages'
 
-import { Card, CardBody, CardHeader, Chip, Spinner, Divider, Progress, DatePicker } from "@heroui/react";
+import { Card, CardBody, CardHeader, Chip, Spinner, Divider, Progress, DatePicker, Tab, Tabs } from "@heroui/react";
+import { TrainerStatsView } from "@/components/trainer/trainer-stats";
 import { Select, SelectItem } from "@heroui/select";
 import { today, getLocalTimeZone, type CalendarDate } from "@internationalized/date";
 import { useQuery } from "@tanstack/react-query";
@@ -66,6 +67,31 @@ const ALL_KEY = "ALL";
 
 
 export default function StatisticsPage() {
+    const isAdmin = useAuthStore((s) => s.user?.role === "ADMIN");
+    const [view, setView] = useState<"courts" | "trainers">("courts");
+    // El admin de sede no ve nada de entrenadores (E22): solo canchas
+    if (!isAdmin) return <CourtStatistics />;
+    return (
+        <div className="space-y-4 min-w-0">
+            <Tabs aria-label="Estadísticas de" size="sm" variant="bordered" selectedKey={view}
+                onSelectionChange={(k) => setView(k as "courts" | "trainers")}>
+                <Tab key="courts" title="Canchas" />
+                <Tab key="trainers" title="Entrenadores" />
+            </Tabs>
+            {view === "courts" ? <CourtStatistics /> : (
+                <div className="space-y-6">
+                    <div>
+                        <h1 className="text-2xl font-bold">Estadísticas de entrenadores</h1>
+                        <p className="text-sm text-default-500 mt-1">Clases, ingresos de los entrenadores y comisión de la empresa.</p>
+                    </div>
+                    <TrainerStatsView admin />
+                </div>
+            )}
+        </div>
+    );
+}
+
+function CourtStatistics() {
     const { user } = useAuthStore();
     const isVenueAdmin = user?.role === "VENUE_ADMIN";
     // Por defecto se ve todo lo acumulado hasta hoy (igual que "Limpiar filtros")

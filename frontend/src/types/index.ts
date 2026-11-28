@@ -183,7 +183,16 @@ export type NotificationType =
     | "USER_REGISTERED"
     | "PAYOUT_REQUESTED"
     | "PAYOUT_PAID"
-    | "PAYOUT_REJECTED";
+    | "PAYOUT_REJECTED"
+    // Entrenadores (migraciones 068/069)
+    | "TRAINER_PUBLISHED"
+    | "CLASS_BOOKED"
+    | "CLASS_CANCELLED"
+    | "CLASS_AUTO_CANCELLED"
+    | "CLASS_REMINDER"
+    | "TRAINER_PAYOUT_REQUESTED"
+    | "TRAINER_PAYOUT_PAID"
+    | "TRAINER_PAYOUT_REJECTED";
 
 export interface AppNotification {
     id: string;

@@ -116,6 +116,8 @@ export interface MyBookingStats {
     completadas: number
     /** Turnos pagados que se cancelaron. */
     canceladas: number
+    /** Clases con entrenadores (migración 069), mismas reglas. */
+    classes: { total: number; realizadas: number; completadas: number; canceladas: number }
 }
 
 /**
@@ -132,7 +134,12 @@ export function useMyBookingStats() {
             const { data, error } = await (supabase.rpc as any)('my_booking_stats')
             if (error) throw toAppError(error)
             const s = (data ?? {}) as Partial<MyBookingStats>
+            const k = (s.classes ?? {}) as Partial<MyBookingStats['classes']>
             return {
+                classes: {
+                    total: Number(k.total ?? 0), realizadas: Number(k.realizadas ?? 0),
+                    completadas: Number(k.completadas ?? 0), canceladas: Number(k.canceladas ?? 0),
+                },
                 total: Number(s.total ?? 0),
                 realizadas: Number(s.realizadas ?? 0),
                 completadas: Number(s.completadas ?? 0),

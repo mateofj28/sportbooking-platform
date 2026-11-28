@@ -181,8 +181,9 @@ export interface AdminTrainersPage {
     items: AdminTrainerRow[]
 }
 
-export function useAdminTrainers(search: string, status: 'ALL' | TrainerStatus, page: number, size = 20) {
+export function useAdminTrainers(search: string, status: 'ALL' | TrainerStatus, page: number, size = 20, enabled = true) {
     return useQuery({
+        enabled,
         queryKey: [...TRAINER_KEY, 'admin', 'list', search, status, page, size],
         placeholderData: keepPreviousData,
         staleTime: 30_000,

@@ -3,7 +3,7 @@
 import { serverNow } from "@/lib/clock";
 import { Button, Spinner, Chip } from "@heroui/react";
 import { formatDateShortAr } from "@/lib/datetime";
-import { ArrowPathRoundedSquareIcon, ArrowTrendingUpIcon, BanknotesIcon, BellIcon, BuildingOffice2Icon, CalendarIcon, CheckBadgeIcon, CheckCircleIcon, CurrencyDollarIcon, NoSymbolIcon, UserPlusIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { AcademicCapIcon, ArrowPathRoundedSquareIcon, ArrowTrendingUpIcon, BanknotesIcon, BellIcon, BuildingOffice2Icon, CalendarIcon, CheckBadgeIcon, CheckCircleIcon, CurrencyDollarIcon, NoSymbolIcon, UserPlusIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -12,6 +12,7 @@ import {
   useMarkAllNotificationsRead,
 } from "@/hooks/use-notifications";
 import type { AppNotification, NotificationType } from "@/types";
+import { useAuthStore } from "@/stores/auth-store";
 
 /** Ícono, color de acento y etiqueta por tipo */
 const TYPE_META: Record<NotificationType, {
@@ -32,11 +33,26 @@ const TYPE_META: Record<NotificationType, {
   PAYOUT_REQUESTED: { icon: <BanknotesIcon className="h-4 w-4 text-warning" />, iconBg: "bg-warning/10", accent: "border-l-warning", label: "Solicitud de pago" },
   PAYOUT_PAID: { icon: <CheckBadgeIcon className="h-4 w-4 text-success" />, iconBg: "bg-success/10", accent: "border-l-success", label: "Pago recibido" },
   PAYOUT_REJECTED: { icon: <NoSymbolIcon className="h-4 w-4 text-danger" />, iconBg: "bg-danger/10", accent: "border-l-danger", label: "Solicitud rechazada" },
+  // Entrenadores (migración 069)
+  TRAINER_PUBLISHED: { icon: <AcademicCapIcon className="h-4 w-4 text-primary" />, iconBg: "bg-primary/10", accent: "border-l-primary", label: "Entrenador publicado" },
+  CLASS_BOOKED: { icon: <CalendarIcon className="h-4 w-4 text-primary" />, iconBg: "bg-primary/10", accent: "border-l-primary", label: "Clase reservada" },
+  CLASS_CANCELLED: { icon: <XCircleIcon className="h-4 w-4 text-danger" />, iconBg: "bg-danger/10", accent: "border-l-danger", label: "Clase cancelada" },
+  CLASS_AUTO_CANCELLED: { icon: <XCircleIcon className="h-4 w-4 text-danger" />, iconBg: "bg-danger/10", accent: "border-l-danger", label: "Clase cancelada automáticamente" },
+  CLASS_REMINDER: { icon: <BellIcon className="h-4 w-4 text-primary" />, iconBg: "bg-primary/10", accent: "border-l-primary", label: "Recordatorio" },
+  TRAINER_PAYOUT_REQUESTED: { icon: <BanknotesIcon className="h-4 w-4 text-warning" />, iconBg: "bg-warning/10", accent: "border-l-warning", label: "Solicitud de pago (entrenador)" },
+  TRAINER_PAYOUT_PAID: { icon: <CheckBadgeIcon className="h-4 w-4 text-success" />, iconBg: "bg-success/10", accent: "border-l-success", label: "Pago recibido" },
+  TRAINER_PAYOUT_REJECTED: { icon: <NoSymbolIcon className="h-4 w-4 text-danger" />, iconBg: "bg-danger/10", accent: "border-l-danger", label: "Solicitud rechazada" },
 };
 
 /** A dónde lleva cada aviso al tocarlo (los de reservas, al detalle de la reserva). */
-function notificationHref(n: AppNotification): string | null {
+function notificationHref(n: AppNotification, isTrainer: boolean): string | null {
   if (n.type === "PAYOUT_REQUESTED") return "/dashboard/points?tab=payouts";
+  if (n.type === "TRAINER_PAYOUT_REQUESTED") return "/dashboard/points?tab=payouts&source=trainers";
+  if (n.type === "TRAINER_PAYOUT_PAID" || n.type === "TRAINER_PAYOUT_REJECTED") return "/dashboard/trainer/wallet";
+  if (n.type === "TRAINER_PUBLISHED") return "/dashboard/trainers";
+  if (n.type === "CLASS_BOOKED" || n.type === "CLASS_CANCELLED" || n.type === "CLASS_AUTO_CANCELLED" || n.type === "CLASS_REMINDER") {
+    return isTrainer ? "/dashboard/trainer/classes" : "/dashboard/classes";
+  }
   if (n.type === "PAYOUT_PAID" || n.type === "PAYOUT_REJECTED") return "/dashboard/wallet";
   return n.bookingId ? `/bookings/${n.bookingId}` : null;
 }
@@ -61,6 +77,7 @@ export default function NotificationsPage() {
   const { data, isLoading } = useNotifications(page, 20);
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
+  const isTrainer = useAuthStore((s) => s.user?.role === "TRAINER");
 
   const items = data?.data ?? [];
   const total = data?.meta.total ?? 0;
@@ -69,7 +86,7 @@ export default function NotificationsPage() {
 
   const handleClick = (n: AppNotification) => {
     if (!n.read) markRead.mutate(n.id);
-    const href = notificationHref(n);
+    const href = notificationHref(n, isTrainer);
     if (href) router.push(href);
   };
 
